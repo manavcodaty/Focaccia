@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@face-pass/shared": "../../packages/shared/src/index.deno.ts",
+    "@supabase/functions-js/": "jsr:@supabase/functions-js@2/",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.100.0",
+    "libsodium-wrappers": "npm:libsodium-wrappers@0.8.2"
+  }
+}

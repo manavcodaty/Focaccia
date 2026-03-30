@@ -24,20 +24,35 @@ LOCKED CONSTRAINTS (DO NOT CHANGE)
 - Face model: use an existing pre-trained on-device face embedding model (no training).
 - Privacy: face data must be obfuscated into a cancelable template and never stored; template must be encrypted inside QR.
 
-STACK + VERSION PINS (use these exact versions unless incompatible with each other; if any are incompatible, keep the same major and document the resolution in /docs/ASSUMPTIONS.md)
+STACK + VERSION PINS
 Web:
-- Node 20 LTS
-- pnpm 9
-- next 16.1.4
-- tailwindcss 4.1.18
-- @supabase/supabase-js 2.90.1
+- Node 24
+- pnpm 10.33.0
+- next 16.2.1
+- react 19.2.4
+- react-dom 19.2.4
+- tailwindcss 4.2.2
+- @supabase/supabase-js 2.100.0
+- typescript 6.0.2
 Mobile:
-- expo 54.0.32 (SDK 54)
-- expo-router ~6.0.22 (bundled with SDK)
+- expo 55.0.8
+- expo-dev-client 55.0.18
+- expo-router 55.0.7
+- react 19.2.4
+- react-native 0.84.1
+- expo-linking 55.0.8
+- expo-constants 55.0.9
+- @expo/metro-runtime 55.0.6
 - react-native-vision-camera 4.7.3
 - react-native-fast-tflite 2.0.0
 - @more-tech/react-native-libsodium 1.5.6
 - @ashleysmart/react-native-vision-camera-face-detector 1.0.8
+- react-native-gesture-handler 2.30.0
+- react-native-reanimated 4.2.3
+- react-native-safe-area-context 5.7.0
+- react-native-screens 4.24.0
+Shared:
+- libsodium-wrappers 0.8.2
 NOTE: Use VisionCamera’s built-in code scanning API for QR scanning (do not use archived code-scanner packages).
 
 REPO STRUCTURE (MUST MATCH)

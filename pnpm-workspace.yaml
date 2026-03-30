@@ -1,0 +1,6 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  '@more-tech/react-native-libsodium': true
+  sharp: true

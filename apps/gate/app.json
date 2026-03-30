@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Face Pass Gate",
+    "slug": "face-pass-gate",
+    "scheme": "face-pass-gate",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.facepass.gate",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Face Pass Gate uses the camera to scan attendee passes and complete offline face verification without uploading images."
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "$(PRODUCT_NAME) needs camera access to scan passes and run offline live verification.",
+          "enableCodeScanner": true
+        }
+      ],
+      [
+        "react-native-fast-tflite",
+        {
+          "enableCoreMLDelegate": true
+        }
+      ]
+    ]
+  }
+}

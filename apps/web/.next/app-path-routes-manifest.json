@@ -1,0 +1,11 @@
+{
+  "/(secure)/dashboard/page": "/dashboard",
+  "/(secure)/events/[eventId]/page": "/events/[eventId]",
+  "/(secure)/events/[eventId]/provisioning/page": "/events/[eventId]/provisioning",
+  "/(secure)/events/new/page": "/events/new",
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/icon.svg/route": "/icon.svg",
+  "/login/page": "/login",
+  "/page": "/"
+}

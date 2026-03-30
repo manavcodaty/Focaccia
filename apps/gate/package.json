@@ -1,0 +1,44 @@
+{
+  "name": "@face-pass/gate",
+  "private": true,
+  "version": "0.1.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "ios": "expo run:ios",
+    "typecheck": "tsc --noEmit",
+    "test:offline": "node --experimental-strip-types ./scripts/verify-offline-flow.ts"
+  },
+  "dependencies": {
+    "@ashleysmart/react-native-vision-camera-face-detector": "1.0.8",
+    "@expo/metro-runtime": "55.0.6",
+    "@face-pass/shared": "workspace:*",
+    "@more-tech/react-native-libsodium": "1.5.6",
+    "@supabase/supabase-js": "2.100.0",
+    "expo": "55.0.8",
+    "expo-clipboard": "^55.0.9",
+    "expo-constants": "55.0.9",
+    "expo-dev-client": "55.0.18",
+    "expo-file-system": "^55.0.11",
+    "expo-image-manipulator": "^55.0.11",
+    "expo-linking": "55.0.8",
+    "expo-router": "55.0.7",
+    "expo-secure-store": "^55.0.9",
+    "expo-sharing": "^55.0.14",
+    "expo-sqlite": "^55.0.11",
+    "jpeg-js": "^0.4.4",
+    "react": "19.2.4",
+    "react-native": "0.84.1",
+    "react-native-fast-tflite": "2.0.0",
+    "react-native-gesture-handler": "2.30.0",
+    "react-native-reanimated": "4.2.3",
+    "react-native-safe-area-context": "5.7.0",
+    "react-native-screens": "4.24.0",
+    "react-native-vision-camera": "4.7.3",
+    "react-native-worklets-core": "^1.6.3"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "typescript": "6.0.2"
+  }
+}

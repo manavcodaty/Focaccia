@@ -1,0 +1,16 @@
+export const palette = {
+  accept: '#187457',
+  acceptSoft: '#d8f3e8',
+  alert: '#b74b33',
+  alertSoft: '#fde3db',
+  background: '#efe8dc',
+  card: '#fbf7f0',
+  highlight: '#1f5fbf',
+  highlightSoft: '#dceafe',
+  ink: '#14202b',
+  line: '#d9cfbf',
+  muted: '#68717d',
+  panel: '#f6f1e7',
+  warning: '#8a5b14',
+  warningSoft: '#f5e6cb',
+};

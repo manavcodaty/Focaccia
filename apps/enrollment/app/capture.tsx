@@ -1,0 +1,409 @@
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Linking,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+  useFrameProcessor,
+} from 'react-native-vision-camera';
+import { Worklets } from 'react-native-worklets-core';
+import { detectFaces } from '@ashleysmart/react-native-vision-camera-face-detector';
+import { prepareCrypto } from '@face-pass/shared';
+
+import { requestPassSignature } from '../src/lib/api';
+import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
+import { issueSignedPassFromEmbedding, tokenSnippet, type PassProcessingPhase } from '../src/lib/pass-flow';
+import { deriveCaptureQuality } from '../src/lib/quality';
+import type { FaceSnapshot } from '../src/lib/types';
+import { useEnrollment } from '../src/state/enrollment-context';
+import { palette } from '../src/theme';
+import { CameraGuide } from '../src/components/camera-guide';
+import { PrimaryButton } from '../src/components/primary-button';
+import { StatusBanner } from '../src/components/status-banner';
+
+function phaseLabel(phase: PassProcessingPhase | null): string {
+  switch (phase) {
+    case 'generating-template':
+      return 'Generating secure face template';
+    case 'encrypting-pass':
+      return 'Encrypting pass data';
+    case 'requesting-signature':
+      return 'Requesting server signature';
+    case 'finalizing-pass':
+      return 'Finalizing pass';
+    default:
+      return 'Preparing face';
+  }
+}
+
+export default function CaptureScreen() {
+  const router = useRouter();
+  const camera = useRef<Camera>(null);
+  const device = useCameraDevice('front');
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const { setPass, state } = useEnrollment();
+  const [faceSnapshot, setFaceSnapshot] = useState<FaceSnapshot | null>(null);
+  const [modelReady, setModelReady] = useState(false);
+  const [modelError, setModelError] = useState<string | null>(null);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingPhase, setProcessingPhase] = useState<PassProcessingPhase | null>(null);
+  const updateFaceSnapshot = useMemo(
+    () => Worklets.createRunOnJS((snapshot: FaceSnapshot | null) => setFaceSnapshot(snapshot)),
+    [],
+  );
+  const frameProcessor = useFrameProcessor(
+    (frame) => {
+      'worklet';
+
+      const detection = detectFaces({
+        frame: frame as never,
+        options: {
+          classificationMode: 'all',
+          landmarkMode: 'all',
+          minFaceSize: 0.15,
+          performanceMode: 'fast',
+        },
+      });
+      const faces = Object.values(detection.faces);
+      const primary = faces[0];
+
+      if (!primary?.landmarks.LEFT_EYE || !primary.landmarks.RIGHT_EYE) {
+        updateFaceSnapshot(null);
+        return;
+      }
+
+      updateFaceSnapshot({
+        bounds: {
+          height: primary.bounds.height,
+          width: primary.bounds.width,
+          x: primary.bounds.x,
+          y: primary.bounds.y,
+        },
+        faceCount: faces.length,
+        frameHeight: frame.height,
+        frameWidth: frame.width,
+        leftEye: {
+          x: primary.landmarks.LEFT_EYE.x,
+          y: primary.landmarks.LEFT_EYE.y,
+        },
+        pitchAngle: primary.pitchAngle,
+        rightEye: {
+          x: primary.landmarks.RIGHT_EYE.x,
+          y: primary.landmarks.RIGHT_EYE.y,
+        },
+        rollAngle: primary.rollAngle,
+        trackedAt: Date.now(),
+        yawAngle: primary.yawAngle,
+      });
+    },
+    [updateFaceSnapshot],
+  );
+  const quality = deriveCaptureQuality(faceSnapshot);
+
+  useEffect(() => {
+    let mounted = true;
+
+    Promise.all([loadFaceEmbeddingModel(), prepareCrypto()])
+      .then(() => {
+        if (mounted) {
+          setModelReady(true);
+        }
+      })
+      .catch((error) => {
+        if (mounted) {
+          setModelError(error instanceof Error ? error.message : 'Failed to load the face model.');
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!state.bundle) {
+    return (
+      <FallbackCard
+        body="The event bundle is missing. Start from the join code screen."
+        ctaLabel="Back to join code"
+        onPress={() => router.replace('/')}
+        title="Enrollment session missing"
+      />
+    );
+  }
+
+  if (!state.consentAccepted) {
+    return (
+      <FallbackCard
+        body="Camera capture only starts after consent. Review the privacy screen first."
+        ctaLabel="Review consent"
+        onPress={() => router.replace('/consent')}
+        title="Consent required"
+      />
+    );
+  }
+
+  if (!device) {
+    return (
+      <FallbackCard
+        body="A front camera could not be found on this device."
+        ctaLabel="Open help"
+        onPress={() => router.push('/help')}
+        title="Front camera unavailable"
+      />
+    );
+  }
+
+  if (!hasPermission) {
+    return (
+      <FallbackCard
+        body="Camera access is required to capture your face on-device and issue the pass."
+        ctaLabel="Allow camera"
+        onPress={() => {
+          void requestPermission();
+        }}
+        secondaryAction={() => Linking.openSettings()}
+        secondaryLabel="Open settings"
+        title="Camera permission required"
+      />
+    );
+  }
+
+  async function handleCapture() {
+    if (!camera.current || !faceSnapshot || !quality.canCapture || !state.bundle) {
+      return;
+    }
+
+    setCaptureError(null);
+    setIsProcessing(true);
+    setProcessingPhase(null);
+
+    try {
+      const photo = await camera.current.takePhoto({
+        enableAutoDistortionCorrection: true,
+        enableAutoRedEyeReduction: true,
+        enableShutterSound: false,
+      });
+      const embedding = await extractFaceEmbeddingFromPhoto({
+        photoHeight: photo.height,
+        photoPath: photo.path,
+        photoWidth: photo.width,
+        snapshot: faceSnapshot,
+      });
+
+      try {
+        const result = await issueSignedPassFromEmbedding({
+          bundle: state.bundle,
+          embedding,
+          issuePass: requestPassSignature,
+          onPhaseChange: setProcessingPhase,
+        });
+
+        const passRecord = {
+          createdAtIso: new Date().toISOString(),
+          payload: result.payload,
+          signature: result.signature,
+          token: result.token,
+          tokenSnippet: tokenSnippet(result.token),
+        };
+
+        if (result.queueCode) {
+          Object.assign(passRecord, { queueCode: result.queueCode });
+        }
+
+        setPass(passRecord);
+        result.template.fill(0);
+        router.replace('/pass');
+      } finally {
+        embedding.fill(0);
+      }
+    } catch (error) {
+      setCaptureError(error instanceof Error ? error.message : 'Pass issuance failed.');
+    } finally {
+      setIsProcessing(false);
+      setProcessingPhase(null);
+    }
+  }
+
+  return (
+    <View style={styles.captureScreen}>
+      <Camera
+        device={device}
+        frameProcessor={frameProcessor}
+        isActive={!isProcessing}
+        photo
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.cameraTint} />
+      <CameraGuide ready={quality.canCapture && modelReady && !isProcessing} />
+
+      <SafeAreaView edges={['top', 'bottom']} style={styles.overlay}>
+        <View style={styles.topPanel}>
+          <Text style={styles.topEyebrow}>Capture</Text>
+          <Text style={styles.topTitle}>Align your face with the guide.</Text>
+          <Text style={styles.topSubtitle}>
+            We only keep enough information in memory to issue the pass for {state.bundle.event_id}.
+          </Text>
+        </View>
+
+        <View style={styles.bottomPanel}>
+          {modelError ? (
+            <StatusBanner message={modelError} tone="warning" />
+          ) : !modelReady ? (
+            <StatusBanner message="Loading face model and secure crypto runtime..." tone="neutral" />
+          ) : null}
+
+          {captureError ? <StatusBanner message={captureError} tone="warning" /> : null}
+
+          {!isProcessing ? (
+            <StatusBanner message={quality.message} tone={quality.tone} />
+          ) : (
+            <View style={styles.processingCard}>
+              <ActivityIndicator color="#ffffff" />
+              <Text style={styles.processingTitle}>{phaseLabel(processingPhase)}</Text>
+              <Text style={styles.processingBody}>
+                Keep the phone steady while the pass is being assembled and signed.
+              </Text>
+            </View>
+          )}
+
+          <PrimaryButton
+            disabled={!quality.canCapture || !modelReady || isProcessing}
+            label={isProcessing ? 'Creating secure pass...' : 'Capture and issue pass'}
+            onPress={() => {
+              void handleCapture();
+            }}
+          />
+          <PrimaryButton label="Back" onPress={() => router.back()} tone="ghost" />
+        </View>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+function FallbackCard({
+  body,
+  ctaLabel,
+  onPress,
+  secondaryAction,
+  secondaryLabel,
+  title,
+}: {
+  body: string;
+  ctaLabel: string;
+  onPress(): void;
+  secondaryAction?: () => void;
+  secondaryLabel?: string;
+  title: string;
+}) {
+  return (
+    <View style={styles.fallbackRoot}>
+      <View style={styles.fallbackCard}>
+        <Text style={styles.fallbackTitle}>{title}</Text>
+        <Text style={styles.fallbackBody}>{body}</Text>
+        <PrimaryButton label={ctaLabel} onPress={onPress} />
+        {secondaryAction && secondaryLabel ? (
+          <PrimaryButton label={secondaryLabel} onPress={secondaryAction} tone="ghost" />
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  bottomPanel: {
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+  },
+  cameraTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(14, 18, 28, 0.26)',
+  },
+  captureScreen: {
+    backgroundColor: '#0d1118',
+    flex: 1,
+  },
+  fallbackBody: {
+    color: palette.ink,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  fallbackCard: {
+    backgroundColor: palette.card,
+    borderColor: palette.line,
+    borderRadius: 28,
+    borderWidth: 1,
+    gap: 14,
+    maxWidth: 420,
+    padding: 22,
+    width: '100%',
+  },
+  fallbackRoot: {
+    alignItems: 'center',
+    backgroundColor: palette.background,
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  fallbackTitle: {
+    color: palette.ink,
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 34,
+  },
+  overlay: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  processingBody: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  processingCard: {
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(12, 16, 25, 0.82)',
+    borderRadius: 20,
+    gap: 8,
+    padding: 16,
+  },
+  processingTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  topEyebrow: {
+    color: '#dbe7ff',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  topPanel: {
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  topSubtitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 15,
+    lineHeight: 21,
+    maxWidth: 320,
+  },
+  topTitle: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 34,
+    maxWidth: 320,
+  },
+});

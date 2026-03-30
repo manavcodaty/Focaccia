@@ -1,0 +1,138 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --background: #f6f0e6;
+  --foreground: #221a12;
+  --card: rgba(255, 252, 246, 0.94);
+  --card-foreground: #221a12;
+  --popover: rgba(255, 252, 246, 0.98);
+  --popover-foreground: #221a12;
+  --primary: #b25b36;
+  --primary-strong: #9f4b28;
+  --primary-foreground: #fff8f1;
+  --secondary: #eadbc8;
+  --secondary-foreground: #2f241c;
+  --muted: rgba(133, 112, 94, 0.14);
+  --muted-foreground: #6f6258;
+  --accent: rgba(178, 91, 54, 0.11);
+  --accent-foreground: #221a12;
+  --destructive: #d0533f;
+  --destructive-foreground: #fff6f2;
+  --border: rgba(86, 68, 51, 0.16);
+  --border-strong: rgba(86, 68, 51, 0.24);
+  --input: rgba(86, 68, 51, 0.24);
+  --ring: rgba(178, 91, 54, 0.48);
+  --radius: 1.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(178, 91, 54, 0.13), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(246, 240, 230, 0.85)),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), sans-serif;
+}
+
+body::before {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.4;
+  content: "";
+  background-image:
+    linear-gradient(rgba(34, 26, 18, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 26, 18, 0.02) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
+}
+
+a,
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(178, 91, 54, 0.22);
+}
+
+.poster-title {
+  font-family: var(--font-display), serif;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.scan-grid::after {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: inherit;
+  background-image:
+    linear-gradient(rgba(178, 91, 54, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(178, 91, 54, 0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 78%);
+}
+
+.fade-section {
+  animation: fadeSection 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.fade-delay-1 {
+  animation-delay: 80ms;
+}
+
+.fade-delay-2 {
+  animation-delay: 160ms;
+}
+
+.fade-delay-3 {
+  animation-delay: 240ms;
+}
+
+@keyframes fadeSection {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

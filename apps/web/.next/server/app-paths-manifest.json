@@ -1,0 +1,11 @@
+{
+  "/(secure)/dashboard/page": "app/(secure)/dashboard/page.js",
+  "/(secure)/events/[eventId]/page": "app/(secure)/events/[eventId]/page.js",
+  "/(secure)/events/[eventId]/provisioning/page": "app/(secure)/events/[eventId]/provisioning/page.js",
+  "/(secure)/events/new/page": "app/(secure)/events/new/page.js",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/icon.svg/route": "app/icon.svg/route.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js"
+}

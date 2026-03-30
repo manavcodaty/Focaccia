@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Face Pass Enrollment",
+    "slug": "face-pass-enrollment",
+    "scheme": "face-pass-enrollment",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.facepass.enrollment",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Face Pass uses the front camera to capture your face on-device so it can issue an event-scoped pass. No face image is uploaded or stored."
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "$(PRODUCT_NAME) needs camera access to capture your face on-device for event pass issuance."
+        }
+      ],
+      [
+        "react-native-fast-tflite",
+        {
+          "enableCoreMLDelegate": true
+        }
+      ]
+    ]
+  }
+}

@@ -1,6 +1,3 @@
 /// <reference types="expo/types" />
 
-declare module '*.tflite' {
-  const asset: number;
-  export default asset;
-}
+// NOTE: This file should not be edited and should be in your git ignore

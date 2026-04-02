@@ -1,0 +1,14 @@
+/* eslint-disable */
+import * as Router from 'expo-router';
+
+export * from 'expo-router';
+
+declare module 'expo-router' {
+  export namespace ExpoRouter {
+    export interface __routes<T extends string | object = string> {
+      hrefInputParams: { pathname: Router.RelativePathString, params?: Router.UnknownInputParams } | { pathname: Router.ExternalPathString, params?: Router.UnknownInputParams } | { pathname: `/export`; params?: Router.UnknownInputParams; } | { pathname: `/fallback`; params?: Router.UnknownInputParams; } | { pathname: `/`; params?: Router.UnknownInputParams; } | { pathname: `/liveness`; params?: Router.UnknownInputParams; } | { pathname: `/provision`; params?: Router.UnknownInputParams; } | { pathname: `/result`; params?: Router.UnknownInputParams; } | { pathname: `/scan`; params?: Router.UnknownInputParams; } | { pathname: `/settings`; params?: Router.UnknownInputParams; } | { pathname: `/_sitemap`; params?: Router.UnknownInputParams; };
+      hrefOutputParams: { pathname: Router.RelativePathString, params?: Router.UnknownOutputParams } | { pathname: Router.ExternalPathString, params?: Router.UnknownOutputParams } | { pathname: `/export`; params?: Router.UnknownOutputParams; } | { pathname: `/fallback`; params?: Router.UnknownOutputParams; } | { pathname: `/`; params?: Router.UnknownOutputParams; } | { pathname: `/liveness`; params?: Router.UnknownOutputParams; } | { pathname: `/provision`; params?: Router.UnknownOutputParams; } | { pathname: `/result`; params?: Router.UnknownOutputParams; } | { pathname: `/scan`; params?: Router.UnknownOutputParams; } | { pathname: `/settings`; params?: Router.UnknownOutputParams; } | { pathname: `/_sitemap`; params?: Router.UnknownOutputParams; };
+      href: Router.RelativePathString | Router.ExternalPathString | `/export${`?${string}` | `#${string}` | ''}` | `/fallback${`?${string}` | `#${string}` | ''}` | `/${`?${string}` | `#${string}` | ''}` | `/liveness${`?${string}` | `#${string}` | ''}` | `/provision${`?${string}` | `#${string}` | ''}` | `/result${`?${string}` | `#${string}` | ''}` | `/scan${`?${string}` | `#${string}` | ''}` | `/settings${`?${string}` | `#${string}` | ''}` | `/_sitemap${`?${string}` | `#${string}` | ''}` | { pathname: Router.RelativePathString, params?: Router.UnknownInputParams } | { pathname: Router.ExternalPathString, params?: Router.UnknownInputParams } | { pathname: `/export`; params?: Router.UnknownInputParams; } | { pathname: `/fallback`; params?: Router.UnknownInputParams; } | { pathname: `/`; params?: Router.UnknownInputParams; } | { pathname: `/liveness`; params?: Router.UnknownInputParams; } | { pathname: `/provision`; params?: Router.UnknownInputParams; } | { pathname: `/result`; params?: Router.UnknownInputParams; } | { pathname: `/scan`; params?: Router.UnknownInputParams; } | { pathname: `/settings`; params?: Router.UnknownInputParams; } | { pathname: `/_sitemap`; params?: Router.UnknownInputParams; };
+    }
+  }
+}

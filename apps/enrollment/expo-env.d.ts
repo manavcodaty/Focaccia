@@ -1,23 +1,3 @@
-/// <reference types="expo-router/types" />
+/// <reference types="expo/types" />
 
-declare module '*.tflite' {
-  const asset: number;
-  export default asset;
-}
-
-declare module 'jpeg-js' {
-  export interface DecodeOptions {
-    useTArray?: boolean;
-  }
-
-  export interface DecodedJpeg {
-    data: Uint8Array;
-    height: number;
-    width: number;
-  }
-
-  export function decode(
-    data: Uint8Array | ArrayBuffer,
-    options?: DecodeOptions,
-  ): DecodedJpeg;
-}
+// NOTE: This file should not be edited and should be in your git ignore

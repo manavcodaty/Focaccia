@@ -63,6 +63,6 @@ const styles = StyleSheet.create({
     backgroundColor: palette.accent,
   },
   primaryLabel: {
-    color: '#ffffff',
+    color: palette.textInverse,
   },
 });

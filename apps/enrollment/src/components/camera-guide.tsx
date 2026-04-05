@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
     top: 120,
   },
   innerFrame: {
-    borderColor: 'rgba(255,255,255,0.5)',
+    borderColor: palette.frame,
     borderRadius: 32,
     borderWidth: 2,
     flex: 1,
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     borderColor: palette.successSoft,
   },
   outerFrame: {
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: palette.frameSoft,
     borderRadius: 44,
     borderWidth: 1,
     padding: 12,
@@ -39,6 +39,6 @@ const styles = StyleSheet.create({
     aspectRatio: 0.76,
   },
   outerFrameReady: {
-    borderColor: 'rgba(217,242,231,0.4)',
+    borderColor: palette.frameReady,
   },
 });

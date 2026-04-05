@@ -63,7 +63,7 @@ export default function PassScreen() {
       <SectionCard eyebrow="QR token" title="Show this at the gate">
         <View style={styles.qrWrap}>
           <QRCode
-            backgroundColor="#ffffff"
+            backgroundColor={palette.card}
             color={palette.ink}
             quietZone={18}
             size={260}
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   qrWrap: {
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: palette.card,
     borderRadius: 28,
     padding: 18,
   },

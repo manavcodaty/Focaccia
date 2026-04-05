@@ -1,19 +1,5 @@
 import { getPublicEnv } from "@/lib/env";
-
-interface EdgeFunctionError {
-  error: {
-    code: string;
-    message: string;
-  };
-  ok: false;
-}
-
-interface EdgeFunctionSuccess<T> {
-  data: T;
-  ok: true;
-}
-
-type EdgeFunctionResponse<T> = EdgeFunctionError | EdgeFunctionSuccess<T>;
+import { parseEdgeFunctionResponse } from "@/lib/edge-function-response";
 
 export async function invokeEdgeFunction<T>({
   accessToken,
@@ -36,14 +22,5 @@ export async function invokeEdgeFunction<T>({
     },
     method,
   });
-
-  const payload = (await response.json()) as EdgeFunctionResponse<T>;
-
-  if (!response.ok || !payload.ok) {
-    throw new Error(
-      payload.ok ? "Function invocation failed." : payload.error.message,
-    );
-  }
-
-  return payload.data;
+  return parseEdgeFunctionResponse<T>(response);
 }

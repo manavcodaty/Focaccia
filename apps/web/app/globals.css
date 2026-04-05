@@ -1,29 +1,63 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
-  --background: #f6f0e6;
-  --foreground: #221a12;
-  --card: rgba(255, 252, 246, 0.94);
-  --card-foreground: #221a12;
-  --popover: rgba(255, 252, 246, 0.98);
-  --popover-foreground: #221a12;
-  --primary: #b25b36;
-  --primary-strong: #9f4b28;
-  --primary-foreground: #fff8f1;
-  --secondary: #eadbc8;
-  --secondary-foreground: #2f241c;
-  --muted: rgba(133, 112, 94, 0.14);
-  --muted-foreground: #6f6258;
-  --accent: rgba(178, 91, 54, 0.11);
-  --accent-foreground: #221a12;
-  --destructive: #d0533f;
-  --destructive-foreground: #fff6f2;
-  --border: rgba(86, 68, 51, 0.16);
-  --border-strong: rgba(86, 68, 51, 0.24);
-  --input: rgba(86, 68, 51, 0.24);
-  --ring: rgba(178, 91, 54, 0.48);
-  --radius: 1.5rem;
+  --background: oklch(0.98 0.003 240);
+  --foreground: #0a1024;
+  --card: #ffffff;
+  --card-foreground: #0a1024;
+  --popover: #ffffff;
+  --popover-foreground: #0a1024;
+  --primary: #0066ff;
+  --primary-strong: #0055dd;
+  --primary-foreground: #ffffff;
+  --secondary: #0a1024;
+  --secondary-foreground: #f8faff;
+  --muted: #edf2fb;
+  --muted-foreground: #64748b;
+  --accent: #e5f0ff;
+  --accent-foreground: #0a1024;
+  --destructive: #b74b33;
+  --destructive-foreground: #fff8f4;
+  --border: #d8e0f0;
+  --border-strong: #bec9e0;
+  --input: #d8e0f0;
+  --ring: rgba(0, 102, 255, 0.28);
+  --radius: 1rem;
+  --chart-1: #0066ff;
+  --chart-2: #0a1024;
+  --chart-3: #5c8dff;
+  --chart-4: #6d7a95;
+  --chart-5: #d8e0f0;
+  --sidebar: #0a1024;
+  --sidebar-foreground: #f8faff;
+  --sidebar-primary: #0066ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #122042;
+  --sidebar-accent-foreground: #f8faff;
+  --sidebar-border: #2a3550;
+  --sidebar-ring: rgba(0, 102, 255, 0.4);
+  --landing-background: #0a1024;
+  --landing-foreground: #ffffff;
+  --landing-primary: #0066ff;
+  --landing-primary-foreground: #ffffff;
+  --landing-border: #2a3550;
+  --font-geist-mono-app: "SFMono-Regular", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+
+  @media (width >= 768px) {
+    padding-inline: 2rem;
+  }
+
+  @media (width >= 1280px) {
+    padding-inline: 3rem;
+  }
 }
 
 @theme inline {
@@ -46,12 +80,38 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-body);
-  --font-display: var(--font-display);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-body-app);
+  --font-display: var(--font-display-app);
+  --font-mono: var(--font-geist-mono-app);
+  --font-sentient: var(--font-sentient-app);
+  --shadow-glow: 0 0 8px 2px var(--tw-shadow-color);
 }
 
 * {
   border-color: var(--border);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 html {
@@ -60,26 +120,8 @@ html {
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(178, 91, 54, 0.13), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(246, 240, 230, 0.85)),
-    var(--background);
   color: var(--foreground);
-  font-family: var(--font-body), sans-serif;
-}
-
-body::before {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  opacity: 0.4;
-  content: "";
-  background-image:
-    linear-gradient(rgba(34, 26, 18, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 26, 18, 0.02) 1px, transparent 1px);
-  background-size: 24px 24px;
-  mask-image: radial-gradient(circle at center, black, transparent 80%);
+  font-family: var(--font-body-app), sans-serif;
 }
 
 a,
@@ -88,11 +130,11 @@ button {
 }
 
 ::selection {
-  background: rgba(178, 91, 54, 0.22);
+  background: rgba(0, 102, 255, 0.22);
 }
 
 .poster-title {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-display-app), serif;
   font-weight: 500;
   letter-spacing: -0.03em;
 }
@@ -104,10 +146,33 @@ button {
   content: "";
   border-radius: inherit;
   background-image:
-    linear-gradient(rgba(178, 91, 54, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(178, 91, 54, 0.12) 1px, transparent 1px);
+    linear-gradient(rgba(0, 102, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 102, 255, 0.12) 1px, transparent 1px);
   background-size: 28px 28px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent 78%);
+}
+
+.landing-page-theme {
+  --background: var(--landing-background);
+  --foreground: var(--landing-foreground);
+  --primary: var(--landing-primary);
+  --primary-foreground: var(--landing-primary-foreground);
+  --border: var(--landing-border);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+#webgl {
+  left: 0;
+  position: fixed;
+  top: 0;
+  height: 100svh;
+  width: 100%;
+}
+
+#webgl canvas {
+  height: 100%;
+  width: 100%;
 }
 
 .fade-section {

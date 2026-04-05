@@ -130,8 +130,8 @@ const eventCreatePage = await fetch("http://127.0.0.1:3000/events/new", {
 });
 const eventCreateHtml = await eventCreatePage.text();
 assert.equal(eventCreatePage.status, 200);
-assert.match(eventCreateHtml, /Event creation/i);
-assert.match(eventCreateHtml, /Create event/i);
+assert.match(eventCreateHtml, /Create New Event/i);
+assert.match(eventCreateHtml, /Event Details/i);
 
 const provisioningResponse = await fetch(
   `http://127.0.0.1:3000/events/${eventId}/provisioning`,
@@ -143,7 +143,8 @@ const provisioningResponse = await fetch(
 );
 const provisioningHtml = await provisioningResponse.text();
 assert.equal(provisioningResponse.status, 200);
-assert.match(provisioningHtml, /Gate provisioning transfer/i);
+assert.match(provisioningHtml, /Gate Provisioning/i);
+assert.match(provisioningHtml, /Public values/i);
 assert.match(provisioningHtml, /PK_SIGN_EVENT/i);
 assert.match(provisioningHtml, /EVENT_SALT/i);
 assert.match(provisioningHtml, new RegExp(eventId));

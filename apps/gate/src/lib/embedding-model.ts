@@ -23,8 +23,19 @@ function ensureFileUri(path: string): string {
 function buildSquareCrop(
   photoWidth: number,
   photoHeight: number,
-  snapshot: FaceSnapshot,
+  snapshot?: FaceSnapshot | null,
 ): { height: number; originX: number; originY: number; width: number } {
+  if (!snapshot) {
+    const cropSize = Math.min(photoWidth, photoHeight) * 0.72;
+
+    return {
+      height: cropSize,
+      originX: (photoWidth - cropSize) / 2,
+      originY: clamp(photoHeight * 0.12, 0, photoHeight - cropSize),
+      width: cropSize,
+    };
+  }
+
   const widthRatio = photoWidth / snapshot.frameWidth;
   const heightRatio = photoHeight / snapshot.frameHeight;
   const faceWidth = snapshot.bounds.width * widthRatio;
@@ -88,7 +99,7 @@ export async function extractFaceEmbeddingFromPhoto({
   photoHeight: number;
   photoPath: string;
   photoWidth: number;
-  snapshot: FaceSnapshot;
+  snapshot?: FaceSnapshot | null;
 }): Promise<Float32Array> {
   const model = await loadFaceEmbeddingModel();
   const photoUri = ensureFileUri(photoPath);
@@ -100,7 +111,7 @@ export async function extractFaceEmbeddingFromPhoto({
       photoUri,
       [
         { crop },
-        { rotate: snapshot.rollAngle * -1 },
+        ...(snapshot ? [{ rotate: snapshot.rollAngle * -1 }] : []),
         { resize: { height: FACE_INPUT_SIZE, width: FACE_INPUT_SIZE } },
       ],
       {

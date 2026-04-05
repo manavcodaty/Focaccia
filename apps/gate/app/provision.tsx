@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: palette.card,
     borderColor: palette.line,
     borderRadius: 16,
     borderWidth: 1,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   scanFrame: {
-    borderColor: '#ffffff',
+    borderColor: palette.scanFrame,
     borderRadius: 24,
     borderWidth: 3,
     height: 180,

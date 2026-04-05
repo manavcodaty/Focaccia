@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
   },
   dangerBanner: {
     backgroundColor: palette.alertSoft,
-    borderColor: '#efbea8',
+    borderColor: palette.alertBorder,
   },
   dangerText: {
     color: palette.alert,
@@ -68,14 +68,14 @@ const styles = StyleSheet.create({
   },
   successBanner: {
     backgroundColor: palette.acceptSoft,
-    borderColor: '#a9dcc7',
+    borderColor: palette.acceptBorder,
   },
   successText: {
     color: palette.accept,
   },
   warningBanner: {
     backgroundColor: palette.warningSoft,
-    borderColor: '#e5c88a',
+    borderColor: palette.warningBorder,
   },
   warningText: {
     color: palette.warning,

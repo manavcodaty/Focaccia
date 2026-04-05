@@ -93,7 +93,7 @@ export default function JoinCodeScreen() {
             maxLength={8}
             onChangeText={(value) => setJoinCode(normalizeJoinCodeInput(value))}
             placeholder="AB12CD34"
-            placeholderTextColor="#9a9fb0"
+            placeholderTextColor={palette.muted}
             returnKeyType="done"
             style={styles.input}
             value={joinCode}
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: palette.card,
     borderColor: palette.line,
     borderRadius: 18,
     borderWidth: 1,

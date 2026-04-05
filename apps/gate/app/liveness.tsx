@@ -1,7 +1,6 @@
 import { prepareCrypto } from '@face-pass/shared';
-import { detectFaces } from '@ashleysmart/react-native-vision-camera-face-detector';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -13,9 +12,7 @@ import {
   Camera,
   useCameraDevice,
   useCameraPermission,
-  useFrameProcessor,
 } from 'react-native-vision-camera';
-import { Worklets } from 'react-native-worklets-core';
 
 import { MetricRow } from '../src/components/metric-row';
 import { PrimaryButton } from '../src/components/primary-button';
@@ -23,22 +20,21 @@ import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
-import { challengeInstruction, createChallenge, hasTimedOut, pickChallenge, advanceChallenge, type LivenessProgress } from '../src/lib/liveness';
+import { challengeInstruction, createChallenge, hasTimedOut, pickChallenge, type LivenessProgress } from '../src/lib/liveness';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
-import type { FaceSnapshot } from '../src/lib/types';
 import { useGate } from '../src/state/gate-context';
 import { palette } from '../src/theme';
 
-function faceStatus(snapshot: FaceSnapshot | null): string {
-  if (!snapshot) {
-    return 'Center the attendee inside the frame to begin the active challenge.';
+function verificationStatus(isProcessing: boolean, modelReady: boolean): string {
+  if (isProcessing) {
+    return 'Capturing one verification frame and matching it locally.';
   }
 
-  if (snapshot.faceCount > 1) {
-    return 'Only one attendee can be in frame during verification.';
+  if (!modelReady) {
+    return 'Loading the face model and crypto runtime.';
   }
 
-  return 'Tracking face landmarks. Complete the prompt to continue.';
+  return 'Ask the attendee to complete the prompt, then capture when ready.';
 }
 
 function FallbackCard({
@@ -77,68 +73,10 @@ export default function LivenessScreen() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const [challenge, setChallenge] = useState<LivenessProgress>(() =>
     createChallenge(pickChallenge()));
-  const [faceSnapshot, setFaceSnapshot] = useState<FaceSnapshot | null>(null);
   const [modelError, setModelError] = useState<string | null>(null);
   const [modelReady, setModelReady] = useState(false);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const updateFaceSnapshot = useMemo(
-    () => Worklets.createRunOnJS((snapshot: FaceSnapshot | null) => setFaceSnapshot(snapshot)),
-    [],
-  );
-  const frameProcessor = useFrameProcessor(
-    (frame) => {
-      'worklet';
-
-      const detection = detectFaces({
-        frame: frame as never,
-        options: {
-          classificationMode: 'all',
-          landmarkMode: 'all',
-          minFaceSize: 0.16,
-          performanceMode: 'fast',
-        },
-      });
-      const faces = Object.values(detection.faces);
-      const primary = faces[0];
-
-      if (!primary?.landmarks.LEFT_EYE || !primary.landmarks.RIGHT_EYE) {
-        updateFaceSnapshot(null);
-        return;
-      }
-
-      updateFaceSnapshot({
-        bounds: {
-          height: primary.bounds.height,
-          width: primary.bounds.width,
-          x: primary.bounds.x,
-          y: primary.bounds.y,
-        },
-        faceCount: faces.length,
-        frameHeight: frame.height,
-        frameWidth: frame.width,
-        leftEye: {
-          x: primary.landmarks.LEFT_EYE.x,
-          y: primary.landmarks.LEFT_EYE.y,
-        },
-        leftEyeOpenProbability: Number.isFinite(primary.leftEyeOpenProbability)
-          ? primary.leftEyeOpenProbability
-          : null,
-        pitchAngle: primary.pitchAngle,
-        rightEye: {
-          x: primary.landmarks.RIGHT_EYE.x,
-          y: primary.landmarks.RIGHT_EYE.y,
-        },
-        rightEyeOpenProbability: Number.isFinite(primary.rightEyeOpenProbability)
-          ? primary.rightEyeOpenProbability
-          : null,
-        rollAngle: primary.rollAngle,
-        trackedAt: Date.now(),
-        yawAngle: primary.yawAngle,
-      });
-    },
-    [updateFaceSnapshot],
-  );
 
   useEffect(() => {
     let mounted = true;
@@ -165,14 +103,6 @@ export default function LivenessScreen() {
   }, [pendingVerification?.payload.pass_id]);
 
   useEffect(() => {
-    if (!faceSnapshot || isProcessing) {
-      return;
-    }
-
-    setChallenge((previous) => advanceChallenge(previous, faceSnapshot, Date.now()));
-  }, [faceSnapshot, isProcessing]);
-
-  useEffect(() => {
     if (!pendingVerification || isProcessing) {
       return;
     }
@@ -194,55 +124,37 @@ export default function LivenessScreen() {
     return () => clearInterval(interval);
   }, [challenge, failLiveness, isProcessing, pendingVerification, router]);
 
-  useEffect(() => {
-    if (!challenge.isComplete || isProcessing || !faceSnapshot || !modelReady) {
+  async function handleVerificationCapture() {
+    if (!camera.current || !pendingVerification || !modelReady || isProcessing) {
       return;
     }
 
-    async function runVerification() {
-      if (!camera.current || !pendingVerification || !faceSnapshot) {
-        return;
-      }
+    setIsProcessing(true);
+    setProcessingError(null);
 
-      setIsProcessing(true);
-      setProcessingError(null);
+    try {
+      const photo = await camera.current.takePhoto({
+        enableAutoDistortionCorrection: true,
+        enableAutoRedEyeReduction: true,
+        enableShutterSound: false,
+      });
+      const embedding = await extractFaceEmbeddingFromPhoto({
+        photoHeight: photo.height,
+        photoPath: photo.path,
+        photoWidth: photo.width,
+      });
 
       try {
-        const photo = await camera.current.takePhoto({
-          enableAutoDistortionCorrection: true,
-          enableAutoRedEyeReduction: true,
-          enableShutterSound: false,
-        });
-        const snapshot = faceSnapshot;
-        const embedding = await extractFaceEmbeddingFromPhoto({
-          photoHeight: photo.height,
-          photoPath: photo.path,
-          photoWidth: photo.width,
-          snapshot,
-        });
-
-        try {
-          await completePendingVerification(embedding, Date.now() - challenge.startedAt);
-          router.replace('/result');
-        } finally {
-          embedding.fill(0);
-        }
-      } catch (error) {
-        setProcessingError(error instanceof Error ? error.message : 'Live matching failed.');
-        setIsProcessing(false);
+        await completePendingVerification(embedding, Date.now() - challenge.startedAt);
+        router.replace('/result');
+      } finally {
+        embedding.fill(0);
       }
+    } catch (error) {
+      setProcessingError(error instanceof Error ? error.message : 'Live matching failed.');
+      setIsProcessing(false);
     }
-
-    void runVerification();
-  }, [
-    challenge,
-    completePendingVerification,
-    faceSnapshot,
-    isProcessing,
-    modelReady,
-    pendingVerification,
-    router,
-  ]);
+  }
 
   if (!pendingVerification) {
     return (
@@ -289,7 +201,7 @@ export default function LivenessScreen() {
         <Text style={styles.eyebrow}>Liveness</Text>
         <Text style={styles.title}>{challengeInstruction(challenge.type)}</Text>
         <Text style={styles.subtitle}>
-          Keep the attendee centered. Once the challenge succeeds, the gate captures one frame,
+          Ask the attendee to complete the prompt, then capture one verification frame. The gate
           generates a live template, deletes the temporary image, and compares locally.
         </Text>
       </View>
@@ -305,7 +217,8 @@ export default function LivenessScreen() {
           message={isProcessing ? 'Liveness confirmed. Verifying match...' : challenge.prompt}
           tone={isProcessing ? 'warning' : 'neutral'}
         />
-        <MetricRow label="Status" value={faceStatus(faceSnapshot)} />
+        <MetricRow label="Mode" value="Manual capture confirmation" />
+        <MetricRow label="Status" value={verificationStatus(isProcessing, modelReady)} />
         <MetricRow
           label="Timeout"
           value={`${pendingVerification.event.policy.liveness_timeout_ms} ms`}
@@ -315,7 +228,6 @@ export default function LivenessScreen() {
       <View style={styles.preview}>
         <Camera
           device={device}
-          frameProcessor={frameProcessor}
           isActive={!isProcessing}
           photo
           style={styles.camera}
@@ -324,13 +236,20 @@ export default function LivenessScreen() {
         <View style={styles.guide} />
         {isProcessing ? (
           <View style={styles.processingCard}>
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={palette.textInverse} />
             <Text style={styles.processingText}>Running secure match...</Text>
           </View>
         ) : null}
       </View>
 
       <View style={styles.footerActions}>
+        <PrimaryButton
+          disabled={!modelReady || isProcessing}
+          label={isProcessing ? 'Verifying match...' : 'Capture and verify attendee'}
+          onPress={() => {
+            void handleVerificationCapture();
+          }}
+        />
         <PrimaryButton label="Cancel verification" onPress={() => router.replace('/scan')} tone="ghost" />
       </View>
     </ScreenShell>
@@ -352,7 +271,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   guide: {
-    borderColor: '#ffffff',
+    borderColor: palette.scanFrame,
     borderRadius: 999,
     borderWidth: 4,
     height: '58%',
@@ -365,7 +284,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   overlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.16)',
+    backgroundColor: palette.overlay,
     ...StyleSheet.absoluteFillObject,
   },
   preview: {
@@ -377,7 +296,7 @@ const styles = StyleSheet.create({
   },
   processingCard: {
     alignItems: 'center',
-    backgroundColor: 'rgba(20, 32, 43, 0.74)',
+    backgroundColor: palette.surfaceInverseSoft,
     borderRadius: 22,
     gap: 10,
     left: 24,
@@ -388,7 +307,7 @@ const styles = StyleSheet.create({
     top: 24,
   },
   processingText: {
-    color: '#ffffff',
+    color: palette.textInverse,
     fontSize: 16,
     fontWeight: '800',
   },

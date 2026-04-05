@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -12,17 +12,12 @@ import {
   Camera,
   useCameraDevice,
   useCameraPermission,
-  useFrameProcessor,
 } from 'react-native-vision-camera';
-import { Worklets } from 'react-native-worklets-core';
-import { detectFaces } from '@ashleysmart/react-native-vision-camera-face-detector';
 import { prepareCrypto } from '@face-pass/shared';
 
 import { requestPassSignature } from '../src/lib/api';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
 import { issueSignedPassFromEmbedding, tokenSnippet, type PassProcessingPhase } from '../src/lib/pass-flow';
-import { deriveCaptureQuality } from '../src/lib/quality';
-import type { FaceSnapshot } from '../src/lib/types';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette } from '../src/theme';
 import { CameraGuide } from '../src/components/camera-guide';
@@ -50,64 +45,18 @@ export default function CaptureScreen() {
   const device = useCameraDevice('front');
   const { hasPermission, requestPermission } = useCameraPermission();
   const { setPass, state } = useEnrollment();
-  const [faceSnapshot, setFaceSnapshot] = useState<FaceSnapshot | null>(null);
   const [modelReady, setModelReady] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingPhase, setProcessingPhase] = useState<PassProcessingPhase | null>(null);
-  const updateFaceSnapshot = useMemo(
-    () => Worklets.createRunOnJS((snapshot: FaceSnapshot | null) => setFaceSnapshot(snapshot)),
-    [],
-  );
-  const frameProcessor = useFrameProcessor(
-    (frame) => {
-      'worklet';
-
-      const detection = detectFaces({
-        frame: frame as never,
-        options: {
-          classificationMode: 'all',
-          landmarkMode: 'all',
-          minFaceSize: 0.15,
-          performanceMode: 'fast',
-        },
-      });
-      const faces = Object.values(detection.faces);
-      const primary = faces[0];
-
-      if (!primary?.landmarks.LEFT_EYE || !primary.landmarks.RIGHT_EYE) {
-        updateFaceSnapshot(null);
-        return;
-      }
-
-      updateFaceSnapshot({
-        bounds: {
-          height: primary.bounds.height,
-          width: primary.bounds.width,
-          x: primary.bounds.x,
-          y: primary.bounds.y,
-        },
-        faceCount: faces.length,
-        frameHeight: frame.height,
-        frameWidth: frame.width,
-        leftEye: {
-          x: primary.landmarks.LEFT_EYE.x,
-          y: primary.landmarks.LEFT_EYE.y,
-        },
-        pitchAngle: primary.pitchAngle,
-        rightEye: {
-          x: primary.landmarks.RIGHT_EYE.x,
-          y: primary.landmarks.RIGHT_EYE.y,
-        },
-        rollAngle: primary.rollAngle,
-        trackedAt: Date.now(),
-        yawAngle: primary.yawAngle,
-      });
-    },
-    [updateFaceSnapshot],
-  );
-  const quality = deriveCaptureQuality(faceSnapshot);
+  const quality = {
+    canCapture: modelReady,
+    message: modelReady
+      ? 'Align your face inside the guide, then capture when ready.'
+      : 'Center your face inside the guide while the face model loads.',
+    tone: modelReady ? 'success' : 'neutral',
+  } as const;
 
   useEffect(() => {
     let mounted = true;
@@ -178,7 +127,7 @@ export default function CaptureScreen() {
   }
 
   async function handleCapture() {
-    if (!camera.current || !faceSnapshot || !quality.canCapture || !state.bundle) {
+    if (!camera.current || !quality.canCapture || !state.bundle) {
       return;
     }
 
@@ -196,7 +145,6 @@ export default function CaptureScreen() {
         photoHeight: photo.height,
         photoPath: photo.path,
         photoWidth: photo.width,
-        snapshot: faceSnapshot,
       });
 
       try {
@@ -237,13 +185,12 @@ export default function CaptureScreen() {
     <View style={styles.captureScreen}>
       <Camera
         device={device}
-        frameProcessor={frameProcessor}
         isActive={!isProcessing}
         photo
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.cameraTint} />
-      <CameraGuide ready={quality.canCapture && modelReady && !isProcessing} />
+      <CameraGuide ready={quality.canCapture && !isProcessing} />
 
       <SafeAreaView edges={['top', 'bottom']} style={styles.overlay}>
         <View style={styles.topPanel}>
@@ -267,7 +214,7 @@ export default function CaptureScreen() {
             <StatusBanner message={quality.message} tone={quality.tone} />
           ) : (
             <View style={styles.processingCard}>
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={palette.textInverse} />
               <Text style={styles.processingTitle}>{phaseLabel(processingPhase)}</Text>
               <Text style={styles.processingBody}>
                 Keep the phone steady while the pass is being assembled and signed.
@@ -276,7 +223,7 @@ export default function CaptureScreen() {
           )}
 
           <PrimaryButton
-            disabled={!quality.canCapture || !modelReady || isProcessing}
+            disabled={!quality.canCapture || isProcessing}
             label={isProcessing ? 'Creating secure pass...' : 'Capture and issue pass'}
             onPress={() => {
               void handleCapture();
@@ -326,10 +273,10 @@ const styles = StyleSheet.create({
   },
   cameraTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(14, 18, 28, 0.26)',
+    backgroundColor: palette.overlay,
   },
   captureScreen: {
-    backgroundColor: '#0d1118',
+    backgroundColor: palette.surfaceInverse,
     flex: 1,
   },
   fallbackBody: {
@@ -365,24 +312,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   processingBody: {
-    color: 'rgba(255,255,255,0.78)',
+    color: palette.textInverseSubtle,
     fontSize: 14,
     lineHeight: 20,
   },
   processingCard: {
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(12, 16, 25, 0.82)',
+    backgroundColor: palette.surfaceInverseSoft,
     borderRadius: 20,
     gap: 8,
     padding: 16,
   },
   processingTitle: {
-    color: '#ffffff',
+    color: palette.textInverse,
     fontSize: 16,
     fontWeight: '700',
   },
   topEyebrow: {
-    color: '#dbe7ff',
+    color: palette.accentSoft,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1.2,
@@ -394,13 +341,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   topSubtitle: {
-    color: 'rgba(255,255,255,0.8)',
+    color: palette.textInverseMuted,
     fontSize: 15,
     lineHeight: 21,
     maxWidth: 320,
   },
   topTitle: {
-    color: '#ffffff',
+    color: palette.textInverse,
     fontSize: 28,
     fontWeight: '700',
     lineHeight: 34,

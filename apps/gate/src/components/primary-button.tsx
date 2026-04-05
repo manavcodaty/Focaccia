@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
     backgroundColor: palette.highlight,
   },
   primaryLabel: {
-    color: '#ffffff',
+    color: palette.textInverse,
   },
 });

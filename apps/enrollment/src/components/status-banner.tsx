@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   neutralBanner: {
-    backgroundColor: '#f8f3ea',
+    backgroundColor: palette.accentSoft,
     borderColor: palette.line,
   },
   neutralText: {
@@ -57,14 +57,14 @@ const styles = StyleSheet.create({
   },
   successBanner: {
     backgroundColor: palette.successSoft,
-    borderColor: '#a5dbbf',
+    borderColor: palette.successBorder,
   },
   successText: {
     color: palette.success,
   },
   warningBanner: {
     backgroundColor: palette.warningSoft,
-    borderColor: '#e4c78e',
+    borderColor: palette.warningBorder,
   },
   warningText: {
     color: palette.warning,

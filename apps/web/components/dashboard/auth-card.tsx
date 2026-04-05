@@ -64,7 +64,7 @@ export function AuthCard() {
 
   return (
     <Card className="relative w-full max-w-xl overflow-hidden border-[color:var(--border-strong)] bg-[color:var(--card)]/94 shadow-[0_40px_120px_-52px_rgba(31,24,18,0.62)]">
-      <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(178,91,54,0.7),transparent)]" />
+      <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(0,102,255,0.7),transparent)]" />
       <CardHeader className="space-y-5 pb-5">
         <div className="flex items-center gap-3">
           <div className="flex size-12 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--accent)]">

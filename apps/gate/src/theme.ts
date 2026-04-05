@@ -1,16 +1,29 @@
 export const palette = {
-  accept: '#187457',
-  acceptSoft: '#d8f3e8',
-  alert: '#b74b33',
-  alertSoft: '#fde3db',
-  background: '#efe8dc',
-  card: '#fbf7f0',
-  highlight: '#1f5fbf',
-  highlightSoft: '#dceafe',
-  ink: '#14202b',
-  line: '#d9cfbf',
-  muted: '#68717d',
-  panel: '#f6f1e7',
-  warning: '#8a5b14',
-  warningSoft: '#f5e6cb',
-};
+  accept: '#17775A',
+  acceptBorder: '#A7DCC6',
+  acceptSoft: '#D8F3E8',
+  alert: '#B74B33',
+  alertBorder: '#E9B9AB',
+  alertSoft: '#FDE3DB',
+  background: '#F7F9FC',
+  card: '#FFFFFF',
+  highlight: '#0066FF',
+  highlightSoft: '#E5F0FF',
+  ink: '#0A1024',
+  line: '#D8E0F0',
+  muted: '#64748B',
+  overlay: 'rgba(10,16,36,0.18)',
+  panel: '#EDF2FB',
+  scanFrame: '#F8FAFF',
+  surfaceInverseSoft: 'rgba(10,16,36,0.74)',
+  textInverse: '#F8FAFF',
+  warning: '#8A5B14',
+  warningBorder: '#E5C88A',
+  warningSoft: '#F5E6CB',
+} as const;
+
+const gateTheme = {
+  palette,
+} as const;
+
+export default gateTheme;

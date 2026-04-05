@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   tokenInput: {
-    backgroundColor: '#ffffff',
+    backgroundColor: palette.card,
     borderColor: palette.line,
     borderRadius: 20,
     borderWidth: 1,

@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dimBottom: {
-    backgroundColor: 'rgba(0, 0, 0, 0.28)',
+    backgroundColor: palette.overlay,
     bottom: 0,
     height: '24%',
     left: 0,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     right: 0,
   },
   dimTop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.28)',
+    backgroundColor: palette.overlay,
     height: '24%',
     left: 0,
     position: 'absolute',
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   scanFrame: {
-    borderColor: '#ffffff',
+    borderColor: palette.scanFrame,
     borderRadius: 30,
     borderWidth: 4,
     height: '46%',

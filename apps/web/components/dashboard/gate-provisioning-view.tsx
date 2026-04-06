@@ -119,7 +119,7 @@ export function GateProvisioningView({
                       <p className="text-sm font-medium text-[color:var(--foreground)]">{gate.name}</p>
                       <p className="mt-1 font-mono text-xs text-[color:var(--muted-foreground)]">{gate.id}</p>
                     </div>
-                    <Badge variant={gate.isActive ? "success" : "danger"}>
+                    <Badge variant={gate.isActive ? "success" : "warning"}>
                       {gate.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>

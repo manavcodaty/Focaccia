@@ -5,7 +5,12 @@ import type {
 } from '@face-pass/shared';
 
 import { getSupabasePublicEnv } from './env';
+import { extractFunctionError, FunctionApiError } from './function-errors';
+import { fetchWithTimeout } from './function-network';
+import { buildFunctionHeaders } from './function-request';
 import type { ApiErrorShape } from './types';
+
+export { FunctionApiError } from './function-errors';
 
 interface ErrorResponse {
   error: ApiErrorShape;
@@ -19,15 +24,14 @@ interface SuccessResponse<T> {
 
 type FunctionResponse<T> = ErrorResponse | SuccessResponse<T>;
 
-export class FunctionApiError extends Error {
-  code: string;
-  status: number;
-
-  constructor(status: number, error: ApiErrorShape) {
-    super(error.message);
-    this.code = error.code;
-    this.status = status;
-  }
+function isSuccessResponse<T>(payload: unknown): payload is SuccessResponse<T> {
+  return Boolean(
+    payload
+      && typeof payload === 'object'
+      && 'ok' in payload
+      && payload.ok === true
+      && 'data' in payload,
+  );
 }
 
 async function invokeFunction<T>({
@@ -41,10 +45,7 @@ async function invokeFunction<T>({
 }): Promise<T> {
   const env = getSupabasePublicEnv();
   const requestInit: RequestInit = {
-    headers: {
-      apikey: env.anonKey,
-      'Content-Type': 'application/json',
-    },
+    headers: buildFunctionHeaders(env.anonKey),
     method,
   };
 
@@ -52,15 +53,35 @@ async function invokeFunction<T>({
     requestInit.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${env.url}/functions/v1/${name}`, requestInit);
-  const payload = (await response.json()) as FunctionResponse<T>;
+  const response = await fetchWithTimeout({
+    errorPrefix: 'Unable to reach the enrollment service.',
+    init: requestInit,
+    url: `${env.url}/functions/v1/${name}`,
+  });
+  const rawBody = await response.text();
+  let payload: FunctionResponse<T> | Record<string, unknown> | null = null;
 
-  if (!response.ok || !payload.ok) {
-    const error = payload.ok
-      ? { code: 'unknown_error', message: 'Unexpected function response.' }
-      : payload.error;
+  if (rawBody.length > 0) {
+    try {
+      payload = JSON.parse(rawBody) as FunctionResponse<T> | Record<string, unknown>;
+    } catch {
+      if (!response.ok) {
+        throw new FunctionApiError(response.status, undefined, rawBody);
+      }
 
-    throw new FunctionApiError(response.status, error);
+      throw new Error('Function response was not valid JSON.');
+    }
+  }
+
+  if (!response.ok || !isSuccessResponse<T>(payload)) {
+    throw new FunctionApiError(
+      response.status,
+      extractFunctionError({
+        payload,
+        status: response.status,
+        statusText: response.statusText,
+      }),
+    );
   }
 
   return payload.data;

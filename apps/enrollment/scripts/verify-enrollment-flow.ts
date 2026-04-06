@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { networkInterfaces } from 'node:os';
 import path from 'node:path';
 
 import { createClient } from '@supabase/supabase-js';
@@ -12,6 +13,7 @@ import {
   toBase64Url,
   x25519Keypair,
   x25519SealOpen,
+  resolveLocalSupabaseUrl,
   type EnrollmentBundle,
   type IssuePassResult,
   type PassPayload,
@@ -49,6 +51,20 @@ function createFakeEmbedding(): Float32Array {
   });
 }
 
+function getLocalIpv4Address(): string | null {
+  const interfaces = networkInterfaces();
+
+  for (const entries of Object.values(interfaces)) {
+    for (const entry of entries ?? []) {
+      if (entry.family === 'IPv4' && !entry.internal) {
+        return entry.address;
+      }
+    }
+  }
+
+  return null;
+}
+
 interface FunctionSuccess<T> {
   data: T;
   ok: true;
@@ -60,6 +76,7 @@ interface FunctionFailure {
     message: string;
   };
   ok: false;
+  msg?: string;
 }
 
 async function callFunction<T>({
@@ -75,22 +92,28 @@ async function callFunction<T>({
   name: string;
   supabaseUrl: string;
 }): Promise<T> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken ?? anonKey}`,
+    apikey: anonKey,
+    'Content-Type': 'application/json',
+  };
+
   const response = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
     body: body ? JSON.stringify(body) : undefined,
-    headers: {
-      apikey: anonKey,
-      Authorization: accessToken ? `Bearer ${accessToken}` : '',
-      'Content-Type': 'application/json',
-    },
+    headers,
     method: 'POST',
   });
   const payload = (await response.json()) as FunctionSuccess<T> | FunctionFailure;
 
   if (!response.ok || !payload.ok) {
+    const message = payload.ok
+      ? `Unexpected failure calling ${name}.`
+      : "error" in payload && payload.error
+        ? `${name} failed: ${payload.error.code} ${payload.error.message}`
+        : `${name} failed: ${"msg" in payload && payload.msg ? payload.msg : JSON.stringify(payload)}`;
+
     throw new Error(
-      payload.ok
-        ? `Unexpected failure calling ${name}.`
-        : `${name} failed: ${payload.error.code} ${payload.error.message}`,
+      message,
     );
   }
 
@@ -99,7 +122,11 @@ async function callFunction<T>({
 
 const enrollmentDir = import.meta.dirname;
 const env = parseEnvFile(path.join(enrollmentDir, '../../web/.env.local'));
-const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
+const localIpv4 = getLocalIpv4Address();
+const supabaseUrl = resolveLocalSupabaseUrl({
+  configuredUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+  expoHostUri: localIpv4 ? `${localIpv4}:8081` : null,
+});
 const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 assert.ok(supabaseUrl, 'Missing NEXT_PUBLIC_SUPABASE_URL.');

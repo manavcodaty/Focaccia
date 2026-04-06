@@ -5,6 +5,8 @@ import path from "node:path";
 
 import { createServerClient } from "@supabase/ssr";
 
+import { getCurrentServerHostname, resolveServerSupabaseUrl } from "./local-network.mjs";
+
 function parseEnvFile(filePath) {
   const raw = readFileSync(filePath, "utf8");
   const values = {};
@@ -34,12 +36,84 @@ function buildCookieHeader(cookieJar) {
     .join("; ");
 }
 
+function applySetCookieHeaders(response, cookieJar) {
+  for (const header of response.headers.getSetCookie?.() ?? []) {
+    const [nameValue] = header.split(";", 1);
+
+    if (!nameValue) {
+      continue;
+    }
+
+    const separatorIndex = nameValue.indexOf("=");
+
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const name = nameValue.slice(0, separatorIndex);
+    const value = nameValue.slice(separatorIndex + 1);
+    cookieJar.set(name, { name, value });
+  }
+}
+
+async function fetchWithCookies(url, cookieJar, init = {}) {
+  let currentUrl = url;
+  let method = init.method ?? "GET";
+  let body = init.body;
+  let redirects = 0;
+  const baseHeaders = new Headers(init.headers ?? {});
+
+  while (redirects < 10) {
+    const headers = new Headers(baseHeaders);
+    const cookieHeader = buildCookieHeader(cookieJar);
+
+    if (cookieHeader) {
+      headers.set("Cookie", cookieHeader);
+    }
+
+    const response = await fetch(currentUrl, {
+      ...init,
+      body,
+      headers,
+      method,
+      redirect: "manual",
+    });
+
+    applySetCookieHeaders(response, cookieJar);
+
+    const location = response.headers.get("location");
+
+    if (
+      location
+      && [301, 302, 303, 307, 308].includes(response.status)
+    ) {
+      currentUrl = new URL(location, currentUrl).toString();
+      redirects += 1;
+
+      if (response.status === 303 || ((response.status === 301 || response.status === 302) && method !== "GET")) {
+        method = "GET";
+        body = undefined;
+      }
+
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error("redirect count exceeded");
+}
+
 const webDir = import.meta.dirname;
 const env = parseEnvFile(path.join(webDir, "../.env.local"));
 const cookieJar = new Map();
+const supabaseUrl = resolveServerSupabaseUrl({
+  configuredUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+  serverHostname: getCurrentServerHostname(),
+});
 
 const supabase = createServerClient(
-  env.NEXT_PUBLIC_SUPABASE_URL,
+  supabaseUrl,
   env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   {
     cookies: {
@@ -110,11 +184,7 @@ assert.ok(session?.access_token, "missing access token after auth");
 const cookieHeader = buildCookieHeader(cookieJar);
 assert.ok(cookieHeader.length > 0, "missing session cookies");
 
-const authenticatedDashboard = await fetch("http://127.0.0.1:3000/dashboard", {
-  headers: {
-    Cookie: cookieHeader,
-  },
-});
+const authenticatedDashboard = await fetchWithCookies("http://127.0.0.1:3000/dashboard", cookieJar);
 const dashboardHtml = await authenticatedDashboard.text();
 assert.equal(authenticatedDashboard.status, 200);
 assert.match(dashboardHtml, /Dashboard/i);

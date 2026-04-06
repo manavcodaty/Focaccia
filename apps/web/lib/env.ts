@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { resolveBrowserSupabaseUrl } from "@/lib/browser-local-network";
+
 const publicEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -20,4 +22,20 @@ export function getPublicEnv(): PublicEnv {
   });
 
   return cachedEnv;
+}
+
+export function getBrowserPublicEnv(): PublicEnv {
+  const env = getPublicEnv();
+
+  if (typeof window === "undefined") {
+    return env;
+  }
+
+  return {
+    ...env,
+    NEXT_PUBLIC_SUPABASE_URL: resolveBrowserSupabaseUrl({
+      browserHostname: window.location.hostname,
+      configuredUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+    }),
+  };
 }

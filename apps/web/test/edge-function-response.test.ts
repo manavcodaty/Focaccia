@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-// @ts-expect-error Node's strip-types runner requires the explicit .ts extension here.
 import { parseEdgeFunctionResponse } from "../lib/edge-function-response.ts";
 
 test("surfaces top-level message fields from failed edge function payloads", async () => {

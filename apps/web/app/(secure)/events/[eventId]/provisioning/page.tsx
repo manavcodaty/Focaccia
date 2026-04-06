@@ -26,7 +26,6 @@ export default async function ProvisioningPage({
   return (
     <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <GateProvisioningView
-        addGateHref="#qr-payload"
         backHref={`/events/${event.event_id}`}
         eventId={event.event_id}
         eventName={event.name}

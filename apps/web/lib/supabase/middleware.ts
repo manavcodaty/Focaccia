@@ -6,6 +6,12 @@ import { getPublicEnv } from "@/lib/env";
 const AUTH_ROUTES = ["/login"];
 const PROTECTED_PREFIXES = ["/dashboard", "/events"];
 
+function isPrivateIpv4Host(host: string): boolean {
+  return /^10\./.test(host)
+    || /^192\.168\./.test(host)
+    || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -14,8 +20,18 @@ export async function updateSession(request: NextRequest) {
   });
 
   const env = getPublicEnv();
+  const resolvedUrl = new URL(env.NEXT_PUBLIC_SUPABASE_URL);
+
+  if (
+    request.nextUrl.hostname !== resolvedUrl.hostname
+    && isPrivateIpv4Host(request.nextUrl.hostname)
+    && isPrivateIpv4Host(resolvedUrl.hostname)
+  ) {
+    resolvedUrl.hostname = request.nextUrl.hostname;
+  }
+
   const supabase = createServerClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
+    resolvedUrl.origin,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {

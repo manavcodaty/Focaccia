@@ -3,11 +3,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
-// @ts-expect-error Node's strip-types runner requires explicit extensions.
 import { focacciaBrand } from "../../../packages/shared/src/brand.ts";
-// @ts-expect-error Node's strip-types runner requires explicit extensions.
 import enrollmentTheme from "../../enrollment/src/theme.ts";
-// @ts-expect-error Node's strip-types runner requires explicit extensions.
 import gateTheme from "../../gate/src/theme.ts";
 test("centralizes the Dashboard brand colors as exact shared tokens", () => {
   assert.equal(focacciaBrand.primary, "#0066FF");

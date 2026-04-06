@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node strip-types runner requires explicit extensions.
 import {
   getFriendlyAuthErrorMessage,
   getPostAuthSuccessState,

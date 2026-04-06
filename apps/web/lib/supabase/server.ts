@@ -2,13 +2,18 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import { getPublicEnv } from "@/lib/env";
+import { getCurrentServerHostname, resolveServerSupabaseUrl } from "@/lib/server-local-network";
 
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
   const env = getPublicEnv();
+  const supabaseUrl = resolveServerSupabaseUrl({
+    configuredUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+    serverHostname: getCurrentServerHostname(),
+  });
 
   return createServerClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
+    supabaseUrl,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {

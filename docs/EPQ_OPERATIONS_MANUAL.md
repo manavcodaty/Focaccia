@@ -26,7 +26,7 @@ Standard command:
 
 ```bash
 cd /Users/manavcodaty/repos/Focaccia
-supabase start
+pnpm run db:start
 ```
 
 Verified command for this workstation and Colima setup:
@@ -36,21 +36,18 @@ cd /Users/manavcodaty/repos/Focaccia
 DOCKER_HOST=ssh://colima supabase start -x logflare,studio,vector
 ```
 
+`pnpm run db:start` writes `supabase/functions/.env` from `supabase/functions/.env.local` before starting Supabase so the local Edge runtime has the Face Pass secrets available.
+
 #### Terminal 3: serve the Edge Functions locally
 
-The functions import the local shared package through `supabase/functions/import_map.json`.
-
-Verified local command:
+On this workstation, `supabase start` still leaves `supabase_edge_runtime_*` stopped, so run the explicit local function server as part of the normal boot sequence:
 
 ```bash
 cd /Users/manavcodaty/repos/Focaccia
-DOCKER_HOST=ssh://colima supabase functions serve --no-verify-jwt --env-file supabase/functions/.env.local --import-map supabase/functions/import_map.json
+pnpm run db:functions:serve
 ```
 
-Notes:
-
-- `supabase/functions/.env.local` must already exist locally and contain the Supabase keys plus `FACE_PASS_SECRET_WRAPPING_KEY_B64URL`.
-- `--no-verify-jwt` is a local runtime workaround documented in [docs/ASSUMPTIONS.md](/Users/manavcodaty/repos/Focaccia/docs/ASSUMPTIONS.md).
+That script reuses `supabase/functions/.env.local`, regenerates `supabase/functions/.env`, serves the functions through `supabase/functions/import_map.json`, and applies the local `--no-verify-jwt` workaround so requests reach the handlers before auth is enforced inside the functions.
 
 #### Terminal 4: configure and start the web dashboard
 

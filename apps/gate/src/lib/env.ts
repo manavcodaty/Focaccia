@@ -1,3 +1,7 @@
+import Constants from 'expo-constants';
+
+import { resolveSupabaseUrl } from './network';
+
 export interface SupabasePublicEnv {
   anonKey: string;
   url: string;
@@ -19,6 +23,12 @@ export function getSupabasePublicEnv(): SupabasePublicEnv {
     );
   }
 
-  cachedEnv = { anonKey, url };
+  cachedEnv = {
+    anonKey,
+    url: resolveSupabaseUrl({
+      configuredUrl: url,
+      expoHostUri: Constants.expoConfig?.hostUri ?? Constants.platform?.hostUri ?? null,
+    }),
+  };
   return cachedEnv;
 }

@@ -64,6 +64,10 @@ async function invokeFunction(apiUrl, anonKey, name, options = {}) {
     headers.set('apikey', anonKey);
   }
 
+  if (!headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${anonKey}`);
+  }
+
   const response = await fetch(`${apiUrl}/functions/v1/${name}`, {
     ...options,
     headers,

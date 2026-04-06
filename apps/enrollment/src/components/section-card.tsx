@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '../theme';
+import { palette, typography } from '../theme';
 
 export function SectionCard({
   children,
@@ -38,16 +38,16 @@ const styles = StyleSheet.create({
     shadowRadius: 30,
   },
   eyebrow: {
+    ...typography.title,
     color: palette.accent,
     fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   title: {
+    ...typography.title,
     color: palette.ink,
     fontSize: 24,
-    fontWeight: '700',
     lineHeight: 30,
   },
 });

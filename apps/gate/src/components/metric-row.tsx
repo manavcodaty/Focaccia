@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '../theme';
+import { palette, typography } from '../theme';
 
 export function MetricRow({
   label,
@@ -19,10 +19,10 @@ export function MetricRow({
 
 const styles = StyleSheet.create({
   label: {
+    ...typography.title,
     color: palette.muted,
     flex: 1,
     fontSize: 13,
-    fontWeight: '700',
     letterSpacing: 0.2,
     textTransform: 'uppercase',
   },
@@ -33,10 +33,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   value: {
+    ...typography.title,
     color: palette.ink,
     flex: 1,
     fontSize: 15,
-    fontWeight: '700',
     textAlign: 'right',
   },
 });

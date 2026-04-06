@@ -7,7 +7,7 @@ import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { useGate } from '../src/state/gate-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 
 export default function FallbackScreen() {
   const router = useRouter();
@@ -76,11 +76,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   body: {
+    ...typography.body,
     color: palette.ink,
     fontSize: 15,
     lineHeight: 22,
   },
   tokenInput: {
+    ...typography.body,
     backgroundColor: palette.card,
     borderColor: palette.line,
     borderRadius: 20,

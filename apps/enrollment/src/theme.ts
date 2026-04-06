@@ -24,8 +24,35 @@ export const palette = {
   warningSoft: '#F5E6CB',
 } as const;
 
+export const fontFamilies = {
+  body: 'IBMPlexSans_400Regular',
+  medium: 'IBMPlexSans_500Medium',
+  semibold: 'IBMPlexSans_600SemiBold',
+  bold: 'IBMPlexSans_700Bold',
+} as const;
+
+export const typography = {
+  body: {
+    fontFamily: fontFamilies.body,
+  },
+  bodyMedium: {
+    fontFamily: fontFamilies.medium,
+  },
+  bodyStrong: {
+    fontFamily: fontFamilies.semibold,
+  },
+  display: {
+    fontFamily: fontFamilies.bold,
+  },
+  title: {
+    fontFamily: fontFamilies.bold,
+  },
+} as const;
+
 const enrollmentTheme = {
+  fontFamilies,
   palette,
+  typography,
 } as const;
 
 export default enrollmentTheme;

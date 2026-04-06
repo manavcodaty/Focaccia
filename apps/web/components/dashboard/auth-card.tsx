@@ -1,7 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+<<<<<<< ours
 import { AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
+=======
+import { AlertCircle, ArrowRight } from "lucide-react";
+>>>>>>> theirs
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -22,6 +26,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+<<<<<<< ours
+=======
+import { Logo } from "@/components/landing/logo";
+>>>>>>> theirs
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 const authSchema = z.object({
@@ -67,6 +75,7 @@ export function AuthCard() {
       <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(0,102,255,0.7),transparent)]" />
       <CardHeader className="space-y-5 pb-5">
         <div className="flex items-center gap-3">
+<<<<<<< ours
           <div className="flex size-12 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[color:var(--accent)]">
             <ShieldCheck className="size-5 text-[color:var(--primary)]" />
           </div>
@@ -74,6 +83,10 @@ export function AuthCard() {
             <div className="font-[family:var(--font-display)] text-3xl leading-none">
               One-Time Face Pass
             </div>
+=======
+          <div>
+            <Logo iconClassName="h-10 w-10" wordmarkClassName="text-[1.55rem]" />
+>>>>>>> theirs
             <div className="mt-1 text-[10px] uppercase tracking-[0.28em] text-[color:var(--muted-foreground)]">
               Organizer access
             </div>

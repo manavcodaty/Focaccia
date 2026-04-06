@@ -23,7 +23,7 @@ import { StatusChip } from '../src/components/status-chip';
 import { challengeInstruction, createChallenge, hasTimedOut, pickChallenge, type LivenessProgress } from '../src/lib/liveness';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
 import { useGate } from '../src/state/gate-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 
 function verificationStatus(isProcessing: boolean, modelReady: boolean): string {
   if (isProcessing) {
@@ -261,9 +261,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eyebrow: {
+    ...typography.title,
     color: palette.highlight,
     fontSize: 12,
-    fontWeight: '800',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
@@ -307,22 +307,23 @@ const styles = StyleSheet.create({
     top: 24,
   },
   processingText: {
+    ...typography.display,
     color: palette.textInverse,
     fontSize: 16,
-    fontWeight: '800',
   },
   screen: {
     gap: 16,
   },
   subtitle: {
+    ...typography.body,
     color: palette.muted,
     fontSize: 15,
     lineHeight: 22,
   },
   title: {
+    ...typography.display,
     color: palette.ink,
     fontSize: 30,
-    fontWeight: '900',
     lineHeight: 34,
   },
 });

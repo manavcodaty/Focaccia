@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { ArrowLeft, ScanLine, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock3, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { CopyButton } from "@/components/dashboard/copy-button";
+import { EventRouteTabs } from "@/components/dashboard/event-route-tabs";
+import { GateLogsPanel } from "@/components/dashboard/gate-logs-panel";
 import { PublicValue } from "@/components/dashboard/public-value";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   Table,
   TableBody,
@@ -39,191 +47,165 @@ export default async function EventDetailPage({
   const { event, logs, revocations } = await getEventDetail(eventId);
 
   return (
-    <div className="space-y-8">
-      <section className="fade-section flex flex-col gap-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <Button asChild variant="ghost">
-            <Link href="/dashboard">
-              <ArrowLeft className="size-4" />
-              Back to dashboard
-            </Link>
-          </Button>
-          <Badge variant={event.pk_gate_event ? "success" : "warning"}>
-            {event.pk_gate_event ? "Gate provisioned" : "Gate not provisioned"}
-          </Badge>
-        </div>
-        <Card className="overflow-hidden border-[color:var(--border-strong)]">
-          <CardContent className="grid gap-6 p-8 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="space-y-4">
-              <div className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--muted-foreground)]">
-                Event overview
+    <div className="fade-section flex flex-col gap-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button asChild size="sm" variant="outline">
+          <Link href="/dashboard">
+            <ArrowLeft data-icon="inline-start" />
+            Dashboard
+          </Link>
+        </Button>
+        <Badge variant={event.pk_gate_event ? "success" : "warning"}>
+          {event.pk_gate_event ? "Gate provisioned" : "Gate not provisioned"}
+        </Badge>
+      </div>
+
+      <section className="rounded-[1.75rem] border border-[color:var(--border)] bg-[color:var(--card)]/88 p-6 shadow-[0_24px_60px_-42px_rgba(10,16,36,0.48)] md:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--muted-foreground)]">Event overview</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--foreground)] md:text-5xl">
+              {event.name}
+            </h1>
+            <p className="mt-2 font-mono text-xs uppercase tracking-[0.16em] text-[color:var(--muted-foreground)]">
+              {event.event_id}
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/45 p-3">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--muted-foreground)]">Starts</p>
+                <p className="mt-1 text-sm text-[color:var(--foreground)]">{formatTimestamp(event.starts_at)}</p>
               </div>
-              <h1 className="poster-title text-5xl leading-none text-[color:var(--foreground)]">
-                {event.name}
-              </h1>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--muted-foreground)]">
-                    Event ID
-                  </div>
-                  <div className="mt-2 font-mono text-sm text-[color:var(--foreground)]">{event.event_id}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--muted-foreground)]">
-                    Starts
-                  </div>
-                  <div className="mt-2 text-sm text-[color:var(--foreground)]">{formatTimestamp(event.starts_at)}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--muted-foreground)]">
-                    Ends
-                  </div>
-                  <div className="mt-2 text-sm text-[color:var(--foreground)]">{formatTimestamp(event.ends_at)}</div>
-                </div>
+              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/45 p-3">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--muted-foreground)]">Ends</p>
+                <p className="mt-1 text-sm text-[color:var(--foreground)]">{formatTimestamp(event.ends_at)}</p>
+              </div>
+              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/45 p-3">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--muted-foreground)]">Created</p>
+                <p className="mt-1 text-sm text-[color:var(--foreground)]">{formatTimestamp(event.created_at)}</p>
               </div>
             </div>
-            <div className="rounded-[1.75rem] border border-[color:var(--border)] bg-[color:var(--background)]/78 p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--muted-foreground)]">
-                    Join code
-                  </div>
-                  <div className="mt-3 font-mono text-4xl tracking-[0.24em] text-[color:var(--foreground)]">
-                    {event.join_code}
-                  </div>
-                </div>
-                <CopyButton label="Join code copied." value={event.join_code} />
-              </div>
-              <p className="mt-4 text-sm leading-6 text-[color:var(--muted-foreground)]">
-                Attendees enter this code in the enrollment app to receive the public event bundle.
+          </div>
+
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border)] bg-[color:var(--accent)]/48 p-5">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--muted-foreground)]">Join code</div>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <p className="font-mono text-4xl tracking-[0.24em] text-[color:var(--foreground)]">{event.join_code}</p>
+              <CopyButton label="Join code copied." value={event.join_code} />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-[color:var(--muted-foreground)]">
+              Attendees use this code in the enrollment app to fetch the public event bundle.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <EventRouteTabs eventId={event.event_id} />
+
+      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {event.pk_gate_event ? <ShieldCheck /> : <ShieldAlert />}
+              Gate readiness
+            </CardTitle>
+            <CardDescription>
+              A single gate device is allowed per event. Binding is permanent once completed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/35 p-4">
+              <p className="text-sm leading-6 text-[color:var(--foreground)]">
+                {event.pk_gate_event
+                  ? "This event is already bound to a gate device."
+                  : "No gate has claimed this event yet."}
               </p>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild>
+                <Link href={`/events/${event.event_id}/provisioning`}>
+                  Open provisioning
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={`/events/${event.event_id}/revocations`}>Manage revocations</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={`/events/${event.event_id}/logs`}>View gate logs</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Public cryptographic values</CardTitle>
+            <CardDescription>
+              Safe to share with enrollment and gate apps. These values contain no biometric data.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <PublicValue label="PK_SIGN_EVENT" value={event.pk_sign_event} />
+            <PublicValue label="EVENT_SALT" value={event.event_salt} />
+            {event.pk_gate_event ? (
+              <PublicValue label="PK_GATE_EVENT" subtle value={event.pk_gate_event} />
+            ) : null}
           </CardContent>
         </Card>
       </section>
 
-      <section className="fade-section fade-delay-1 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gate provisioning state</CardTitle>
-              <CardDescription>
-                One event, one gate. The gate phone will generate the encryption keypair on-device.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="flex items-start gap-3 rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--accent)] p-4">
-                {event.pk_gate_event ? (
-                  <ShieldCheck className="mt-1 size-5 text-emerald-600" />
-                ) : (
-                  <ShieldAlert className="mt-1 size-5 text-amber-600" />
-                )}
-                <div>
-                  <div className="font-medium text-[color:var(--foreground)]">
-                    {event.pk_gate_event ? "This event already has its bound gate." : "No gate has claimed this event yet."}
-                  </div>
-                  <p className="mt-1 text-sm leading-6 text-[color:var(--muted-foreground)]">
-                    Provisioning is irreversible at the event level. Only the first gate device registration is accepted.
-                  </p>
-                </div>
+      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <Card>
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>Revocation preview</CardTitle>
+                <CardDescription>
+                  Quick view of the latest denied pass IDs for this event.
+                </CardDescription>
               </div>
-              <Button asChild>
-                <Link href={`/events/${event.event_id}/provisioning`}>
-                  Open provisioning page
-                  <ScanLine className="size-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Public cryptographic values</CardTitle>
-              <CardDescription>
-                These values are safe to display and distribute to the enrollment and gate apps.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <PublicValue label="PK_SIGN_EVENT" value={event.pk_sign_event} />
-              <PublicValue label="EVENT_SALT" value={event.event_salt} />
-              {event.pk_gate_event ? (
-                <PublicValue label="PK_GATE_EVENT" value={event.pk_gate_event} />
-              ) : null}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Revocations</CardTitle>
-              <CardDescription>
-                Server-side list of pass identifiers that the gate must reject during offline sync windows.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {revocations.length > 0 ? (
+              <Badge variant="outline">{revocations.length} total</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {revocations.length > 0 ? (
+              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)]">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Pass ID</TableHead>
-                      <TableHead>Revoked</TableHead>
+                      <TableHead>Revoked At</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {revocations.map((revocation) => (
+                    {revocations.slice(0, 5).map((revocation) => (
                       <TableRow key={`${revocation.event_id}-${revocation.pass_id}`}>
                         <TableCell className="font-mono text-xs">{revocation.pass_id}</TableCell>
-                        <TableCell>{formatTimestamp(revocation.revoked_at)}</TableCell>
+                        <TableCell className="text-sm text-[color:var(--muted-foreground)]">
+                          {formatTimestamp(revocation.revoked_at)}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              ) : (
-                <div className="rounded-[1.5rem] border border-dashed border-[color:var(--border)] p-4 text-sm leading-6 text-[color:var(--muted-foreground)]">
-                  No passes have been revoked yet.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            ) : (
+              <Empty className="border-[color:var(--border)] bg-[color:var(--muted)]/30 p-6">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <Clock3 />
+                  </EmptyMedia>
+                  <EmptyTitle>No revocations yet</EmptyTitle>
+                  <EmptyDescription>
+                    This event currently has no denied pass IDs.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            )}
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Logs</CardTitle>
-              <CardDescription>
-                Uploaded gate CSV exports appear here when the operations app starts publishing them.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {logs.length > 0 ? (
-                logs.map((log) => (
-                  <div key={log.id} className="space-y-3 rounded-[1.5rem] border border-[color:var(--border)] p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <Badge variant="outline">CSV upload</Badge>
-                      <span className="text-xs uppercase tracking-[0.2em] text-[color:var(--muted-foreground)]">
-                        {formatTimestamp(log.uploaded_at)}
-                      </span>
-                    </div>
-                    <Separator />
-                    {log.csv_url ? (
-                      <Button asChild variant="outline">
-                        <a href={log.csv_url}>Download CSV</a>
-                      </Button>
-                    ) : (
-                      <p className="text-sm text-[color:var(--muted-foreground)]">
-                        No downloadable URL was stored for this upload.
-                      </p>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-[1.5rem] border border-dashed border-[color:var(--border)] p-4 text-sm leading-6 text-[color:var(--muted-foreground)]">
-                  No gate logs uploaded yet.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <GateLogsPanel compact logs={logs} />
       </section>
     </div>
   );

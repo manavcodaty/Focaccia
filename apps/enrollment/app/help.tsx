@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 
 export default function HelpScreen() {
   const router = useRouter();
@@ -41,6 +41,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bodyText: {
+    ...typography.body,
     color: palette.ink,
     fontSize: 15,
     lineHeight: 22,

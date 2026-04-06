@@ -9,6 +9,7 @@ import { getFriendlyAuthErrorMessage, getPostAuthSuccessState, type AuthMode } f
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
+import { Logo } from "@/components/landing/logo";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "./ui/field";
@@ -110,6 +111,9 @@ export function AuthCard({ className, ...props }: ComponentProps<"div">) {
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
+          <div className="flex justify-center">
+            <Logo iconClassName="h-10 w-10" wordmarkClassName="text-[1.55rem]" />
+          </div>
           <CardTitle className="text-xl">{copy.title}</CardTitle>
           <CardDescription>{copy.description}</CardDescription>
         </CardHeader>

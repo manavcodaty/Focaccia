@@ -1,0 +1,394 @@
+// BEGIN FOCACCIA EXPO_SQLITE SHIM
+// Xcode 26 can fail to import the vendored Expo SQLite C module into Swift.
+// Declare the required symbols explicitly so this module can still compile
+// against the vendored `sqlite3.c` build.
+private typealias ExSQLiteExecCallback = @convention(c) (
+  UnsafeMutableRawPointer?,
+  Int32,
+  UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?,
+  UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32
+
+private typealias ExSQLiteUpdateHook = @convention(c) (
+  UnsafeMutableRawPointer?,
+  Int32,
+  UnsafePointer<CChar>?,
+  UnsafePointer<CChar>?,
+  sqlite3_int64
+) -> Void
+
+private typealias ExSQLiteChangesetFilter = @convention(c) (
+  UnsafeMutableRawPointer?,
+  UnsafePointer<CChar>?
+) -> Int32
+
+private typealias ExSQLiteChangesetConflict = @convention(c) (
+  UnsafeMutableRawPointer?,
+  Int32,
+  OpaquePointer?
+) -> Int32
+
+private let SQLITE_CHANGESET_REPLACE: Int32 = 1
+
+private func withOptionalCStringArray<T>(
+  _ value: [CChar]?,
+  _ body: (UnsafePointer<CChar>?) -> T
+) -> T {
+  guard let value else {
+    return body(nil)
+  }
+  return value.withUnsafeBufferPointer { buffer in
+    body(buffer.baseAddress)
+  }
+}
+
+private func withOptionalCString<T>(
+  _ value: String?,
+  _ body: (UnsafePointer<CChar>?) -> T
+) -> T {
+  guard let value else {
+    return body(nil)
+  }
+  return value.withCString(body)
+}
+
+@_silgen_name("exsqlite3_open")
+private func exsqlite3_open(
+  _ filename: UnsafePointer<CChar>?,
+  _ database: UnsafeMutablePointer<OpaquePointer?>?
+) -> Int32
+
+private func exsqlite3_open(
+  _ filename: String,
+  _ database: UnsafeMutablePointer<OpaquePointer?>?
+) -> Int32 {
+  filename.withCString { exsqlite3_open($0, database) }
+}
+
+@_silgen_name("exsqlite3_get_autocommit")
+private func exsqlite3_get_autocommit(_ database: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_malloc64")
+private func exsqlite3_malloc64(_ size: sqlite3_uint64) -> UnsafeMutableRawPointer?
+
+@_silgen_name("exsqlite3_free")
+private func exsqlite3_free(_ pointer: UnsafeMutableRawPointer?)
+
+private func exsqlite3_free(_ pointer: UnsafeMutablePointer<CChar>?) {
+  exsqlite3_free(UnsafeMutableRawPointer(pointer))
+}
+
+private func exsqlite3_free(_ pointer: UnsafeMutablePointer<UInt8>?) {
+  exsqlite3_free(UnsafeMutableRawPointer(pointer))
+}
+
+@_silgen_name("exsqlite3_deserialize")
+private func exsqlite3_deserialize(
+  _ database: OpaquePointer?,
+  _ schema: UnsafePointer<CChar>?,
+  _ data: UnsafeMutablePointer<UInt8>?,
+  _ databaseSize: sqlite3_int64,
+  _ bufferSize: sqlite3_int64,
+  _ flags: UInt32
+) -> Int32
+
+private func exsqlite3_deserialize(
+  _ database: OpaquePointer?,
+  _ schema: String,
+  _ data: UnsafeMutablePointer<UInt8>?,
+  _ databaseSize: sqlite3_int64,
+  _ bufferSize: sqlite3_int64,
+  _ flags: UInt32
+) -> Int32 {
+  schema.withCString {
+    exsqlite3_deserialize(database, $0, data, databaseSize, bufferSize, flags)
+  }
+}
+
+@_silgen_name("exsqlite3_exec")
+private func exsqlite3_exec(
+  _ database: OpaquePointer?,
+  _ sql: UnsafePointer<CChar>?,
+  _ callback: ExSQLiteExecCallback?,
+  _ context: UnsafeMutableRawPointer?,
+  _ error: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32
+
+private func exsqlite3_exec(
+  _ database: OpaquePointer?,
+  _ sql: String,
+  _ callback: ExSQLiteExecCallback?,
+  _ context: UnsafeMutableRawPointer?,
+  _ error: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+  sql.withCString {
+    exsqlite3_exec(database, $0, callback, context, error)
+  }
+}
+
+@_silgen_name("exsqlite3_serialize")
+private func exsqlite3_serialize(
+  _ database: OpaquePointer?,
+  _ schema: UnsafePointer<CChar>?,
+  _ size: UnsafeMutablePointer<sqlite3_int64>?,
+  _ flags: UInt32
+) -> UnsafeMutablePointer<UInt8>?
+
+private func exsqlite3_serialize(
+  _ database: OpaquePointer?,
+  _ schema: String,
+  _ size: UnsafeMutablePointer<sqlite3_int64>?,
+  _ flags: UInt32
+) -> UnsafeMutablePointer<UInt8>? {
+  schema.withCString {
+    exsqlite3_serialize(database, $0, size, flags)
+  }
+}
+
+@_silgen_name("exsqlite3_prepare_v2")
+private func exsqlite3_prepare_v2(
+  _ database: OpaquePointer?,
+  _ sql: UnsafePointer<CChar>?,
+  _ length: Int32,
+  _ statement: UnsafeMutablePointer<OpaquePointer?>?,
+  _ tail: UnsafeMutablePointer<UnsafePointer<CChar>?>?
+) -> Int32
+
+private func exsqlite3_prepare_v2(
+  _ database: OpaquePointer?,
+  _ sql: [CChar]?,
+  _ length: Int32,
+  _ statement: UnsafeMutablePointer<OpaquePointer?>?,
+  _ tail: UnsafeMutablePointer<UnsafePointer<CChar>?>?
+) -> Int32 {
+  withOptionalCStringArray(sql) {
+    exsqlite3_prepare_v2(database, $0, length, statement, tail)
+  }
+}
+
+@_silgen_name("exsqlite3_reset")
+private func exsqlite3_reset(_ statement: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_clear_bindings")
+private func exsqlite3_clear_bindings(_ statement: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_step")
+private func exsqlite3_step(_ statement: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_last_insert_rowid")
+private func exsqlite3_last_insert_rowid(_ database: OpaquePointer?) -> sqlite3_int64
+
+@_silgen_name("exsqlite3_changes")
+private func exsqlite3_changes(_ database: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_finalize")
+private func exsqlite3_finalize(_ statement: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_errcode")
+private func exsqlite3_errcode(_ database: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_errmsg")
+private func exsqlite3_errmsg(_ database: OpaquePointer?) -> UnsafePointer<CChar>
+
+@_silgen_name("exsqlite3_close")
+private func exsqlite3_close(_ database: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_backup_init")
+private func exsqlite3_backup_init(
+  _ destination: OpaquePointer?,
+  _ destinationName: UnsafePointer<CChar>?,
+  _ source: OpaquePointer?,
+  _ sourceName: UnsafePointer<CChar>?
+) -> OpaquePointer?
+
+private func exsqlite3_backup_init(
+  _ destination: OpaquePointer?,
+  _ destinationName: String,
+  _ source: OpaquePointer?,
+  _ sourceName: String
+) -> OpaquePointer? {
+  destinationName.withCString { destinationNamePointer in
+    sourceName.withCString { sourceNamePointer in
+      exsqlite3_backup_init(destination, destinationNamePointer, source, sourceNamePointer)
+    }
+  }
+}
+
+@_silgen_name("exsqlite3_backup_step")
+private func exsqlite3_backup_step(_ backup: OpaquePointer?, _ pages: Int32) -> Int32
+
+@_silgen_name("exsqlite3_backup_finish")
+private func exsqlite3_backup_finish(_ backup: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_update_hook")
+private func exsqlite3_update_hook(
+  _ database: OpaquePointer?,
+  _ callback: ExSQLiteUpdateHook?,
+  _ context: UnsafeMutableRawPointer?
+) -> UnsafeMutableRawPointer?
+
+@_silgen_name("exsqlite3_db_filename")
+private func exsqlite3_db_filename(
+  _ database: OpaquePointer?,
+  _ name: UnsafePointer<CChar>?
+) -> UnsafePointer<CChar>?
+
+@_silgen_name("exsqlite3_enable_load_extension")
+private func exsqlite3_enable_load_extension(_ database: OpaquePointer?, _ enabled: Int32) -> Int32
+
+@_silgen_name("exsqlite3_load_extension")
+private func exsqlite3_load_extension(
+  _ database: OpaquePointer?,
+  _ file: UnsafePointer<CChar>?,
+  _ entryPoint: UnsafePointer<CChar>?,
+  _ error: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32
+
+private func exsqlite3_load_extension(
+  _ database: OpaquePointer?,
+  _ file: [CChar]?,
+  _ entryPoint: String?,
+  _ error: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+  withOptionalCStringArray(file) { filePointer in
+    withOptionalCString(entryPoint) { entryPointPointer in
+      exsqlite3_load_extension(database, filePointer, entryPointPointer, error)
+    }
+  }
+}
+
+@_silgen_name("exsqlite3_column_count")
+private func exsqlite3_column_count(_ statement: OpaquePointer?) -> Int32
+
+@_silgen_name("exsqlite3_column_name")
+private func exsqlite3_column_name(_ statement: OpaquePointer?, _ index: Int32) -> UnsafePointer<CChar>
+
+@_silgen_name("exsqlite3_column_type")
+private func exsqlite3_column_type(_ statement: OpaquePointer?, _ index: Int32) -> Int32
+
+@_silgen_name("exsqlite3_column_int64")
+private func exsqlite3_column_int64(_ statement: OpaquePointer?, _ index: Int32) -> sqlite3_int64
+
+@_silgen_name("exsqlite3_column_double")
+private func exsqlite3_column_double(_ statement: OpaquePointer?, _ index: Int32) -> Double
+
+@_silgen_name("exsqlite3_column_text")
+private func exsqlite3_column_text(_ statement: OpaquePointer?, _ index: Int32) -> UnsafePointer<UInt8>?
+
+@_silgen_name("exsqlite3_column_blob")
+private func exsqlite3_column_blob(_ statement: OpaquePointer?, _ index: Int32) -> UnsafeRawPointer?
+
+@_silgen_name("exsqlite3_column_bytes")
+private func exsqlite3_column_bytes(_ statement: OpaquePointer?, _ index: Int32) -> Int32
+
+@_silgen_name("exsqlite3_bind_null")
+private func exsqlite3_bind_null(_ statement: OpaquePointer?, _ index: Int32) -> Int32
+
+@_silgen_name("exsqlite3_bind_int64")
+private func exsqlite3_bind_int64(_ statement: OpaquePointer?, _ index: Int32, _ value: sqlite3_int64) -> Int32
+
+@_silgen_name("exsqlite3_bind_double")
+private func exsqlite3_bind_double(_ statement: OpaquePointer?, _ index: Int32, _ value: Double) -> Int32
+
+@_silgen_name("exsqlite3_bind_text")
+private func exsqlite3_bind_text(
+  _ statement: OpaquePointer?,
+  _ index: Int32,
+  _ value: UnsafePointer<CChar>?,
+  _ length: Int32,
+  _ destructor: sqlite3_destructor_type?
+) -> Int32
+
+private func exsqlite3_bind_text(
+  _ statement: OpaquePointer?,
+  _ index: Int32,
+  _ value: String,
+  _ length: Int32,
+  _ destructor: sqlite3_destructor_type?
+) -> Int32 {
+  value.withCString {
+    exsqlite3_bind_text(statement, index, $0, length, destructor)
+  }
+}
+
+@_silgen_name("exsqlite3_bind_blob")
+private func exsqlite3_bind_blob(
+  _ statement: OpaquePointer?,
+  _ index: Int32,
+  _ value: UnsafeRawPointer?,
+  _ length: Int32,
+  _ destructor: sqlite3_destructor_type?
+) -> Int32
+
+@_silgen_name("exsqlite3_bind_int")
+private func exsqlite3_bind_int(_ statement: OpaquePointer?, _ index: Int32, _ value: Int32) -> Int32
+
+@_silgen_name("exsqlite3_bind_parameter_index")
+private func exsqlite3_bind_parameter_index(_ statement: OpaquePointer?, _ name: UnsafePointer<CChar>?) -> Int32
+
+private func exsqlite3_bind_parameter_index(_ statement: OpaquePointer?, _ name: [CChar]?) -> Int32 {
+  withOptionalCStringArray(name) {
+    exsqlite3_bind_parameter_index(statement, $0)
+  }
+}
+
+@_silgen_name("exsqlite3_next_stmt")
+private func exsqlite3_next_stmt(_ database: OpaquePointer?, _ statement: OpaquePointer?) -> OpaquePointer?
+
+@_silgen_name("exsqlite3session_create")
+private func exsqlite3session_create(
+  _ database: OpaquePointer?,
+  _ name: UnsafePointer<CChar>?,
+  _ session: UnsafeMutablePointer<OpaquePointer?>?
+) -> Int32
+
+private func exsqlite3session_create(
+  _ database: OpaquePointer?,
+  _ name: [CChar]?,
+  _ session: UnsafeMutablePointer<OpaquePointer?>?
+) -> Int32 {
+  withOptionalCStringArray(name) {
+    exsqlite3session_create(database, $0, session)
+  }
+}
+
+@_silgen_name("exsqlite3session_attach")
+private func exsqlite3session_attach(_ session: OpaquePointer?, _ table: UnsafePointer<CChar>?) -> Int32
+
+private func exsqlite3session_attach(_ session: OpaquePointer?, _ table: [CChar]?) -> Int32 {
+  withOptionalCStringArray(table) {
+    exsqlite3session_attach(session, $0)
+  }
+}
+
+@_silgen_name("exsqlite3session_enable")
+private func exsqlite3session_enable(_ session: OpaquePointer?, _ enabled: Int32) -> Int32
+
+@_silgen_name("exsqlite3session_delete")
+private func exsqlite3session_delete(_ session: OpaquePointer?)
+
+@_silgen_name("exsqlite3session_changeset")
+private func exsqlite3session_changeset(
+  _ session: OpaquePointer?,
+  _ size: UnsafeMutablePointer<Int32>?,
+  _ changeset: UnsafeMutablePointer<UnsafeMutableRawPointer?>?
+) -> Int32
+
+@_silgen_name("exsqlite3changeset_apply")
+private func exsqlite3changeset_apply(
+  _ database: OpaquePointer?,
+  _ size: Int32,
+  _ changeset: UnsafeMutableRawPointer?,
+  _ filter: ExSQLiteChangesetFilter?,
+  _ conflict: ExSQLiteChangesetConflict?,
+  _ context: UnsafeMutableRawPointer?
+) -> Int32
+
+@_silgen_name("exsqlite3changeset_invert")
+private func exsqlite3changeset_invert(
+  _ size: Int32,
+  _ input: UnsafeMutableRawPointer?,
+  _ outputSize: UnsafeMutablePointer<Int32>?,
+  _ output: UnsafeMutablePointer<UnsafeMutableRawPointer?>?
+) -> Int32
+// END FOCACCIA EXPO_SQLITE SHIM

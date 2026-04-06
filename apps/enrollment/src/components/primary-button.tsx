@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '../theme';
+import { palette, typography } from '../theme';
 
 export function PrimaryButton({
   disabled = false,
@@ -52,8 +52,8 @@ const styles = StyleSheet.create({
     color: palette.ink,
   },
   label: {
+    ...typography.title,
     fontSize: 16,
-    fontWeight: '700',
     letterSpacing: 0.2,
   },
   pressed: {

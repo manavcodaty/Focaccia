@@ -24,7 +24,7 @@ import { snippet } from '../src/lib/display';
 import { parseProvisioningQrPayload } from '../src/lib/provisioning';
 import type { ProvisioningQrPayload } from '../src/lib/types';
 import { useGate } from '../src/state/gate-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 
 function PermissionFallback({
   body,
@@ -278,6 +278,7 @@ export default function ProvisionScreen() {
 
 const styles = StyleSheet.create({
   body: {
+    ...typography.body,
     color: palette.ink,
     fontSize: 15,
     lineHeight: 22,
@@ -286,11 +287,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   caption: {
+    ...typography.body,
     color: palette.muted,
     fontSize: 14,
     lineHeight: 20,
   },
   input: {
+    ...typography.body,
     backgroundColor: palette.card,
     borderColor: palette.line,
     borderRadius: 16,

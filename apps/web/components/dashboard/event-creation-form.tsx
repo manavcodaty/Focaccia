@@ -1,340 +1,320 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, ArrowUpRight, CalendarClock, CheckCircle2, KeyRound, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
-import { useAuth } from '@/components/providers/auth-provider'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, PlusCircle, Trash2, Calendar, MapPin, Tag } from 'lucide-react'
-import { createEventIdFromDraft } from '@/lib/dashboard-adapters'
-import { invokeEdgeFunction } from '@/lib/functions'
-import type { CreateEventResult } from '@/lib/types'
-import Link from 'next/link'
+import { CopyButton } from "@/components/dashboard/copy-button";
+import { useAuth } from "@/components/providers/auth-provider";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
+import { createEventIdFromDraft } from "@/lib/dashboard-adapters";
+import { invokeEdgeFunction } from "@/lib/functions";
+import type { CreateEventResult } from "@/lib/types";
 
-// ============================================================
-// PROP INTERFACE — Backend engineer should implement these:
-//
-// onSubmit(data: EventFormData) => Promise<void>
-//   Called when the form is valid and submitted.
-//   Expect: POST /api/events with the EventFormData payload.
-//
-// isLoading: boolean
-//   Set true while the POST request is in flight to disable
-//   inputs and show a spinner on the submit button.
-//
-// error?: string
-//   Server-side validation or network error to display.
-// ============================================================
-export interface EventFormData {
-  name: string
-  location: string
-  startTime: string
-  endTime: string
-  tags: string[]
+const createEventSchema = z
+  .object({
+    ends_at: z.string().min(1, "Choose an end time."),
+    event_id: z
+      .string()
+      .min(3, "Use at least 3 characters.")
+      .regex(/^[a-zA-Z0-9_-]+$/, "Use letters, numbers, hyphen, or underscore."),
+    name: z.string().min(3, "Give the event a recognizable name."),
+    starts_at: z.string().min(1, "Choose a start time."),
+  })
+  .refine(
+    (value) => new Date(value.starts_at).getTime() < new Date(value.ends_at).getTime(),
+    {
+      message: "The event must end after it starts.",
+      path: ["ends_at"],
+    },
+  );
+
+type CreateEventValues = z.infer<typeof createEventSchema>;
+
+function initialDateValue(offsetMinutes: number) {
+  const date = new Date(Date.now() + offsetMinutes * 60 * 1000);
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-interface EventCreationFormProps {
-  onSubmit?: (data: EventFormData) => Promise<void>
-  isLoading?: boolean
-  error?: string
-}
+export function EventCreationForm() {
+  const { supabase, user } = useAuth();
+  const [createdEvent, setCreatedEvent] = useState<CreateEventResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-// ============================================================
-// DEFAULT FORM VALUES — Replace with real defaults as needed
-// ============================================================
-const INITIAL_STATE: EventFormData = {
-  name: '',
-  location: '',
-  startTime: '',
-  endTime: '',
-  tags: [],
-}
+  const defaults = useMemo<CreateEventValues>(
+    () => ({
+      ends_at: initialDateValue(60 * 24),
+      event_id: "",
+      name: "",
+      starts_at: initialDateValue(30),
+    }),
+    [],
+  );
 
-export function EventCreationForm({
-  onSubmit,
-  isLoading = false,
-  error,
-}: EventCreationFormProps) {
-  const router = useRouter()
-  const { supabase, user } = useAuth()
-  const [formData, setFormData] = useState<EventFormData>(INITIAL_STATE)
-  const [tagInput, setTagInput] = useState('')
-  const [submissionError, setSubmissionError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [validationErrors, setValidationErrors] = useState<Partial<Record<keyof EventFormData, string>>>({})
+  const form = useForm<CreateEventValues>({
+    defaultValues: defaults,
+    resolver: zodResolver(createEventSchema),
+  });
 
-  const busy = isLoading || isSubmitting
-  const serverError = error ?? submissionError
+  const nameValue = form.watch("name");
 
-  function handleChange(field: keyof EventFormData, value: string) {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    if (validationErrors[field]) {
-      setValidationErrors((prev) => ({ ...prev, [field]: undefined }))
+  function handleNameBlur() {
+    const hasCustomEventId = Boolean(form.formState.dirtyFields.event_id);
+
+    if (hasCustomEventId) {
+      return;
     }
-    if (submissionError) {
-      setSubmissionError(null)
-    }
+
+    form.setValue("event_id", createEventIdFromDraft(nameValue), {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
   }
 
-  function addTag() {
-    const trimmed = tagInput.trim()
-    if (!trimmed || formData.tags.includes(trimmed)) return
-    setFormData((prev) => ({ ...prev, tags: [...prev.tags, trimmed] }))
-    setTagInput('')
-  }
-
-  function removeTag(tag: string) {
-    setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }))
-  }
-
-  function validate(): boolean {
-    const errors: Partial<Record<keyof EventFormData, string>> = {}
-    if (!formData.name.trim()) errors.name = 'Event name is required'
-    if (!formData.startTime) errors.startTime = 'Start time is required'
-    if (!formData.endTime) errors.endTime = 'End time is required'
-    if (formData.startTime && formData.endTime && formData.endTime <= formData.startTime) {
-      errors.endTime = 'End time must be after start time'
-    }
-    setValidationErrors(errors)
-    return Object.keys(errors).length === 0
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!validate()) return
-
-    if (onSubmit) {
-      await onSubmit(formData)
-      return
-    }
-
-    const eventId = createEventIdFromDraft(formData.name)
-
-    if (!eventId) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        name: 'Event name must contain letters or numbers.',
-      }))
-      return
-    }
+  async function onSubmit(values: CreateEventValues) {
+    setErrorMessage(null);
 
     const {
       data: { session },
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getSession();
 
-    if (!session?.access_token || !user) {
-      setSubmissionError('Your organizer session is missing. Sign in again.')
-      return
+    const accessToken = session?.access_token;
+
+    if (!accessToken || !user) {
+      setErrorMessage("Your organizer session is missing. Sign in again.");
+      return;
     }
-
-    setIsSubmitting(true)
-    setSubmissionError(null)
 
     try {
       const created = await invokeEdgeFunction<CreateEventResult>({
-        accessToken: session.access_token,
+        accessToken,
         body: {
-          ends_at: new Date(formData.endTime).toISOString(),
-          event_id: eventId,
-          name: formData.name.trim(),
-          starts_at: new Date(formData.startTime).toISOString(),
+          ends_at: new Date(values.ends_at).toISOString(),
+          event_id: values.event_id.trim(),
+          name: values.name.trim(),
+          starts_at: new Date(values.starts_at).toISOString(),
         },
-        name: 'create-event',
-      })
+        name: "create-event",
+      });
 
-      toast.success('Event created.')
-      router.push(`/events/${created.event_id}/provisioning`)
-      router.refresh()
-    } catch (submitError) {
-      setSubmissionError(
-        submitError instanceof Error ? submitError.message : 'Event creation failed.',
-      )
-    } finally {
-      setIsSubmitting(false)
+      setCreatedEvent(created);
+      toast.success("Event created.");
+      form.reset({
+        ...defaults,
+        event_id: "",
+        name: "",
+      });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to create event.");
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Back Navigation */}
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="sm" asChild>
+    <div className="fade-section flex flex-col gap-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button asChild size="sm" variant="outline">
           <Link href="/dashboard">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Events
+            <ArrowLeft data-icon="inline-start" />
+            Dashboard
           </Link>
         </Button>
+        <Badge variant="outline">Organizer-only</Badge>
       </div>
 
-      {/* Page Title */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-balance">Create New Event</h1>
-        <p className="text-muted-foreground mt-1">
-          Fill in the details below. You can provision gates after creating the event.
-        </p>
-      </div>
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarClock />
+              Create Event
+            </CardTitle>
+            <CardDescription>
+              Provisioning starts with a trusted event record. Focaccia generates join code, event salt, and signing key as soon as this form succeeds.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
+              <FieldGroup>
+                <Field data-invalid={Boolean(form.formState.errors.name)}>
+                  <FieldLabel htmlFor="event-name">Event name</FieldLabel>
+                  <Input
+                    aria-invalid={Boolean(form.formState.errors.name)}
+                    id="event-name"
+                    placeholder="Dubai Summit Evening Entry"
+                    {...form.register("name")}
+                    onBlur={(event) => {
+                      form.register("name").onBlur(event);
+                      handleNameBlur();
+                    }}
+                  />
+                  <FieldDescription>
+                    Use a recognisable name that staff can quickly match under pressure.
+                  </FieldDescription>
+                  <FieldError>{form.formState.errors.name?.message}</FieldError>
+                </Field>
 
-      {/* Server-level error */}
-      {serverError && (
-        <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-          {serverError}
-        </div>
-      )}
+                <Field data-invalid={Boolean(form.formState.errors.event_id)}>
+                  <FieldLabel htmlFor="event-id">Event ID</FieldLabel>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <InputGroupText>event</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      aria-invalid={Boolean(form.formState.errors.event_id)}
+                      id="event-id"
+                      placeholder="dubai_summit_2026"
+                      {...form.register("event_id")}
+                    />
+                  </InputGroup>
+                  <FieldDescription>
+                    Stable identifier used across provisioning, enrollment, revocations, and gate logs.
+                  </FieldDescription>
+                  <FieldError>{form.formState.errors.event_id?.message}</FieldError>
+                </Field>
+              </FieldGroup>
 
-      {/* Basic Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Tag className="h-5 w-5" />
-            Event Details
-          </CardTitle>
-          <CardDescription>General information about your event</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="event-name">
-              Event Name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="event-name"
-              placeholder="e.g. Summer Music Festival 2026"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              disabled={busy}
-              aria-invalid={!!validationErrors.name}
-              aria-describedby={validationErrors.name ? 'name-error' : undefined}
-            />
-            {validationErrors.name && (
-              <p id="name-error" className="text-sm text-destructive">
-                {validationErrors.name}
-              </p>
-            )}
-          </div>
+              <FieldGroup className="@lg/field-group:grid @lg/field-group:grid-cols-2 @lg/field-group:gap-4">
+                <Field data-invalid={Boolean(form.formState.errors.starts_at)}>
+                  <FieldLabel htmlFor="starts-at">Starts at</FieldLabel>
+                  <Input
+                    aria-invalid={Boolean(form.formState.errors.starts_at)}
+                    id="starts-at"
+                    type="datetime-local"
+                    {...form.register("starts_at")}
+                  />
+                  <FieldError>{form.formState.errors.starts_at?.message}</FieldError>
+                </Field>
+                <Field data-invalid={Boolean(form.formState.errors.ends_at)}>
+                  <FieldLabel htmlFor="ends-at">Ends at</FieldLabel>
+                  <Input
+                    aria-invalid={Boolean(form.formState.errors.ends_at)}
+                    id="ends-at"
+                    type="datetime-local"
+                    {...form.register("ends_at")}
+                  />
+                  <FieldError>{form.formState.errors.ends_at?.message}</FieldError>
+                </Field>
+              </FieldGroup>
 
-          <div className="space-y-2">
-            <Label htmlFor="event-location">
-              <MapPin className="inline h-3.5 w-3.5 mr-1" />
-              Location
-            </Label>
-            <Input
-              id="event-location"
-              placeholder="e.g. Golden Gate Park, San Francisco"
-              value={formData.location}
-              onChange={(e) => handleChange('location', e.target.value)}
-              disabled={busy}
-            />
-          </div>
+              {errorMessage ? (
+                <Alert variant="destructive">
+                  <KeyRound />
+                  <AlertTitle>Creation failed</AlertTitle>
+                  <AlertDescription>{errorMessage}</AlertDescription>
+                </Alert>
+              ) : null}
 
-          {/* Tags */}
-          <div className="space-y-2">
-            <Label htmlFor="event-tag">Tags</Label>
-            <div className="flex gap-2">
-              <Input
-                id="event-tag"
-                placeholder="Add a tag and press Enter"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addTag()
-                  }
-                }}
-                disabled={busy}
-              />
-              <Button type="button" variant="outline" onClick={addTag} disabled={busy}>
-                <PlusCircle className="h-4 w-4" />
-              </Button>
-            </div>
-            {formData.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {formData.tags.map((tag) => (
-                  <Badge key={tag} className="gap-1">
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="hover:text-destructive transition-colors"
-                      aria-label={`Remove tag ${tag}`}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button asChild variant="ghost">
+                  <Link href="/dashboard">Cancel</Link>
+                </Button>
+                <Button disabled={form.formState.isSubmitting} type="submit">
+                  {form.formState.isSubmitting ? "Creating event..." : "Create event"}
+                </Button>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+        </Card>
 
-      {/* Schedule */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Schedule
-          </CardTitle>
-          <CardDescription>Set the start and end times for your event</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="start-time">
-              Start Time <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="start-time"
-              type="datetime-local"
-              value={formData.startTime}
-              onChange={(e) => handleChange('startTime', e.target.value)}
-              disabled={busy}
-              aria-invalid={!!validationErrors.startTime}
-              aria-describedby={validationErrors.startTime ? 'start-error' : undefined}
-            />
-            {validationErrors.startTime && (
-              <p id="start-error" className="text-sm text-destructive">
-                {validationErrors.startTime}
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="end-time">
-              End Time <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="end-time"
-              type="datetime-local"
-              value={formData.endTime}
-              onChange={(e) => handleChange('endTime', e.target.value)}
-              disabled={busy}
-              aria-invalid={!!validationErrors.endTime}
-              aria-describedby={validationErrors.endTime ? 'end-error' : undefined}
-            />
-            {validationErrors.endTime && (
-              <p id="end-error" className="text-sm text-destructive">
-                {validationErrors.endTime}
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Sparkles />
+                What happens next
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/42 p-3 text-sm leading-6 text-[color:var(--muted-foreground)]">
+                1. Event metadata is written under your organizer identity.
+              </div>
+              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/42 p-3 text-sm leading-6 text-[color:var(--muted-foreground)]">
+                2. The service generates <strong className="font-semibold text-[color:var(--foreground)]">EVENT_SALT</strong> and an event signing keypair.
+              </div>
+              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/42 p-3 text-sm leading-6 text-[color:var(--muted-foreground)]">
+                3. You open provisioning and bind the first gate device for this event.
+              </div>
+            </CardContent>
+          </Card>
 
-      <Separator />
+          {createdEvent ? (
+            <Card className="border-[color:var(--border-strong)]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <CheckCircle2 className="text-[color:var(--success)]" />
+                  Event created
+                </CardTitle>
+                <CardDescription>
+                  Share the join code with attendees and continue to gate provisioning.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--accent)]/52 p-4">
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--muted-foreground)]">
+                    Join code
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <p className="font-mono text-4xl tracking-[0.24em] text-[color:var(--foreground)]">
+                      {createdEvent.join_code}
+                    </p>
+                    <CopyButton label="Join code copied." value={createdEvent.join_code} />
+                  </div>
+                </div>
 
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="outline" asChild disabled={busy}>
-          <Link href="/dashboard">Cancel</Link>
-        </Button>
-        <Button type="submit" disabled={busy}>
-          {busy ? 'Creating...' : 'Create Event'}
-        </Button>
+                <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--muted-foreground)]">
+                    PK_SIGN_EVENT
+                  </p>
+                  <p className="mt-2 break-all font-mono text-xs text-[color:var(--foreground)]">
+                    {createdEvent.pk_sign_event}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button asChild>
+                    <Link href={`/events/${createdEvent.event_id}/provisioning`}>
+                      Open provisioning
+                      <ArrowUpRight data-icon="inline-end" />
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href={`/events/${createdEvent.event_id}`}>Open event overview</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
       </div>
-    </form>
-  )
+    </div>
+  );
 }

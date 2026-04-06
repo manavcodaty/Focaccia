@@ -6,9 +6,9 @@ import {
   IconExternalLink,
   IconLayoutDashboard,
   IconPlus,
-  IconShieldCheck,
 } from "@tabler/icons-react"
 
+import { Logo } from "@/components/landing/logo"
 import { NavMain } from "@/components/layout/nav-main"
 import { NavSecondary } from "@/components/layout/nav-secondary"
 import { NavUser } from "@/components/layout/nav-user"
@@ -54,10 +54,11 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link href="/dashboard">
-                <IconShieldCheck className="size-5! text-primary" />
-                <span className="text-base font-semibold tracking-tight">
-                  Focaccia
-                </span>
+                <Logo
+                  className="text-[color:var(--sidebar-foreground)]"
+                  iconClassName="h-7 w-7"
+                  wordmarkClassName="text-[1.1rem]"
+                />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

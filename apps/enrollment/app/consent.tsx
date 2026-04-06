@@ -5,7 +5,7 @@ import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { useEnrollment } from '../src/state/enrollment-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 
 export default function ConsentScreen() {
   const router = useRouter();
@@ -81,22 +81,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bodyText: {
+    ...typography.body,
     color: palette.ink,
     fontSize: 15,
     lineHeight: 23,
   },
   detailLabel: {
+    ...typography.bodyStrong,
     color: palette.muted,
     fontSize: 14,
-    fontWeight: '600',
   },
   detailRow: {
     gap: 4,
   },
   detailValue: {
+    ...typography.title,
     color: palette.ink,
     fontSize: 16,
-    fontWeight: '700',
   },
   screen: {
     gap: 18,

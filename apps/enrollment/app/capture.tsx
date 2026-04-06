@@ -19,7 +19,7 @@ import { requestPassSignature } from '../src/lib/api';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
 import { issueSignedPassFromEmbedding, tokenSnippet, type PassProcessingPhase } from '../src/lib/pass-flow';
 import { useEnrollment } from '../src/state/enrollment-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 import { CameraGuide } from '../src/components/camera-guide';
 import { PrimaryButton } from '../src/components/primary-button';
 import { StatusBanner } from '../src/components/status-banner';
@@ -280,6 +280,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fallbackBody: {
+    ...typography.body,
     color: palette.ink,
     fontSize: 15,
     lineHeight: 22,
@@ -302,9 +303,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   fallbackTitle: {
+    ...typography.title,
     color: palette.ink,
     fontSize: 28,
-    fontWeight: '700',
     lineHeight: 34,
   },
   overlay: {
@@ -312,6 +313,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   processingBody: {
+    ...typography.body,
     color: palette.textInverseSubtle,
     fontSize: 14,
     lineHeight: 20,
@@ -324,14 +326,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   processingTitle: {
+    ...typography.title,
     color: palette.textInverse,
     fontSize: 16,
-    fontWeight: '700',
   },
   topEyebrow: {
+    ...typography.title,
     color: palette.accentSoft,
     fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
@@ -341,15 +343,16 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   topSubtitle: {
+    ...typography.body,
     color: palette.textInverseMuted,
     fontSize: 15,
     lineHeight: 21,
     maxWidth: 320,
   },
   topTitle: {
+    ...typography.title,
     color: palette.textInverse,
     fontSize: 28,
-    fontWeight: '700',
     lineHeight: 34,
     maxWidth: 320,
   },

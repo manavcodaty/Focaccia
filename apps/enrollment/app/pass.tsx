@@ -9,7 +9,7 @@ import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { useEnrollment } from '../src/state/enrollment-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 
 export default function PassScreen() {
   const router = useRouter();
@@ -101,22 +101,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bodyText: {
+    ...typography.body,
     color: palette.ink,
     fontSize: 15,
     lineHeight: 22,
   },
   detailLabel: {
+    ...typography.bodyStrong,
     color: palette.muted,
     fontSize: 14,
-    fontWeight: '600',
   },
   detailRow: {
     gap: 4,
   },
   detailValue: {
+    ...typography.title,
     color: palette.ink,
     fontSize: 16,
-    fontWeight: '700',
   },
   qrWrap: {
     alignItems: 'center',
@@ -128,16 +129,16 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   snippetLabel: {
+    ...typography.title,
     color: palette.muted,
     fontSize: 13,
-    fontWeight: '700',
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   snippetValue: {
+    ...typography.title,
     color: palette.ink,
     fontSize: 16,
-    fontWeight: '700',
     lineHeight: 22,
   },
 });

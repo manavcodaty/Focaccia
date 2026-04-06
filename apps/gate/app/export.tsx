@@ -9,6 +9,7 @@ import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { useGate } from '../src/state/gate-context';
+import { palette, typography } from '../src/theme';
 
 export default function ExportScreen() {
   const { exportLogsCsv, gate } = useGate();
@@ -99,6 +100,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   body: {
+    ...typography.body,
+    color: palette.ink,
     fontSize: 15,
     lineHeight: 22,
   },

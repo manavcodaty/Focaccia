@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.focacciaBrand = void 0;
+exports.focacciaBrandMark = exports.focacciaWordmark = exports.focacciaBrand = void 0;
 exports.focacciaBrand = {
     background: "#F7F9FC",
     border: "#D8E0F0",
@@ -19,5 +19,25 @@ exports.focacciaBrand = {
     successSoft: "#D8F3E8",
     warning: "#8A5B14",
     warningSoft: "#F5E6CB",
+};
+exports.focacciaWordmark = "Focaccia";
+exports.focacciaBrandMark = {
+    checkPath: "M51 64.5 60 73l18-20",
+    innerRect: {
+        height: 92,
+        rx: 24,
+        width: 92,
+        x: 18,
+        y: 18,
+    },
+    outerRect: {
+        height: 128,
+        rx: 32,
+        width: 128,
+        x: 0,
+        y: 0,
+    },
+    shieldPath: "M64 34c-12.7 0-23 10.3-23 23v8c0 18 11.2 27.8 23 31 11.8-3.2 23-13 23-31v-8c0-12.7-10.3-23-23-23Z",
+    viewBox: "0 0 128 128",
 };
 //# sourceMappingURL=brand.js.map

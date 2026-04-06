@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '../theme';
+import { palette, typography } from '../theme';
 
 export function StatusChip({
   label,
@@ -38,9 +38,9 @@ const styles = StyleSheet.create({
     backgroundColor: palette.alertSoft,
   },
   label: {
+    ...typography.title,
     color: palette.ink,
     fontSize: 12,
-    fontWeight: '800',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },

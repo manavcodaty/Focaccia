@@ -20,7 +20,7 @@ import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { useGate } from '../src/state/gate-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 
 function GateFallback({
   body,
@@ -208,9 +208,9 @@ const styles = StyleSheet.create({
     top: 0,
   },
   eyebrow: {
+    ...typography.title,
     color: palette.highlight,
     fontSize: 12,
-    fontWeight: '800',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
@@ -246,14 +246,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   subtitle: {
+    ...typography.body,
     color: palette.muted,
     fontSize: 15,
     lineHeight: 22,
   },
   title: {
+    ...typography.display,
     color: palette.ink,
     fontSize: 32,
-    fontWeight: '900',
     lineHeight: 36,
   },
 });

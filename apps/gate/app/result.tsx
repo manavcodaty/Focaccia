@@ -9,7 +9,7 @@ import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { decisionTone, formatDuration } from '../src/lib/display';
 import { useGate } from '../src/state/gate-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 
 export default function ResultScreen() {
   const router = useRouter();
@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headline: {
+    ...typography.body,
     color: palette.ink,
     fontSize: 16,
     lineHeight: 24,

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '../theme';
+import { palette, typography } from '../theme';
 
 export function StatusBanner({
   message,
@@ -44,8 +44,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   message: {
+    ...typography.bodyStrong,
     fontSize: 14,
-    fontWeight: '600',
     lineHeight: 20,
   },
   neutralBanner: {

@@ -10,6 +10,7 @@ import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { formatTimestamp } from '../src/lib/display';
 import { useGate } from '../src/state/gate-context';
+import { palette, typography } from '../src/theme';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -109,6 +110,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   note: {
+    ...typography.body,
+    color: palette.ink,
     fontSize: 15,
     lineHeight: 22,
   },

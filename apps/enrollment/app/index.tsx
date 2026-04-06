@@ -9,8 +9,9 @@ import {
 } from 'react-native';
 
 import { fetchEnrollmentBundle, FunctionApiError } from '../src/lib/api';
+import { BrandLogo } from '../src/components/brand-logo';
 import { useEnrollment } from '../src/state/enrollment-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
@@ -76,6 +77,7 @@ export default function JoinCodeScreen() {
   return (
     <ScreenShell style={styles.screen}>
       <View style={styles.hero}>
+        <BrandLogo />
         <Text style={styles.kicker}>One-Time Face Pass</Text>
         <Text style={styles.title}>Join an event securely on your own phone.</Text>
         <Text style={styles.subtitle}>
@@ -129,14 +131,15 @@ export default function JoinCodeScreen() {
 
 const styles = StyleSheet.create({
   bodyText: {
+    ...typography.body,
     color: palette.ink,
     fontSize: 15,
     lineHeight: 22,
   },
   helpLink: {
+    ...typography.bodyStrong,
     color: palette.accent,
     fontSize: 15,
-    fontWeight: '600',
     lineHeight: 22,
     textAlign: 'center',
   },
@@ -145,13 +148,13 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   input: {
+    ...typography.display,
     backgroundColor: palette.card,
     borderColor: palette.line,
     borderRadius: 18,
     borderWidth: 1,
     color: palette.ink,
     fontSize: 28,
-    fontWeight: '700',
     letterSpacing: 3,
     minHeight: 62,
     paddingHorizontal: 18,
@@ -161,30 +164,31 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   kicker: {
+    ...typography.title,
     color: palette.accent,
     fontSize: 13,
-    fontWeight: '700',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   label: {
+    ...typography.bodyStrong,
     color: palette.ink,
     fontSize: 14,
-    fontWeight: '600',
   },
   screen: {
     gap: 18,
     justifyContent: 'center',
   },
   subtitle: {
+    ...typography.body,
     color: palette.muted,
     fontSize: 16,
     lineHeight: 24,
   },
   title: {
+    ...typography.display,
     color: palette.ink,
     fontSize: 34,
-    fontWeight: '700',
     lineHeight: 40,
   },
 });

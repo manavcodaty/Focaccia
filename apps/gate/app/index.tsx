@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { BrandLogo } from '../src/components/brand-logo';
 import { MetricRow } from '../src/components/metric-row';
 import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
@@ -9,7 +10,7 @@ import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { formatTimestamp, snippet } from '../src/lib/display';
 import { useGate } from '../src/state/gate-context';
-import { palette } from '../src/theme';
+import { palette, typography } from '../src/theme';
 
 export default function GateHomeScreen() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function GateHomeScreen() {
   return (
     <ScreenShell>
       <View style={styles.hero}>
+        <BrandLogo />
         <Text style={styles.eyebrow}>Gate</Text>
         <Text style={styles.title}>Offline entry control.</Text>
         <Text style={styles.subtitle}>
@@ -111,9 +113,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   eyebrow: {
+    ...typography.title,
     color: palette.highlight,
     fontSize: 12,
-    fontWeight: '800',
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   },
@@ -122,14 +124,15 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   subtitle: {
+    ...typography.body,
     color: palette.muted,
     fontSize: 16,
     lineHeight: 24,
   },
   title: {
+    ...typography.display,
     color: palette.ink,
     fontSize: 34,
-    fontWeight: '900',
     lineHeight: 38,
   },
 });

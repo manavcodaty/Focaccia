@@ -44,11 +44,11 @@ export default async function EventRevocationsPage({
   const { event, revocations } = await getEventDetail(eventId);
 
   return (
-    <div className="fade-section flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="fade-section flex flex-col gap-5">
+      <div className="flex flex-wrap items-center gap-2.5">
         <Button asChild size="sm" variant="outline">
           <Link href={`/events/${event.event_id}`}>
-            <ArrowLeft data-icon="inline-start" />
+            <ArrowLeft className="size-3.5" />
             Event overview
           </Link>
         </Button>
@@ -74,7 +74,7 @@ export default async function EventRevocationsPage({
             <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)]">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-transparent">
                     <TableHead>Pass ID</TableHead>
                     <TableHead>Revoked At</TableHead>
                   </TableRow>
@@ -82,8 +82,8 @@ export default async function EventRevocationsPage({
                 <TableBody>
                   {revocations.map((revocation) => (
                     <TableRow key={`${revocation.event_id}-${revocation.pass_id}`}>
-                      <TableCell className="font-mono text-xs">{revocation.pass_id}</TableCell>
-                      <TableCell className="text-sm text-[color:var(--muted-foreground)]">
+                      <TableCell className="token-mono text-xs">{revocation.pass_id}</TableCell>
+                      <TableCell className="text-[0.8125rem] text-[color:var(--muted-foreground)]">
                         {formatTimestamp(revocation.revoked_at)}
                       </TableCell>
                     </TableRow>
@@ -92,7 +92,7 @@ export default async function EventRevocationsPage({
               </Table>
             </div>
           ) : (
-            <Empty className="border-[color:var(--border)] bg-[color:var(--muted)]/30 p-6">
+            <Empty>
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <TicketSlash />

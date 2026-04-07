@@ -16,7 +16,7 @@ export function EventRouteTabs({ eventId }: { eventId: string }) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Event sections" className="flex flex-wrap items-center gap-2">
+    <nav aria-label="Event sections" className="flex items-center gap-1 rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/40 p-1">
       {tabs.map((tab) => {
         const href = `/events/${eventId}${tab.suffix}`;
         const isActive = pathname === href;
@@ -24,10 +24,10 @@ export function EventRouteTabs({ eventId }: { eventId: string }) {
         return (
           <Link
             className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition-colors",
+              "rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-200",
               isActive
-                ? "border-[color:var(--primary)] bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
-                : "border-[color:var(--border)] bg-[color:var(--card)] text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]",
+                ? "bg-[color:var(--card)] text-[color:var(--foreground)] shadow-[var(--shadow-card)]"
+                : "text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]",
             )}
             href={href}
             key={tab.label}

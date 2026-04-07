@@ -23,9 +23,15 @@ export function CopyButton({
   }
 
   return (
-    <Button onClick={handleCopy} size="sm" type="button" variant="outline">
-      {didCopy ? <Check className="size-4" /> : <Copy className="size-4" />}
-      Copy
+    <Button
+      onClick={handleCopy}
+      size="sm"
+      type="button"
+      variant="outline"
+      className={didCopy ? "border-[color:var(--success)]/30 bg-[color:var(--success-soft)]/50 text-[color:var(--success)]" : ""}
+    >
+      {didCopy ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+      {didCopy ? "Copied" : "Copy"}
     </Button>
   );
 }

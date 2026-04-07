@@ -10,7 +10,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="input-group"
       className={cn(
-        "group/input-group flex min-h-11 w-full items-stretch rounded-xl border border-[color:var(--input)] bg-[color:var(--card)]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--ring)]/45",
+        "group/input-group flex min-h-10 w-full items-stretch rounded-xl border border-[color:var(--input)] bg-[color:var(--card)] shadow-[var(--shadow-inset)] focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--ring)] focus-within:shadow-none",
         className,
       )}
       {...props}
@@ -28,7 +28,7 @@ function InputGroupAddon({
       data-slot="input-group-addon"
       data-align={align}
       className={cn(
-        "flex items-center px-2",
+        "flex items-center px-3",
         "data-[align=end]:order-last data-[align=start]:order-first",
         className,
       )}

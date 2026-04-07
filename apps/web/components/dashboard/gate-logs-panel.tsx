@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileClock } from "lucide-react";
+import { Download, FileClock } from "lucide-react";
 
 import type { GateLogRecord } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +63,7 @@ export function GateLogsPanel({
           <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)]">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="hover:bg-transparent">
                   <TableHead>Uploaded</TableHead>
                   <TableHead>CSV Export</TableHead>
                 </TableRow>
@@ -71,19 +71,20 @@ export function GateLogsPanel({
               <TableBody>
                 {visibleLogs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="text-sm text-[color:var(--foreground)]">
+                    <TableCell className="text-[0.8125rem] text-[color:var(--foreground)]">
                       {formatTimestamp(log.uploaded_at)}
                     </TableCell>
                     <TableCell>
                       {log.csv_url ? (
                         <Link
-                          className="font-medium text-[color:var(--primary)] underline-offset-4 hover:underline"
+                          className="inline-flex items-center gap-1.5 text-sm font-medium text-[color:var(--primary)] transition-colors hover:text-[color:var(--primary-strong)]"
                           href={log.csv_url}
                         >
-                          Open CSV
+                          <Download className="size-3.5" />
+                          Download CSV
                         </Link>
                       ) : (
-                        <span className="text-sm text-[color:var(--muted-foreground)]">Missing file reference</span>
+                        <span className="text-[0.8125rem] text-[color:var(--muted-foreground)]">Missing file reference</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -92,7 +93,7 @@ export function GateLogsPanel({
             </Table>
           </div>
         ) : (
-          <Empty className="border-[color:var(--border)] bg-[color:var(--muted)]/30 p-6">
+          <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <FileClock />
@@ -106,7 +107,7 @@ export function GateLogsPanel({
         )}
         {!compact && eventId ? (
           <div className="mt-4 flex justify-end">
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" size="sm">
               <Link href={`/events/${eventId}`}>Back to overview</Link>
             </Button>
           </div>

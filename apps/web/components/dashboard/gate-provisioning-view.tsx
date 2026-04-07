@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import type { ProvisionedGateSummary } from "@/lib/dashboard-adapters";
 import { Badge } from "@/components/ui/badge";
@@ -37,11 +37,11 @@ export function GateProvisioningView({
   const isProvisioned = gates.length > 0;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center gap-2.5">
         <Button asChild size="sm" variant="outline">
           <Link href={backHref}>
-            <ArrowLeft data-icon="inline-start" />
+            <ArrowLeft className="size-3.5" />
             Back to event
           </Link>
         </Button>
@@ -57,15 +57,17 @@ export function GateProvisioningView({
             Bind one gate phone to this event. The first successful provisioning call sets the permanent event gate key.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/45 p-4">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--muted-foreground)]">Event</p>
-            <p className="mt-2 text-base font-medium text-[color:var(--foreground)]">{eventName}</p>
-            <p className="mt-1 font-mono text-xs text-[color:var(--muted-foreground)]">{eventId}</p>
-          </div>
-          <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/45 p-4">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--muted-foreground)]">EVENT_SALT</p>
-            <p className="mt-2 break-all font-mono text-xs text-[color:var(--foreground)]">{eventSalt}</p>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-4">
+              <p className="text-xs font-medium text-[color:var(--muted-foreground)]">Event</p>
+              <p className="mt-1.5 text-sm font-medium text-[color:var(--foreground)]">{eventName}</p>
+              <p className="mt-0.5 token-mono text-xs text-[color:var(--muted-foreground)]">{eventId}</p>
+            </div>
+            <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-4">
+              <p className="text-xs font-medium text-[color:var(--muted-foreground)]">EVENT_SALT</p>
+              <p className="mt-1.5 token-mono break-all text-xs leading-5 text-[color:var(--foreground)]">{eventSalt}</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -77,24 +79,31 @@ export function GateProvisioningView({
             Follow this exact sequence to avoid locking the event to an unintended device.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--muted-foreground)]">Step 1</p>
-            <p className="mt-1 text-sm leading-6 text-[color:var(--foreground)]">
-              Open the Gate App on the intended device and navigate to the provisioning scanner.
-            </p>
-          </div>
-          <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--muted-foreground)]">Step 2</p>
-            <p className="mt-1 text-sm leading-6 text-[color:var(--foreground)]">
-              Scan the QR payload from this page. The gate device generates its keypair on-device and submits only the public key.
-            </p>
-          </div>
-          <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--muted-foreground)]">Step 3</p>
-            <p className="mt-1 text-sm leading-6 text-[color:var(--foreground)]">
-              Confirm this page shows the event as provisioned. This event cannot be rebound to a different gate afterwards.
-            </p>
+        <CardContent>
+          <div className="flex flex-col gap-3">
+            {[
+              {
+                step: "1",
+                text: "Open the Gate App on the intended device and navigate to the provisioning scanner.",
+              },
+              {
+                step: "2",
+                text: "Scan the QR payload from this page. The gate device generates its keypair on-device and submits only the public key.",
+              },
+              {
+                step: "3",
+                text: "Confirm this page shows the event as provisioned. This event cannot be rebound to a different gate afterwards.",
+              },
+            ].map((item) => (
+              <div key={item.step} className="flex gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--primary)]/10 text-xs font-semibold text-[color:var(--primary)]">
+                  {item.step}
+                </div>
+                <p className="text-[0.8125rem] leading-relaxed text-[color:var(--foreground)]">
+                  {item.text}
+                </p>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -117,20 +126,22 @@ export function GateProvisioningView({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-sm font-medium text-[color:var(--foreground)]">{gate.name}</p>
-                      <p className="mt-1 font-mono text-xs text-[color:var(--muted-foreground)]">{gate.id}</p>
+                      <p className="mt-0.5 token-mono text-xs text-[color:var(--muted-foreground)]">{gate.id}</p>
                     </div>
                     <Badge variant={gate.isActive ? "success" : "warning"}>
                       {gate.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>
-                  <p className="mt-3 break-all rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/55 p-3 font-mono text-xs text-[color:var(--foreground)]">
-                    {gate.publicKey}
-                  </p>
+                  <div className="mt-3 rounded-lg border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-3">
+                    <p className="token-mono break-all text-xs leading-5 text-[color:var(--foreground)]">
+                      {gate.publicKey}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <Empty className="border-[color:var(--border)] bg-[color:var(--muted)]/35 p-6">
+            <Empty>
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <ShieldAlert />
@@ -146,14 +157,16 @@ export function GateProvisioningView({
       </Card>
 
       {isProvisioned ? (
-        <div className="rounded-xl border border-[color:var(--success-soft)] bg-[color:var(--success-soft)]/55 p-4">
-          <p className="flex items-center gap-2 text-sm font-medium text-[color:var(--success)]">
-            <CheckCircle2 />
-            Gate device successfully provisioned
-          </p>
-          <p className="mt-1 text-sm leading-6 text-[color:var(--success)]">
-            Keep this page available for audit reference and proceed with attendee enrollment operations.
-          </p>
+        <div className="flex items-start gap-3 rounded-xl border border-[color:var(--success)]/20 bg-[color:var(--success-soft)]/40 p-4">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[color:var(--success)]" />
+          <div>
+            <p className="text-sm font-medium text-[color:var(--success)]">
+              Gate device successfully provisioned
+            </p>
+            <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-[color:var(--success)]/80">
+              Keep this page available for audit reference and proceed with attendee enrollment operations.
+            </p>
+          </div>
         </div>
       ) : null}
     </div>

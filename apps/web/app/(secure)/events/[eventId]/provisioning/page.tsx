@@ -24,7 +24,7 @@ export default async function ProvisioningPage({
   const qrValue = createProvisioningQrValue(event);
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+    <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
       <GateProvisioningView
         backHref={`/events/${event.event_id}`}
         eventId={event.event_id}
@@ -33,7 +33,7 @@ export default async function ProvisioningPage({
         gates={provisionedGates}
       />
 
-      <div className="space-y-6" id="qr-payload">
+      <div className="space-y-5" id="qr-payload">
         <Card>
           <CardHeader>
             <CardTitle>Public values</CardTitle>
@@ -41,7 +41,7 @@ export default async function ProvisioningPage({
               These are the exact values the gate needs for offline signature verification and template derivation.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <PublicValue label="PK_SIGN_EVENT" value={event.pk_sign_event} />
             <PublicValue label="EVENT_SALT" value={event.event_salt} />
             {event.pk_gate_event ? (
@@ -62,7 +62,7 @@ export default async function ProvisioningPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-[1.5rem] border border-[color:var(--border)] bg-[color:var(--background)]/70 p-5 font-mono text-xs leading-6 text-[color:var(--foreground)]">
+            <pre className="token-mono overflow-x-auto whitespace-pre-wrap break-all rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-4 text-xs leading-6 text-[color:var(--foreground)]">
               {JSON.stringify(provisioningPayload, null, 2)}
             </pre>
           </CardContent>

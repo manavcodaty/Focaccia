@@ -16,11 +16,11 @@ export default async function EventLogsPage({
   const { event, logs } = await getEventDetail(eventId);
 
   return (
-    <div className="fade-section flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="fade-section flex flex-col gap-5">
+      <div className="flex flex-wrap items-center gap-2.5">
         <Button asChild size="sm" variant="outline">
           <Link href={`/events/${event.event_id}`}>
-            <ArrowLeft data-icon="inline-start" />
+            <ArrowLeft className="size-3.5" />
             Event overview
           </Link>
         </Button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, ArrowUpRight, CalendarClock, CheckCircle2, KeyRound, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CalendarClock, CheckCircle2, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -139,22 +139,22 @@ export function EventCreationForm() {
   }
 
   return (
-    <div className="fade-section flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="fade-section flex flex-col gap-5">
+      <div className="flex flex-wrap items-center gap-2.5">
         <Button asChild size="sm" variant="outline">
           <Link href="/dashboard">
-            <ArrowLeft data-icon="inline-start" />
+            <ArrowLeft className="size-3.5" />
             Dashboard
           </Link>
         </Button>
         <Badge variant="outline">Organizer-only</Badge>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CalendarClock />
+              <CalendarClock className="size-4 text-[color:var(--primary)]" />
               Create Event
             </CardTitle>
             <CardDescription>
@@ -162,7 +162,7 @@ export function EventCreationForm() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
+            <form className="flex flex-col gap-5" onSubmit={form.handleSubmit(onSubmit)}>
               <FieldGroup>
                 <Field data-invalid={Boolean(form.formState.errors.name)}>
                   <FieldLabel htmlFor="event-name">Event name</FieldLabel>
@@ -227,50 +227,67 @@ export function EventCreationForm() {
 
               {errorMessage ? (
                 <Alert variant="destructive">
-                  <KeyRound />
+                  <KeyRound className="size-4" />
                   <AlertTitle>Creation failed</AlertTitle>
                   <AlertDescription>{errorMessage}</AlertDescription>
                 </Alert>
               ) : null}
 
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
                 <Button asChild variant="ghost">
                   <Link href="/dashboard">Cancel</Link>
                 </Button>
                 <Button disabled={form.formState.isSubmitting} type="submit">
-                  {form.formState.isSubmitting ? "Creating event..." : "Create event"}
+                  {form.formState.isSubmitting ? "Creating event…" : "Create event"}
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles />
-                What happens next
-              </CardTitle>
+              <CardTitle className="text-[0.9375rem]">What happens next</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/42 p-3 text-sm leading-6 text-[color:var(--muted-foreground)]">
-                1. Event metadata is written under your organizer identity.
-              </div>
-              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/42 p-3 text-sm leading-6 text-[color:var(--muted-foreground)]">
-                2. The service generates <strong className="font-semibold text-[color:var(--foreground)]">EVENT_SALT</strong> and an event signing keypair.
-              </div>
-              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/42 p-3 text-sm leading-6 text-[color:var(--muted-foreground)]">
-                3. You open provisioning and bind the first gate device for this event.
+            <CardContent>
+              <div className="flex flex-col gap-2.5">
+                {[
+                  {
+                    step: "1",
+                    text: "Event metadata is written under your organizer identity.",
+                  },
+                  {
+                    step: "2",
+                    text: (
+                      <>
+                        The service generates <strong className="font-semibold text-[color:var(--foreground)]">EVENT_SALT</strong> and an event signing keypair.
+                      </>
+                    ),
+                  },
+                  {
+                    step: "3",
+                    text: "You open provisioning and bind the first gate device for this event.",
+                  },
+                ].map((item) => (
+                  <div key={item.step} className="flex gap-3 rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-3.5">
+                    <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-[color:var(--primary)]/10 text-[0.6875rem] font-semibold text-[color:var(--primary)]">
+                      {item.step}
+                    </div>
+                    <p className="text-[0.8125rem] leading-relaxed text-[color:var(--muted-foreground)]">
+                      {item.text}
+                    </p>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
 
           {createdEvent ? (
-            <Card className="border-[color:var(--border-strong)]">
+            <Card className="border-[color:var(--success)]/20">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <CheckCircle2 className="text-[color:var(--success)]" />
+                <CardTitle className="flex items-center gap-2 text-[0.9375rem]">
+                  <CheckCircle2 className="size-4 text-[color:var(--success)]" />
                   Event created
                 </CardTitle>
                 <CardDescription>
@@ -278,23 +295,23 @@ export function EventCreationForm() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--accent)]/52 p-4">
-                  <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--muted-foreground)]">
+                <div className="rounded-xl border border-[color:var(--primary)]/15 bg-[color:var(--accent)]/40 p-4">
+                  <div className="text-xs font-medium text-[color:var(--muted-foreground)]">
                     Join code
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="font-mono text-4xl tracking-[0.24em] text-[color:var(--foreground)]">
+                    <p className="token-mono text-3xl font-medium tracking-[0.2em] text-[color:var(--foreground)]">
                       {createdEvent.join_code}
                     </p>
                     <CopyButton label="Join code copied." value={createdEvent.join_code} />
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] p-3">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--muted-foreground)]">
+                <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-3.5">
+                  <p className="text-xs font-medium text-[color:var(--muted-foreground)]">
                     PK_SIGN_EVENT
                   </p>
-                  <p className="mt-2 break-all font-mono text-xs text-[color:var(--foreground)]">
+                  <p className="mt-1.5 token-mono break-all text-xs leading-5 text-[color:var(--foreground)]">
                     {createdEvent.pk_sign_event}
                   </p>
                 </div>
@@ -303,7 +320,7 @@ export function EventCreationForm() {
                   <Button asChild>
                     <Link href={`/events/${createdEvent.event_id}/provisioning`}>
                       Open provisioning
-                      <ArrowUpRight data-icon="inline-end" />
+                      <ArrowUpRight className="size-3.5" />
                     </Link>
                   </Button>
                   <Button asChild variant="outline">

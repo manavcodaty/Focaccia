@@ -4,14 +4,15 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f7f9fc;
+  /* ─── Core palette (from brand.ts) ─── */
+  --background: #F7F9FC;
   --foreground: #0a1024;
   --card: #ffffff;
   --card-foreground: #0a1024;
   --popover: #ffffff;
   --popover-foreground: #0a1024;
-  --primary: #0066ff;
-  --primary-strong: #0058df;
+  --primary: #0066FF;
+  --primary-strong: #0055dd;
   --primary-foreground: #ffffff;
   --secondary: #0a1024;
   --secondary-foreground: #f8faff;
@@ -21,12 +22,13 @@
   --accent-foreground: #0a1024;
   --destructive: #b74b33;
   --destructive-foreground: #fff8f4;
-  --border: #d8e0f0;
-  --border-strong: #bec9e0;
-  --input: #ced9ed;
-  --ring: rgba(0, 102, 255, 0.32);
+  --border: #dfe5f2;
+  --border-strong: #b8c4dd;
+  --input: #d4dced;
+  --ring: rgba(0, 102, 255, 0.28);
   --radius: 1rem;
 
+  /* ─── Semantic status ─── */
   --danger: #b74b33;
   --danger-soft: #fde3db;
   --success: #17775a;
@@ -34,20 +36,29 @@
   --warning: #8a5b14;
   --warning-soft: #f5e6cb;
 
+  /* ─── Sidebar (dark branded surface) ─── */
   --sidebar: #0a1024;
   --sidebar-foreground: #f8faff;
-  --sidebar-primary: #0066ff;
+  --sidebar-primary: #0066FF;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #122042;
+  --sidebar-accent: #16254a;
   --sidebar-accent-foreground: #f8faff;
-  --sidebar-border: #2a3550;
+  --sidebar-border: #1e3060;
   --sidebar-ring: rgba(0, 102, 255, 0.4);
+  --sidebar-muted: rgba(255, 255, 255, 0.06);
 
+  /* ─── Landing page (dark) ─── */
   --landing-background: #0a1024;
   --landing-foreground: #ffffff;
-  --landing-primary: #0066ff;
+  --landing-primary: #0066FF;
   --landing-primary-foreground: #ffffff;
   --landing-border: #2a3550;
+
+  /* ─── Elevation / surface ─── */
+  --shadow-card: 0 1px 2px rgba(10, 16, 36, 0.04), 0 8px 24px -6px rgba(10, 16, 36, 0.08);
+  --shadow-card-hover: 0 2px 4px rgba(10, 16, 36, 0.06), 0 12px 32px -6px rgba(10, 16, 36, 0.12);
+  --shadow-elevated: 0 4px 6px rgba(10, 16, 36, 0.04), 0 20px 48px -8px rgba(10, 16, 36, 0.14);
+  --shadow-inset: inset 0 1px 2px rgba(10, 16, 36, 0.06);
 }
 
 @utility container {
@@ -114,11 +125,10 @@ html {
 body {
   min-height: 100vh;
   color: var(--foreground);
-  font-family: var(--font-body-app), sans-serif;
-  background:
-    radial-gradient(60rem 30rem at -4% -8%, rgba(0, 102, 255, 0.13), transparent 65%),
-    radial-gradient(52rem 28rem at 108% 2%, rgba(10, 16, 36, 0.1), transparent 62%),
-    linear-gradient(180deg, #f9fbff 0%, #f3f6fd 48%, #eef2fb 100%);
+  font-family: var(--font-body-app), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--background);
 }
 
 a,
@@ -127,15 +137,17 @@ button {
 }
 
 ::selection {
-  background: rgba(0, 102, 255, 0.22);
+  background: rgba(0, 102, 255, 0.18);
 }
 
+/* ─── Premium typography ─── */
 .poster-title {
   font-family: var(--font-body-app), sans-serif;
   font-weight: 500;
   letter-spacing: -0.03em;
 }
 
+/* ─── Landing page scan grid effect ─── */
 .scan-grid::after {
   pointer-events: none;
   position: absolute;
@@ -143,12 +155,13 @@ button {
   content: "";
   border-radius: inherit;
   background-image:
-    linear-gradient(rgba(0, 102, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 102, 255, 0.1) 1px, transparent 1px);
+    linear-gradient(rgba(0, 102, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 102, 255, 0.08) 1px, transparent 1px);
   background-size: 28px 28px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.34), transparent 78%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.3), transparent 78%);
 }
 
+/* ─── Landing page theme override ─── */
 .landing-page-theme {
   --background: var(--landing-background);
   --foreground: var(--landing-foreground);
@@ -159,6 +172,7 @@ button {
   color: var(--foreground);
 }
 
+/* ─── WebGL canvas ─── */
 #webgl {
   left: 0;
   position: fixed;
@@ -172,30 +186,51 @@ button {
   width: 100%;
 }
 
+/* ─── Page entrance animations ─── */
 .fade-section {
-  animation: fadeSection 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fadeSection 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .fade-delay-1 {
-  animation-delay: 80ms;
+  animation-delay: 60ms;
 }
 
 .fade-delay-2 {
-  animation-delay: 150ms;
+  animation-delay: 120ms;
 }
 
 .fade-delay-3 {
-  animation-delay: 220ms;
+  animation-delay: 180ms;
 }
 
 @keyframes fadeSection {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
 
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ─── Dashboard-specific surface gradient ─── */
+.dashboard-surface {
+  background:
+    linear-gradient(180deg, #f9fbff 0%, #f6f8fd 50%, #f2f5fb 100%);
+}
+
+/* ─── Premium code/token display ─── */
+.token-mono {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", ui-monospace, monospace;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Smooth micro-transitions for interactive elements ─── */
+.transition-premium {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }

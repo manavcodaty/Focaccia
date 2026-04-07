@@ -27,10 +27,9 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-1">
+      <SidebarGroupContent className="flex flex-col gap-0.5">
         <SidebarMenu>
           {items.map((item) => {
-            // Consider active if the pathname exactly matches or starts with item url (for nested routes)
             const isActive =
               pathname === item.url ||
               (item.url !== "/" && pathname.startsWith(item.url))
@@ -43,13 +42,13 @@ export function NavMain({
                   isActive={isActive}
                   className={
                     isActive
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                      : undefined
+                      ? "bg-[color:var(--sidebar-primary)] text-[color:var(--sidebar-primary-foreground)] hover:bg-[color:var(--sidebar-primary)]/90 hover:text-[color:var(--sidebar-primary-foreground)] shadow-[0_1px_3px_rgba(0,102,255,0.25)]"
+                      : "text-[color:var(--sidebar-foreground)]/70 hover:text-[color:var(--sidebar-foreground)]"
                   }
                 >
                   <Link href={item.url}>
-                    {item.icon && <item.icon />}
-                    <span>{item.title}</span>
+                    {item.icon && <item.icon className="size-[1.125rem]" />}
+                    <span className="font-medium">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

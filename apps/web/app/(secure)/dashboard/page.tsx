@@ -46,43 +46,45 @@ export default async function DashboardPage() {
   const organizer = user.email?.split("@")[0] ?? "organizer";
 
   return (
-    <div className="fade-section flex flex-col gap-8">
-      <section className="flex flex-col gap-6 rounded-[1.75rem] border border-[color:var(--border)] bg-[color:var(--card)]/76 p-6 shadow-[0_24px_60px_-42px_rgba(10,16,36,0.45)] md:p-8">
+    <div className="fade-section flex flex-col gap-6">
+      {/* Hero section */}
+      <section className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Badge variant="outline">Organizer workspace</Badge>
+          <div>
+            <p className="text-xs font-medium text-[color:var(--muted-foreground)]">
+              Organizer workspace
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-[color:var(--foreground)] md:text-3xl">
+              Welcome back, {organizer}
+            </h1>
+            <p className="mt-1.5 max-w-2xl text-[0.8125rem] leading-relaxed text-[color:var(--muted-foreground)]">
+              Monitor event readiness, enforce pass revocations, and keep provisioning context clear before doors open.
+            </p>
+          </div>
           <Button asChild>
             <Link href="/events/new">
-              <CalendarPlus data-icon="inline-start" />
+              <CalendarPlus className="size-4" />
               Create event
             </Link>
           </Button>
         </div>
-        <div className="max-w-3xl">
-          <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--foreground)] md:text-5xl">
-            Welcome back, {organizer}
-          </h1>
-          <p className="mt-3 text-base leading-7 text-[color:var(--muted-foreground)]">
-            Monitor event readiness, enforce pass revocations, and keep provisioning context clear before doors open.
-          </p>
-        </div>
       </section>
 
+      {/* Metrics */}
       <section className="grid gap-4 md:grid-cols-3">
         {metricCards.map(({ description, icon: Icon, key, label }) => (
           <Card key={key}>
-            <CardHeader className="pb-3">
-              <CardDescription>{label}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between gap-4">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-4xl font-semibold tracking-tight text-[color:var(--foreground)]">
+                  <p className="text-xs font-medium text-[color:var(--muted-foreground)]">{label}</p>
+                  <p className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--foreground)]">
                     {metrics[key]}
                   </p>
-                  <p className="mt-2 text-sm text-[color:var(--muted-foreground)]">{description}</p>
+                  <p className="mt-1 text-xs text-[color:var(--muted-foreground)]">{description}</p>
                 </div>
-                <div className="flex size-11 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/55 text-[color:var(--primary)]">
-                  <Icon />
+                <div className="flex size-9 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--accent)]/50">
+                  <Icon className="size-4 text-[color:var(--primary)]" />
                 </div>
               </div>
             </CardContent>
@@ -90,6 +92,7 @@ export default async function DashboardPage() {
         ))}
       </section>
 
+      {/* Event roster */}
       <section>
         {events.length > 0 ? (
           <Card>
@@ -98,20 +101,20 @@ export default async function DashboardPage() {
                 <div>
                   <CardTitle>Event roster</CardTitle>
                   <CardDescription>
-                    Keep provisioning status, revocation count, and gate logs visible in one operational surface.
+                    Provisioning status, revocation count, and gate logs in one operational surface.
                   </CardDescription>
                 </div>
                 <Badge variant="outline">{events.length} tracked</Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent>
               <EventTable events={events} />
             </CardContent>
           </Card>
         ) : (
           <Card>
             <CardContent className="p-6">
-              <Empty className="border-[color:var(--border)] bg-[color:var(--muted)]/28 p-8">
+              <Empty>
                 <EmptyHeader>
                   <EmptyMedia variant="icon">
                     <ShieldCheck />
@@ -124,7 +127,7 @@ export default async function DashboardPage() {
                 <Button asChild>
                   <Link href="/events/new">
                     Create first event
-                    <ArrowRight data-icon="inline-end" />
+                    <ArrowRight className="size-3.5" />
                   </Link>
                 </Button>
               </Empty>

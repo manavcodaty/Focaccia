@@ -4,14 +4,18 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
-  "relative w-full rounded-[1.5rem] border px-4 py-4 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg~*]:pl-7",
+  "relative w-full rounded-xl border p-4 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:size-4 [&>svg~*]:pl-7",
   {
     variants: {
       variant: {
         default:
           "border-[color:var(--border)] bg-[color:var(--card)] text-[color:var(--card-foreground)]",
         destructive:
-          "border-red-300/80 bg-red-500/6 text-red-800 [&>svg]:text-red-600",
+          "border-[color:var(--danger)]/20 bg-[color:var(--danger-soft)]/60 text-[color:var(--danger)] [&>svg]:text-[color:var(--danger)]",
+        success:
+          "border-[color:var(--success)]/20 bg-[color:var(--success-soft)]/60 text-[color:var(--success)] [&>svg]:text-[color:var(--success)]",
+        warning:
+          "border-[color:var(--warning)]/20 bg-[color:var(--warning-soft)]/60 text-[color:var(--warning)] [&>svg]:text-[color:var(--warning)]",
       },
     },
     defaultVariants: {
@@ -37,7 +41,7 @@ AlertTitle.displayName = "AlertTitle";
 
 const AlertDescription = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("text-sm leading-6 [&_p]:leading-relaxed", className)} {...props} />
+    <div ref={ref} className={cn("text-[0.8125rem] leading-relaxed [&_p]:leading-relaxed", className)} {...props} />
   ),
 );
 AlertDescription.displayName = "AlertDescription";

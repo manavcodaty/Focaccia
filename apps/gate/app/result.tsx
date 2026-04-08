@@ -8,11 +8,14 @@ import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { decisionTone, formatDuration } from '../src/lib/display';
+import { scaleFont } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
 export default function ResultScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const { gate, lastResult, resetLastResult } = useGate();
 
   if (!lastResult || !gate) {
@@ -40,7 +43,15 @@ export default function ResultScreen() {
           tone={decisionTone(lastResult)}
         />
         <StatusBanner message={lastResult.hint} tone={decisionTone(lastResult)} />
-        <Text style={styles.headline}>
+        <Text
+          style={[
+            styles.headline,
+            {
+              fontSize: scaleFont(layout, 16),
+              lineHeight: scaleFont(layout, 24),
+            },
+          ]}
+        >
           {lastResult.accepted
             ? 'The pass was verified entirely offline and the replay marker is now stored locally.'
             : 'The gate rejected the pass before entry was granted.'}
@@ -94,7 +105,5 @@ const styles = StyleSheet.create({
   headline: {
     ...typography.body,
     color: palette.ink,
-    fontSize: 16,
-    lineHeight: 24,
   },
 });

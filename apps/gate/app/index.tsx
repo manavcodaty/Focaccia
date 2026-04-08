@@ -9,20 +9,41 @@ import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { formatTimestamp, snippet } from '../src/lib/display';
+import { scaleFont } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
 export default function GateHomeScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const { auth, dbError, dbReady, gate, signOut, stats } = useGate();
 
   return (
     <ScreenShell>
       <View style={styles.hero}>
         <BrandLogo />
-        <Text style={styles.eyebrow}>Gate</Text>
-        <Text style={styles.title}>Offline entry control.</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Gate</Text>
+        <Text
+          style={[
+            styles.title,
+            {
+              fontSize: scaleFont(layout, 34, 1.12),
+              lineHeight: scaleFont(layout, 38, 1.12),
+            },
+          ]}
+        >
+          Offline entry control.
+        </Text>
+        <Text
+          style={[
+            styles.subtitle,
+            {
+              fontSize: scaleFont(layout, 16),
+              lineHeight: scaleFont(layout, 24),
+            },
+          ]}
+        >
           Provision one gate per event, verify passes without a network dependency, and keep
           replay state on-device.
         </Text>
@@ -115,7 +136,6 @@ const styles = StyleSheet.create({
   eyebrow: {
     ...typography.title,
     color: palette.highlight,
-    fontSize: 12,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   },
@@ -126,13 +146,9 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: palette.muted,
-    fontSize: 16,
-    lineHeight: 24,
   },
   title: {
     ...typography.display,
     color: palette.ink,
-    fontSize: 34,
-    lineHeight: 38,
   },
 });

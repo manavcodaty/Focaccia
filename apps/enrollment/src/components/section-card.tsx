@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { scaleFont, scaleSpacing } from '../lib/responsive-metrics';
+import { useResponsiveLayout } from '../lib/use-responsive-layout';
 import { palette, typography } from '../theme';
 
 export function SectionCard({
@@ -12,26 +14,44 @@ export function SectionCard({
   eyebrow?: string;
   title?: string;
 }) {
+  const layout = useResponsiveLayout();
+
   return (
-    <View style={styles.card}>
-      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-      {title ? <Text style={styles.title}>{title}</Text> : null}
-      <View style={styles.body}>{children}</View>
+    <View
+      style={[
+        styles.card,
+        {
+          borderRadius: scaleSpacing(layout, 28, 1.08),
+          gap: scaleSpacing(layout, 14, 1.05),
+          padding: scaleSpacing(layout, 20, 1.12),
+        },
+      ]}
+    >
+      {eyebrow ? <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>{eyebrow}</Text> : null}
+      {title ? (
+        <Text
+          style={[
+            styles.title,
+            {
+              fontSize: scaleFont(layout, 24, 1.12),
+              lineHeight: scaleFont(layout, 30, 1.12),
+            },
+          ]}
+        >
+          {title}
+        </Text>
+      ) : null}
+      <View style={[styles.body, { gap: scaleSpacing(layout, 14, 1.05) }]}>{children}</View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  body: {
-    gap: 14,
-  },
+  body: {},
   card: {
     backgroundColor: palette.card,
     borderColor: palette.line,
-    borderRadius: 28,
     borderWidth: 1,
-    gap: 14,
-    padding: 20,
     shadowColor: '#000000',
     shadowOffset: { height: 18, width: 0 },
     shadowOpacity: 0.04,

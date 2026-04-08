@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { getProvisionedGates } from "@/lib/dashboard-adapters";
 import { getEventDetail } from "@/lib/data";
+import { getEventLifecycleState } from "@/lib/event-lifecycle";
 import { buildProvisioningPayload, createProvisioningQrValue } from "@/lib/provisioning";
 
 export default async function ProvisioningPage({
@@ -19,6 +20,7 @@ export default async function ProvisioningPage({
 }) {
   const { eventId } = await params;
   const { event } = await getEventDetail(eventId);
+  const lifecycle = getEventLifecycleState(event);
   const provisioningPayload = buildProvisioningPayload(event);
   const provisionedGates = getProvisionedGates(event);
   const qrValue = createProvisioningQrValue(event);
@@ -31,6 +33,7 @@ export default async function ProvisioningPage({
         eventName={event.name}
         eventSalt={event.event_salt}
         gates={provisionedGates}
+        phase={lifecycle.phase}
       />
 
       <div className="space-y-5" id="qr-payload">
@@ -50,6 +53,7 @@ export default async function ProvisioningPage({
           </CardContent>
         </Card>
         <ProvisioningQrCard
+          isClosed={lifecycle.phase === "ended"}
           isProvisioned={Boolean(event.pk_gate_event)}
           payloadLabel={`event:${provisioningPayload.event_id}`}
           qrValue={qrValue}

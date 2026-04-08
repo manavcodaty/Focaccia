@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { scaleFont, scaleSpacing } from '../lib/responsive-metrics';
+import { useResponsiveLayout } from '../lib/use-responsive-layout';
 import { palette, typography } from '../theme';
 
 export function StatusBanner({
@@ -9,10 +11,17 @@ export function StatusBanner({
   message: string;
   tone?: 'danger' | 'neutral' | 'success' | 'warning';
 }) {
+  const layout = useResponsiveLayout();
+
   return (
     <View
       style={[
         styles.banner,
+        {
+          borderRadius: scaleSpacing(layout, 18, 1.05),
+          paddingHorizontal: scaleSpacing(layout, 14, 1.06),
+          paddingVertical: scaleSpacing(layout, 12, 1.06),
+        },
         tone === 'success'
           ? styles.successBanner
           : tone === 'warning'
@@ -25,6 +34,10 @@ export function StatusBanner({
       <Text
         style={[
           styles.message,
+          {
+            fontSize: scaleFont(layout, 14),
+            lineHeight: scaleFont(layout, 20),
+          },
           tone === 'success'
             ? styles.successText
             : tone === 'warning'
@@ -41,12 +54,7 @@ export function StatusBanner({
 }
 
 const styles = StyleSheet.create({
-  banner: {
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
+  banner: { borderWidth: 1 },
   dangerBanner: {
     backgroundColor: palette.alertSoft,
     borderColor: palette.alertBorder,
@@ -56,8 +64,6 @@ const styles = StyleSheet.create({
   },
   message: {
     ...typography.title,
-    fontSize: 14,
-    lineHeight: 20,
   },
   neutralBanner: {
     backgroundColor: palette.panel,

@@ -1,19 +1,20 @@
 import {
-  canonicalJsonBytes,
   canonicalJsonSignature,
   prepareCrypto,
   toBase64Url,
   type PassPayload,
 } from '../_shared/face-pass-shared.ts';
 
-import { jsonError, jsonSuccess, readJsonBody } from '../_shared/api.ts';
+import { jsonError, jsonSuccess, readJsonBody, respondWithError } from '../_shared/api.ts';
 import { handleCors } from '../_shared/cors.ts';
+import { hasEventEnded } from '../_shared/event-lifecycle.ts';
 import { computeQueueCode } from '../_shared/queue-code.ts';
 import { getQueueCodeSecret, getSigningSecret } from '../_shared/secret-store.ts';
 import { createAdminClient } from '../_shared/supabase.ts';
 import type { EventRecord, IssuePassRequest, IssuePassResponse } from '../_shared/types.ts';
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
+const JOIN_CODE_PATTERN = /^[A-Z0-9]{8}$/;
 
 const cryptoReady = prepareCrypto();
 
@@ -61,15 +62,17 @@ function validatePassPayload(payload: PassPayload, event: Pick<EventRecord, 'end
     throw new Error('exp must not be later than the event end time.');
   }
 
-  const nowUnix = Math.floor(Date.now() / 1000);
-
-  if (nowUnix > eventEndsAtUnix) {
-    throw new Error('This event has already ended.');
+  if (hasEventEnded(event)) {
+    throw new Error('This event has already ended and cannot accept new attendees.');
   }
 
   if (!event.pk_gate_event) {
     throw new Error('This event has not been provisioned with a gate device.');
   }
+}
+
+function extractJoinCode(joinCode: string | undefined): string {
+  return (joinCode ?? '').trim().toUpperCase();
 }
 
 Deno.serve(async (req) => {
@@ -86,13 +89,24 @@ Deno.serve(async (req) => {
   try {
     await cryptoReady;
 
-    const requestBody = await readJsonBody<IssuePassRequest | PassPayload>(req);
-    const payload = 'payload' in requestBody ? requestBody.payload : requestBody;
+    const requestBody = await readJsonBody<IssuePassRequest>(req);
+    const payload = requestBody.payload;
+    const joinCode = extractJoinCode(requestBody.join_code);
+
+    if (!JOIN_CODE_PATTERN.test(joinCode)) {
+      return jsonError(
+        400,
+        'invalid_join_code',
+        'join_code must be 8 uppercase alphanumeric characters.',
+      );
+    }
+
     const adminClient = createAdminClient();
     const { data: event, error: eventError } = await adminClient
       .from('events')
       .select('event_id, starts_at, ends_at, pk_gate_event')
       .eq('event_id', payload.event_id)
+      .eq('join_code', joinCode)
       .single();
 
     if (eventError || !event) {
@@ -121,13 +135,24 @@ Deno.serve(async (req) => {
       signingSecret.fill(0);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error.';
-    const status = message.includes('not found')
-      ? 404
-      : message.includes('not been provisioned') || message.includes('already ended')
-        ? 409
-        : 400;
+    if (error instanceof Error) {
+      const message = error.message;
+      const status = message.includes('not found')
+        ? 404
+        : message.includes('not been provisioned') || message.includes('already ended')
+          ? 409
+          : 400;
 
-    return jsonError(status, 'issue_pass_failed', message);
+      return respondWithError(error, {
+        code: 'issue_pass_failed',
+        message: 'Unable to issue a pass for this event.',
+        status,
+      });
+    }
+
+    return respondWithError(error, {
+      code: 'issue_pass_failed',
+      message: 'Unable to issue a pass for this event.',
+    });
   }
 });

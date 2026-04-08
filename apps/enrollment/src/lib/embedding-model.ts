@@ -12,6 +12,26 @@ const FACE_MARGIN = 1.8;
 
 let modelPromise: Promise<TensorflowModel> | null = null;
 
+async function deleteFileBestEffort(file: File | null): Promise<void> {
+  if (!file) {
+    return;
+  }
+
+  try {
+    await file.delete();
+  } catch {
+    // Ignore cleanup races if the file is already gone.
+  }
+}
+
+function zeroArrayView(value: unknown): void {
+  const typedValue = value as { fill?: (fillValue: number) => void };
+
+  if (ArrayBuffer.isView(value) && typeof typedValue.fill === 'function') {
+    typedValue.fill(0);
+  }
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
@@ -104,6 +124,9 @@ export async function extractFaceEmbeddingFromPhoto({
   const model = await loadFaceEmbeddingModel();
   const photoUri = ensureFileUri(photoPath);
   const sourceFile = new File(photoUri);
+  let alignedFile: File | null = null;
+  let alignedBytes: Uint8Array | null = null;
+  let modelInput: Float32Array | null = null;
 
   try {
     const crop = buildSquareCrop(photoWidth, photoHeight, snapshot);
@@ -119,12 +142,9 @@ export async function extractFaceEmbeddingFromPhoto({
         format: SaveFormat.JPEG,
       },
     );
-    const alignedFile = new File(alignedFace.uri);
-    const alignedBytes = new Uint8Array(await alignedFile.arrayBuffer());
-    const modelInput = imageBytesToModelInput(alignedBytes);
-
-    alignedBytes.fill(0);
-    alignedFile.delete();
+    alignedFile = new File(alignedFace.uri);
+    alignedBytes = new Uint8Array(await alignedFile.arrayBuffer());
+    modelInput = imageBytesToModelInput(alignedBytes);
 
     try {
       const [output] = await model.run([modelInput]);
@@ -133,13 +153,17 @@ export async function extractFaceEmbeddingFromPhoto({
         throw new Error('Face embedding model returned an unexpected tensor shape.');
       }
 
-      return output instanceof Float32Array
+      const embedding = output instanceof Float32Array
         ? Float32Array.from(output)
         : Float32Array.from(output as ArrayLike<number>);
+      zeroArrayView(output);
+      return embedding;
     } finally {
       modelInput.fill(0);
     }
   } finally {
-    sourceFile.delete();
+    alignedBytes?.fill(0);
+    await deleteFileBestEffort(alignedFile);
+    await deleteFileBestEffort(sourceFile);
   }
 }

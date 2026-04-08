@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
+import { scaleFont, scaleSpacing } from '../lib/responsive-metrics';
+import { useResponsiveLayout } from '../lib/use-responsive-layout';
 import { palette, typography } from '../theme';
 
 export function PrimaryButton({
@@ -13,6 +15,8 @@ export function PrimaryButton({
   onPress(): void;
   tone?: 'danger' | 'ghost' | 'primary';
 }) {
+  const layout = useResponsiveLayout();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -20,6 +24,11 @@ export function PrimaryButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        {
+          borderRadius: scaleSpacing(layout, 18, 1.08),
+          minHeight: scaleSpacing(layout, 58, 1.08),
+          paddingHorizontal: scaleSpacing(layout, 20, 1.08),
+        },
         tone === 'ghost'
           ? styles.ghostButton
           : tone === 'danger'
@@ -32,6 +41,7 @@ export function PrimaryButton({
       <Text
         style={[
           styles.label,
+          { fontSize: scaleFont(layout, 16) },
           tone === 'ghost' ? styles.ghostLabel : styles.primaryLabel,
         ]}
       >
@@ -44,10 +54,7 @@ export function PrimaryButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    borderRadius: 18,
     justifyContent: 'center',
-    minHeight: 58,
-    paddingHorizontal: 20,
   },
   dangerButton: {
     backgroundColor: palette.alert,

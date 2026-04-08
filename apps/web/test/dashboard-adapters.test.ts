@@ -49,10 +49,11 @@ test("derives the provisioning gate list from the event record", () => {
       {
         createdAt: "2026-04-02T08:00:00.000Z",
         id: "dubai_summit_evening_entry-gate",
-        isActive: true,
+        isActive: false,
         name: "Bound gate device",
         publicKey: "pk_gate_123",
       },
     ],
+    "ended events should surface their bound gate as inactive",
   );
 });

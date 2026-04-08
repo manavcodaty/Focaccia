@@ -8,11 +8,14 @@ import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
+import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
 
 export default function PassScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const { reset, state } = useEnrollment();
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
   const bundle = state.bundle;
@@ -42,42 +45,64 @@ export default function PassScreen() {
   return (
     <ScreenShell style={styles.screen}>
       <SectionCard eyebrow="Pass ready" title="Your one-time event pass is ready">
-        <Text style={styles.bodyText}>
+        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           Present this QR code at the gate. The verifier will confirm the signature and match a live face check there.
         </Text>
       </SectionCard>
 
       <SectionCard eyebrow="Event" title={activeBundle.event_id}>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Valid until</Text>
-          <Text style={styles.detailValue}>{new Date(activeBundle.ends_at).toLocaleString()}</Text>
+          <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Valid until</Text>
+          <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>
+            {new Date(activeBundle.ends_at).toLocaleString()}
+          </Text>
         </View>
         {activePass.queueCode ? (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Queue code</Text>
-            <Text style={styles.detailValue}>{activePass.queueCode}</Text>
+            <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Queue code</Text>
+            <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>{activePass.queueCode}</Text>
           </View>
         ) : null}
       </SectionCard>
 
       <SectionCard eyebrow="QR token" title="Show this at the gate">
-        <View style={styles.qrWrap}>
+        <View
+          style={[
+            styles.qrWrap,
+            {
+              borderRadius: scaleSpacing(layout, 28, 1.08),
+              padding: scaleSpacing(layout, 18, 1.1),
+            },
+          ]}
+        >
           <QRCode
             backgroundColor={palette.card}
             color={palette.ink}
             quietZone={18}
-            size={260}
+            size={layout.qrSize}
             value={activePass.token}
           />
         </View>
-        <Text style={styles.snippetLabel}>Manual fallback token snippet</Text>
-        <Text style={styles.snippetValue}>{activePass.tokenSnippet}</Text>
+        <Text style={[styles.snippetLabel, { fontSize: scaleFont(layout, 13) }]}>
+          Manual fallback token snippet
+        </Text>
+        <Text
+          style={[
+            styles.snippetValue,
+            {
+              fontSize: scaleFont(layout, 16),
+              lineHeight: scaleFont(layout, 22),
+            },
+          ]}
+        >
+          {activePass.tokenSnippet}
+        </Text>
         <PrimaryButton label="Copy full token" onPress={() => void handleCopy()} />
         {copiedMessage ? <StatusBanner message={copiedMessage} tone="success" /> : null}
       </SectionCard>
 
       <SectionCard eyebrow="Instructions" title="If scanning fails">
-        <Text style={styles.bodyText}>
+        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           Ask gate staff to paste the full token. The short snippet helps confirm they are entering the right value, but it is not enough on its own.
         </Text>
       </SectionCard>
@@ -103,13 +128,10 @@ const styles = StyleSheet.create({
   bodyText: {
     ...typography.body,
     color: palette.ink,
-    fontSize: 15,
-    lineHeight: 22,
   },
   detailLabel: {
     ...typography.bodyStrong,
     color: palette.muted,
-    fontSize: 14,
   },
   detailRow: {
     gap: 4,
@@ -117,13 +139,10 @@ const styles = StyleSheet.create({
   detailValue: {
     ...typography.title,
     color: palette.ink,
-    fontSize: 16,
   },
   qrWrap: {
     alignItems: 'center',
     backgroundColor: palette.card,
-    borderRadius: 28,
-    padding: 18,
   },
   screen: {
     gap: 18,
@@ -131,14 +150,11 @@ const styles = StyleSheet.create({
   snippetLabel: {
     ...typography.title,
     color: palette.muted,
-    fontSize: 13,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   snippetValue: {
     ...typography.title,
     color: palette.ink,
-    fontSize: 16,
-    lineHeight: 22,
   },
 });

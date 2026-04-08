@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient, type User } from 'npm:@supabase/supabase-js@2.100.0';
 
+import { exposedApiError } from './api.ts';
 import { getRuntimeConfig } from './env.ts';
 
 function buildClient(key: string, accessToken?: string): SupabaseClient {
@@ -46,7 +47,7 @@ export async function requireUser(
   const accessToken = getBearerToken(req);
 
   if (!accessToken) {
-    throw new Error('Missing bearer token.');
+    throw exposedApiError(401, 'missing_bearer_token', 'Missing bearer token.');
   }
 
   const anonClient = buildClient(getRuntimeConfig().supabaseAnonKey);
@@ -56,7 +57,7 @@ export async function requireUser(
   } = await anonClient.auth.getUser(accessToken);
 
   if (error || !user) {
-    throw new Error('Authentication failed.');
+    throw exposedApiError(401, 'authentication_failed', 'Authentication failed.');
   }
 
   return {

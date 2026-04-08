@@ -9,11 +9,14 @@ import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { formatTimestamp } from '../src/lib/display';
+import { scaleFont } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const { auth, gate, refreshStats, signOut, stats, syncRevocationCache } = useGate();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -80,7 +83,7 @@ export default function SettingsScreen() {
       </SectionCard>
 
       <SectionCard eyebrow="Notes" title="Offline operation">
-        <Text style={styles.note}>
+        <Text style={[styles.note, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           The scan pipeline never calls the network. Organizer auth is only used for provisioning
           and pre-event revocation refresh.
         </Text>
@@ -112,7 +115,5 @@ const styles = StyleSheet.create({
   note: {
     ...typography.body,
     color: palette.ink,
-    fontSize: 15,
-    lineHeight: 22,
   },
 });

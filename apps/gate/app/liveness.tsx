@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type ViewStyle,
 } from 'react-native';
 import {
   Camera,
@@ -22,6 +23,8 @@ import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { challengeInstruction, createChallenge, hasTimedOut, pickChallenge, type LivenessProgress } from '../src/lib/liveness';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
+import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
@@ -69,6 +72,7 @@ export default function LivenessScreen() {
   const router = useRouter();
   const camera = useRef<Camera>(null);
   const device = useCameraDevice('back');
+  const layout = useResponsiveLayout();
   const { completePendingVerification, failLiveness, pendingVerification } = useGate();
   const { hasPermission, requestPermission } = useCameraPermission();
   const [challenge, setChallenge] = useState<LivenessProgress>(() =>
@@ -195,63 +199,235 @@ export default function LivenessScreen() {
     );
   }
 
+  const previewStyle = layout.isLandscape
+    ? {
+        width: Math.min(
+          layout.cameraFrameMaxWidth,
+          layout.shortSide * (layout.isTablet ? 0.82 : 0.88),
+        ),
+      }
+    : {
+        maxWidth: layout.cameraFrameMaxWidth,
+        width: '100%' as const,
+      };
+  const guideStyle: ViewStyle = {
+    borderRadius: scaleSpacing(layout, 999, 1),
+    height: layout.isLandscape ? '56%' : '58%',
+    left: layout.isLandscape ? '18%' : '16%',
+    top: layout.isLandscape ? '20%' : '18%',
+    width: layout.isLandscape ? '64%' : '68%',
+  };
+
   return (
-    <ScreenShell scroll={false} style={styles.screen}>
-      <View style={styles.header}>
-        <Text style={styles.eyebrow}>Liveness</Text>
-        <Text style={styles.title}>{challengeInstruction(challenge.type)}</Text>
-        <Text style={styles.subtitle}>
-          Ask the attendee to complete the prompt, then capture one verification frame. The gate
-          generates a live template, deletes the temporary image, and compares locally.
-        </Text>
-      </View>
-
-      <SectionCard eyebrow="Challenge" title="Active liveness in progress">
-        <StatusChip label={challenge.type.replace('-', ' ')} tone="warning" />
-        {modelError ? <StatusBanner message={modelError} tone="danger" /> : null}
-        {processingError ? <StatusBanner message={processingError} tone="danger" /> : null}
-        {!modelReady && !modelError ? (
-          <StatusBanner message="Loading the FaceNet model and crypto runtime..." tone="neutral" />
-        ) : null}
-        <StatusBanner
-          message={isProcessing ? 'Liveness confirmed. Verifying match...' : challenge.prompt}
-          tone={isProcessing ? 'warning' : 'neutral'}
-        />
-        <MetricRow label="Mode" value="Manual capture confirmation" />
-        <MetricRow label="Status" value={verificationStatus(isProcessing, modelReady)} />
-        <MetricRow
-          label="Timeout"
-          value={`${pendingVerification.event.policy.liveness_timeout_ms} ms`}
-        />
-      </SectionCard>
-
-      <View style={styles.preview}>
-        <Camera
-          device={device}
-          isActive={!isProcessing}
-          photo
-          style={styles.camera}
-        />
-        <View style={styles.overlay} />
-        <View style={styles.guide} />
-        {isProcessing ? (
-          <View style={styles.processingCard}>
-            <ActivityIndicator color={palette.textInverse} />
-            <Text style={styles.processingText}>Running secure match...</Text>
+    <ScreenShell scroll={false} style={styles.screen} variant="wide">
+      {layout.isLandscape ? (
+        <View
+          style={[
+            styles.landscapeShell,
+            { gap: scaleSpacing(layout, 18, 1.08), maxWidth: layout.wideContentMaxWidth },
+          ]}
+        >
+          <View style={styles.previewColumn}>
+            <View
+              style={[
+                styles.preview,
+                previewStyle,
+                {
+                  aspectRatio: layout.cameraAspectRatio,
+                  borderRadius: scaleSpacing(layout, 30, 1.08),
+                },
+              ]}
+            >
+              <Camera
+                device={device}
+                isActive={!isProcessing}
+                photo
+                style={styles.camera}
+              />
+              <View style={styles.overlay} />
+              <View style={[styles.guide, guideStyle]} />
+              {isProcessing ? (
+                <View
+                  style={[
+                    styles.processingCard,
+                    {
+                      borderRadius: scaleSpacing(layout, 22, 1.08),
+                      left: scaleSpacing(layout, 24, 1.06),
+                      paddingHorizontal: scaleSpacing(layout, 18, 1.06),
+                      paddingVertical: scaleSpacing(layout, 16, 1.06),
+                      right: scaleSpacing(layout, 24, 1.06),
+                      top: scaleSpacing(layout, 24, 1.06),
+                    },
+                  ]}
+                >
+                  <ActivityIndicator color={palette.textInverse} />
+                  <Text style={[styles.processingText, { fontSize: scaleFont(layout, 16) }]}>
+                    Running secure match...
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </View>
-        ) : null}
-      </View>
 
-      <View style={styles.footerActions}>
-        <PrimaryButton
-          disabled={!modelReady || isProcessing}
-          label={isProcessing ? 'Verifying match...' : 'Capture and verify attendee'}
-          onPress={() => {
-            void handleVerificationCapture();
-          }}
-        />
-        <PrimaryButton label="Cancel verification" onPress={() => router.replace('/scan')} tone="ghost" />
-      </View>
+          <View style={[styles.infoColumn, { gap: scaleSpacing(layout, 16, 1.08) }]}>
+            <View style={styles.header}>
+              <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Liveness</Text>
+              <Text
+                style={[
+                  styles.title,
+                  {
+                    fontSize: scaleFont(layout, 30, 1.12),
+                    lineHeight: scaleFont(layout, 34, 1.12),
+                  },
+                ]}
+              >
+                {challengeInstruction(challenge.type)}
+              </Text>
+              <Text
+                style={[
+                  styles.subtitle,
+                  {
+                    fontSize: scaleFont(layout, 15),
+                    lineHeight: scaleFont(layout, 22),
+                  },
+                ]}
+              >
+                Ask the attendee to complete the prompt, then capture one verification frame. The gate
+                generates a live template, deletes the temporary image, and compares locally.
+              </Text>
+            </View>
+
+            <SectionCard eyebrow="Challenge" title="Active liveness in progress">
+              <StatusChip label={challenge.type.replace('-', ' ')} tone="warning" />
+              {modelError ? <StatusBanner message={modelError} tone="danger" /> : null}
+              {processingError ? <StatusBanner message={processingError} tone="danger" /> : null}
+              {!modelReady && !modelError ? (
+                <StatusBanner message="Loading the FaceNet model and crypto runtime..." tone="neutral" />
+              ) : null}
+              <StatusBanner
+                message={isProcessing ? 'Liveness confirmed. Verifying match...' : challenge.prompt}
+                tone={isProcessing ? 'warning' : 'neutral'}
+              />
+              <MetricRow label="Mode" value="Manual capture confirmation" />
+              <MetricRow label="Status" value={verificationStatus(isProcessing, modelReady)} />
+              <MetricRow
+                label="Timeout"
+                value={`${pendingVerification.event.policy.liveness_timeout_ms} ms`}
+              />
+            </SectionCard>
+
+            <View style={styles.footerActions}>
+              <PrimaryButton
+                disabled={!modelReady || isProcessing}
+                label={isProcessing ? 'Verifying match...' : 'Capture and verify attendee'}
+                onPress={() => {
+                  void handleVerificationCapture();
+                }}
+              />
+              <PrimaryButton label="Cancel verification" onPress={() => router.replace('/scan')} tone="ghost" />
+            </View>
+          </View>
+        </View>
+      ) : (
+        <>
+          <View style={styles.header}>
+            <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Liveness</Text>
+            <Text
+              style={[
+                styles.title,
+                {
+                  fontSize: scaleFont(layout, 30, 1.12),
+                  lineHeight: scaleFont(layout, 34, 1.12),
+                },
+              ]}
+            >
+              {challengeInstruction(challenge.type)}
+            </Text>
+            <Text
+              style={[
+                styles.subtitle,
+                {
+                  fontSize: scaleFont(layout, 15),
+                  lineHeight: scaleFont(layout, 22),
+                },
+              ]}
+            >
+              Ask the attendee to complete the prompt, then capture one verification frame. The gate
+              generates a live template, deletes the temporary image, and compares locally.
+            </Text>
+          </View>
+
+          <SectionCard eyebrow="Challenge" title="Active liveness in progress">
+            <StatusChip label={challenge.type.replace('-', ' ')} tone="warning" />
+            {modelError ? <StatusBanner message={modelError} tone="danger" /> : null}
+            {processingError ? <StatusBanner message={processingError} tone="danger" /> : null}
+            {!modelReady && !modelError ? (
+              <StatusBanner message="Loading the FaceNet model and crypto runtime..." tone="neutral" />
+            ) : null}
+            <StatusBanner
+              message={isProcessing ? 'Liveness confirmed. Verifying match...' : challenge.prompt}
+              tone={isProcessing ? 'warning' : 'neutral'}
+            />
+            <MetricRow label="Mode" value="Manual capture confirmation" />
+            <MetricRow label="Status" value={verificationStatus(isProcessing, modelReady)} />
+            <MetricRow
+              label="Timeout"
+              value={`${pendingVerification.event.policy.liveness_timeout_ms} ms`}
+            />
+          </SectionCard>
+
+          <View
+            style={[
+              styles.preview,
+              previewStyle,
+              {
+                aspectRatio: layout.cameraAspectRatio,
+                borderRadius: scaleSpacing(layout, 30, 1.08),
+              },
+            ]}
+          >
+            <Camera
+              device={device}
+              isActive={!isProcessing}
+              photo
+              style={styles.camera}
+            />
+            <View style={styles.overlay} />
+            <View style={[styles.guide, guideStyle]} />
+            {isProcessing ? (
+              <View
+                style={[
+                  styles.processingCard,
+                  {
+                    borderRadius: scaleSpacing(layout, 22, 1.08),
+                    left: scaleSpacing(layout, 24, 1.06),
+                    paddingHorizontal: scaleSpacing(layout, 18, 1.06),
+                    paddingVertical: scaleSpacing(layout, 16, 1.06),
+                    right: scaleSpacing(layout, 24, 1.06),
+                    top: scaleSpacing(layout, 24, 1.06),
+                  },
+                ]}
+              >
+                <ActivityIndicator color={palette.textInverse} />
+                <Text style={[styles.processingText, { fontSize: scaleFont(layout, 16) }]}>
+                  Running secure match...
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.footerActions}>
+            <PrimaryButton
+              disabled={!modelReady || isProcessing}
+              label={isProcessing ? 'Verifying match...' : 'Capture and verify attendee'}
+              onPress={() => {
+                void handleVerificationCapture();
+              }}
+            />
+            <PrimaryButton label="Cancel verification" onPress={() => router.replace('/scan')} tone="ghost" />
+          </View>
+        </>
+      )}
     </ScreenShell>
   );
 }
@@ -272,44 +448,45 @@ const styles = StyleSheet.create({
   },
   guide: {
     borderColor: palette.scanFrame,
-    borderRadius: 999,
     borderWidth: 4,
-    height: '58%',
-    left: '16%',
     position: 'absolute',
-    top: '18%',
-    width: '68%',
   },
   header: {
     gap: 8,
+  },
+  infoColumn: {
+    flex: 1,
+    justifyContent: 'center',
+    maxWidth: 360,
+  },
+  landscapeShell: {
+    alignItems: 'stretch',
+    flex: 1,
+    flexDirection: 'row',
+    width: '100%',
   },
   overlay: {
     backgroundColor: palette.overlay,
     ...StyleSheet.absoluteFillObject,
   },
   preview: {
-    borderRadius: 30,
-    flex: 1,
-    minHeight: 360,
+    alignSelf: 'center',
     overflow: 'hidden',
     position: 'relative',
+  },
+  previewColumn: {
+    flex: 1,
+    justifyContent: 'center',
   },
   processingCard: {
     alignItems: 'center',
     backgroundColor: palette.surfaceInverseSoft,
-    borderRadius: 22,
     gap: 10,
-    left: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
     position: 'absolute',
-    right: 24,
-    top: 24,
   },
   processingText: {
     ...typography.display,
     color: palette.textInverse,
-    fontSize: 16,
   },
   screen: {
     gap: 16,
@@ -317,13 +494,9 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: palette.muted,
-    fontSize: 15,
-    lineHeight: 22,
   },
   title: {
     ...typography.display,
     color: palette.ink,
-    fontSize: 30,
-    lineHeight: 34,
   },
 });

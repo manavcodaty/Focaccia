@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { scaleFont, scaleSpacing } from '../lib/responsive-metrics';
+import { useResponsiveLayout } from '../lib/use-responsive-layout';
 import { palette, typography } from '../theme';
 
 export function StatusChip({
@@ -9,10 +11,17 @@ export function StatusChip({
   label: string;
   tone?: 'danger' | 'neutral' | 'success' | 'warning';
 }) {
+  const layout = useResponsiveLayout();
+
   return (
     <View
       style={[
         styles.chip,
+        {
+          borderRadius: scaleSpacing(layout, 999, 1),
+          paddingHorizontal: scaleSpacing(layout, 12, 1.06),
+          paddingVertical: scaleSpacing(layout, 8, 1.06),
+        },
         tone === 'success'
           ? styles.success
           : tone === 'warning'
@@ -22,7 +31,7 @@ export function StatusChip({
               : styles.neutral,
       ]}
     >
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { fontSize: scaleFont(layout, 12) }]}>{label}</Text>
     </View>
   );
 }
@@ -30,9 +39,6 @@ export function StatusChip({
 const styles = StyleSheet.create({
   chip: {
     alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
   },
   danger: {
     backgroundColor: palette.alertSoft,
@@ -40,7 +46,6 @@ const styles = StyleSheet.create({
   label: {
     ...typography.title,
     color: palette.ink,
-    fontSize: 12,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },

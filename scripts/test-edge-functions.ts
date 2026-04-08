@@ -57,7 +57,7 @@ async function expectJson(response) {
   return json;
 }
 
-async function invokeFunction(apiUrl, anonKey, name, options = {}) {
+async function invokeFunctionRaw(apiUrl, anonKey, name, options = {}) {
   const headers = new Headers(options.headers ?? {});
 
   if (!headers.has('apikey')) {
@@ -76,6 +76,16 @@ async function invokeFunction(apiUrl, anonKey, name, options = {}) {
   return { response, json };
 }
 
+async function invokeFunction(apiUrl, anonKey, name, options = {}) {
+  const { response, json } = await invokeFunctionRaw(apiUrl, anonKey, name, options);
+
+  if (!response.ok || !json.ok) {
+    throw new Error(`${name} failed: ${JSON.stringify(json)}`);
+  }
+
+  return { response, json };
+}
+
 async function queryRest(apiUrl, serviceRoleKey, path) {
   const response = await fetch(`${apiUrl}/rest/v1/${path}`, {
     headers: {
@@ -83,6 +93,21 @@ async function queryRest(apiUrl, serviceRoleKey, path) {
       Authorization: `Bearer ${serviceRoleKey}`,
       Accept: 'application/json',
     },
+  });
+  const json = await expectJson(response);
+  return { response, json };
+}
+
+async function mutateRest(apiUrl, serviceRoleKey, path, options = {}) {
+  const headers = new Headers(options.headers ?? {});
+  headers.set('apikey', serviceRoleKey);
+  headers.set('Authorization', `Bearer ${serviceRoleKey}`);
+  headers.set('Accept', 'application/json');
+  headers.set('Content-Type', 'application/json');
+
+  const response = await fetch(`${apiUrl}/rest/v1/${path}`, {
+    ...options,
+    headers,
   });
   const json = await expectJson(response);
   return { response, json };
@@ -130,7 +155,7 @@ async function main() {
   assert.equal(corsResponse.headers.get('access-control-allow-origin'), '*');
 
   const organizer = await signUpOrganizer(API_URL, ANON_KEY);
-  const startsAt = new Date(Date.now() + 5 * 60 * 1000);
+  const startsAt = new Date(Date.now() - 5 * 60 * 1000);
   const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const eventId = `evt_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
 
@@ -197,7 +222,7 @@ async function main() {
   assert.match(provisionGate.json.data.k_code_event, /^[A-Za-z0-9_-]{43}$/);
   assert.equal(provisionGate.json.data.policy.match_threshold, 80);
 
-  const duplicateProvision = await invokeFunction(API_URL, ANON_KEY, 'provision-gate', {
+  const duplicateProvision = await invokeFunctionRaw(API_URL, ANON_KEY, 'provision-gate', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${organizer.accessToken}`,
@@ -210,6 +235,7 @@ async function main() {
     }),
   });
   assert.equal(duplicateProvision.response.status, 409);
+  assert.equal(duplicateProvision.json.ok, false);
 
   const gateDevicesCheck = await queryRest(
     API_URL,
@@ -223,9 +249,15 @@ async function main() {
   const enrollmentBundle = await invokeFunction(
     API_URL,
     ANON_KEY,
-    `get-enrollment-bundle?join_code=${createEvent.json.data.join_code}`,
+    'get-enrollment-bundle',
     {
-      method: 'GET',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        join_code: createEvent.json.data.join_code,
+      }),
     },
   );
   assert.equal(enrollmentBundle.response.status, 200, JSON.stringify(enrollmentBundle.json));
@@ -255,13 +287,31 @@ async function main() {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      join_code: createEvent.json.data.join_code,
       payload,
     }),
   });
+
+  assert.equal(issuePass.response.status, 200, JSON.stringify(issuePass.json));
+  assert.equal(issuePass.json.ok, true);
+  assert.match(issuePass.json.data.signature, /^[A-Za-z0-9_-]+$/);
   assert.equal(issuePass.response.status, 200, JSON.stringify(issuePass.json));
   assert.equal(issuePass.json.ok, true);
   assert.match(issuePass.json.data.signature, /^[A-Za-z0-9_-]+$/);
   assert.match(issuePass.json.data.queue_code, /^[0-9]{8}$/);
+
+  const missingJoinCodeIssuePass = await invokeFunctionRaw(API_URL, ANON_KEY, 'issue-pass', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      payload,
+    }),
+  });
+  assert.equal(missingJoinCodeIssuePass.response.status, 400);
+  assert.equal(missingJoinCodeIssuePass.json.ok, false);
+  assert.match(missingJoinCodeIssuePass.json.error.message, /join_code/i);
 
   const payloadBytes = shared.canonicalJsonBytes(payload);
   const signatureBytes = await shared.fromBase64Url(issuePass.json.data.signature);
@@ -286,7 +336,7 @@ async function main() {
   });
   assert.equal(revokePass.response.status, 201, JSON.stringify(revokePass.json));
 
-  const duplicateRevocation = await invokeFunction(API_URL, ANON_KEY, 'revoke-pass', {
+  const duplicateRevocation = await invokeFunctionRaw(API_URL, ANON_KEY, 'revoke-pass', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${organizer.accessToken}`,
@@ -298,6 +348,7 @@ async function main() {
     }),
   });
   assert.equal(duplicateRevocation.response.status, 409);
+  assert.equal(duplicateRevocation.json.ok, false);
 
   const revocationsCheck = await queryRest(
     API_URL,
@@ -306,6 +357,144 @@ async function main() {
   );
   assert.equal(revocationsCheck.response.status, 200);
   assert.equal(revocationsCheck.json.length, 1);
+
+  const endedAt = new Date(Date.now() - 60 * 1000).toISOString();
+  const closeEvent = await mutateRest(
+    API_URL,
+    SERVICE_ROLE_KEY,
+    `events?event_id=eq.${eventId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({
+        ends_at: endedAt,
+      }),
+    },
+  );
+  assert.equal(closeEvent.response.status, 200, JSON.stringify(closeEvent.json));
+  assert.equal(closeEvent.json.length, 1);
+  assert.equal(new Date(closeEvent.json[0].ends_at).toISOString(), endedAt);
+
+  const endedBundle = await invokeFunctionRaw(
+    API_URL,
+    ANON_KEY,
+    'get-enrollment-bundle',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        join_code: createEvent.json.data.join_code,
+      }),
+    },
+  );
+  assert.equal(endedBundle.response.status, 409);
+  assert.equal(endedBundle.json.ok, false);
+  assert.match(endedBundle.json.error.message, /already ended|cannot accept new attendees/i);
+
+  const legacyGetBundle = await invokeFunctionRaw(
+    API_URL,
+    ANON_KEY,
+    `get-enrollment-bundle?join_code=${createEvent.json.data.join_code}`,
+    {
+      method: 'GET',
+    },
+  );
+  assert.equal(legacyGetBundle.response.status, 405);
+  assert.equal(legacyGetBundle.json.ok, false);
+
+  const endedIssuePass = await invokeFunctionRaw(API_URL, ANON_KEY, 'issue-pass', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      join_code: createEvent.json.data.join_code,
+      payload: {
+        ...payload,
+        exp: Math.floor(new Date(endedAt).getTime() / 1000),
+        iat: Math.floor(startsAt.getTime() / 1000),
+      },
+    }),
+  });
+  assert.equal(endedIssuePass.response.status, 409);
+  assert.equal(endedIssuePass.json.ok, false);
+  assert.match(endedIssuePass.json.error.message, /already ended/i);
+
+  const endedEventId = `evt_${randomUUID().replace(/-/g, '').slice(0, 12)}`;
+  const endedEvent = await invokeFunction(API_URL, ANON_KEY, 'create-event', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${organizer.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      event_id: endedEventId,
+      name: 'Ended Event Provisioning Guard',
+      starts_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      ends_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    }),
+  });
+  assert.equal(endedEvent.response.status, 201, JSON.stringify(endedEvent.json));
+
+  const endedGateKeyPair = await shared.x25519Keypair();
+  const endedGatePublicKey = await shared.toBase64Url(endedGateKeyPair.publicKey);
+  const endedProvision = await invokeFunctionRaw(API_URL, ANON_KEY, 'provision-gate', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${organizer.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      event_id: endedEventId,
+      device_name: 'Gate Phone 3',
+      pk_gate_event: endedGatePublicKey,
+    }),
+  });
+  assert.equal(endedProvision.response.status, 409);
+  assert.equal(endedProvision.json.ok, false);
+  assert.match(endedProvision.json.error.message, /already ended|cannot provision/i);
+
+  const deleteEvent = await invokeFunctionRaw(API_URL, ANON_KEY, 'delete-event', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${organizer.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      event_id: eventId,
+    }),
+  });
+  assert.equal(deleteEvent.response.status, 200, JSON.stringify(deleteEvent.json));
+  assert.equal(deleteEvent.json.ok, true);
+  assert.equal(deleteEvent.json.data.event_id, eventId);
+
+  const deletedEventCheck = await queryRest(
+    API_URL,
+    SERVICE_ROLE_KEY,
+    `events?select=event_id&event_id=eq.${eventId}`,
+  );
+  assert.equal(deletedEventCheck.response.status, 200);
+  assert.equal(deletedEventCheck.json.length, 0);
+
+  const deletedSecretsCheck = await queryRest(
+    API_URL,
+    SERVICE_ROLE_KEY,
+    `edge_event_secrets?select=event_id&event_id=eq.${eventId}`,
+  );
+  assert.equal(deletedSecretsCheck.response.status, 200);
+  assert.equal(deletedSecretsCheck.json.length, 0);
+
+  const deletedGateCheck = await queryRest(
+    API_URL,
+    SERVICE_ROLE_KEY,
+    `gate_devices?select=event_id&event_id=eq.${eventId}`,
+  );
+  assert.equal(deletedGateCheck.response.status, 200);
+  assert.equal(deletedGateCheck.json.length, 0);
 
   console.log('Edge function integration passed.');
   console.log(JSON.stringify({

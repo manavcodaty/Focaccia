@@ -1,4 +1,4 @@
-import { jsonError, jsonSuccess, readJsonBody } from '../_shared/api.ts';
+import { jsonError, jsonSuccess, readJsonBody, respondWithError } from '../_shared/api.ts';
 import { handleCors } from '../_shared/cors.ts';
 import { requireUser } from '../_shared/supabase.ts';
 import type { RevokePassRequest } from '../_shared/types.ts';
@@ -39,17 +39,20 @@ Deno.serve(async (req) => {
       .single();
 
     if (error) {
-      const status = error.message.includes('duplicate key value') ? 409 : 400;
-      return jsonError(status, 'revoke_pass_failed', error.message);
+      if (error.message.includes('duplicate key value')) {
+        return jsonError(409, 'revoke_pass_failed', 'Pass already revoked.');
+      }
+
+      console.error(`Failed to revoke pass ${body.pass_id.trim()} for ${body.event_id.trim()}: ${error.message}`);
+      return jsonError(500, 'revoke_pass_failed', 'Unable to revoke the pass.');
     }
 
     return jsonSuccess(data, 201);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error.';
-    const status = message === 'Missing bearer token.' || message === 'Authentication failed.'
-      ? 401
-      : 400;
-
-    return jsonError(status, 'revoke_pass_failed', message);
+    return respondWithError(error, {
+      code: 'revoke_pass_failed',
+      message: 'Unable to revoke the pass.',
+      status: 400,
+    });
   }
 });

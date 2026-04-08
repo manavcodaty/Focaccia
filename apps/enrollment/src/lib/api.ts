@@ -96,9 +96,13 @@ export async function fetchEnrollmentBundle(joinCode: string): Promise<Enrollmen
   });
 }
 
-export async function requestPassSignature(payload: PassPayload): Promise<IssuePassResult> {
+export async function requestPassSignature(
+  joinCode: string,
+  payload: PassPayload,
+): Promise<IssuePassResult> {
   return invokeFunction<IssuePassResult>({
     body: {
+      join_code: joinCode.trim().toUpperCase(),
       payload,
     },
     name: 'issue-pass',

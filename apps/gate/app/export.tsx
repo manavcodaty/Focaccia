@@ -8,10 +8,13 @@ import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
+import { scaleFont } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
 export default function ExportScreen() {
+  const layout = useResponsiveLayout();
   const { exportLogsCsv, gate } = useGate();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +69,7 @@ export default function ExportScreen() {
   return (
     <ScreenShell>
       <SectionCard eyebrow="Export" title="Operational logs only">
-        <Text style={styles.body}>
+        <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           CSV export contains timings, event IDs, pass references, outcomes, and reason codes. It
           never includes biometric templates or captured images.
         </Text>
@@ -102,7 +105,5 @@ const styles = StyleSheet.create({
   body: {
     ...typography.body,
     color: palette.ink,
-    fontSize: 15,
-    lineHeight: 22,
   },
 });

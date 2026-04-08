@@ -11,6 +11,12 @@ export type PostAuthSuccessState =
       message: "Check your email to confirm your organizer account.";
     };
 
+export interface PostSignOutState {
+  href: "/";
+  kind: "hard-redirect";
+  message: "Signed out.";
+}
+
 export function getFriendlyAuthErrorMessage(message: string, mode: AuthMode): string {
   const normalized = message.trim().toLowerCase();
 
@@ -57,5 +63,13 @@ export function getPostAuthSuccessState(
   return {
     kind: "confirm-email",
     message: "Check your email to confirm your organizer account.",
+  };
+}
+
+export function getPostSignOutState(): PostSignOutState {
+  return {
+    href: "/",
+    kind: "hard-redirect",
+    message: "Signed out.",
   };
 }

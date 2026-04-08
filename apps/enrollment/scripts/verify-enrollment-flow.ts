@@ -216,6 +216,7 @@ const signedPass = await issueSignedPassFromEmbedding({
     callFunction<IssuePassResult>({
       anonKey,
       body: {
+        join_code: createdEvent.join_code,
         payload,
       },
       name: 'issue-pass',

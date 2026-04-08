@@ -22,7 +22,7 @@ import {
   prepareOfflineVerification,
 } from '../src/lib/offline-verifier.ts';
 import { parseProvisioningQrPayload } from '../src/lib/provisioning.ts';
-import type { SqlDriver, SqlValue } from '../src/lib/sqlite-port.ts';
+import type { SqlDriver, SqlRunResult, SqlValue } from '../src/lib/sqlite-port.ts';
 import type { StoredGateConfig } from '../src/lib/types.ts';
 
 class NodeSqliteDriver implements SqlDriver {
@@ -48,8 +48,9 @@ class NodeSqliteDriver implements SqlDriver {
     return (this.database.prepare(sql).get(...params) as T | undefined) ?? null;
   }
 
-  async run(sql: string, params: readonly SqlValue[] = []): Promise<void> {
-    this.database.prepare(sql).run(...params);
+  async run(sql: string, params: readonly SqlValue[] = []): Promise<SqlRunResult> {
+    const result = this.database.prepare(sql).run(...params) as { changes?: number };
+    return { changes: result.changes ?? 0 };
   }
 }
 

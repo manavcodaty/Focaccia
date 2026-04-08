@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   getFriendlyAuthErrorMessage,
   getPostAuthSuccessState,
+  getPostSignOutState,
 } from "../lib/auth-feedback.ts";
 
 test("maps invalid credential errors to a concise sign-in message", () => {
@@ -44,5 +45,13 @@ test("shows a confirmation state when sign-up succeeds without a live session", 
   assert.deepEqual(getPostAuthSuccessState("signup", false), {
     kind: "confirm-email",
     message: "Check your email to confirm your organizer account.",
+  });
+});
+
+test("hard-redirects signed-out organizers to the public landing page", () => {
+  assert.deepEqual(getPostSignOutState(), {
+    href: "/",
+    kind: "hard-redirect",
+    message: "Signed out.",
   });
 });

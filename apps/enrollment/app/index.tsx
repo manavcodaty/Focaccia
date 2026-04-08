@@ -10,6 +10,8 @@ import {
 
 import { fetchEnrollmentBundle, FunctionApiError } from '../src/lib/api';
 import { BrandLogo } from '../src/components/brand-logo';
+import { scaleFont } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
 import { PrimaryButton } from '../src/components/primary-button';
@@ -41,6 +43,7 @@ function describeJoinCodeError(error: unknown): string {
 export default function JoinCodeScreen() {
   const router = useRouter();
   const { reset, setBundle, state } = useEnrollment();
+  const layout = useResponsiveLayout();
   const [joinCode, setJoinCode] = useState(state.joinCode);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<'neutral' | 'success' | 'warning'>('neutral');
@@ -78,9 +81,27 @@ export default function JoinCodeScreen() {
     <ScreenShell style={styles.screen}>
       <View style={styles.hero}>
         <BrandLogo />
-        <Text style={styles.kicker}>One-Time Face Pass</Text>
-        <Text style={styles.title}>Join an event securely on your own phone.</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.kicker, { fontSize: scaleFont(layout, 13) }]}>One-Time Face Pass</Text>
+        <Text
+          style={[
+            styles.title,
+            {
+              fontSize: scaleFont(layout, 34, 1.12),
+              lineHeight: scaleFont(layout, 40, 1.12),
+            },
+          ]}
+        >
+          Join an event securely on your own phone.
+        </Text>
+        <Text
+          style={[
+            styles.subtitle,
+            {
+              fontSize: scaleFont(layout, 16),
+              lineHeight: scaleFont(layout, 24),
+            },
+          ]}
+        >
           Your face is processed on-device, transformed into an event-scoped template, and never uploaded as an image.
         </Text>
       </View>
@@ -97,7 +118,13 @@ export default function JoinCodeScreen() {
             placeholder="AB12CD34"
             placeholderTextColor={palette.muted}
             returnKeyType="done"
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                fontSize: scaleFont(layout, 28, 1.1),
+                minHeight: layout.isTablet ? 68 : 62,
+              },
+            ]}
             value={joinCode}
           />
         </View>
@@ -114,16 +141,18 @@ export default function JoinCodeScreen() {
       </SectionCard>
 
       <SectionCard eyebrow="Privacy" title="What happens next">
-        <Text style={styles.bodyText}>
+        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           You will review consent, capture your face once, and receive a signed QR token for this event only.
         </Text>
-        <Text style={styles.bodyText}>
+        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           If scanning fails later, the app also exposes the full token for manual copy or paste at the gate.
         </Text>
       </SectionCard>
 
       <Pressable accessibilityRole="link" onPress={() => router.push('/help')}>
-        <Text style={styles.helpLink}>Need help finding your join code or understanding the process?</Text>
+        <Text style={[styles.helpLink, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
+          Need help finding your join code or understanding the process?
+        </Text>
       </Pressable>
     </ScreenShell>
   );
@@ -133,14 +162,10 @@ const styles = StyleSheet.create({
   bodyText: {
     ...typography.body,
     color: palette.ink,
-    fontSize: 15,
-    lineHeight: 22,
   },
   helpLink: {
     ...typography.bodyStrong,
     color: palette.accent,
-    fontSize: 15,
-    lineHeight: 22,
     textAlign: 'center',
   },
   hero: {
@@ -154,9 +179,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     color: palette.ink,
-    fontSize: 28,
     letterSpacing: 3,
-    minHeight: 62,
     paddingHorizontal: 18,
     textAlign: 'center',
   },
@@ -182,13 +205,9 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: palette.muted,
-    fontSize: 16,
-    lineHeight: 24,
   },
   title: {
     ...typography.display,
     color: palette.ink,
-    fontSize: 34,
-    lineHeight: 40,
   },
 });

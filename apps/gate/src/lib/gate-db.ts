@@ -31,9 +31,10 @@ create table if not exists gate_config (
 );
 
 create table if not exists used_passes (
-  pass_id text primary key,
   event_id text not null,
-  accepted_at text not null
+  pass_id text not null,
+  accepted_at text not null,
+  primary key (event_id, pass_id)
 );
 
 create table if not exists revocation_cache (
@@ -62,6 +63,23 @@ create table if not exists scan_logs (
   total_ms integer not null,
   hamming_distance integer
 );
+`;
+
+const USED_PASSES_SCHEMA_SQL = `
+create table if not exists used_passes_v2 (
+  event_id text not null,
+  pass_id text not null,
+  accepted_at text not null,
+  primary key (event_id, pass_id)
+);
+
+insert or ignore into used_passes_v2 (event_id, pass_id, accepted_at)
+select event_id, pass_id, accepted_at
+from used_passes;
+
+drop table if exists used_passes;
+alter table used_passes_v2 rename to used_passes;
+create index if not exists used_passes_event_id_idx on used_passes (event_id);
 `;
 
 function numberToBoolean(value: boolean): number {
@@ -111,6 +129,7 @@ export class GateRepository {
 
   async migrate(): Promise<void> {
     await this.driver.exec(SCHEMA_SQL);
+    await this.driver.exec(USED_PASSES_SCHEMA_SQL);
   }
 
   async close(): Promise<void> {
@@ -209,11 +228,12 @@ export class GateRepository {
     return row !== null;
   }
 
-  async markPassUsed(eventId: string, passId: string, acceptedAtIso: string): Promise<void> {
-    await this.driver.run(
-      'insert or replace into used_passes (pass_id, event_id, accepted_at) values (?, ?, ?)',
-      [passId, eventId, acceptedAtIso],
+  async markPassUsed(eventId: string, passId: string, acceptedAtIso: string): Promise<boolean> {
+    const result = await this.driver.run(
+      'insert or ignore into used_passes (event_id, pass_id, accepted_at) values (?, ?, ?)',
+      [eventId, passId, acceptedAtIso],
     );
+    return result.changes > 0;
   }
 
   async insertLog(entry: GateLogEntry): Promise<void> {

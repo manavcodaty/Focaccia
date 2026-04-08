@@ -1,3 +1,5 @@
+import { hiddenApiError } from './api.ts';
+
 const SECRET_WRAPPING_KEY_BYTES = 32;
 
 export interface RuntimeConfig {
@@ -16,10 +18,30 @@ function requireEnv(name: string): string {
   const value = Deno.env.get(name);
 
   if (!value) {
-    throw new Error(`Missing required environment variable ${name}.`);
+    throw hiddenApiError({
+      clientMessage: 'The Face Pass service is not configured correctly.',
+      code: 'service_misconfigured',
+      message: `Missing required environment variable ${name}.`,
+    });
   }
 
   return value;
+}
+
+function requireAnyEnv(...names: string[]): string {
+  for (const name of names) {
+    const value = Deno.env.get(name);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  throw hiddenApiError({
+    clientMessage: 'The Face Pass service is not configured correctly.',
+    code: 'service_misconfigured',
+    message: `Missing required environment variable ${names.join(' or ')}.`,
+  });
 }
 
 function parsePositiveInteger(name: string, fallback: number): number {
@@ -32,7 +54,11 @@ function parsePositiveInteger(name: string, fallback: number): number {
   const parsed = Number.parseInt(raw, 10);
 
   if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`${name} must be a positive integer.`);
+    throw hiddenApiError({
+      clientMessage: 'The Face Pass service is not configured correctly.',
+      code: 'service_misconfigured',
+      message: `${name} must be a positive integer.`,
+    });
   }
 
   return parsed;
@@ -43,15 +69,21 @@ export function getRuntimeConfig(): RuntimeConfig {
     const secretWrappingKeyBase64Url = requireEnv('FACE_PASS_SECRET_WRAPPING_KEY_B64URL');
 
     if (secretWrappingKeyBase64Url.length !== 43) {
-      throw new Error(
-        `FACE_PASS_SECRET_WRAPPING_KEY_B64URL must encode ${SECRET_WRAPPING_KEY_BYTES} bytes.`,
-      );
+      throw hiddenApiError({
+        clientMessage: 'The Face Pass service is not configured correctly.',
+        code: 'service_misconfigured',
+        message:
+          `FACE_PASS_SECRET_WRAPPING_KEY_B64URL must encode ${SECRET_WRAPPING_KEY_BYTES} bytes.`,
+      });
     }
 
     cachedConfig = {
-      supabaseUrl: requireEnv('SUPABASE_URL'),
-      supabaseAnonKey: requireEnv('SUPABASE_ANON_KEY'),
-      supabaseServiceRoleKey: requireEnv('SUPABASE_SERVICE_ROLE_KEY'),
+      supabaseUrl: requireAnyEnv('SUPABASE_URL', 'FACE_PASS_SUPABASE_URL'),
+      supabaseAnonKey: requireAnyEnv('SUPABASE_ANON_KEY', 'FACE_PASS_SUPABASE_ANON_KEY'),
+      supabaseServiceRoleKey: requireAnyEnv(
+        'SUPABASE_SERVICE_ROLE_KEY',
+        'FACE_PASS_SUPABASE_SERVICE_ROLE_KEY',
+      ),
       secretWrappingKeyBase64Url,
       matchThreshold: parsePositiveInteger('FACE_PASS_MATCH_THRESHOLD', 80),
       livenessTimeoutMs: parsePositiveInteger('FACE_PASS_LIVENESS_TIMEOUT_MS', 4000),

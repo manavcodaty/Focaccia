@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type ViewStyle,
 } from 'react-native';
 import {
   Camera,
@@ -19,6 +20,8 @@ import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
+import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
@@ -52,6 +55,7 @@ function GateFallback({
 
 export default function ScanScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const { gate, processToken } = useGate();
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -143,46 +147,179 @@ export default function ScanScreen() {
     );
   }
 
+  const previewStyle = layout.isLandscape
+    ? {
+        width: Math.min(
+          layout.previewFrameMaxWidth,
+          layout.shortSide * (layout.isTablet ? 0.82 : 0.9),
+        ),
+      }
+    : {
+        maxWidth: layout.previewFrameMaxWidth,
+        width: '100%' as const,
+      };
+  const scanFrameStyle: ViewStyle = {
+    borderRadius: scaleSpacing(layout, 30, 1.08),
+    height: layout.isLandscape ? '52%' : '46%',
+    left: layout.isLandscape ? '14%' : '10%',
+    top: layout.isLandscape ? '24%' : '27%',
+    width: layout.isLandscape ? '72%' : '80%',
+  };
+
   return (
-    <ScreenShell scroll={false} style={styles.screen}>
-      <View style={styles.header}>
-        <Text style={styles.eyebrow}>Scan</Text>
-        <Text style={styles.title}>{gate.event_name}</Text>
-        <Text style={styles.subtitle}>
-          Offline verification checks signature, event, replay, revocation cache, and gate-only
-          decryptability before live matching starts.
-        </Text>
-      </View>
+    <ScreenShell scroll={false} style={styles.screen} variant="wide">
+      {layout.isLandscape ? (
+        <View
+          style={[
+            styles.landscapeShell,
+            { gap: scaleSpacing(layout, 18, 1.08), maxWidth: layout.wideContentMaxWidth },
+          ]}
+        >
+          <View style={styles.previewColumn}>
+            <View
+              style={[
+                styles.preview,
+                previewStyle,
+                {
+                  aspectRatio: layout.previewAspectRatio,
+                  borderRadius: scaleSpacing(layout, 30, 1.08),
+                },
+              ]}
+            >
+              <Camera
+                codeScanner={codeScanner}
+                device={device}
+                isActive={!isProcessing}
+                style={styles.camera}
+              />
+              <View style={styles.dimTop} />
+              <View style={styles.dimBottom} />
+              <View style={[styles.scanFrame, scanFrameStyle]} />
+            </View>
+          </View>
 
-      <SectionCard eyebrow="Status" title="Scanner live">
-        <View style={styles.statusRow}>
-          <StatusChip label="Offline-ready" tone="success" />
-          <StatusChip label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'} tone="warning" />
+          <View style={[styles.infoColumn, { gap: scaleSpacing(layout, 16, 1.08) }]}>
+            <View style={styles.header}>
+              <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Scan</Text>
+              <Text
+                style={[
+                  styles.title,
+                  {
+                    fontSize: scaleFont(layout, 32, 1.12),
+                    lineHeight: scaleFont(layout, 36, 1.12),
+                  },
+                ]}
+              >
+                {gate.event_name}
+              </Text>
+              <Text
+                style={[
+                  styles.subtitle,
+                  {
+                    fontSize: scaleFont(layout, 15),
+                    lineHeight: scaleFont(layout, 22),
+                  },
+                ]}
+              >
+                Offline verification checks signature, event, replay, revocation cache, and gate-only
+                decryptability before live matching starts.
+              </Text>
+            </View>
+
+            <SectionCard eyebrow="Status" title="Scanner live">
+              <View style={styles.statusRow}>
+                <StatusChip label="Offline-ready" tone="success" />
+                <StatusChip
+                  label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'}
+                  tone="warning"
+                />
+              </View>
+              <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
+              <MetricRow label="Liveness timeout" value={`${gate.policy.liveness_timeout_ms} ms`} />
+              <StatusBanner
+                message={error ?? status}
+                tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
+              />
+            </SectionCard>
+
+            <View style={styles.footerActions}>
+              <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
+              <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
+            </View>
+          </View>
         </View>
-        <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
-        <MetricRow label="Liveness timeout" value={`${gate.policy.liveness_timeout_ms} ms`} />
-        <StatusBanner
-          message={error ?? status}
-          tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
-        />
-      </SectionCard>
+      ) : (
+        <>
+          <View style={styles.header}>
+            <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Scan</Text>
+            <Text
+              style={[
+                styles.title,
+                {
+                  fontSize: scaleFont(layout, 32, 1.12),
+                  lineHeight: scaleFont(layout, 36, 1.12),
+                },
+              ]}
+            >
+              {gate.event_name}
+            </Text>
+            <Text
+              style={[
+                styles.subtitle,
+                {
+                  fontSize: scaleFont(layout, 15),
+                  lineHeight: scaleFont(layout, 22),
+                },
+              ]}
+            >
+              Offline verification checks signature, event, replay, revocation cache, and gate-only
+              decryptability before live matching starts.
+            </Text>
+          </View>
 
-      <View style={styles.preview}>
-        <Camera
-          codeScanner={codeScanner}
-          device={device}
-          isActive={!isProcessing}
-          style={styles.camera}
-        />
-        <View style={styles.dimTop} />
-        <View style={styles.dimBottom} />
-        <View style={styles.scanFrame} />
-      </View>
+          <SectionCard eyebrow="Status" title="Scanner live">
+            <View style={styles.statusRow}>
+              <StatusChip label="Offline-ready" tone="success" />
+              <StatusChip
+                label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'}
+                tone="warning"
+              />
+            </View>
+            <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
+            <MetricRow label="Liveness timeout" value={`${gate.policy.liveness_timeout_ms} ms`} />
+            <StatusBanner
+              message={error ?? status}
+              tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
+            />
+          </SectionCard>
 
-      <View style={styles.footerActions}>
-        <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
-        <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
-      </View>
+          <View
+            style={[
+              styles.preview,
+              previewStyle,
+              {
+                aspectRatio: layout.previewAspectRatio,
+                borderRadius: scaleSpacing(layout, 30, 1.08),
+              },
+            ]}
+          >
+            <Camera
+              codeScanner={codeScanner}
+              device={device}
+              isActive={!isProcessing}
+              style={styles.camera}
+            />
+            <View style={styles.dimTop} />
+            <View style={styles.dimBottom} />
+            <View style={[styles.scanFrame, scanFrameStyle]} />
+          </View>
+
+          <View style={styles.footerActions}>
+            <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
+            <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
+          </View>
+        </>
+      )}
     </ScreenShell>
   );
 }
@@ -220,22 +357,30 @@ const styles = StyleSheet.create({
   header: {
     gap: 8,
   },
-  preview: {
-    borderRadius: 30,
+  infoColumn: {
     flex: 1,
-    minHeight: 360,
+    justifyContent: 'center',
+    maxWidth: 360,
+  },
+  landscapeShell: {
+    alignItems: 'stretch',
+    flex: 1,
+    flexDirection: 'row',
+    width: '100%',
+  },
+  preview: {
+    alignSelf: 'center',
     overflow: 'hidden',
     position: 'relative',
   },
+  previewColumn: {
+    flex: 1,
+    justifyContent: 'center',
+  },
   scanFrame: {
     borderColor: palette.scanFrame,
-    borderRadius: 30,
     borderWidth: 4,
-    height: '46%',
-    left: '10%',
     position: 'absolute',
-    top: '27%',
-    width: '80%',
   },
   screen: {
     gap: 16,

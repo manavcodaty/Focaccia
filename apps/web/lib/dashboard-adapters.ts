@@ -1,4 +1,5 @@
 import type { EventRecord } from "@/lib/types";
+import { isEventEnded } from "./event-lifecycle.ts";
 
 export interface ProvisionedGateSummary {
   createdAt: string;
@@ -28,7 +29,7 @@ export function getProvisionedGates(
     {
       createdAt: event.created_at,
       id: `${event.event_id}-gate`,
-      isActive: true,
+      isActive: !isEventEnded(event),
       name: "Bound gate device",
       publicKey: event.pk_gate_event,
     },

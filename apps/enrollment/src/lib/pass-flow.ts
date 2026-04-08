@@ -86,49 +86,63 @@ export async function issueSignedPassFromEmbedding({
 
   const eventSalt = await fromBase64Url(bundle.event_salt);
   const gatePublicKey = await fromBase64Url(bundle.pk_gate_event);
-  const passId = await toBase64Url(randomBytes(16));
-  const nonce = await toBase64Url(randomBytes(12));
+  const passIdBytes = randomBytes(16);
+  const nonceBytes = randomBytes(12);
+  let encryptedTemplateBytes: Uint8Array | null = null;
+  let payloadBytes: Uint8Array | null = null;
 
-  onPhaseChange?.('generating-template');
-  const template = await cancelableTemplateV1(embedding, eventSalt);
+  try {
+    const passId = await toBase64Url(passIdBytes);
+    const nonce = await toBase64Url(nonceBytes);
 
-  onPhaseChange?.('encrypting-pass');
-  const encryptedTemplateBytes = await x25519Seal(template, gatePublicKey);
-  const encryptedTemplate = await toBase64Url(encryptedTemplateBytes);
+    onPhaseChange?.('generating-template');
+    const template = await cancelableTemplateV1(embedding, eventSalt);
 
-  const payload: PassPayload = {
-    enc_template: encryptedTemplate,
-    event_id: bundle.event_id,
-    exp: eventEndsAt,
-    iat: issuedAt,
-    nonce,
-    pass_id: passId,
-    single_use: true,
-    v: 1,
-  };
+    onPhaseChange?.('encrypting-pass');
+    encryptedTemplateBytes = await x25519Seal(template, gatePublicKey);
+    const encryptedTemplate = await toBase64Url(encryptedTemplateBytes);
 
-  onPhaseChange?.('requesting-signature');
-  const { queue_code: queueCode, signature } = await issuePass(payload);
+    const payload: PassPayload = {
+      enc_template: encryptedTemplate,
+      event_id: bundle.event_id,
+      exp: eventEndsAt,
+      iat: issuedAt,
+      nonce,
+      pass_id: passId,
+      single_use: true,
+      v: 1,
+    };
 
-  if (!signature) {
-    throw new Error('The signing service returned an empty signature.');
+    onPhaseChange?.('requesting-signature');
+    const { queue_code: queueCode, signature } = await issuePass(payload);
+
+    if (!signature) {
+      throw new Error('The signing service returned an empty signature.');
+    }
+
+    onPhaseChange?.('finalizing-pass');
+    payloadBytes = canonicalJsonBytes(
+      payload as unknown as Record<string, string | number | boolean>,
+    );
+    const token = `${await toBase64Url(payloadBytes)}.${signature}`;
+    const result: SignedPassResult = {
+      payload,
+      signature,
+      template,
+      token,
+    };
+
+    if (queueCode) {
+      result.queueCode = queueCode;
+    }
+
+    return result;
+  } finally {
+    encryptedTemplateBytes?.fill(0);
+    eventSalt.fill(0);
+    gatePublicKey.fill(0);
+    nonceBytes.fill(0);
+    passIdBytes.fill(0);
+    payloadBytes?.fill(0);
   }
-
-  onPhaseChange?.('finalizing-pass');
-  const payloadBytes = canonicalJsonBytes(
-    payload as unknown as Record<string, string | number | boolean>,
-  );
-  const token = `${await toBase64Url(payloadBytes)}.${signature}`;
-  const result: SignedPassResult = {
-    payload,
-    signature,
-    template,
-    token,
-  };
-
-  if (queueCode) {
-    result.queueCode = queueCode;
-  }
-
-  return result;
 }

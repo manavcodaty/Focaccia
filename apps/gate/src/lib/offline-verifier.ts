@@ -21,6 +21,7 @@ import {
 } from './types.ts';
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
+const MAX_TOKEN_LENGTH = 4096;
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
 
@@ -175,23 +176,6 @@ function buildRejectedDecision(
   });
 }
 
-function parseTokenPayload(token: string): {
-  payload: PassPayload;
-  payloadBytes: Uint8Array;
-  signatureBytes: Uint8Array;
-} {
-  const parts = token.trim().split('.');
-
-  if (parts.length !== 2 || !parts[0] || !parts[1]) {
-    throw new Error('Token must contain exactly one payload and one signature segment.');
-  }
-
-  const payloadBytes = fromBase64Url(parts[0]);
-  const signatureBytes = fromBase64Url(parts[1]);
-
-  throw new Error('Unreachable');
-}
-
 export interface PrepareOfflineVerificationInput {
   checkReplay(passId: string): Promise<boolean>;
   checkRevoked(passId: string): Promise<boolean>;
@@ -217,6 +201,10 @@ async function decodeToken(token: string): Promise<{
   payloadBytes: Uint8Array;
   signatureBytes: Uint8Array;
 }> {
+  if (token.length > MAX_TOKEN_LENGTH) {
+    throw new Error('Token exceeds the maximum supported length.');
+  }
+
   const parts = token.trim().split('.');
 
   if (parts.length !== 2 || !parts[0] || !parts[1]) {

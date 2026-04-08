@@ -1,14 +1,13 @@
-import { jsonError, jsonSuccess, readJsonBody } from '../_shared/api.ts';
+import { jsonError, jsonSuccess, readJsonBody, respondWithError } from '../_shared/api.ts';
 import { handleCors } from '../_shared/cors.ts';
+import { hasEventEnded } from '../_shared/event-lifecycle.ts';
 import { createAdminClient } from '../_shared/supabase.ts';
-import type { EnrollmentBundleResponse, EventRecord } from '../_shared/types.ts';
+import type { EnrollmentBundleResponse } from '../_shared/types.ts';
 
 const JOIN_CODE_PATTERN = /^[A-Z0-9]{8}$/;
 
-function extractJoinCode(req: Request, body?: { join_code?: string }): string {
-  const url = new URL(req.url);
-  const candidate = body?.join_code ?? url.searchParams.get('join_code') ?? '';
-  return candidate.trim().toUpperCase();
+function extractJoinCode(body: { join_code?: string }): string {
+  return (body.join_code ?? '').trim().toUpperCase();
 }
 
 Deno.serve(async (req) => {
@@ -18,17 +17,17 @@ Deno.serve(async (req) => {
     return corsResponse;
   }
 
-  if (req.method !== 'GET' && req.method !== 'POST') {
+  if (req.method !== 'POST') {
     return jsonError(
       405,
       'method_not_allowed',
-      'Use GET or POST for get-enrollment-bundle.',
+      'Use POST for get-enrollment-bundle.',
     );
   }
 
   try {
-    const body = req.method === 'POST' ? await readJsonBody<{ join_code?: string }>(req) : undefined;
-    const joinCode = extractJoinCode(req, body);
+    const body = await readJsonBody<{ join_code?: string }>(req);
+    const joinCode = extractJoinCode(body);
 
     if (!JOIN_CODE_PATTERN.test(joinCode)) {
       return jsonError(400, 'invalid_join_code', 'join_code must be 8 uppercase alphanumeric characters.');
@@ -43,6 +42,14 @@ Deno.serve(async (req) => {
 
     if (error || !data) {
       return jsonError(404, 'event_not_found', 'No event found for the provided join code.');
+    }
+
+    if (hasEventEnded(data)) {
+      return jsonError(
+        409,
+        'event_ended',
+        'This event has already ended and cannot accept new attendees.',
+      );
     }
 
     if (!data.pk_gate_event) {
@@ -60,7 +67,10 @@ Deno.serve(async (req) => {
 
     return jsonSuccess(response);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error.';
-    return jsonError(400, 'enrollment_bundle_failed', message);
+    return respondWithError(error, {
+      code: 'enrollment_bundle_failed',
+      message: 'Unable to load the enrollment bundle.',
+      status: 400,
+    });
   }
 });

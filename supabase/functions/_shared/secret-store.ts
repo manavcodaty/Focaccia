@@ -2,6 +2,7 @@ import sodium from 'npm:libsodium-wrappers@0.8.2';
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.100.0';
 import { fromBase64Url, prepareCrypto, toBase64Url } from './face-pass-shared.ts';
 
+import { hiddenApiError } from './api.ts';
 import { getRuntimeConfig } from './env.ts';
 import type { SecretRecord } from './types.ts';
 
@@ -22,9 +23,12 @@ async function getWrappingKey(): Promise<Uint8Array> {
       const key = await fromBase64Url(getRuntimeConfig().secretWrappingKeyBase64Url);
 
       if (key.length !== sodium.crypto_secretbox_KEYBYTES) {
-        throw new Error(
-          `FACE_PASS_SECRET_WRAPPING_KEY_B64URL must decode to ${sodium.crypto_secretbox_KEYBYTES} bytes.`,
-        );
+        throw hiddenApiError({
+          clientMessage: 'Server secret material is unavailable.',
+          code: 'secret_wrapping_key_invalid',
+          message:
+            `FACE_PASS_SECRET_WRAPPING_KEY_B64URL must decode to ${sodium.crypto_secretbox_KEYBYTES} bytes.`,
+        });
       }
 
       return key;
@@ -52,7 +56,11 @@ async function decryptSecret(ciphertextEnvelope: string): Promise<Uint8Array> {
   );
 
   if (!nonceBase64Url || !ciphertextBase64Url || extra !== undefined) {
-    throw new Error('Secret ciphertext envelope is malformed.');
+    throw hiddenApiError({
+      clientMessage: 'Server secret material is unavailable.',
+      code: 'secret_ciphertext_invalid',
+      message: 'Secret ciphertext envelope is malformed.',
+    });
   }
 
   const wrappingKey = await getWrappingKey();
@@ -73,7 +81,11 @@ async function getSecretRecord(
     .single();
 
   if (error || !data) {
-    throw new Error(`Missing server-side secret record for event ${eventId}.`);
+    throw hiddenApiError({
+      clientMessage: 'Event secret material is unavailable.',
+      code: 'event_secret_missing',
+      message: `Missing server-side secret record for event ${eventId}.`,
+    });
   }
 
   return data as SecretRecord;
@@ -92,7 +104,11 @@ export async function createEventSecretRecord(
   });
 
   if (error) {
-    throw new Error(`Failed to persist event secret for ${eventId}: ${error.message}`);
+    throw hiddenApiError({
+      clientMessage: 'Unable to persist server secret material.',
+      code: 'event_secret_persist_failed',
+      message: `Failed to persist event secret for ${eventId}: ${error.message}`,
+    });
   }
 }
 
@@ -120,7 +136,11 @@ export async function setQueueCodeSecret(
     .eq('event_id', eventId);
 
   if (error) {
-    throw new Error(`Failed to persist queue code secret for ${eventId}: ${error.message}`);
+    throw hiddenApiError({
+      clientMessage: 'Unable to persist queue code secret.',
+      code: 'queue_code_secret_persist_failed',
+      message: `Failed to persist queue code secret for ${eventId}: ${error.message}`,
+    });
   }
 }
 

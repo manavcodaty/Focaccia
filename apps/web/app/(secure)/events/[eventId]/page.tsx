@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getEventDetail } from "@/lib/data";
+import { getEventLifecycleState } from "@/lib/event-lifecycle";
 
 function formatTimestamp(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -45,6 +46,7 @@ export default async function EventDetailPage({
 }) {
   const { eventId } = await params;
   const { event, logs, revocations } = await getEventDetail(eventId);
+  const lifecycle = getEventLifecycleState(event);
 
   return (
     <div className="fade-section flex flex-col gap-5">
@@ -58,6 +60,9 @@ export default async function EventDetailPage({
         </Button>
         <Badge variant={event.pk_gate_event ? "success" : "warning"}>
           {event.pk_gate_event ? "Gate provisioned" : "Gate not provisioned"}
+        </Badge>
+        <Badge variant={lifecycle.phase === "ended" ? "warning" : lifecycle.phase === "active" ? "primary" : "outline"}>
+          {lifecycle.phase === "ended" ? "Event ended" : lifecycle.phase === "active" ? "Event live" : "Event upcoming"}
         </Badge>
       </div>
 
@@ -92,7 +97,9 @@ export default async function EventDetailPage({
             <CopyButton label="Join code copied." value={event.join_code} />
           </div>
           <p className="mt-2.5 text-[0.8125rem] leading-relaxed text-[color:var(--muted-foreground)]">
-            Attendees use this code in the enrollment app to fetch the public event bundle.
+            {lifecycle.phase === "ended"
+              ? "This event window has closed. The join code is kept for audit reference and no longer admits new attendees."
+              : "Attendees use this code in the enrollment app to fetch the public event bundle."}
           </p>
         </div>
       </section>
@@ -115,9 +122,11 @@ export default async function EventDetailPage({
           <CardContent className="flex flex-col gap-4">
             <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-3.5">
               <p className="text-[0.8125rem] leading-relaxed text-[color:var(--foreground)]">
-                {event.pk_gate_event
-                  ? "This event is already bound to a gate device."
-                  : "No gate has claimed this event yet."}
+                {lifecycle.phase === "ended"
+                  ? "This event has ended. No new gate devices or attendee enrollments can be added."
+                  : event.pk_gate_event
+                    ? "This event is already bound to a gate device."
+                    : "No gate has claimed this event yet."}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">

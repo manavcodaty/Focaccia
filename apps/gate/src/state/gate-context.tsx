@@ -57,6 +57,7 @@ interface GateContextValue {
 }
 
 const GateContext = createContext<GateContextValue | null>(null);
+const REPLAY_CONFLICT_HINT = 'This pass has already been accepted on this gate.';
 
 export function GateProvider({ children }: PropsWithChildren) {
   const [auth, setAuth] = useState<OrganizerAuthState | null>(null);
@@ -108,18 +109,29 @@ export function GateProvider({ children }: PropsWithChildren) {
         }
 
         try {
-          const decision = await finalizeOfflineVerification({
+          const acceptedDecision = await finalizeOfflineVerification({
             liveEmbedding,
             livenessMs,
             pending: pendingVerification,
           });
+          let decision = acceptedDecision;
 
-          if (decision.accepted && decision.pass_id) {
-            await repository.markPassUsed(
-              decision.event_id,
-              decision.pass_id,
+          if (acceptedDecision.accepted && acceptedDecision.pass_id) {
+            const wasRecorded = await repository.markPassUsed(
+              acceptedDecision.event_id,
+              acceptedDecision.pass_id,
               new Date().toISOString(),
             );
+
+            if (!wasRecorded) {
+              decision = {
+                ...acceptedDecision,
+                accepted: false,
+                hint: REPLAY_CONFLICT_HINT,
+                outcome: 'REJECT',
+                reasonCode: 'REPLAY_USED',
+              };
+            }
           }
 
           await repository.insertLog(decisionToLogEntry(decision));

@@ -1,7 +1,7 @@
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
 import { GateRepository } from './gate-db';
-import type { SqlDriver, SqlValue } from './sqlite-port';
+import type { SqlDriver, SqlRunResult, SqlValue } from './sqlite-port';
 
 class ExpoSqliteDriver implements SqlDriver {
   constructor(private readonly database: SQLiteDatabase) {}
@@ -18,8 +18,9 @@ class ExpoSqliteDriver implements SqlDriver {
     return this.database.getFirstAsync<T>(sql, [...params]);
   }
 
-  async run(sql: string, params: readonly SqlValue[] = []): Promise<void> {
-    await this.database.runAsync(sql, [...params]);
+  async run(sql: string, params: readonly SqlValue[] = []): Promise<SqlRunResult> {
+    const result = await this.database.runAsync(sql, [...params]);
+    return { changes: result.changes };
   }
 }
 

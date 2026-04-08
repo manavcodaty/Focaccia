@@ -1,7 +1,8 @@
 import { prepareCrypto, toBase64Url } from '../_shared/face-pass-shared.ts';
 
-import { jsonError, jsonSuccess, readJsonBody } from '../_shared/api.ts';
+import { jsonError, jsonSuccess, readJsonBody, respondWithError } from '../_shared/api.ts';
 import { handleCors } from '../_shared/cors.ts';
+import { hasEventEnded } from '../_shared/event-lifecycle.ts';
 import { getDefaultPolicy } from '../_shared/policy.ts';
 import { randomBytes } from '../_shared/random.ts';
 import { setQueueCodeSecret } from '../_shared/secret-store.ts';
@@ -53,6 +54,14 @@ Deno.serve(async (req) => {
       return jsonError(404, 'event_not_found', 'Event not found or not owned by the caller.');
     }
 
+    if (hasEventEnded(ownedEvent)) {
+      return jsonError(
+        409,
+        'event_ended',
+        'This event has already ended and cannot provision new gates.',
+      );
+    }
+
     if (ownedEvent.pk_gate_event) {
       return jsonError(409, 'gate_already_provisioned', 'This event already has a gate device.');
     }
@@ -88,7 +97,12 @@ Deno.serve(async (req) => {
         .update({ pk_gate_event: null })
         .eq('event_id', body.event_id.trim());
 
-      return jsonError(500, 'gate_insert_failed', gateInsertError.message);
+      console.error(`Failed to insert gate device for ${body.event_id.trim()}: ${gateInsertError.message}`);
+      return jsonError(
+        500,
+        'gate_insert_failed',
+        'Unable to store gate provisioning state.',
+      );
     }
 
     const queueCodeSecret = randomBytes(32);
@@ -112,11 +126,10 @@ Deno.serve(async (req) => {
       queueCodeSecret.fill(0);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error.';
-    const status = message === 'Missing bearer token.' || message === 'Authentication failed.'
-      ? 401
-      : 400;
-
-    return jsonError(status, 'provision_gate_failed', message);
+    return respondWithError(error, {
+      code: 'provision_gate_failed',
+      message: 'Unable to provision the gate.',
+      status: 400,
+    });
   }
 });

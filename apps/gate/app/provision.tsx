@@ -6,6 +6,7 @@ import {
   Text,
   TextInput,
   View,
+  type ViewStyle,
 } from 'react-native';
 import {
   Camera,
@@ -22,6 +23,8 @@ import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { snippet } from '../src/lib/display';
 import { parseProvisioningQrPayload } from '../src/lib/provisioning';
+import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import type { ProvisioningQrPayload } from '../src/lib/types';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
@@ -56,6 +59,7 @@ function PermissionFallback({
 
 export default function ProvisionScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const {
     auth,
     completeProvisioning,
@@ -171,14 +175,28 @@ export default function ProvisionScreen() {
     );
   }
 
+  const previewStyle = {
+    aspectRatio: layout.previewAspectRatio,
+    borderRadius: scaleSpacing(layout, 24, 1.08),
+    maxWidth: layout.previewFrameMaxWidth,
+    width: '100%' as const,
+  };
+  const scanFrameStyle: ViewStyle = {
+    borderRadius: scaleSpacing(layout, 24, 1.08),
+    height: layout.isLandscape ? '58%' : '64%',
+    left: layout.isLandscape ? '18%' : '15%',
+    top: layout.isLandscape ? '21%' : '18%',
+    width: layout.isLandscape ? '64%' : '70%',
+  };
+
   return (
-    <ScreenShell>
+    <ScreenShell variant="wide">
       <SectionCard eyebrow="Provision" title="Pair this device to one event">
         <StatusChip
           label={gate ? 'Local bundle already exists' : 'Scan dashboard QR'}
           tone={gate ? 'warning' : 'success'}
         />
-        <Text style={styles.body}>
+        <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           The gate phone generates its own X25519 keypair locally. Only the public key leaves the
           device during provisioning.
         </Text>
@@ -200,7 +218,14 @@ export default function ProvisionScreen() {
               onChangeText={setEmail}
               placeholder="Organizer email"
               placeholderTextColor={palette.muted}
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  borderRadius: scaleSpacing(layout, 16, 1.06),
+                  fontSize: scaleFont(layout, 16),
+                  minHeight: layout.isTablet ? 60 : 56,
+                },
+              ]}
               value={email}
             />
             <TextInput
@@ -210,7 +235,14 @@ export default function ProvisionScreen() {
               placeholder="Password"
               placeholderTextColor={palette.muted}
               secureTextEntry
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  borderRadius: scaleSpacing(layout, 16, 1.06),
+                  fontSize: scaleFont(layout, 16),
+                  minHeight: layout.isTablet ? 60 : 56,
+                },
+              ]}
               value={password}
             />
             <PrimaryButton
@@ -225,16 +257,16 @@ export default function ProvisionScreen() {
       </SectionCard>
 
       <SectionCard eyebrow="QR" title={draft ? draft.name : 'Scan the provisioning QR'}>
-        <View style={styles.preview}>
+        <View style={[styles.preview, previewStyle]}>
           <Camera
             codeScanner={codeScanner}
             device={device}
             isActive={!draft && !isBusy}
             style={styles.camera}
           />
-          <View style={styles.scanFrame} />
+          <View style={[styles.scanFrame, scanFrameStyle]} />
         </View>
-        <Text style={styles.caption}>
+        <Text style={[styles.caption, { fontSize: scaleFont(layout, 14), lineHeight: scaleFont(layout, 20) }]}>
           {draft
             ? 'Provisioning QR captured. Review the public event material below.'
             : 'Point the rear camera at the dashboard provisioning QR.'}
@@ -258,7 +290,14 @@ export default function ProvisionScreen() {
               onChangeText={setDeviceName}
               placeholder="Device name"
               placeholderTextColor={palette.muted}
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  borderRadius: scaleSpacing(layout, 16, 1.06),
+                  fontSize: scaleFont(layout, 16),
+                  minHeight: layout.isTablet ? 60 : 56,
+                },
+              ]}
               value={deviceName}
             />
             <PrimaryButton
@@ -280,8 +319,6 @@ const styles = StyleSheet.create({
   body: {
     ...typography.body,
     color: palette.ink,
-    fontSize: 15,
-    lineHeight: 22,
   },
   camera: {
     flex: 1,
@@ -289,34 +326,23 @@ const styles = StyleSheet.create({
   caption: {
     ...typography.body,
     color: palette.muted,
-    fontSize: 14,
-    lineHeight: 20,
   },
   input: {
     ...typography.body,
     backgroundColor: palette.card,
     borderColor: palette.line,
-    borderRadius: 16,
     borderWidth: 1,
     color: palette.ink,
-    fontSize: 16,
-    minHeight: 56,
     paddingHorizontal: 16,
   },
   preview: {
-    borderRadius: 24,
-    height: 280,
+    alignSelf: 'center',
     overflow: 'hidden',
     position: 'relative',
   },
   scanFrame: {
     borderColor: palette.scanFrame,
-    borderRadius: 24,
     borderWidth: 3,
-    height: 180,
-    left: '15%',
     position: 'absolute',
-    top: '18%',
-    width: '70%',
   },
 });

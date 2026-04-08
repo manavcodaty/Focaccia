@@ -4,11 +4,14 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
+import { scaleFont } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
 
 export default function ConsentScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const { acceptConsent, reset, state } = useEnrollment();
 
   if (!state.bundle) {
@@ -33,33 +36,41 @@ export default function ConsentScreen() {
   return (
     <ScreenShell style={styles.screen}>
       <SectionCard eyebrow="Consent" title="Review how your pass is created">
-        <Text style={styles.bodyText}>
+        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
           Your face stays on this phone while the app generates a one-time, event-scoped template.
         </Text>
-        <Text style={styles.bodyText}>
+        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
           No face image is uploaded, no reusable embedding is stored, and the final pass can only be verified for {state.bundle.event_id}.
         </Text>
       </SectionCard>
 
       <SectionCard eyebrow="Event" title="Enrollment details">
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Join code</Text>
-          <Text style={styles.detailValue}>{state.joinCode}</Text>
+          <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Join code</Text>
+          <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>{state.joinCode}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Event ID</Text>
-          <Text style={styles.detailValue}>{state.bundle.event_id}</Text>
+          <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Event ID</Text>
+          <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>{state.bundle.event_id}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Valid until</Text>
-          <Text style={styles.detailValue}>{new Date(state.bundle.ends_at).toLocaleString()}</Text>
+          <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Valid until</Text>
+          <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>
+            {new Date(state.bundle.ends_at).toLocaleString()}
+          </Text>
         </View>
       </SectionCard>
 
       <SectionCard eyebrow="Before camera starts" title="What you are agreeing to">
-        <Text style={styles.bodyText}>1. The app will request camera access only on the next screen.</Text>
-        <Text style={styles.bodyText}>2. The captured face image is used in memory to issue this pass and is not retained.</Text>
-        <Text style={styles.bodyText}>3. The pass is single-use and intended only for this event and gate.</Text>
+        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
+          1. The app will request camera access only on the next screen.
+        </Text>
+        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
+          2. The captured face image is used in memory to issue this pass and is not retained.
+        </Text>
+        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
+          3. The pass is single-use and intended only for this event and gate.
+        </Text>
       </SectionCard>
 
       <View style={styles.actions}>
@@ -83,13 +94,10 @@ const styles = StyleSheet.create({
   bodyText: {
     ...typography.body,
     color: palette.ink,
-    fontSize: 15,
-    lineHeight: 23,
   },
   detailLabel: {
     ...typography.bodyStrong,
     color: palette.muted,
-    fontSize: 14,
   },
   detailRow: {
     gap: 4,
@@ -97,7 +105,6 @@ const styles = StyleSheet.create({
   detailValue: {
     ...typography.title,
     color: palette.ink,
-    fontSize: 16,
   },
   screen: {
     gap: 18,

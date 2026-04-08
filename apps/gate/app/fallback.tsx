@@ -6,11 +6,14 @@ import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
+import { scaleFont } from '../src/lib/responsive-metrics';
+import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
 export default function FallbackScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const { gate, processToken } = useGate();
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
@@ -34,7 +37,7 @@ export default function FallbackScreen() {
   return (
     <ScreenShell>
       <SectionCard eyebrow="Fallback" title="Paste the full pass token">
-        <Text style={styles.body}>
+        <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           This screen accepts the full QR token text when optical scanning fails. The short queue
           code is not enough to reconstruct a pass offline.
         </Text>
@@ -52,7 +55,13 @@ export default function FallbackScreen() {
           onChangeText={setToken}
           placeholder="eyJ2IjoxLCJldmVudF9pZCI6Ii4uLiJ9.signature"
           placeholderTextColor={palette.muted}
-          style={styles.tokenInput}
+          style={[
+            styles.tokenInput,
+            {
+              fontSize: scaleFont(layout, 15),
+              minHeight: layout.isTablet ? 220 : 180,
+            },
+          ]}
           value={token}
         />
       </SectionCard>
@@ -78,8 +87,6 @@ const styles = StyleSheet.create({
   body: {
     ...typography.body,
     color: palette.ink,
-    fontSize: 15,
-    lineHeight: 22,
   },
   tokenInput: {
     ...typography.body,
@@ -88,8 +95,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     color: palette.ink,
-    fontSize: 15,
-    minHeight: 180,
     padding: 16,
     textAlignVertical: 'top',
   },

@@ -1,9 +1,15 @@
 import { randomBytes } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const REQUIRED_FACE_PASS_KEYS = [
   "FACE_PASS_SECRET_WRAPPING_KEY_B64URL",
+];
+
+const REQUIRED_SUPABASE_KEYS = [
+  "SUPABASE_URL",
+  "SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
 ];
 
 const OPTIONAL_FACE_PASS_KEYS = [
@@ -66,6 +72,18 @@ export function prepareFunctionsEnvFiles({ envExampleText, envLocalText }) {
     outputEntries.push([key, value]);
   }
 
+  for (const key of REQUIRED_SUPABASE_KEYS) {
+    const value = envLocal.get(key);
+
+    if (!value) {
+      throw new Error(`Missing required environment variable ${key} in supabase/functions/.env.local.`);
+    }
+
+    const facePassKey = `FACE_PASS_${key}`;
+    envLocal.set(facePassKey, value);
+    outputEntries.push([facePassKey, value]);
+  }
+
   for (const key of OPTIONAL_FACE_PASS_KEYS) {
     const value = envLocal.get(key) ?? envExample.get(key);
 
@@ -103,8 +121,10 @@ function main() {
     envLocalText: readFileSync(envLocalPath, "utf8"),
   });
 
-  writeFileSync(envPath, result.envText, "utf8");
-  writeFileSync(envLocalPath, result.updatedEnvLocalText, "utf8");
+  writeFileSync(envPath, result.envText, { encoding: "utf8", mode: 0o600 });
+  writeFileSync(envLocalPath, result.updatedEnvLocalText, { encoding: "utf8", mode: 0o600 });
+  chmodSync(envPath, 0o600);
+  chmodSync(envLocalPath, 0o600);
 
   if (result.generatedSecret) {
     console.log("Generated FACE_PASS_SECRET_WRAPPING_KEY_B64URL in supabase/functions/.env.local.");

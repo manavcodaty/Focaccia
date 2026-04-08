@@ -1,6 +1,6 @@
 import { ed25519Keypair, prepareCrypto, toBase64Url } from '../_shared/face-pass-shared.ts';
 
-import { jsonError, jsonSuccess, readJsonBody } from '../_shared/api.ts';
+import { hiddenApiError, jsonError, jsonSuccess, readJsonBody, respondWithError } from '../_shared/api.ts';
 import { handleCors } from '../_shared/cors.ts';
 import { generateJoinCode, randomBytes } from '../_shared/random.ts';
 import { createEventSecretRecord } from '../_shared/secret-store.ts';
@@ -82,11 +82,23 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          throw new Error(error.message);
+          if (isUniqueViolation(error.message, 'events_event_id_key')) {
+            throw new Error('event_id already exists.');
+          }
+
+          throw hiddenApiError({
+            clientMessage: 'Unable to create the event.',
+            code: 'event_insert_failed',
+            message: `Failed to insert event row: ${error.message}`,
+          });
         }
 
         if (!data) {
-          throw new Error('Event creation did not return a row.');
+          throw hiddenApiError({
+            clientMessage: 'Unable to create the event.',
+            code: 'event_insert_failed',
+            message: 'Event creation did not return a row.',
+          });
         }
 
         try {
@@ -114,13 +126,18 @@ Deno.serve(async (req) => {
       signingKeyPair.privateKey.fill(0);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error.';
-    const status = message === 'Missing bearer token.' || message === 'Authentication failed.'
-      ? 401
-      : message.includes('duplicate key value')
-        ? 409
-        : 400;
+    if (error instanceof Error) {
+      const status = error.message === 'event_id already exists.' ? 409 : 400;
+      return respondWithError(error, {
+        code: 'create_event_failed',
+        message: 'Unable to create the event.',
+        status,
+      });
+    }
 
-    return jsonError(status, 'create_event_failed', message);
+    return respondWithError(error, {
+      code: 'create_event_failed',
+      message: 'Unable to create the event.',
+    });
   }
 });

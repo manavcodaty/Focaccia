@@ -4,11 +4,12 @@ import {
   IconDotsVertical,
   IconLogout,
 } from "@tabler/icons-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
 import { useAuth } from "@/components/providers/auth-provider"
+import { getPostSignOutState } from "@/lib/auth-feedback"
+import { performSecureSignOut } from "@/lib/sign-out"
 import {
   Avatar,
   AvatarFallback,
@@ -29,7 +30,6 @@ import {
 } from '@/components/ui/sidebar'
 
 export function NavUser() {
-  const router = useRouter()
   const { supabase, user } = useAuth()
   const { isMobile } = useSidebar()
   const [isPending, setIsPending] = useState(false)
@@ -40,18 +40,18 @@ export function NavUser() {
   async function handleSignOut() {
     setIsPending(true)
 
-    const { error } = await supabase.auth.signOut()
-
-    setIsPending(false)
-
-    if (error) {
-      toast.error(error.message)
+    try {
+      await performSecureSignOut(supabase)
+    } catch (error) {
+      setIsPending(false)
+      toast.error(error instanceof Error ? error.message : "Unable to sign out.")
       return
     }
 
-    toast.success("Signed out.")
-    router.push("/login")
-    router.refresh()
+    setIsPending(false)
+    const nextState = getPostSignOutState()
+    toast.success(nextState.message)
+    window.location.replace(nextState.href)
   }
 
   return (

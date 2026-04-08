@@ -34,6 +34,14 @@ export interface CreateEventResponse {
   starts_at: string;
 }
 
+export interface DeleteEventRequest {
+  event_id: string;
+}
+
+export interface DeleteEventResponse {
+  event_id: string;
+}
+
 export interface ProvisionGateRequest {
   device_name?: string;
   event_id: string;
@@ -45,6 +53,7 @@ export interface ProvisionGateResponse extends GateBundle {}
 export interface EnrollmentBundleResponse extends EnrollmentBundle {}
 
 export interface IssuePassRequest {
+  join_code: string;
   payload: PassPayload;
 }
 

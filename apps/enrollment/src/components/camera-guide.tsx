@@ -1,11 +1,35 @@
 import { StyleSheet, View } from 'react-native';
 
+import { scaleSpacing } from '../lib/responsive-metrics';
+import { useResponsiveLayout } from '../lib/use-responsive-layout';
 import { palette } from '../theme';
 
 export function CameraGuide({ ready }: { ready: boolean }) {
+  const layout = useResponsiveLayout();
+
   return (
-    <View pointerEvents="none" style={styles.container}>
-      <View style={[styles.outerFrame, ready ? styles.outerFrameReady : null]}>
+    <View
+      pointerEvents="none"
+      style={[
+        styles.container,
+        {
+          paddingHorizontal: scaleSpacing(layout, layout.isLandscape ? 24 : 18, 1.08),
+          paddingVertical: scaleSpacing(layout, layout.isLandscape ? 24 : 18, 1.08),
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.outerFrame,
+          {
+            aspectRatio: layout.isLandscape ? 1.08 : 0.76,
+            maxWidth: layout.isTablet ? 440 : 360,
+            padding: scaleSpacing(layout, 12, 1.08),
+            width: layout.isLandscape ? '72%' : '78%',
+          },
+          ready ? styles.outerFrameReady : null,
+        ]}
+      >
         <View style={[styles.innerFrame, ready ? styles.innerFrameReady : null]} />
       </View>
     </View>
@@ -15,11 +39,8 @@ export function CameraGuide({ ready }: { ready: boolean }) {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    bottom: 160,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 120,
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
   },
   innerFrame: {
     borderColor: palette.frame,
@@ -34,9 +55,6 @@ const styles = StyleSheet.create({
     borderColor: palette.frameSoft,
     borderRadius: 44,
     borderWidth: 1,
-    padding: 12,
-    width: '78%',
-    aspectRatio: 0.76,
   },
   outerFrameReady: {
     borderColor: palette.frameReady,

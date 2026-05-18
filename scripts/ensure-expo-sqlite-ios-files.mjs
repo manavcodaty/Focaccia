@@ -15,9 +15,10 @@ const checkOnly = process.argv.includes('--check');
 const rootDir = process.cwd();
 const swiftShim = `${readFileSync(new URL('./expo-sqlite-swift-shim.swiftfrag', import.meta.url), 'utf8').trimEnd()}\n`;
 
-function collectExpoSqlitePackageDirs() {
+function collectPackageDirs(packageName) {
   const packageDirs = new Set();
   const pnpmStoreDir = path.join(rootDir, 'node_modules', '.pnpm');
+  const packagePathParts = packageName.split('/');
 
   if (existsSync(pnpmStoreDir)) {
     for (const entry of readdirSync(pnpmStoreDir, { withFileTypes: true })) {
@@ -25,13 +26,7 @@ function collectExpoSqlitePackageDirs() {
         continue;
       }
 
-      const packageJsonPath = path.join(
-        pnpmStoreDir,
-        entry.name,
-        'node_modules',
-        'expo-sqlite',
-        'package.json'
-      );
+      const packageJsonPath = path.join(pnpmStoreDir, entry.name, 'node_modules', ...packagePathParts, 'package.json');
 
       if (existsSync(packageJsonPath)) {
         packageDirs.add(path.dirname(packageJsonPath));
@@ -39,12 +34,20 @@ function collectExpoSqlitePackageDirs() {
     }
   }
 
-  const hoistedPackageJsonPath = path.join(rootDir, 'node_modules', 'expo-sqlite', 'package.json');
+  const hoistedPackageJsonPath = path.join(rootDir, 'node_modules', ...packagePathParts, 'package.json');
   if (existsSync(hoistedPackageJsonPath)) {
     packageDirs.add(path.dirname(hoistedPackageJsonPath));
   }
 
   return [...packageDirs];
+}
+
+function collectExpoSqlitePackageDirs() {
+  return collectPackageDirs('expo-sqlite');
+}
+
+function collectExpoDomWebViewPackageDirs() {
+  return collectPackageDirs('@expo/dom-webview');
 }
 
 function removeBrokenLinkIfNeeded(filePath) {
@@ -111,34 +114,64 @@ function ensureSQLiteModuleShim(packageDir) {
   return [modulePath];
 }
 
-const packageDirs = collectExpoSqlitePackageDirs();
+function ensureDomWebViewReactImport(packageDir) {
+  const modulePath = path.join(packageDir, 'ios', 'DomWebView.swift');
 
-if (packageDirs.length === 0) {
-  console.log('ensure-expo-sqlite-ios-files: no expo-sqlite install found');
+  if (!existsSync(modulePath)) {
+    throw new Error(`Missing Expo DOM WebView Swift file: ${modulePath}`);
+  }
+
+  const currentContents = readFileSync(modulePath, 'utf8');
+  if (currentContents.includes('import React\n')) {
+    return [];
+  }
+
+  const importLine = 'import ExpoModulesCore\n';
+  if (!currentContents.includes(importLine)) {
+    throw new Error(`Unable to locate ExpoModulesCore import in ${modulePath}`);
+  }
+
+  if (!checkOnly) {
+    const patchedContents = currentContents.replace(importLine, `${importLine}import React\n`);
+    writeFileSync(modulePath, patchedContents);
+  }
+
+  return [modulePath];
+}
+
+const sqlitePackageDirs = collectExpoSqlitePackageDirs();
+const domWebViewPackageDirs = collectExpoDomWebViewPackageDirs();
+
+if (sqlitePackageDirs.length === 0 && domWebViewPackageDirs.length === 0) {
+  console.log('ensure-expo-sqlite-ios-files: no Expo native packages found to repair');
   process.exit(0);
 }
 
 const repairedPaths = [];
 
-for (const packageDir of packageDirs) {
+for (const packageDir of sqlitePackageDirs) {
   repairedPaths.push(...syncExpoSqliteSources(packageDir));
   repairedPaths.push(...ensureSQLiteModuleShim(packageDir));
 }
 
+for (const packageDir of domWebViewPackageDirs) {
+  repairedPaths.push(...ensureDomWebViewReactImport(packageDir));
+}
+
 if (repairedPaths.length === 0) {
-  console.log('ensure-expo-sqlite-ios-files: expo-sqlite iOS sources and shim already present');
+  console.log('ensure-expo-sqlite-ios-files: Expo native repairs already present');
   process.exit(0);
 }
 
 if (checkOnly) {
-  console.error('ensure-expo-sqlite-ios-files: missing expo-sqlite iOS repairs:');
+  console.error('ensure-expo-sqlite-ios-files: missing Expo native repairs:');
   for (const filePath of repairedPaths) {
     console.error(`- ${path.relative(rootDir, filePath)}`);
   }
   process.exit(1);
 }
 
-console.log('ensure-expo-sqlite-ios-files: restored expo-sqlite iOS files:');
+console.log('ensure-expo-sqlite-ios-files: restored Expo native files:');
 for (const filePath of repairedPaths) {
   console.log(`- ${path.relative(rootDir, filePath)}`);
 }

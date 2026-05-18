@@ -6,6 +6,14 @@ function isPrivateIpv4Host(host) {
     || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
 }
 
+function isLoopbackHost(host) {
+  return host === "localhost" || host === "127.0.0.1";
+}
+
+function isLocalDevelopmentHost(host) {
+  return isPrivateIpv4Host(host) || isLoopbackHost(host);
+}
+
 export function getCurrentServerHostname() {
   const interfaces = networkInterfaces();
 
@@ -20,15 +28,22 @@ export function getCurrentServerHostname() {
   return undefined;
 }
 
-export function resolveServerSupabaseUrl({ configuredUrl, serverHostname }) {
-  if (!serverHostname) {
-    return configuredUrl;
-  }
-
+export function resolveServerSupabaseUrl({ configuredUrl, requestHostname, serverHostname }) {
   const resolved = new URL(configuredUrl);
 
   if (
-    serverHostname !== resolved.hostname
+    requestHostname
+    && requestHostname !== resolved.hostname
+    && isLocalDevelopmentHost(requestHostname)
+    && isLocalDevelopmentHost(resolved.hostname)
+  ) {
+    resolved.hostname = requestHostname;
+    return resolved.origin;
+  }
+
+  if (
+    serverHostname
+    && serverHostname !== resolved.hostname
     && isPrivateIpv4Host(serverHostname)
     && isPrivateIpv4Host(resolved.hostname)
   ) {

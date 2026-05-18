@@ -1,7 +1,6 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import type { ComponentProps, FormEvent } from "react";
 import { useState } from "react";
 
@@ -29,7 +28,6 @@ const modeCopy: Record<AuthMode, { cta: string; description: string; title: stri
 };
 
 export function AuthCard({ className, ...props }: ComponentProps<"div">) {
-  const router = useRouter();
   const supabase = createBrowserSupabaseClient();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
@@ -63,8 +61,7 @@ export function AuthCard({ className, ...props }: ComponentProps<"div">) {
         return;
       }
 
-      router.push(nextState.href);
-      router.refresh();
+      window.location.assign(nextState.href);
     } finally {
       setIsSubmitting(false);
     }

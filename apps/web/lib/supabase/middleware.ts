@@ -12,6 +12,14 @@ function isPrivateIpv4Host(host: string): boolean {
     || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
 }
 
+function isLoopbackHost(host: string): boolean {
+  return host === "localhost" || host === "127.0.0.1";
+}
+
+function isLocalDevelopmentHost(host: string): boolean {
+  return isPrivateIpv4Host(host) || isLoopbackHost(host);
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -24,8 +32,8 @@ export async function updateSession(request: NextRequest) {
 
   if (
     request.nextUrl.hostname !== resolvedUrl.hostname
-    && isPrivateIpv4Host(request.nextUrl.hostname)
-    && isPrivateIpv4Host(resolvedUrl.hostname)
+    && isLocalDevelopmentHost(request.nextUrl.hostname)
+    && isLocalDevelopmentHost(resolvedUrl.hostname)
   ) {
     resolvedUrl.hostname = request.nextUrl.hostname;
   }

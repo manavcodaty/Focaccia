@@ -24,3 +24,11 @@ test("strips social-login UI and wires the auth card to email/password Supabase 
   assert.match(source, /Email/);
   assert.match(source, /Password/);
 });
+
+test("uses a document navigation after successful auth so the dashboard sees fresh cookies", () => {
+  const source = readFileSync(authCardPath, "utf8");
+
+  assert.match(source, /window\.location\.assign\(nextState\.href\)/);
+  assert.doesNotMatch(source, /router\.push\(nextState\.href\)/);
+  assert.doesNotMatch(source, /router\.refresh\(\)/);
+});

@@ -107,8 +107,11 @@ async function fetchWithCookies(url, cookieJar, init = {}) {
 const webDir = import.meta.dirname;
 const env = parseEnvFile(path.join(webDir, "../.env.local"));
 const cookieJar = new Map();
+const webBaseUrl = "http://localhost:3000";
+const requestHostname = new URL(webBaseUrl).hostname;
 const supabaseUrl = resolveServerSupabaseUrl({
   configuredUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+  requestHostname,
   serverHostname: getCurrentServerHostname(),
 });
 
@@ -129,7 +132,7 @@ const supabase = createServerClient(
   },
 );
 
-const loginResponse = await fetch("http://127.0.0.1:3000/login");
+const loginResponse = await fetch(`${webBaseUrl}/login`);
 const loginHtml = await loginResponse.text();
 const loginMain = loginHtml.match(/<main[\s\S]*<\/main>/i)?.[0] ?? loginHtml;
 assert.equal(loginResponse.status, 200);
@@ -143,7 +146,7 @@ assert.doesNotMatch(loginMain, /Google/i);
 assert.doesNotMatch(loginMain, /Continue with/i);
 assert.doesNotMatch(loginMain, /Or continue with/i);
 
-const unauthenticatedDashboard = await fetch("http://127.0.0.1:3000/dashboard", {
+const unauthenticatedDashboard = await fetch(`${webBaseUrl}/dashboard`, {
   redirect: "manual",
 });
 assert.equal(unauthenticatedDashboard.status, 307);
@@ -184,12 +187,12 @@ assert.ok(session?.access_token, "missing access token after auth");
 const cookieHeader = buildCookieHeader(cookieJar);
 assert.ok(cookieHeader.length > 0, "missing session cookies");
 
-const authenticatedDashboard = await fetchWithCookies("http://127.0.0.1:3000/dashboard", cookieJar);
+const authenticatedDashboard = await fetchWithCookies(`${webBaseUrl}/dashboard`, cookieJar);
 const dashboardHtml = await authenticatedDashboard.text();
 assert.equal(authenticatedDashboard.status, 200);
 assert.match(dashboardHtml, /Dashboard/i);
 
-const authenticatedLogin = await fetch("http://127.0.0.1:3000/login", {
+const authenticatedLogin = await fetch(`${webBaseUrl}/login`, {
   headers: {
     Cookie: cookieHeader,
   },

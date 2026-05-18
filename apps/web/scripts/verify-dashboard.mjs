@@ -107,8 +107,11 @@ async function fetchWithCookies(url, cookieJar, init = {}) {
 const webDir = import.meta.dirname;
 const env = parseEnvFile(path.join(webDir, "../.env.local"));
 const cookieJar = new Map();
+const webBaseUrl = "http://localhost:3000";
+const requestHostname = new URL(webBaseUrl).hostname;
 const supabaseUrl = resolveServerSupabaseUrl({
   configuredUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+  requestHostname,
   serverHostname: getCurrentServerHostname(),
 });
 
@@ -129,7 +132,7 @@ const supabase = createServerClient(
   },
 );
 
-const unauthenticatedDashboard = await fetch("http://127.0.0.1:3000/dashboard", {
+const unauthenticatedDashboard = await fetch(`${webBaseUrl}/dashboard`, {
   redirect: "manual",
 });
 assert.equal(unauthenticatedDashboard.status, 307);
@@ -161,7 +164,7 @@ assert.ok(session?.access_token, "missing access token after auth");
 const cookieHeader = buildCookieHeader(cookieJar);
 assert.ok(cookieHeader.length > 0, "missing session cookies");
 
-const dashboardResponse = await fetchWithCookies("http://127.0.0.1:3000/dashboard", cookieJar);
+const dashboardResponse = await fetchWithCookies(`${webBaseUrl}/dashboard`, cookieJar);
 const dashboardHtml = await dashboardResponse.text();
 assert.equal(dashboardResponse.status, 200);
 assert.match(dashboardHtml, /Welcome back/i);
@@ -195,7 +198,7 @@ assert.equal(createEventJson.ok, true);
 assert.match(createEventJson.data.join_code, /^[A-Z0-9]{8}$/);
 
 const eventOverviewResponse = await fetchWithCookies(
-  `http://127.0.0.1:3000/events/${eventId}`,
+  `${webBaseUrl}/events/${eventId}`,
   cookieJar,
 );
 const eventOverviewHtml = await eventOverviewResponse.text();
@@ -204,14 +207,14 @@ assert.match(eventOverviewHtml, /Event overview/i);
 assert.match(eventOverviewHtml, /Public cryptographic values/i);
 assert.match(eventOverviewHtml, /Gate logs/i);
 
-const eventCreatePage = await fetchWithCookies("http://127.0.0.1:3000/events/new", cookieJar);
+const eventCreatePage = await fetchWithCookies(`${webBaseUrl}/events/new`, cookieJar);
 const eventCreateHtml = await eventCreatePage.text();
 assert.equal(eventCreatePage.status, 200);
 assert.match(eventCreateHtml, /Create Event/i);
 assert.match(eventCreateHtml, /join code, event salt, and signing key/i);
 
 const provisioningResponse = await fetchWithCookies(
-  `http://127.0.0.1:3000/events/${eventId}/provisioning`,
+  `${webBaseUrl}/events/${eventId}/provisioning`,
   cookieJar,
 );
 const provisioningHtml = await provisioningResponse.text();
@@ -223,7 +226,7 @@ assert.match(provisioningHtml, /EVENT_SALT/i);
 assert.match(provisioningHtml, new RegExp(eventId));
 
 const revocationsResponse = await fetchWithCookies(
-  `http://127.0.0.1:3000/events/${eventId}/revocations`,
+  `${webBaseUrl}/events/${eventId}/revocations`,
   cookieJar,
 );
 const revocationsHtml = await revocationsResponse.text();
@@ -232,7 +235,7 @@ assert.match(revocationsHtml, /Revocations/i);
 assert.match(revocationsHtml, /No revocations yet/i);
 
 const logsResponse = await fetchWithCookies(
-  `http://127.0.0.1:3000/events/${eventId}/logs`,
+  `${webBaseUrl}/events/${eventId}/logs`,
   cookieJar,
 );
 const logsHtml = await logsResponse.text();

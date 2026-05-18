@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     ...typography.title,
-    color: palette.highlight,
+    color: palette.terracotta,
     fontSize: 12,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...typography.body,
-    color: palette.muted,
+    color: palette.mutedStone,
     fontSize: 15,
     lineHeight: 22,
   },

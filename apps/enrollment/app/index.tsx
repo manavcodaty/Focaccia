@@ -116,7 +116,7 @@ export default function JoinCodeScreen() {
             maxLength={8}
             onChangeText={(value) => setJoinCode(normalizeJoinCodeInput(value))}
             placeholder="AB12CD34"
-            placeholderTextColor={palette.muted}
+            placeholderTextColor={palette.mutedStone}
             returnKeyType="done"
             style={[
               styles.input,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   },
   helpLink: {
     ...typography.bodyStrong,
-    color: palette.accent,
+    color: palette.terracotta,
     textAlign: 'center',
   },
   hero: {
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   input: {
     ...typography.display,
     backgroundColor: palette.card,
-    borderColor: palette.line,
+    borderColor: palette.hintOfGrey,
     borderRadius: 18,
     borderWidth: 1,
     color: palette.ink,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   },
   kicker: {
     ...typography.title,
-    color: palette.accent,
+    color: palette.terracotta,
     fontSize: 13,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...typography.body,
-    color: palette.muted,
+    color: palette.mutedStone,
   },
   title: {
     ...typography.display,

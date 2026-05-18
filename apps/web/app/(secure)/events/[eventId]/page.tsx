@@ -15,13 +15,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import {
   Table,
   TableBody,
   TableCell,
@@ -49,7 +42,7 @@ export default async function EventDetailPage({
   const lifecycle = getEventLifecycleState(event);
 
   return (
-    <div className="fade-section flex flex-col gap-5">
+    <div className="fade-section flex flex-col gap-6">
       {/* Navigation */}
       <div className="flex flex-wrap items-center gap-2.5">
         <Button asChild size="sm" variant="outline">
@@ -61,45 +54,71 @@ export default async function EventDetailPage({
         <Badge variant={event.pk_gate_event ? "success" : "warning"}>
           {event.pk_gate_event ? "Gate provisioned" : "Gate not provisioned"}
         </Badge>
-        <Badge variant={lifecycle.phase === "ended" ? "warning" : lifecycle.phase === "active" ? "primary" : "outline"}>
-          {lifecycle.phase === "ended" ? "Event ended" : lifecycle.phase === "active" ? "Event live" : "Event upcoming"}
+        <Badge
+          variant={
+            lifecycle.phase === "ended"
+              ? "warning"
+              : lifecycle.phase === "active"
+                ? "warmAccent"
+                : "outline"
+          }
+        >
+          {lifecycle.phase === "ended"
+            ? "Event ended"
+            : lifecycle.phase === "active"
+              ? "Event live"
+              : "Event upcoming"}
         </Badge>
       </div>
 
       {/* Event header */}
-      <section className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <section className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-2xl">
-          <p className="text-xs font-medium text-[color:var(--muted-foreground)]">Event overview</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-[-0.02em] text-[color:var(--foreground)] md:text-3xl">
+          <p className="text-[12px] font-medium uppercase tracking-[0.2em] text-[var(--color-terracotta)]">
+            Event overview
+          </p>
+          <h1 className="mt-2 text-[26px] font-medium tracking-[-0.009em] text-[var(--color-ink)]">
             {event.name}
           </h1>
-          <p className="mt-1 token-mono text-xs text-[color:var(--muted-foreground)]">
+          <p className="mt-1 token-mono text-[12px] text-[var(--color-hint-of-grey)]">
             {event.event_id}
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {[
               { label: "Starts", value: formatTimestamp(event.starts_at) },
               { label: "Ends", value: formatTimestamp(event.ends_at) },
               { label: "Created", value: formatTimestamp(event.created_at) },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-3">
-                <p className="text-xs font-medium text-[color:var(--muted-foreground)]">{item.label}</p>
-                <p className="mt-1 text-sm text-[color:var(--foreground)]">{item.value}</p>
+              <div
+                key={item.label}
+                className="rounded-[16px] bg-[var(--color-fog)] p-3.5"
+              >
+                <p className="text-[12px] font-medium text-[var(--color-muted-stone)]">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-[14px] text-[var(--color-ink)]">
+                  {item.value}
+                </p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="w-full max-w-sm rounded-2xl border border-[color:var(--primary)]/15 bg-[color:var(--accent)]/30 p-5">
-          <div className="text-xs font-medium text-[color:var(--muted-foreground)]">Join code</div>
+        {/* Join code card */}
+        <div className="w-full max-w-sm rounded-[24px] bg-[var(--color-warm-mist)] p-5">
+          <div className="text-[12px] font-medium text-[var(--color-terracotta)]">
+            Join code
+          </div>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="token-mono text-3xl font-medium tracking-[0.2em] text-[color:var(--foreground)]">{event.join_code}</p>
+            <p className="token-mono text-[28px] font-medium tracking-[0.15em] text-[var(--color-ink)]">
+              {event.join_code}
+            </p>
             <CopyButton label="Join code copied." value={event.join_code} />
           </div>
-          <p className="mt-2.5 text-[0.8125rem] leading-relaxed text-[color:var(--muted-foreground)]">
+          <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--color-terracotta)]/80">
             {lifecycle.phase === "ended"
-              ? "This event window has closed. The join code is kept for audit reference and no longer admits new attendees."
-              : "Attendees use this code in the enrollment app to fetch the public event bundle."}
+              ? "This event has ended. The join code is kept for audit reference."
+              : "Attendees enter this code in the enrollment app to receive the public event bundle."}
           </p>
         </div>
       </section>
@@ -112,18 +131,23 @@ export default async function EventDetailPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {event.pk_gate_event ? <ShieldCheck className="size-4 text-[color:var(--success)]" /> : <ShieldAlert className="size-4 text-[color:var(--warning)]" />}
+              {event.pk_gate_event ? (
+                <ShieldCheck className="size-4 text-[var(--success)]" />
+              ) : (
+                <ShieldAlert className="size-4 text-[var(--warning)]" />
+              )}
               Gate readiness
             </CardTitle>
             <CardDescription>
-              A single gate device is allowed per event. Binding is permanent once completed.
+              A single gate device is allowed per event. Binding is permanent
+              once completed.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-3.5">
-              <p className="text-[0.8125rem] leading-relaxed text-[color:var(--foreground)]">
+            <div className="rounded-[16px] bg-[var(--color-fog)] p-4">
+              <p className="text-[14px] leading-relaxed text-[var(--color-ink)]">
                 {lifecycle.phase === "ended"
-                  ? "This event has ended. No new gate devices or attendee enrollments can be added."
+                  ? "This event has ended. No new gate devices or enrollments can be added."
                   : event.pk_gate_event
                     ? "This event is already bound to a gate device."
                     : "No gate has claimed this event yet."}
@@ -137,10 +161,14 @@ export default async function EventDetailPage({
                 </Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href={`/events/${event.event_id}/revocations`}>Manage revocations</Link>
+                <Link href={`/events/${event.event_id}/revocations`}>
+                  Manage revocations
+                </Link>
               </Button>
-              <Button asChild variant="outline">
-                <Link href={`/events/${event.event_id}/logs`}>View gate logs</Link>
+              <Button asChild variant="ghost">
+                <Link href={`/events/${event.event_id}/logs`}>
+                  View gate logs
+                </Link>
               </Button>
             </div>
           </CardContent>
@@ -150,14 +178,19 @@ export default async function EventDetailPage({
           <CardHeader>
             <CardTitle>Public cryptographic values</CardTitle>
             <CardDescription>
-              Safe to share with enrollment and gate apps. These values contain no biometric data.
+              Safe to share with enrollment and gate apps. These values contain
+              no biometric data.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <PublicValue label="PK_SIGN_EVENT" value={event.pk_sign_event} />
             <PublicValue label="EVENT_SALT" value={event.event_salt} />
             {event.pk_gate_event ? (
-              <PublicValue label="PK_GATE_EVENT" subtle value={event.pk_gate_event} />
+              <PublicValue
+                label="PK_GATE_EVENT"
+                subtle
+                value={event.pk_gate_event}
+              />
             ) : null}
           </CardContent>
         </Card>
@@ -179,7 +212,7 @@ export default async function EventDetailPage({
           </CardHeader>
           <CardContent>
             {revocations.length > 0 ? (
-              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)]">
+              <div className="rounded-[16px] border border-[var(--color-ink)]/[0.06] overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -189,9 +222,13 @@ export default async function EventDetailPage({
                   </TableHeader>
                   <TableBody>
                     {revocations.slice(0, 5).map((revocation) => (
-                      <TableRow key={`${revocation.event_id}-${revocation.pass_id}`}>
-                        <TableCell className="token-mono text-xs">{revocation.pass_id}</TableCell>
-                        <TableCell className="text-[0.8125rem] text-[color:var(--muted-foreground)]">
+                      <TableRow
+                        key={`${revocation.event_id}-${revocation.pass_id}`}
+                      >
+                        <TableCell className="token-mono text-[12px]">
+                          {revocation.pass_id}
+                        </TableCell>
+                        <TableCell className="text-[13px] text-[var(--color-muted-stone)]">
                           {formatTimestamp(revocation.revoked_at)}
                         </TableCell>
                       </TableRow>
@@ -200,17 +237,15 @@ export default async function EventDetailPage({
                 </Table>
               </div>
             ) : (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <Clock3 />
-                  </EmptyMedia>
-                  <EmptyTitle>No revocations yet</EmptyTitle>
-                  <EmptyDescription>
-                    This event currently has no denied pass IDs.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
+              <div className="flex flex-col items-center gap-3 rounded-[16px] bg-[var(--color-fog)] px-6 py-10 text-center">
+                <Clock3 className="size-5 text-[var(--color-hint-of-grey)]" />
+                <p className="text-[14px] font-medium text-[var(--color-ink)]">
+                  No revocations yet
+                </p>
+                <p className="text-[13px] text-[var(--color-muted-stone)]">
+                  This event currently has no denied pass IDs.
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>

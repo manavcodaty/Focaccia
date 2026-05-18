@@ -1,0 +1,62 @@
+<svg width="460" height="560" viewBox="0 0 460 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Focaccia Option 5</title>
+  <desc id="desc">Option 5 logo from the supplied image: scan-corner mosaic icon above the Focaccia wordmark.</desc>
+  <defs>
+    <filter id="tileShadow" x="10" y="40" width="440" height="360" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="7" stdDeviation="13" flood-color="#14171A" flood-opacity="0.06"/>
+    </filter>
+    <linearGradient id="peachSoft" x1="120" y1="140" x2="322" y2="322" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE1D2"/>
+      <stop offset="1" stop-color="#F3B98F"/>
+    </linearGradient>
+    <linearGradient id="rust" x1="182" y1="146" x2="318" y2="316" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C7693F"/>
+      <stop offset="1" stop-color="#8F2E19"/>
+    </linearGradient>
+    <style>
+      .dark { fill: #1c2024; }
+      .label { fill: #5d6064; font: 500 18px Inter, Avenir Next, Helvetica Neue, Arial, sans-serif; letter-spacing: 6px; }
+      .wordmark { fill: #1c2024; font: 600 58px Inter, Avenir Next, Helvetica Neue, Arial, sans-serif; letter-spacing: -2.4px; }
+    </style>
+  </defs>
+
+  <rect width="460" height="560" fill="#FFFFFF"/>
+
+  <text class="label" x="230" y="45" text-anchor="middle">OPTION 5</text>
+
+  <g filter="url(#tileShadow)">
+    <rect x="44" y="88" width="372" height="282" rx="64" fill="#FFFFFF"/>
+    <rect x="45.5" y="89.5" width="369" height="279" rx="62.5" stroke="#DEDFE1" stroke-width="3"/>
+  </g>
+
+  <g stroke="#1C2024" stroke-width="8" stroke-linecap="round">
+    <path d="M144 137H101C83.8792 137 70 150.879 70 168V211"/>
+    <path d="M316 137H359C376.121 137 390 150.879 390 168V211"/>
+    <path d="M144 322H101C83.8792 322 70 308.121 70 291V248"/>
+    <path d="M316 322H359C376.121 322 390 308.121 390 291V248"/>
+  </g>
+
+  <g transform="translate(139 164)">
+    <path d="M0 0H29V10C29 26.0163 16.0163 39 0 39V0Z" fill="url(#rust)"/>
+    <path d="M48 0H78V10C78 26.0163 65.0163 39 49 39H48V0Z" class="dark"/>
+    <rect x="97" y="0" width="30" height="39" fill="#FFD9C7"/>
+    <path d="M146 0H176V39H146V0Z" fill="#A63A1D"/>
+
+    <path d="M0 49H29V59C29 75.0163 16.0163 88 0 88V49Z" class="dark"/>
+    <rect x="48" y="49" width="30" height="39" fill="#F1BE91"/>
+    <path d="M97 49H127V59C127 75.0163 114.016 88 98 88H97V49Z" fill="#D7D7D5"/>
+    <rect x="146" y="49" width="30" height="39" class="dark"/>
+
+    <rect x="0" y="98" width="29" height="39" class="dark"/>
+    <path d="M48 98H78V137H72C58.7452 137 48 126.255 48 113V98Z" fill="#CC8042"/>
+    <circle cx="112" cy="117.5" r="19.5" class="dark"/>
+    <rect x="146" y="98" width="30" height="39" fill="#FFD9C7"/>
+
+    <path d="M0 147H7C23.0163 147 36 159.984 36 176H0V147Z" fill="#FFD9C7"/>
+    <path d="M48 147H78V153C78 165.703 67.7025 176 55 176H48V147Z" class="dark"/>
+    <rect x="97" y="147" width="30" height="29" fill="#A63A1D"/>
+    <path d="M146 147H176V176H146V169C146 156.85 155.85 147 168 147H176H146Z" class="dark"/>
+  </g>
+
+  <text class="wordmark" x="230" y="468" text-anchor="middle">Focaccia</text>
+</svg>

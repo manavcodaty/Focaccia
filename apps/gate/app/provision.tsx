@@ -217,7 +217,7 @@ export default function ProvisionScreen() {
               autoCorrect={false}
               onChangeText={setEmail}
               placeholder="Organizer email"
-              placeholderTextColor={palette.muted}
+              placeholderTextColor={palette.mutedStone}
               style={[
                 styles.input,
                 {
@@ -233,7 +233,7 @@ export default function ProvisionScreen() {
               autoCorrect={false}
               onChangeText={setPassword}
               placeholder="Password"
-              placeholderTextColor={palette.muted}
+              placeholderTextColor={palette.mutedStone}
               secureTextEntry
               style={[
                 styles.input,
@@ -289,7 +289,7 @@ export default function ProvisionScreen() {
               autoCapitalize="words"
               onChangeText={setDeviceName}
               placeholder="Device name"
-              placeholderTextColor={palette.muted}
+              placeholderTextColor={palette.mutedStone}
               style={[
                 styles.input,
                 {
@@ -325,12 +325,12 @@ const styles = StyleSheet.create({
   },
   caption: {
     ...typography.body,
-    color: palette.muted,
+    color: palette.mutedStone,
   },
   input: {
     ...typography.body,
     backgroundColor: palette.card,
-    borderColor: palette.line,
+    borderColor: palette.hintOfGrey,
     borderWidth: 1,
     color: palette.ink,
     paddingHorizontal: 16,

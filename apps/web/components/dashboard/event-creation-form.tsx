@@ -270,11 +270,11 @@ export function EventCreationForm() {
                     text: "You open provisioning and bind the first gate device for this event.",
                   },
                 ].map((item) => (
-                  <div key={item.step} className="flex gap-3 rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-3.5">
-                    <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-[color:var(--primary)]/10 text-[0.6875rem] font-semibold text-[color:var(--primary)]">
+                  <div key={item.step} className="flex gap-3 rounded-[16px] bg-[var(--color-fog)] p-3.5">
+                    <div className="flex size-6 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-warm-mist)] text-[11px] font-medium text-[var(--color-terracotta)]">
                       {item.step}
                     </div>
-                    <p className="text-[0.8125rem] leading-relaxed text-[color:var(--muted-foreground)]">
+                    <p className="text-[13px] leading-relaxed text-[var(--color-muted-stone)]">
                       {item.text}
                     </p>
                   </div>
@@ -284,7 +284,8 @@ export function EventCreationForm() {
           </Card>
 
           {createdEvent ? (
-            <Card className="border-[color:var(--success)]/20">
+            /* eslint-disable-next-line @next/next/no-assign-module-variable */
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-[0.9375rem]">
                   <CheckCircle2 className="size-4 text-[color:var(--success)]" />
@@ -295,23 +296,23 @@ export function EventCreationForm() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <div className="rounded-xl border border-[color:var(--primary)]/15 bg-[color:var(--accent)]/40 p-4">
-                  <div className="text-xs font-medium text-[color:var(--muted-foreground)]">
+                <div className="rounded-[16px] bg-[var(--color-warm-mist)] p-4">
+                  <div className="text-[12px] font-medium text-[var(--color-terracotta)]">
                     Join code
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="token-mono text-3xl font-medium tracking-[0.2em] text-[color:var(--foreground)]">
+                    <p className="token-mono text-[28px] font-medium tracking-[0.15em] text-[var(--color-ink)]">
                       {createdEvent.join_code}
                     </p>
                     <CopyButton label="Join code copied." value={createdEvent.join_code} />
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-3.5">
-                  <p className="text-xs font-medium text-[color:var(--muted-foreground)]">
+                <div className="rounded-[16px] bg-[var(--color-fog)] p-3.5">
+                  <p className="text-[12px] font-medium text-[var(--color-muted-stone)]">
                     PK_SIGN_EVENT
                   </p>
-                  <p className="mt-1.5 token-mono break-all text-xs leading-5 text-[color:var(--foreground)]">
+                  <p className="mt-1.5 token-mono break-all text-[12px] leading-5 text-[var(--color-ink)]">
                     {createdEvent.pk_sign_event}
                   </p>
                 </div>

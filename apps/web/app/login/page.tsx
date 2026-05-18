@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { LockKeyhole } from "lucide-react";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -15,28 +14,36 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10 sm:px-8">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(0,102,255,0.16),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(10,16,36,0.12),_transparent_28%)]" />
-      <div className="absolute left-8 top-8 inline-flex items-center gap-3 rounded-full border border-[color:var(--border)] bg-[color:var(--card)]/86 px-4 py-2 text-xs uppercase tracking-[0.24em] text-[color:var(--muted-foreground)] backdrop-blur-lg">
-        <LockKeyhole className="size-3.5 text-[color:var(--primary)]" />
-        Privacy-preserving organizer access
-      </div>
-      <div className="relative grid w-full max-w-6xl gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-        <section className="fade-section hidden max-w-xl lg:block">
-          <p className="text-[11px] uppercase tracking-[0.36em] text-[color:var(--muted-foreground)]">
-            Event-scoped biometric entry
+    <main className="relative flex min-h-screen items-center justify-center px-5 py-10 sm:px-8 bg-mesh overflow-hidden">
+      {/* Texture overlay */}
+      <div className="bg-noise absolute inset-0 z-0 opacity-40"></div>
+
+      {/* Decorative Orbs */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[var(--color-warm-mist)] opacity-40 rounded-full blur-[100px] mix-blend-multiply animate-pulse" style={{ animationDuration: '8s' }}></div>
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[var(--color-fog)] opacity-60 rounded-full blur-[120px] mix-blend-multiply animate-pulse" style={{ animationDuration: '12s', animationDelay: '2s' }}></div>
+
+      <div className="relative grid w-full max-w-5xl gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        {/* Left: Brand messaging */}
+        <section className="fade-section hidden max-w-lg lg:block">
+          <p className="text-[12px] font-medium uppercase tracking-[0.2em] text-[var(--color-terracotta)]">
+            Organizer access
           </p>
-          <h1 className="poster-title mt-5 text-6xl leading-[0.95] text-[color:var(--foreground)]">
+          <h1 className="display-heading mt-5 text-[44px] text-[var(--color-ink)]">
             Provision trust.
             <br />
-            Keep the raw face off the network.
+            Keep the face off the network.
           </h1>
-          <p className="mt-6 max-w-lg text-lg leading-8 text-[color:var(--muted-foreground)]">
-            The organizer console creates event salts, signing keys, join codes, and the gate handoff surface without ever becoming a storage layer for biometric images.
+          <p className="mt-6 max-w-md text-[15px] leading-[1.5] text-[var(--color-muted-stone)]">
+            The organizer console creates event salts, signing keys, and join
+            codes without ever becoming a storage layer for biometric data.
           </p>
         </section>
+
+        {/* Right: Auth form */}
         <div className="fade-section fade-delay-1 flex justify-center lg:justify-end">
-          <AuthCard />
+          <div className="hover-lift rounded-[24px]">
+            <AuthCard />
+          </div>
         </div>
       </div>
     </main>

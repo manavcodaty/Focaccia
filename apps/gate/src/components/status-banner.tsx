@@ -18,9 +18,9 @@ export function StatusBanner({
       style={[
         styles.banner,
         {
-          borderRadius: scaleSpacing(layout, 18, 1.05),
-          paddingHorizontal: scaleSpacing(layout, 14, 1.06),
-          paddingVertical: scaleSpacing(layout, 12, 1.06),
+          borderRadius: 16,
+          paddingHorizontal: scaleSpacing(layout, 16, 1.06),
+          paddingVertical: scaleSpacing(layout, 14, 1.06),
         },
         tone === 'success'
           ? styles.successBanner
@@ -54,34 +54,30 @@ export function StatusBanner({
 }
 
 const styles = StyleSheet.create({
-  banner: { borderWidth: 1 },
+  banner: {},
   dangerBanner: {
     backgroundColor: palette.alertSoft,
-    borderColor: palette.alertBorder,
   },
   dangerText: {
     color: palette.alert,
   },
   message: {
-    ...typography.title,
+    ...typography.bodyStrong,
   },
   neutralBanner: {
-    backgroundColor: palette.panel,
-    borderColor: palette.line,
+    backgroundColor: palette.fog,
   },
   neutralText: {
     color: palette.ink,
   },
   successBanner: {
     backgroundColor: palette.acceptSoft,
-    borderColor: palette.acceptBorder,
   },
   successText: {
     color: palette.accept,
   },
   warningBanner: {
     backgroundColor: palette.warningSoft,
-    borderColor: palette.warningBorder,
   },
   warningText: {
     color: palette.warning,

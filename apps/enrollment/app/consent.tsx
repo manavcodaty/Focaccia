@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     ...typography.bodyStrong,
-    color: palette.muted,
+    color: palette.mutedStone,
   },
   detailRow: {
     gap: 4,

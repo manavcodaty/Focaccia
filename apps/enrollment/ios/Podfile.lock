@@ -179,6 +179,8 @@ PODS:
     - Yoga
   - ExpoAsset (55.0.13):
     - ExpoModulesCore
+  - ExpoBlur (55.0.14):
+    - ExpoModulesCore
   - ExpoClipboard (55.0.12):
     - ExpoModulesCore
   - ExpoDomWebView (55.0.3):
@@ -200,6 +202,8 @@ PODS:
     - ExpoModulesCore
     - SDWebImageWebPCoder
   - ExpoKeepAwake (55.0.6):
+    - ExpoModulesCore
+  - ExpoLinearGradient (55.0.14):
     - ExpoModulesCore
   - ExpoLinking (55.0.11):
     - ExpoModulesCore
@@ -2463,6 +2467,7 @@ DEPENDENCIES:
   - "expo-dev-menu (from `../../../node_modules/.pnpm/expo-dev-menu@55.0.20_expo@55.0.12/node_modules/expo-dev-menu`)"
   - "expo-dev-menu-interface (from `../../../node_modules/.pnpm/expo-dev-menu-interface@55.0.2_expo@55.0.12/node_modules/expo-dev-menu-interface/ios`)"
   - "ExpoAsset (from `../../../node_modules/.pnpm/expo-asset@55.0.13_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-native+me_f3ba73eb7e096f2cfb584983f9c68a02/node_modules/expo-asset/ios`)"
+  - "ExpoBlur (from `../../../node_modules/.pnpm/expo-blur@55.0.14_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-native+met_7052de55da9cd658cb408d6363524641/node_modules/expo-blur/ios`)"
   - "ExpoClipboard (from `../../../node_modules/.pnpm/expo-clipboard@55.0.12_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-nativ_f33a66567f7985dfc6b22e3443eea256/node_modules/expo-clipboard/ios`)"
   - "ExpoDomWebView (from `../../../node_modules/.pnpm/@expo+dom-webview@55.0.3_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-nat_8653f9a2586eecff5f471c4a3052d1b6/node_modules/@expo/dom-webview/ios`)"
   - "ExpoFileSystem (from `../../../node_modules/.pnpm/expo-file-system@55.0.15_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-nat_bf16707967282e9aa56f8aaf64c19abb/node_modules/expo-file-system/ios`)"
@@ -2471,6 +2476,7 @@ DEPENDENCIES:
   - "ExpoImage (from `../../../node_modules/.pnpm/expo-image@55.0.8_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-native+met_f94a7e30e4b02ae5a9a683c45b427477/node_modules/expo-image/ios`)"
   - "ExpoImageManipulator (from `../../../node_modules/.pnpm/expo-image-manipulator@55.0.14_expo@55.0.12/node_modules/expo-image-manipulator/ios`)"
   - "ExpoKeepAwake (from `../../../node_modules/.pnpm/expo-keep-awake@55.0.6_expo@55.0.12_react@19.2.0/node_modules/expo-keep-awake/ios`)"
+  - "ExpoLinearGradient (from `../../../node_modules/.pnpm/expo-linear-gradient@55.0.14_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react_19de3daf5030860adf609e65847faa97/node_modules/expo-linear-gradient/ios`)"
   - "ExpoLinking (from `../../../node_modules/.pnpm/expo-linking@55.0.11_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-native+_afb05ee992ba3c2791874dd2e4658202/node_modules/expo-linking/ios`)"
   - "ExpoLogBox (from `../../../node_modules/.pnpm/@expo+log-box@55.0.10_@expo+dom-webview@55.0.3_expo@55.0.12_react-native@0.83.4_@babel+_e621aa6db477f59c8ba8dbb6d60c5911/node_modules/@expo/log-box`)"
   - "ExpoModulesCore (from `../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.0_@react-native+metro-co_76268c435698f6e2a58a5a4c27d1c5f9/node_modules/expo-modules-core`)"
@@ -2595,6 +2601,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/expo-dev-menu-interface@55.0.2_expo@55.0.12/node_modules/expo-dev-menu-interface/ios"
   ExpoAsset:
     :path: "../../../node_modules/.pnpm/expo-asset@55.0.13_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-native+me_f3ba73eb7e096f2cfb584983f9c68a02/node_modules/expo-asset/ios"
+  ExpoBlur:
+    :path: "../../../node_modules/.pnpm/expo-blur@55.0.14_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-native+met_7052de55da9cd658cb408d6363524641/node_modules/expo-blur/ios"
   ExpoClipboard:
     :path: "../../../node_modules/.pnpm/expo-clipboard@55.0.12_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-nativ_f33a66567f7985dfc6b22e3443eea256/node_modules/expo-clipboard/ios"
   ExpoDomWebView:
@@ -2611,6 +2619,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/expo-image-manipulator@55.0.14_expo@55.0.12/node_modules/expo-image-manipulator/ios"
   ExpoKeepAwake:
     :path: "../../../node_modules/.pnpm/expo-keep-awake@55.0.6_expo@55.0.12_react@19.2.0/node_modules/expo-keep-awake/ios"
+  ExpoLinearGradient:
+    :path: "../../../node_modules/.pnpm/expo-linear-gradient@55.0.14_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react_19de3daf5030860adf609e65847faa97/node_modules/expo-linear-gradient/ios"
   ExpoLinking:
     :path: "../../../node_modules/.pnpm/expo-linking@55.0.11_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.0_@react-native+_afb05ee992ba3c2791874dd2e4658202/node_modules/expo-linking/ios"
   ExpoLogBox:
@@ -2805,6 +2815,7 @@ SPEC CHECKSUMS:
   expo-dev-menu: 6d83d4aeffd36abcbaa5c1a150e33a6a2b799257
   expo-dev-menu-interface: 833795f4c98a674d36cbc12b11b21756c38e01e8
   ExpoAsset: 3636e70a874487efd0a677f6c064dbc9fc8f174b
+  ExpoBlur: 7a86e84e7728108fa6908d7103fa527705a3dbbf
   ExpoClipboard: 7c8c987388fcde07e799050a8c7a7d84ece2c919
   ExpoDomWebView: f101fb3db4b6eec4163fca51f7507189b7e48661
   ExpoFileSystem: d40374bc7b6e990e2640e5dc3350fc83b1d74a40
@@ -2813,6 +2824,7 @@ SPEC CHECKSUMS:
   ExpoImage: ef931bba1fd3e907c2262216d17eb21095c9ac2b
   ExpoImageManipulator: 20dd2df7f2052417a689518461d343aef176703e
   ExpoKeepAwake: a1baf9810a2dee1905aa9bdd336852598f7220e9
+  ExpoLinearGradient: dcbc1ca46ebfeb9d7646f49595057d161dae208e
   ExpoLinking: b42fd76bdda8662ddf797b17cb4cc793adabfe98
   ExpoLogBox: a3de999775d423ac9cb85d24bd47628e5392761f
   ExpoModulesCore: 964f01116faf01b68467a6c8ea06e14d65fe7b3c

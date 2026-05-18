@@ -54,7 +54,7 @@ export default function FallbackScreen() {
           multiline
           onChangeText={setToken}
           placeholder="eyJ2IjoxLCJldmVudF9pZCI6Ii4uLiJ9.signature"
-          placeholderTextColor={palette.muted}
+          placeholderTextColor={palette.mutedStone}
           style={[
             styles.tokenInput,
             {
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   tokenInput: {
     ...typography.body,
     backgroundColor: palette.card,
-    borderColor: palette.line,
+    borderColor: palette.hintOfGrey,
     borderRadius: 20,
     borderWidth: 1,
     color: palette.ink,

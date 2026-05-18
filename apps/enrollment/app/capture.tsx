@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
   },
   fallbackCard: {
     backgroundColor: palette.card,
-    borderColor: palette.line,
+    borderColor: palette.hintOfGrey,
     borderWidth: 1,
     width: '100%',
   },
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   },
   topEyebrow: {
     ...typography.title,
-    color: palette.accentSoft,
+    color: palette.warmMist,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },

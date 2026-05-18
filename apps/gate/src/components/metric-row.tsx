@@ -24,9 +24,9 @@ export function MetricRow({
 const styles = StyleSheet.create({
   label: {
     ...typography.title,
-    color: palette.muted,
+    color: palette.mutedStone,
     flex: 1,
-    letterSpacing: 0.2,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   row: {

@@ -1,4 +1,4 @@
-import { focacciaBrand, focacciaBrandMark, focacciaWordmark } from '@face-pass/shared';
+import { focacciaBrandMark, focacciaWordmark } from '@face-pass/shared';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
@@ -14,7 +14,7 @@ export function BrandLogo() {
     >
       <Svg height={36} viewBox={focacciaBrandMark.viewBox} width={36}>
         <Rect
-          fill={focacciaBrand.background}
+          fill={palette.canvas}
           height={focacciaBrandMark.outerRect.height}
           rx={focacciaBrandMark.outerRect.rx}
           width={focacciaBrandMark.outerRect.width}
@@ -22,20 +22,20 @@ export function BrandLogo() {
           y={focacciaBrandMark.outerRect.y}
         />
         <Rect
-          fill={focacciaBrand.card}
+          fill={palette.canvas}
           height={focacciaBrandMark.innerRect.height}
           rx={focacciaBrandMark.innerRect.rx}
-          stroke={focacciaBrand.border}
+          stroke={palette.hintOfGrey}
           strokeWidth={4}
           width={focacciaBrandMark.innerRect.width}
           x={focacciaBrandMark.innerRect.x}
           y={focacciaBrandMark.innerRect.y}
         />
-        <Path d={focacciaBrandMark.shieldPath} fill={focacciaBrand.primary} />
+        <Path d={focacciaBrandMark.shieldPath} fill={palette.ink} />
         <Path
           d={focacciaBrandMark.checkPath}
           fill="none"
-          stroke={focacciaBrand.primaryForeground}
+          stroke={palette.canvas}
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={8}
@@ -56,7 +56,6 @@ const styles = StyleSheet.create({
     ...typography.display,
     color: palette.ink,
     fontSize: 28,
-    fontStyle: 'italic',
     letterSpacing: -0.6,
     lineHeight: 30,
   },

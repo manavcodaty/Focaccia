@@ -18,8 +18,8 @@ export function StatusChip({
       style={[
         styles.chip,
         {
-          borderRadius: scaleSpacing(layout, 999, 1),
-          paddingHorizontal: scaleSpacing(layout, 12, 1.06),
+          borderRadius: 9999,
+          paddingHorizontal: scaleSpacing(layout, 14, 1.06),
           paddingVertical: scaleSpacing(layout, 8, 1.06),
         },
         tone === 'success'
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   neutral: {
-    backgroundColor: palette.panel,
+    backgroundColor: palette.fog,
   },
   success: {
     backgroundColor: palette.acceptSoft,

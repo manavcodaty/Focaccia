@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     ...typography.bodyStrong,
-    color: palette.muted,
+    color: palette.mutedStone,
   },
   detailRow: {
     gap: 4,
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   snippetLabel: {
     ...typography.title,
-    color: palette.muted,
+    color: palette.mutedStone,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },

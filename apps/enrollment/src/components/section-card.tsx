@@ -21,27 +21,33 @@ export function SectionCard({
       style={[
         styles.card,
         {
-          borderRadius: scaleSpacing(layout, 28, 1.08),
+          borderRadius: 24,
           gap: scaleSpacing(layout, 14, 1.05),
           padding: scaleSpacing(layout, 20, 1.12),
         },
       ]}
     >
-      {eyebrow ? <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>{eyebrow}</Text> : null}
+      {eyebrow ? (
+        <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 11) }]}>
+          {eyebrow}
+        </Text>
+      ) : null}
       {title ? (
         <Text
           style={[
             styles.title,
             {
-              fontSize: scaleFont(layout, 24, 1.12),
-              lineHeight: scaleFont(layout, 30, 1.12),
+              fontSize: scaleFont(layout, 22, 1.12),
+              lineHeight: scaleFont(layout, 28, 1.12),
             },
           ]}
         >
           {title}
         </Text>
       ) : null}
-      <View style={[styles.body, { gap: scaleSpacing(layout, 14, 1.05) }]}>{children}</View>
+      <View style={[styles.body, { gap: scaleSpacing(layout, 14, 1.05) }]}>
+        {children}
+      </View>
     </View>
   );
 }
@@ -50,24 +56,26 @@ const styles = StyleSheet.create({
   body: {},
   card: {
     backgroundColor: palette.card,
-    borderColor: palette.line,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
     borderWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { height: 18, width: 0 },
-    shadowOpacity: 0.04,
-    shadowRadius: 30,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
   },
   eyebrow: {
     ...typography.title,
-    color: palette.accent,
-    fontSize: 12,
-    letterSpacing: 1.2,
+    color: palette.terracotta,
+    fontSize: 11,
+    letterSpacing: 2.0,
     textTransform: 'uppercase',
   },
   title: {
     ...typography.title,
     color: palette.ink,
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 22,
+    letterSpacing: -0.2,
+    lineHeight: 28,
   },
 });

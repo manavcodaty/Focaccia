@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     ...typography.title,
-    color: palette.highlight,
+    color: palette.terracotta,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   },
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...typography.body,
-    color: palette.muted,
+    color: palette.mutedStone,
   },
   title: {
     ...typography.display,

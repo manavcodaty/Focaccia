@@ -4,61 +4,84 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* ─── Core palette (from brand.ts) ─── */
-  --background: #F7F9FC;
-  --foreground: #0a1024;
-  --card: #ffffff;
-  --card-foreground: #0a1024;
-  --popover: #ffffff;
-  --popover-foreground: #0a1024;
-  --primary: #0066FF;
-  --primary-strong: #0055dd;
-  --primary-foreground: #ffffff;
-  --secondary: #0a1024;
-  --secondary-foreground: #f8faff;
-  --muted: #edf2fb;
-  --muted-foreground: #64748b;
-  --accent: #e5f0ff;
-  --accent-foreground: #0a1024;
+  /* ─── Steep / Warm, Crisp Canvas — from docs/DESIGN.md ─── */
+  --color-canvas: #ffffff;
+  --color-ink: #17191c;
+  --color-graphite: #000000;
+  --color-warm-mist: #fbe1d1;
+  --color-terracotta: #5d2a1a;
+  --color-fog: #f7f7f8;
+  --color-muted-stone: #4c4c4c;
+  --color-light-steel: #777b86;
+  --color-hint-of-grey: #a3a6af;
+  --color-dusk-link: #8b8c8d;
+
+  /* ─── Mapped to shadcn/Radix semantic tokens ─── */
+  --background: var(--color-canvas);
+  --foreground: var(--color-ink);
+  --card: var(--color-canvas);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-canvas);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-ink);
+  --primary-foreground: var(--color-canvas);
+  --secondary: var(--color-fog);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-fog);
+  --muted-foreground: var(--color-muted-stone);
+  --accent: var(--color-warm-mist);
+  --accent-foreground: var(--color-terracotta);
   --destructive: #b74b33;
   --destructive-foreground: #fff8f4;
-  --border: #dfe5f2;
-  --border-strong: #b8c4dd;
-  --input: #d4dced;
-  --ring: rgba(0, 102, 255, 0.28);
-  --radius: 1rem;
+  --border: var(--color-hint-of-grey);
+  --input: var(--color-hint-of-grey);
+  --ring: var(--color-ink);
+  --radius: 24px;
 
   /* ─── Semantic status ─── */
   --danger: #b74b33;
   --danger-soft: #fde3db;
-  --success: #17775a;
-  --success-soft: #d8f3e8;
+  --success: #2a7d5a;
+  --success-soft: #e5f4ec;
   --warning: #8a5b14;
   --warning-soft: #f5e6cb;
 
-  /* ─── Sidebar (dark branded surface) ─── */
-  --sidebar: #0a1024;
-  --sidebar-foreground: #f8faff;
-  --sidebar-primary: #0066FF;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #16254a;
-  --sidebar-accent-foreground: #f8faff;
-  --sidebar-border: #1e3060;
-  --sidebar-ring: rgba(0, 102, 255, 0.4);
-  --sidebar-muted: rgba(255, 255, 255, 0.06);
+  /* ─── Typography ─── */
+  --font-sohne: 'Sohne', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-signifier: 'Signifier', Georgia, 'Times New Roman', serif;
 
-  /* ─── Landing page (dark) ─── */
-  --landing-background: #0a1024;
-  --landing-foreground: #ffffff;
-  --landing-primary: #0066FF;
-  --landing-primary-foreground: #ffffff;
-  --landing-border: #2a3550;
+  /* ─── Spacing (DESIGN.md base unit 4px) ─── */
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-64: 64px;
+  --spacing-80: 80px;
+  --spacing-96: 96px;
 
-  /* ─── Elevation / surface ─── */
-  --shadow-card: 0 1px 2px rgba(10, 16, 36, 0.04), 0 8px 24px -6px rgba(10, 16, 36, 0.08);
-  --shadow-card-hover: 0 2px 4px rgba(10, 16, 36, 0.06), 0 12px 32px -6px rgba(10, 16, 36, 0.12);
-  --shadow-elevated: 0 4px 6px rgba(10, 16, 36, 0.04), 0 20px 48px -8px rgba(10, 16, 36, 0.14);
-  --shadow-inset: inset 0 1px 2px rgba(10, 16, 36, 0.06);
+  /* ─── Layout ─── */
+  --page-max-width: 1280px;
+  --section-gap: 80px;
+  --card-padding: 20px;
+  --element-gap: 8px;
+
+  /* ─── Border Radius (DESIGN.md) ─── */
+  --radius-cards: 24px;
+  --radius-images: 12px;
+  --radius-inputs: 16px;
+  --radius-buttons: 9999px;
+  --radius-default: 24px;
+
+  /* ─── Elevation (DESIGN.md) ─── */
+  --shadow-subtle: rgba(4, 23, 43, 0.03) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 4px, rgba(0, 0, 0, 0.02) 0px 8px 16px;
+  --shadow-card: rgba(4, 23, 43, 0.04) 0px 0px 0px 1px, rgba(0, 0, 0, 0.06) 0px 4px 8px -2px, rgba(0, 0, 0, 0.04) 0px 12px 24px -4px;
+  --shadow-card-hover: rgba(4, 23, 43, 0.06) 0px 0px 0px 1px, rgba(0, 0, 0, 0.08) 0px 8px 16px -4px, rgba(0, 0, 0, 0.06) 0px 24px 40px -8px;
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 @utility container {
@@ -94,23 +117,25 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: var(--font-body-app);
-  --font-display: var(--font-body-app);
-  --font-mono: var(--font-body-app);
-  --font-sentient: var(--font-body-app);
+
+  /* Sidebar tokens — light canvas sidebar */
+  --color-sidebar: var(--color-fog);
+  --color-sidebar-foreground: var(--color-ink);
+  --color-sidebar-primary: var(--color-ink);
+  --color-sidebar-primary-foreground: var(--color-canvas);
+  --color-sidebar-accent: var(--color-warm-mist);
+  --color-sidebar-accent-foreground: var(--color-terracotta);
+  --color-sidebar-border: rgba(0, 0, 0, 0.08);
+  --color-sidebar-ring: var(--color-ink);
+
+  --font-sans: var(--font-sohne);
+  --font-display: var(--font-signifier);
+  --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', ui-monospace, monospace;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border/30 outline-ring/50;
   }
 
   body {
@@ -125,7 +150,9 @@ html {
 body {
   min-height: 100vh;
   color: var(--foreground);
-  font-family: var(--font-body-app), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-sohne);
+  font-weight: 400;
+  letter-spacing: -0.009em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--background);
@@ -137,53 +164,22 @@ button {
 }
 
 ::selection {
-  background: rgba(0, 102, 255, 0.18);
+  background: rgba(93, 42, 26, 0.12);
 }
 
-/* ─── Premium typography ─── */
-.poster-title {
-  font-family: var(--font-body-app), sans-serif;
-  font-weight: 500;
-  letter-spacing: -0.03em;
+/* ─── Display headings (Signifier treatment) ─── */
+.display-heading {
+  font-family: var(--font-signifier);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
 }
 
-/* ─── Landing page scan grid effect ─── */
-.scan-grid::after {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  content: "";
-  border-radius: inherit;
-  background-image:
-    linear-gradient(rgba(0, 102, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 102, 255, 0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.3), transparent 78%);
-}
-
-/* ─── Landing page theme override ─── */
-.landing-page-theme {
-  --background: var(--landing-background);
-  --foreground: var(--landing-foreground);
-  --primary: var(--landing-primary);
-  --primary-foreground: var(--landing-primary-foreground);
-  --border: var(--landing-border);
-  background: var(--background);
-  color: var(--foreground);
-}
-
-/* ─── WebGL canvas ─── */
-#webgl {
-  left: 0;
-  position: fixed;
-  top: 0;
-  height: 100svh;
-  width: 100%;
-}
-
-#webgl canvas {
-  height: 100%;
-  width: 100%;
+/* ─── Monospace code / token display ─── */
+.token-mono {
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', ui-monospace, monospace;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.01em;
 }
 
 /* ─── Page entrance animations ─── */
@@ -215,22 +211,91 @@ button {
   }
 }
 
-/* ─── Dashboard-specific surface gradient ─── */
-.dashboard-surface {
-  background:
-    linear-gradient(180deg, #f9fbff 0%, #f6f8fd 50%, #f2f5fb 100%);
-}
-
-/* ─── Premium code/token display ─── */
-.token-mono {
-  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", ui-monospace, monospace;
-  font-feature-settings: "tnum" 1;
-  letter-spacing: 0.01em;
-}
-
 /* ─── Smooth micro-transitions for interactive elements ─── */
 .transition-premium {
-  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
-  transition-duration: 200ms;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, filter;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.hover-lift {
+  transition: transform 300ms cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 300ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ─── Noise texture overlay ─── */
+.bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 150px;
+  opacity: 0.035;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* ─── Button magic hover ─── */
+.btn-magic {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.btn-magic:active {
+  transform: scale(0.97);
+}
+
+/* ─── Premium Glassmorphism ─── */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 
+    0 1px 2px rgba(0,0,0,0.02),
+    0 8px 24px rgba(0,0,0,0.03),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+}
+
+.dark .glass-panel {
+  background: rgba(23, 25, 28, 0.65);
+  box-shadow: 
+    0 1px 2px rgba(0,0,0,0.1),
+    0 8px 24px rgba(0,0,0,0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Animated Mesh Background ─── */
+.bg-mesh {
+  background-color: var(--color-canvas);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(251, 225, 209, 0.4) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(247, 247, 248, 0.8) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(251, 225, 209, 0.3) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(247, 247, 248, 0.7) 0px, transparent 50%);
+  background-size: 200% 200%;
+  animation: mesh-gradient 15s ease infinite;
+}
+
+@keyframes mesh-gradient {
+  0% { background-position: 0% 0%; }
+  25% { background-position: 100% 0%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* ─── Reduced motion support ─── */
+@media (prefers-reduced-motion: reduce) {
+  .fade-section {
+    animation: none;
+    opacity: 1;
+  }
+
+  .transition-premium, .hover-lift, .hover-lift:hover, .btn-magic {
+    transition-duration: 0ms;
+    transform: none !important;
+  }
 }

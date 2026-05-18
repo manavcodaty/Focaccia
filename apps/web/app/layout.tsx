@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 
 import "./globals.css";
-
-const bodyFont = IBM_Plex_Sans({
-  subsets: ["latin"],
-  variable: "--font-body-app",
-  weight: ["400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   description: "Privacy-preserving biometric event access verified offline and stored nowhere.",
@@ -21,10 +14,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className={bodyFont.variable} lang="en">
+    <html lang="en">
       <body className="antialiased">
         {children}
-        <Toaster position="top-right" richColors />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: "var(--color-canvas)",
+              border: "1px solid rgba(0, 0, 0, 0.08)",
+              borderRadius: "var(--radius-cards)",
+              boxShadow: "var(--shadow-subtle)",
+              color: "var(--color-ink)",
+              fontFamily: "var(--font-sohne)",
+            },
+          }}
+        />
       </body>
     </html>
   );

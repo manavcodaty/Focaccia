@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { scaleFont, scaleSpacing } from '../lib/responsive-metrics';
 import { useResponsiveLayout } from '../lib/use-responsive-layout';
@@ -25,9 +25,9 @@ export function PrimaryButton({
       style={({ pressed }) => [
         styles.button,
         {
-          borderRadius: scaleSpacing(layout, 18, 1.08),
-          minHeight: scaleSpacing(layout, 56, 1.08),
-          paddingHorizontal: scaleSpacing(layout, 20, 1.08),
+          borderRadius: 9999,
+          minHeight: scaleSpacing(layout, 52, 1.08),
+          paddingHorizontal: scaleSpacing(layout, 24, 1.08),
         },
         tone === 'ghost' ? styles.ghostButton : styles.primaryButton,
         disabled ? styles.disabled : null,
@@ -53,11 +53,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   disabled: {
-    opacity: 0.45,
+    opacity: 0.40,
   },
   ghostButton: {
     backgroundColor: 'transparent',
-    borderColor: palette.line,
+    borderColor: palette.ink,
     borderWidth: 1,
   },
   ghostLabel: {
@@ -66,13 +66,19 @@ const styles = StyleSheet.create({
   label: {
     ...typography.title,
     fontSize: 16,
-    letterSpacing: 0.2,
+    letterSpacing: -0.1,
   },
   pressed: {
-    transform: [{ scale: 0.99 }],
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
   },
   primaryButton: {
-    backgroundColor: palette.accent,
+    backgroundColor: palette.ink,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
   primaryLabel: {
     color: palette.textInverse,

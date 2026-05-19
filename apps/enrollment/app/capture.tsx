@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -204,8 +205,9 @@ export default function CaptureScreen() {
   return (
     <View style={styles.captureScreen}>
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
-        <View
-          style={[
+        <ScrollView
+          bounces={false}
+          contentContainerStyle={[
             styles.captureLayout,
             {
               gap: layout.sectionGap,
@@ -213,6 +215,7 @@ export default function CaptureScreen() {
               paddingVertical: layout.verticalPadding,
             },
           ]}
+          showsVerticalScrollIndicator={false}
         >
           {layout.isLandscape ? (
             <View
@@ -233,6 +236,7 @@ export default function CaptureScreen() {
                   ]}
                 >
                   <Camera
+                    ref={camera}
                     device={device}
                     isActive={!isProcessing}
                     photo
@@ -378,6 +382,7 @@ export default function CaptureScreen() {
                 ]}
               >
                 <Camera
+                  ref={camera}
                   device={device}
                   isActive={!isProcessing}
                   photo
@@ -446,7 +451,7 @@ export default function CaptureScreen() {
               </View>
             </View>
           )}
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -535,7 +540,7 @@ const styles = StyleSheet.create({
   },
   captureLayout: {
     alignItems: 'center',
-    flex: 1,
+    flexGrow: 1,
   },
   landscapeShell: {
     alignItems: 'stretch',

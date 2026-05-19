@@ -219,7 +219,7 @@ export default function LivenessScreen() {
   };
 
   return (
-    <ScreenShell scroll={false} style={styles.screen} variant="wide">
+    <ScreenShell style={styles.screen} variant="wide">
       {layout.isLandscape ? (
         <View
           style={[
@@ -239,6 +239,7 @@ export default function LivenessScreen() {
               ]}
             >
               <Camera
+                ref={camera}
                 device={device}
                 isActive={!isProcessing}
                 photo
@@ -387,6 +388,7 @@ export default function LivenessScreen() {
             ]}
           >
             <Camera
+              ref={camera}
               device={device}
               isActive={!isProcessing}
               photo

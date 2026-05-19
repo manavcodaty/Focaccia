@@ -7,7 +7,7 @@ export interface SecureValueStore {
 }
 
 function storageKey(eventId: string): string {
-  return `face-pass:gate:sk:${eventId}`;
+  return `face-pass.gate.sk.${eventId}`;
 }
 
 export async function loadGatePrivateKey(

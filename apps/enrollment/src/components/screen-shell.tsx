@@ -66,7 +66,7 @@ export function ScreenShell({
 
 const styles = StyleSheet.create({
   content: {
-    flex: 1,
+    flexGrow: 1,
     alignSelf: 'center',
     width: '100%',
   },

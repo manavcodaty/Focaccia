@@ -167,7 +167,7 @@ export default function ScanScreen() {
   };
 
   return (
-    <ScreenShell scroll={false} style={styles.screen} variant="wide">
+    <ScreenShell style={styles.screen} variant="wide">
       {layout.isLandscape ? (
         <View
           style={[

@@ -1,3 +1,4 @@
+import { GateProvisioningListener } from "@/components/dashboard/gate-provisioning-listener";
 import { GateProvisioningView } from "@/components/dashboard/gate-provisioning-view";
 import { PublicValue } from "@/components/dashboard/public-value";
 import { ProvisioningQrCard } from "@/components/dashboard/provisioning-qr-card";
@@ -72,6 +73,7 @@ export default async function ProvisioningPage({
           </CardContent>
         </Card>
       </div>
+      <GateProvisioningListener eventId={event.event_id} />
     </div>
   );
 }

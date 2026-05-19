@@ -20,6 +20,7 @@ import { requestPassSignature } from '../src/lib/api';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
 import { issueSignedPassFromEmbedding, tokenSnippet, type PassProcessingPhase } from '../src/lib/pass-flow';
 import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
+import type { EnrollmentPassRecord } from '../src/lib/types';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
@@ -141,8 +142,6 @@ export default function CaptureScreen() {
 
     try {
       const photo = await camera.current.takePhoto({
-        enableAutoDistortionCorrection: true,
-        enableAutoRedEyeReduction: true,
         enableShutterSound: false,
       });
       const embedding = await extractFaceEmbeddingFromPhoto({
@@ -159,17 +158,14 @@ export default function CaptureScreen() {
           onPhaseChange: setProcessingPhase,
         });
 
-        const passRecord = {
+        const passRecord: EnrollmentPassRecord = {
           createdAtIso: new Date().toISOString(),
           payload: result.payload,
+          ...(result.queueCode ? { queueCode: result.queueCode } : {}),
           signature: result.signature,
           token: result.token,
           tokenSnippet: tokenSnippet(result.token),
         };
-
-        if (result.queueCode) {
-          Object.assign(passRecord, { queueCode: result.queueCode });
-        }
 
         setPass(passRecord);
         result.template.fill(0);
@@ -238,7 +234,7 @@ export default function CaptureScreen() {
                   <Camera
                     ref={camera}
                     device={device}
-                    isActive={!isProcessing}
+                    isActive={true}
                     photo
                     style={StyleSheet.absoluteFill}
                   />
@@ -384,7 +380,7 @@ export default function CaptureScreen() {
                 <Camera
                   ref={camera}
                   device={device}
-                  isActive={!isProcessing}
+                  isActive={true}
                   photo
                   style={StyleSheet.absoluteFill}
                 />

@@ -138,8 +138,6 @@ export default function LivenessScreen() {
 
     try {
       const photo = await camera.current.takePhoto({
-        enableAutoDistortionCorrection: true,
-        enableAutoRedEyeReduction: true,
         enableShutterSound: false,
       });
       const embedding = await extractFaceEmbeddingFromPhoto({
@@ -241,7 +239,7 @@ export default function LivenessScreen() {
               <Camera
                 ref={camera}
                 device={device}
-                isActive={!isProcessing}
+                isActive={true}
                 photo
                 style={styles.camera}
               />
@@ -390,7 +388,7 @@ export default function LivenessScreen() {
             <Camera
               ref={camera}
               device={device}
-              isActive={!isProcessing}
+              isActive={true}
               photo
               style={styles.camera}
             />

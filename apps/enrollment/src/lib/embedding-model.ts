@@ -4,11 +4,11 @@ import { loadTensorflowModel, type TensorflowModel } from 'react-native-fast-tfl
 import { decode } from 'jpeg-js';
 import faceModelAsset from '../../assets/models/facenet_512.tflite';
 
+import { buildSquareCrop, snapshotRollDegrees } from './face-crop';
 import type { FaceSnapshot } from './types';
 
 const FACE_INPUT_SIZE = 160;
 const FACE_OUTPUT_SIZE = 512;
-const FACE_MARGIN = 1.8;
 
 let modelPromise: Promise<TensorflowModel> | null = null;
 
@@ -32,50 +32,8 @@ function zeroArrayView(value: unknown): void {
   }
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 function ensureFileUri(path: string): string {
   return path.startsWith('file://') ? path : `file://${path}`;
-}
-
-function buildSquareCrop(
-  photoWidth: number,
-  photoHeight: number,
-  snapshot?: FaceSnapshot | null,
-): { height: number; originX: number; originY: number; width: number } {
-  if (!snapshot) {
-    const cropSize = Math.min(photoWidth, photoHeight) * 0.72;
-
-    return {
-      height: cropSize,
-      originX: (photoWidth - cropSize) / 2,
-      originY: clamp(photoHeight * 0.12, 0, photoHeight - cropSize),
-      width: cropSize,
-    };
-  }
-
-  const widthRatio = photoWidth / snapshot.frameWidth;
-  const heightRatio = photoHeight / snapshot.frameHeight;
-  const faceWidth = snapshot.bounds.width * widthRatio;
-  const faceHeight = snapshot.bounds.height * heightRatio;
-  const faceCenterX = (snapshot.bounds.x + snapshot.bounds.width / 2) * widthRatio;
-  const faceCenterY = (snapshot.bounds.y + snapshot.bounds.height / 2) * heightRatio;
-  const cropSize = Math.min(
-    Math.max(faceWidth, faceHeight) * FACE_MARGIN,
-    photoWidth,
-    photoHeight,
-  );
-  const originX = clamp(faceCenterX - cropSize / 2, 0, photoWidth - cropSize);
-  const originY = clamp(faceCenterY - cropSize * 0.55, 0, photoHeight - cropSize);
-
-  return {
-    height: cropSize,
-    originX,
-    originY,
-    width: cropSize,
-  };
 }
 
 function imageBytesToModelInput(bytes: Uint8Array): Float32Array {
@@ -130,11 +88,12 @@ export async function extractFaceEmbeddingFromPhoto({
 
   try {
     const crop = buildSquareCrop(photoWidth, photoHeight, snapshot);
+    const rollDegrees = snapshotRollDegrees(snapshot);
     const alignedFace = await manipulateAsync(
       photoUri,
       [
         { crop },
-        ...(snapshot ? [{ rotate: snapshot.rollAngle * -1 }] : []),
+        ...(rollDegrees === null ? [] : [{ rotate: rollDegrees }]),
         { resize: { height: FACE_INPUT_SIZE, width: FACE_INPUT_SIZE } },
       ],
       {

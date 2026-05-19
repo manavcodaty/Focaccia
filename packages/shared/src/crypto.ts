@@ -129,3 +129,8 @@ export async function fromBase64Url(value: string): Promise<Uint8Array> {
   const sodium = await getSodium();
   return sodium.from_base64(value, sodium.base64_variants.URLSAFE_NO_PADDING);
 }
+
+export async function randomBytes(length: number): Promise<Uint8Array> {
+  const sodium = await getSodium();
+  return sodium.randombytes_buf(length);
+}

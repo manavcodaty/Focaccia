@@ -34,6 +34,7 @@ export interface SodiumApi {
     publicKey: Uint8Array,
   ): boolean;
   from_base64(value: string, variant?: number): Uint8Array;
+  randombytes_buf(length: number): Uint8Array;
   to_base64(value: Uint8Array, variant?: number): string;
 }
 

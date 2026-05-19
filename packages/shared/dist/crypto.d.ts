@@ -21,4 +21,5 @@ export declare function x25519Seal(message: Uint8Array, publicKey: Uint8Array): 
 export declare function x25519SealOpen(ciphertext: Uint8Array, publicKey: Uint8Array, privateKey: Uint8Array): Promise<Uint8Array>;
 export declare function toBase64Url(value: Uint8Array): Promise<string>;
 export declare function fromBase64Url(value: string): Promise<Uint8Array>;
+export declare function randomBytes(length: number): Promise<Uint8Array>;
 //# sourceMappingURL=crypto.d.ts.map

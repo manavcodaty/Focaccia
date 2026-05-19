@@ -12,6 +12,7 @@ exports.x25519Seal = x25519Seal;
 exports.x25519SealOpen = x25519SealOpen;
 exports.toBase64Url = toBase64Url;
 exports.fromBase64Url = fromBase64Url;
+exports.randomBytes = randomBytes;
 const canonical_json_1 = require("./canonical-json");
 const sodium_1 = require("./sodium");
 function toEd25519KeyPair(keyPair) {
@@ -88,5 +89,9 @@ async function toBase64Url(value) {
 async function fromBase64Url(value) {
     const sodium = await (0, sodium_1.getSodium)();
     return sodium.from_base64(value, sodium.base64_variants.URLSAFE_NO_PADDING);
+}
+async function randomBytes(length) {
+    const sodium = await (0, sodium_1.getSodium)();
+    return sodium.randombytes_buf(length);
 }
 //# sourceMappingURL=crypto.js.map

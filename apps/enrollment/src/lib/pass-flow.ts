@@ -4,6 +4,7 @@ import {
   fromBase64Url,
   toBase64Url,
   x25519Seal,
+  randomBytes,
   type EnrollmentBundle,
   type IssuePassResult,
   type PassPayload,
@@ -29,7 +30,6 @@ export interface IssueSignedPassFromEmbeddingOptions {
   issuePass(payload: PassPayload): Promise<IssuePassResult>;
   now?: Date;
   onPhaseChange?(phase: PassProcessingPhase): void;
-  randomBytes?(length: number): Uint8Array;
 }
 
 function unixSeconds(value: Date | string): number {
@@ -42,17 +42,7 @@ function unixSeconds(value: Date | string): number {
   return Math.floor(milliseconds / 1000);
 }
 
-function secureRandomBytes(length: number): Uint8Array {
-  const random = globalThis.crypto;
 
-  if (!random?.getRandomValues) {
-    throw new Error('Secure random bytes are unavailable in this runtime.');
-  }
-
-  const bytes = new Uint8Array(length);
-  random.getRandomValues(bytes);
-  return bytes;
-}
 
 export function tokenSnippet(token: string, edgeLength = 12): string {
   if (token.length <= edgeLength * 2) {
@@ -68,7 +58,6 @@ export async function issueSignedPassFromEmbedding({
   issuePass,
   now = new Date(),
   onPhaseChange,
-  randomBytes = secureRandomBytes,
 }: IssueSignedPassFromEmbeddingOptions): Promise<SignedPassResult> {
   const eventStartsAt = unixSeconds(bundle.starts_at);
   const eventEndsAt = unixSeconds(bundle.ends_at);
@@ -86,8 +75,8 @@ export async function issueSignedPassFromEmbedding({
 
   const eventSalt = await fromBase64Url(bundle.event_salt);
   const gatePublicKey = await fromBase64Url(bundle.pk_gate_event);
-  const passIdBytes = randomBytes(16);
-  const nonceBytes = randomBytes(12);
+  const passIdBytes = await randomBytes(16);
+  const nonceBytes = await randomBytes(12);
   let encryptedTemplateBytes: Uint8Array | null = null;
   let payloadBytes: Uint8Array | null = null;
 

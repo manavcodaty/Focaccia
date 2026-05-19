@@ -16,6 +16,7 @@ export interface SodiumApi {
     crypto_sign_seed_keypair(seed: Uint8Array): SodiumKeyPair;
     crypto_sign_verify_detached(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): boolean;
     from_base64(value: string, variant?: number): Uint8Array;
+    randombytes_buf(length: number): Uint8Array;
     to_base64(value: Uint8Array, variant?: number): string;
 }
 export declare function getSodium(): Promise<SodiumApi>;

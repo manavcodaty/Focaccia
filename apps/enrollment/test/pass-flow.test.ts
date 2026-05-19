@@ -34,41 +34,56 @@ test('issueSignedPassFromEmbedding builds an encrypted, signed pass token', asyn
     pk_sign_event: await toBase64Url(signingKeys.publicKey),
     starts_at: '2030-05-01T18:00:00.000Z',
   };
+  const cryptoDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
 
-  const result = await issueSignedPassFromEmbedding({
-    bundle,
-    embedding: createFakeEmbedding(),
-    issuePass: async (payload: PassPayload) => {
-      const signature = await ed25519SignDetached(canonicalJsonBytes(payload), signingKeys.privateKey);
-      return { queue_code: '12345678', signature: await toBase64Url(signature) };
-    },
-    now: new Date('2030-05-01T19:30:00.000Z'),
-    randomBytes: (length) => Uint8Array.from({ length }, (_, index) => (index * 11 + 5) & 0xff),
+  Object.defineProperty(globalThis, 'crypto', {
+    configurable: true,
+    value: undefined,
   });
 
-  const [payloadPart, signaturePart] = result.token.split('.');
-  assert.ok(payloadPart);
-  assert.ok(signaturePart);
-  assert.equal(result.queueCode, '12345678');
-  assert.equal(tokenSnippet(result.token), `${payloadPart.slice(0, 12)}...${signaturePart.slice(-12)}`);
+  try {
+    const result = await issueSignedPassFromEmbedding({
+      bundle,
+      embedding: createFakeEmbedding(),
+      issuePass: async (payload: PassPayload) => {
+        const signature = await ed25519SignDetached(canonicalJsonBytes(payload), signingKeys.privateKey);
+        return { queue_code: '12345678', signature: await toBase64Url(signature) };
+      },
+      now: new Date('2030-05-01T19:30:00.000Z'),
+    });
 
-  const payloadBytes = await fromBase64Url(payloadPart);
-  const payload = JSON.parse(new TextDecoder().decode(payloadBytes)) as PassPayload;
-  const signature = await fromBase64Url(signaturePart);
+    const [payloadPart, signaturePart] = result.token.split('.');
+    assert.ok(payloadPart);
+    assert.ok(signaturePart);
+    assert.equal(result.queueCode, '12345678');
+    assert.equal(tokenSnippet(result.token), `${payloadPart.slice(0, 12)}...${signaturePart.slice(-12)}`);
 
-  assert.equal(payload.event_id, bundle.event_id);
-  assert.equal(payload.single_use, true);
-  assert.equal(payload.v, 1);
-  assert.ok(payload.enc_template.length > 40);
+    const payloadBytes = await fromBase64Url(payloadPart);
+    const payload = JSON.parse(new TextDecoder().decode(payloadBytes)) as PassPayload;
+    const signature = await fromBase64Url(signaturePart);
 
-  const templateCiphertext = await fromBase64Url(payload.enc_template);
-  const decryptedTemplate = await x25519SealOpen(
-    templateCiphertext,
-    gateKeys.publicKey,
-    gateKeys.privateKey,
-  );
+    assert.equal(payload.event_id, bundle.event_id);
+    assert.equal(payload.single_use, true);
+    assert.equal(payload.v, 1);
+    assert.ok(payload.pass_id.length > 0);
+    assert.ok(payload.nonce.length > 0);
+    assert.ok(payload.enc_template.length > 40);
 
-  assert.equal(decryptedTemplate.length, 32);
-  assert.deepEqual(result.template, decryptedTemplate);
-  assert.equal(signature.length > 0, true);
+    const templateCiphertext = await fromBase64Url(payload.enc_template);
+    const decryptedTemplate = await x25519SealOpen(
+      templateCiphertext,
+      gateKeys.publicKey,
+      gateKeys.privateKey,
+    );
+
+    assert.equal(decryptedTemplate.length, 32);
+    assert.deepEqual(result.template, decryptedTemplate);
+    assert.equal(signature.length > 0, true);
+  } finally {
+    if (cryptoDescriptor) {
+      Object.defineProperty(globalThis, 'crypto', cryptoDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, 'crypto');
+    }
+  }
 });

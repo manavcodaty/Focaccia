@@ -1687,6 +1687,28 @@ PODS:
     - TensorFlowLiteC (= 2.17.0)
     - TensorFlowLiteC/CoreML (= 2.17.0)
     - Yoga
+  - react-native-get-random-values (2.0.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - react-native-libsodium (1.5.6):
     - RCTRequired
     - RCTTypeSafety
@@ -2525,6 +2547,7 @@ DEPENDENCIES:
   - "React-Mapbuffer (from `../../../node_modules/.pnpm/react-native@0.83.4_@babel+core@7.29.0_@react-native+metro-config@0.84.1_@babel+core@7._7847610923a5de0176238953cd466d2e/node_modules/react-native/ReactCommon`)"
   - "React-microtasksnativemodule (from `../../../node_modules/.pnpm/react-native@0.83.4_@babel+core@7.29.0_@react-native+metro-config@0.84.1_@babel+core@7._7847610923a5de0176238953cd466d2e/node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)"
   - "react-native-fast-tflite (from `../../../node_modules/.pnpm/react-native-fast-tflite@2.0.0_react-native@0.83.4_@babel+core@7.29.0_@react-native+met_8f73d82bfe158b077d3292df3b77ae5b/node_modules/react-native-fast-tflite`)"
+  - "react-native-get-random-values (from `../../../node_modules/.pnpm/react-native-get-random-values@2.0.0_react-native@0.83.4_@babel+core@7.29.0_@react-nati_f0fb9498e2133943d2a9ab329e85039d/node_modules/react-native-get-random-values`)"
   - "react-native-libsodium (from `../../../node_modules/.pnpm/@more-tech+react-native-libsodium@1.5.6_react-native@0.83.4_@babel+core@7.29.0_@react-n_4199290638a26c7c054e17c5935c111b/node_modules/@more-tech/react-native-libsodium`)"
   - "react-native-safe-area-context (from `../../../node_modules/.pnpm/react-native-safe-area-context@5.6.2_react-native@0.83.4_@babel+core@7.29.0_@react-nati_1156a580cffad0ae6aca5e0a7c80d733/node_modules/react-native-safe-area-context`)"
   - "react-native-worklets-core (from `../../../node_modules/.pnpm/react-native-worklets-core@1.6.3_react-native@0.83.4_@babel+core@7.29.0_@react-native+m_2a260c525608f364f4b15d92b49a25b2/node_modules/react-native-worklets-core`)"
@@ -2716,6 +2739,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/react-native@0.83.4_@babel+core@7.29.0_@react-native+metro-config@0.84.1_@babel+core@7._7847610923a5de0176238953cd466d2e/node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-fast-tflite:
     :path: "../../../node_modules/.pnpm/react-native-fast-tflite@2.0.0_react-native@0.83.4_@babel+core@7.29.0_@react-native+met_8f73d82bfe158b077d3292df3b77ae5b/node_modules/react-native-fast-tflite"
+  react-native-get-random-values:
+    :path: "../../../node_modules/.pnpm/react-native-get-random-values@2.0.0_react-native@0.83.4_@babel+core@7.29.0_@react-nati_f0fb9498e2133943d2a9ab329e85039d/node_modules/react-native-get-random-values"
   react-native-libsodium:
     :path: "../../../node_modules/.pnpm/@more-tech+react-native-libsodium@1.5.6_react-native@0.83.4_@babel+core@7.29.0_@react-n_4199290638a26c7c054e17c5935c111b/node_modules/@more-tech/react-native-libsodium"
   react-native-safe-area-context:
@@ -2876,6 +2901,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 274cb203819492f7fb594bbb3a1f3f5061fa794d
   React-microtasksnativemodule: 563b4dcc8b8570814d6de4fc1196f48d2944acd4
   react-native-fast-tflite: 39e21063f3f41f7074bcef895bd21d382024a821
+  react-native-get-random-values: a603782b2b222a34533c66371614790282dba3f1
   react-native-libsodium: cc5827e94cfb86cfd84344e61273088a34b07bbe
   react-native-safe-area-context: 37e680fc4cace3c0030ee46e8987d24f5d3bdab2
   react-native-worklets-core: 3a098cd17188379c1a0ecbdea1f7d28f70dbb2a0

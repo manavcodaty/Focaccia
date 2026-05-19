@@ -1,3 +1,5 @@
+import 'react-native-get-random-values';
+
 import {
   IBMPlexSans_400Regular,
   IBMPlexSans_500Medium,

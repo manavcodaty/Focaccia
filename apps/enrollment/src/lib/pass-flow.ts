@@ -73,10 +73,12 @@ export async function issueSignedPassFromEmbedding({
     throw new Error('The event window is invalid for pass issuance.');
   }
 
-  const eventSalt = await fromBase64Url(bundle.event_salt);
-  const gatePublicKey = await fromBase64Url(bundle.pk_gate_event);
-  const passIdBytes = await randomBytes(16);
-  const nonceBytes = await randomBytes(12);
+  const [eventSalt, gatePublicKey, passIdBytes, nonceBytes] = await Promise.all([
+    fromBase64Url(bundle.event_salt),
+    fromBase64Url(bundle.pk_gate_event),
+    randomBytes(16),
+    randomBytes(12),
+  ]);
   let encryptedTemplateBytes: Uint8Array | null = null;
   let payloadBytes: Uint8Array | null = null;
 

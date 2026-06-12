@@ -78,6 +78,23 @@ test('LAN proxy enforces exact browser origins and native no-Origin requests', a
     assert.equal(nativeResponse.headers.get('access-control-allow-origin'), null);
     const allowedResponse = await fetch(url, { headers: { Origin: 'http://192.168.1.50:3000' } });
     assert.equal(allowedResponse.headers.get('access-control-allow-origin'), 'http://192.168.1.50:3000');
+    const preflightResponse = await fetch(url, {
+      headers: {
+        'Access-Control-Request-Headers': 'accept-profile,apikey,content-profile,content-type,x-supabase-api-version',
+        'Access-Control-Request-Method': 'POST',
+        Origin: 'http://192.168.1.50:3000',
+      },
+      method: 'OPTIONS',
+    });
+    assert.equal(preflightResponse.status, 204);
+    assert.match(
+      preflightResponse.headers.get('access-control-allow-headers') ?? '',
+      /x-supabase-api-version/,
+    );
+    assert.match(
+      preflightResponse.headers.get('access-control-allow-headers') ?? '',
+      /accept-profile/,
+    );
     const rejectedResponse = await fetch(url, { headers: { Origin: 'https://attacker.example' } });
     assert.equal(rejectedResponse.status, 403);
   } finally {

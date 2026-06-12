@@ -74,11 +74,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: palette.ink,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
   },
   primaryLabel: {
     color: palette.textInverse,

@@ -43,7 +43,21 @@ function rejectHttp(response, status, message) {
 function corsHeaders(origin, allowedOrigins) {
   return origin && allowedOrigins.includes(origin)
     ? {
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, idempotency-key',
+        'Access-Control-Allow-Headers': [
+          'accept-profile',
+          'apikey',
+          'authorization',
+          'content-profile',
+          'content-type',
+          'idempotency-key',
+          'prefer',
+          'range',
+          'x-client-info',
+          'x-supabase-api-version',
+          'x-supabase-client-platform',
+          'x-supabase-client-version',
+          'x-upsert',
+        ].join(', '),
         'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS',
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Max-Age': '86400',

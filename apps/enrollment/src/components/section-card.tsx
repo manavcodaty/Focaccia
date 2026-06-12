@@ -58,11 +58,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.card,
     borderColor: 'rgba(0, 0, 0, 0.05)',
     borderWidth: 1,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.08)',
   },
   eyebrow: {
     ...typography.title,

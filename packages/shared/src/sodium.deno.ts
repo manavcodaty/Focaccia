@@ -1,4 +1,4 @@
-import sodiumModule from 'https://esm.sh/libsodium-wrappers@0.7.16?bundle&target=deno';
+import sodiumModule from "./vendor/libsodium/libsodium-wrappers.mjs";
 
 export interface SodiumKeyPair {
   publicKey: Uint8Array;
@@ -30,8 +30,16 @@ export interface SodiumApi {
     message: Uint8Array,
     publicKey: Uint8Array,
   ): boolean;
-  crypto_secretbox_easy(message: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array;
-  crypto_secretbox_open_easy(ciphertext: Uint8Array, nonce: Uint8Array, key: Uint8Array): Uint8Array;
+  crypto_secretbox_easy(
+    message: Uint8Array,
+    nonce: Uint8Array,
+    key: Uint8Array,
+  ): Uint8Array;
+  crypto_secretbox_open_easy(
+    ciphertext: Uint8Array,
+    nonce: Uint8Array,
+    key: Uint8Array,
+  ): Uint8Array;
   crypto_secretbox_KEYBYTES: number;
   crypto_secretbox_NONCEBYTES: number;
   from_base64(value: string, variant?: number): Uint8Array;
@@ -39,7 +47,7 @@ export interface SodiumApi {
   to_base64(value: Uint8Array, variant?: number): string;
 }
 
-const sodium = sodiumModule as SodiumApi & { ready: Promise<void> };
+const sodium = sodiumModule as unknown as SodiumApi & { ready: Promise<void> };
 
 let sodiumPromise: Promise<SodiumApi> | undefined;
 

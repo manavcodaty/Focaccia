@@ -185,10 +185,14 @@ button { color: inherit; }
 .account-heading h1 { margin: 0; font-size: clamp(54px, 6vw, 76px); }
 .account-heading > p { max-width: 470px; margin: 0; color: var(--stone); }
 .owned-ticket-list { display: grid; gap: 14px; }
-.owned-ticket { display: grid; grid-template-columns: 1.05fr 1fr auto; align-items: center; gap: 30px; padding: 26px 28px; border-radius: 22px; background: var(--fog); }
+.owned-ticket { display: grid; grid-template-columns: 1fr .9fr 1.15fr auto; align-items: center; gap: 30px; padding: 26px 28px; border-radius: 22px; background: var(--fog); }
 .owned-ticket h2 { margin: 12px 0 2px; font-size: 21px; }
 .owned-ticket p { margin: 0; color: var(--stone); }
 .owned-ticket-meta { display: grid; gap: 5px; color: var(--stone); font-size: 14px; }
+.owned-ticket-recovery { display: grid; gap: 4px; min-width: 0; }
+.owned-ticket-recovery small { color: var(--steel); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.owned-ticket-recovery strong { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 16px; letter-spacing: .05em; }
+.owned-ticket-recovery span { color: var(--stone); font-size: 12px; line-height: 1.45; }
 .status-pill { width: fit-content; display: inline-flex; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 750; }
 .status-warm { background: var(--warm-mist); color: var(--terracotta); }
 .status-success { background: var(--success-soft); color: var(--success); }
@@ -274,7 +278,8 @@ button { color: inherit; }
   .claim-code-panel { min-height: 190px; }
   .owned-ticket { grid-template-columns: 1fr auto; }
   .owned-ticket-meta { grid-column: 1; }
-  .owned-ticket .round-link { grid-column: 2; grid-row: 1 / span 2; }
+  .owned-ticket-recovery { grid-column: 1; }
+  .owned-ticket .round-link { grid-column: 2; grid-row: 1 / span 3; }
 }
 
 @media (max-width: 680px) {

@@ -6,13 +6,13 @@ import {
   resolveSupabaseUrl,
 } from '../src/lib/network.ts';
 
-test('replaces a stale local LAN host with the current Expo host for the gate app', () => {
+test('does not rewrite an explicitly selected LAN host from Expo metadata', () => {
   const resolved = resolveSupabaseUrl({
     configuredUrl: 'http://192.168.0.144:54321',
     expoHostUri: '192.168.0.141:8081',
   });
 
-  assert.equal(resolved, 'http://192.168.0.141:54321');
+  assert.equal(resolved, 'http://192.168.0.144:54321');
 });
 
 test('preserves configured non-local hosts for the gate app', () => {
@@ -24,13 +24,20 @@ test('preserves configured non-local hosts for the gate app', () => {
   assert.equal(resolved, 'https://project-ref.supabase.co');
 });
 
-test('replaces localhost with the current Expo host for gate device builds', () => {
+test('does not silently repair a loopback URL from Expo metadata', () => {
   const resolved = resolveSupabaseUrl({
     configuredUrl: 'http://127.0.0.1:54321',
     expoHostUri: '192.168.0.141:8081',
   });
 
-  assert.equal(resolved, 'http://192.168.0.141:54321');
+  assert.equal(resolved, 'http://127.0.0.1:54321');
+});
+
+test('rejects a missing selected URL instead of inferring one', () => {
+  assert.throws(
+    () => resolveSupabaseUrl({ expoHostUri: '192.168.0.141:8081' }),
+    /never inferred/i,
+  );
 });
 
 test('times out hung gate requests with an actionable error', async () => {
@@ -47,6 +54,6 @@ test('times out hung gate requests with an actionable error', async () => {
         input: 'http://192.168.0.144:54321/auth/v1/token?grant_type=password',
         timeoutMs: 10,
       }),
-    /Unable to reach the organizer sign-in service\..*EXPO_PUBLIC_SUPABASE_URL/i,
+    /Unable to reach the organizer sign-in service\..*EXPO_PUBLIC_FOCACCIA_SUPABASE_URL/i,
   );
 });

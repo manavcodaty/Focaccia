@@ -3,32 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolveLocalSupabaseUrl = resolveLocalSupabaseUrl;
 exports.fetchWithTimeout = fetchWithTimeout;
 exports.createTimeoutFetch = createTimeoutFetch;
-const LOCAL_SUPABASE_PORT = '54321';
 const DEFAULT_TIMEOUT_MS = 8000;
-function isPrivateIpv4Host(host) {
-    return /^10\./.test(host)
-        || /^192\.168\./.test(host)
-        || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
-}
-function isLoopbackHost(host) {
-    return host === 'localhost' || host === '127.0.0.1';
-}
-function extractHost(hostUri) {
-    if (!hostUri) {
-        return null;
-    }
-    const trimmed = hostUri.trim();
-    if (!trimmed) {
-        return null;
-    }
-    const value = trimmed.includes('://') ? trimmed : `http://${trimmed}`;
-    try {
-        return new URL(value).hostname;
-    }
-    catch {
-        return null;
-    }
-}
 function describeRequestTarget(input) {
     if (typeof input === 'string') {
         return input;
@@ -38,22 +13,11 @@ function describeRequestTarget(input) {
     }
     return input.url;
 }
-function resolveLocalSupabaseUrl({ configuredUrl, expoHostUri, }) {
-    const runtimeHost = extractHost(expoHostUri);
-    if (configuredUrl) {
-        const resolved = new URL(configuredUrl);
-        if (runtimeHost
-            && runtimeHost !== resolved.hostname
-            && isPrivateIpv4Host(runtimeHost)
-            && (isPrivateIpv4Host(resolved.hostname) || isLoopbackHost(resolved.hostname))) {
-            resolved.hostname = runtimeHost;
-        }
-        return resolved.origin;
+function resolveLocalSupabaseUrl({ configuredUrl, }) {
+    if (!configuredUrl) {
+        throw new Error('Missing EXPO_PUBLIC_FOCACCIA_SUPABASE_URL. Network URLs are never inferred from Expo host metadata.');
     }
-    if (!runtimeHost) {
-        throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL for the mobile app, and no Expo host was available to infer it.');
-    }
-    return `http://${runtimeHost}:${LOCAL_SUPABASE_PORT}`;
+    return new URL(configuredUrl).origin;
 }
 async function fetchWithTimeout({ errorPrefix, fetchImpl = fetch, init, input, timeoutMs = DEFAULT_TIMEOUT_MS, }) {
     const controller = new AbortController();
@@ -70,7 +34,7 @@ async function fetchWithTimeout({ errorPrefix, fetchImpl = fetch, init, input, t
     }
     catch (error) {
         if (error instanceof Error && (error.name === 'AbortError' || error instanceof TypeError)) {
-            throw new Error(`${errorPrefix} Check EXPO_PUBLIC_SUPABASE_URL and confirm the local Supabase services are reachable at ${describeRequestTarget(input)}.`);
+            throw new Error(`${errorPrefix} Check EXPO_PUBLIC_FOCACCIA_SUPABASE_URL and confirm the selected Supabase service is reachable at ${describeRequestTarget(input)}.`);
         }
         throw error;
     }

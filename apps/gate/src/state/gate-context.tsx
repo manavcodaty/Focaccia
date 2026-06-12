@@ -6,7 +6,7 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { x25519Keypair, toBase64Url } from '@face-pass/shared';
+import { ed25519Keypair, x25519Keypair, toBase64Url } from '@face-pass/shared';
 
 import { callProvisionGate, signInOrganizer, syncRevocations } from '../lib/api';
 import { openGateRepository } from '../lib/expo-db';
@@ -22,6 +22,7 @@ import {
 import {
   loadGatePrivateKey,
   saveGatePrivateKey,
+  saveGateSyncPrivateKey,
 } from '../lib/secure-value-store';
 import type {
   GateStats,
@@ -152,17 +153,25 @@ export function GateProvider({ children }: PropsWithChildren) {
           throw new Error('Organizer sign-in is required before provisioning.');
         }
 
-        const keyPair = await x25519Keypair();
+        const [encryptionKeyPair, syncKeyPair] = await Promise.all([
+          x25519Keypair(),
+          ed25519Keypair(),
+        ]);
 
         try {
-          const pkGateEvent = await toBase64Url(keyPair.publicKey);
+          const [pkGateEvent, syncPublicKey] = await Promise.all([
+            toBase64Url(encryptionKeyPair.publicKey),
+            toBase64Url(syncKeyPair.publicKey),
+          ]);
           const request: {
             device_name?: string;
             event_id: string;
             pk_gate_event: string;
+            sync_public_key: string;
           } = {
             event_id: payload.event_id,
             pk_gate_event: pkGateEvent,
+            sync_public_key: syncPublicKey,
           };
 
           if (deviceName.trim()) {
@@ -177,13 +186,26 @@ export function GateProvider({ children }: PropsWithChildren) {
             provisioned_at: new Date().toISOString(),
           };
 
-          await saveGatePrivateKey(expoSecureValueStore, storedGate.event_id, keyPair.privateKey);
+          await Promise.all([
+            saveGatePrivateKey(
+              expoSecureValueStore,
+              storedGate.event_id,
+              encryptionKeyPair.privateKey,
+            ),
+            saveGateSyncPrivateKey(
+              expoSecureValueStore,
+              storedGate.event_id,
+              syncKeyPair.privateKey,
+            ),
+          ]);
           await repository.saveGateConfig(storedGate);
           setGate(storedGate);
           await reloadFromRepository(repository);
         } finally {
-          keyPair.privateKey.fill(0);
-          keyPair.publicKey.fill(0);
+          encryptionKeyPair.privateKey.fill(0);
+          encryptionKeyPair.publicKey.fill(0);
+          syncKeyPair.privateKey.fill(0);
+          syncKeyPair.publicKey.fill(0);
         }
       },
       dbError,

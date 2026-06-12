@@ -9,9 +9,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:build": "rm -rf dist-test && tsc -p tsconfig.test.json",
+    "test:network-coverage": "pnpm run test:build && jest --config jest.network.config.cjs --runInBand",
+    "test:phase2-coverage": "pnpm run test:build && jest --config jest.phase2.config.cjs --runInBand",
     "test": "pnpm run test:build && jest --config jest.config.cjs --runInBand"
   },
   "dependencies": {

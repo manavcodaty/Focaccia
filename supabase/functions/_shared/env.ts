@@ -10,6 +10,8 @@ export interface RuntimeConfig {
   readonly matchThreshold: number;
   readonly livenessTimeoutMs: number;
   readonly queueCodeDigits: number;
+  readonly claimCodePepperBase64Url: string;
+  readonly organizerEmailAllowlist: readonly string[];
 }
 
 let cachedConfig: RuntimeConfig | undefined;
@@ -64,6 +66,26 @@ function parsePositiveInteger(name: string, fallback: number): number {
   return parsed;
 }
 
+function parseOrganizerAllowlist(): readonly string[] {
+  const raw = requireEnv('FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST');
+  const emails = raw.split(',').map((value) => value.trim().toLowerCase());
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (
+    emails.length === 0
+    || emails.some((email) => !email || email.includes('*') || !emailPattern.test(email))
+    || new Set(emails).size !== emails.length
+  ) {
+    throw hiddenApiError({
+      clientMessage: 'The Face Pass service is not configured correctly.',
+      code: 'organizer_allowlist_invalid',
+      message: 'FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST must contain unique exact email addresses.',
+    });
+  }
+
+  return emails;
+}
+
 export function getRuntimeConfig(): RuntimeConfig {
   if (!cachedConfig) {
     const secretWrappingKeyBase64Url = requireEnv('FACE_PASS_SECRET_WRAPPING_KEY_B64URL');
@@ -74,6 +96,16 @@ export function getRuntimeConfig(): RuntimeConfig {
         code: 'service_misconfigured',
         message:
           `FACE_PASS_SECRET_WRAPPING_KEY_B64URL must encode ${SECRET_WRAPPING_KEY_BYTES} bytes.`,
+      });
+    }
+
+    const claimCodePepperBase64Url = requireEnv('FOCACCIA_CLAIM_CODE_PEPPER');
+
+    if (claimCodePepperBase64Url.length !== 43) {
+      throw hiddenApiError({
+        clientMessage: 'The Face Pass service is not configured correctly.',
+        code: 'claim_code_pepper_invalid',
+        message: 'FOCACCIA_CLAIM_CODE_PEPPER must encode 32 bytes.',
       });
     }
 
@@ -88,6 +120,8 @@ export function getRuntimeConfig(): RuntimeConfig {
       matchThreshold: parsePositiveInteger('FACE_PASS_MATCH_THRESHOLD', 80),
       livenessTimeoutMs: parsePositiveInteger('FACE_PASS_LIVENESS_TIMEOUT_MS', 4000),
       queueCodeDigits: parsePositiveInteger('FACE_PASS_QUEUE_CODE_DIGITS', 8),
+      claimCodePepperBase64Url,
+      organizerEmailAllowlist: parseOrganizerAllowlist(),
     };
   }
 

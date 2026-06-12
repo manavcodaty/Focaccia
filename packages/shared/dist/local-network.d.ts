@@ -1,7 +1,7 @@
 type RequestTarget = string | URL | {
     url: string;
 };
-export declare function resolveLocalSupabaseUrl({ configuredUrl, expoHostUri, }: {
+export declare function resolveLocalSupabaseUrl({ configuredUrl, }: {
     configuredUrl?: string;
     expoHostUri?: string | null;
 }): string;

@@ -44,10 +44,10 @@ export const palette = {
 } as const;
 
 export const fontFamilies = {
-  body: 'System',
-  medium: 'System',
-  semibold: 'System',
-  bold: 'System',
+  body: 'IBMPlexSans_400Regular',
+  medium: 'IBMPlexSans_500Medium',
+  semibold: 'IBMPlexSans_600SemiBold',
+  bold: 'IBMPlexSans_700Bold',
 } as const;
 
 export const typography = {

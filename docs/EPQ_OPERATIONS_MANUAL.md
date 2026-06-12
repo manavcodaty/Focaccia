@@ -11,6 +11,8 @@ This document reflects the repository as built, not the original design intent. 
 
 ### Local Boot Sequence
 
+The authoritative network instructions are in [NETWORK_MODES.md](./NETWORK_MODES.md). Network mode is mandatory and is never inferred from localhost, browser hostnames, Expo metadata, or server interfaces.
+
 Use separate terminals for each long-running process.
 
 #### Terminal 1: install dependencies
@@ -20,59 +22,19 @@ cd /Users/manavcodaty/repos/Focaccia
 pnpm install
 ```
 
-#### Terminal 2: start the local Supabase stack
-
-Standard command:
+#### Terminal 2: start the local stack
 
 ```bash
 cd /Users/manavcodaty/repos/Focaccia
-pnpm run db:start
+cp .env.local.example .env.local
+colima stop
+colima start --port-forwarder none --save-config
+pnpm demo:local
 ```
 
-Verified command for this workstation and Colima setup:
+Replace the example LAN IP before startup. The command starts Supabase, Edge Functions, the constrained LAN proxy, and the web app without printing secrets. PostgreSQL and Studio must have no LAN listener.
 
-```bash
-cd /Users/manavcodaty/repos/Focaccia
-DOCKER_HOST=ssh://colima supabase start -x logflare,studio,vector
-```
-
-`pnpm run db:start` writes `supabase/functions/.env` from `supabase/functions/.env.local` before starting Supabase so the local Edge runtime has the Face Pass secrets available.
-
-#### Terminal 3: serve the Edge Functions locally
-
-On this workstation, `supabase start` still leaves `supabase_edge_runtime_*` stopped, so run the explicit local function server as part of the normal boot sequence:
-
-```bash
-cd /Users/manavcodaty/repos/Focaccia
-pnpm run db:functions:serve
-```
-
-That script reuses `supabase/functions/.env.local`, regenerates `supabase/functions/.env`, serves the functions through `supabase/functions/import_map.json`, and applies the local `--no-verify-jwt` workaround so requests reach the handlers before auth is enforced inside the functions.
-
-#### Terminal 4: configure and start the web dashboard
-
-Create the local web env file once:
-
-```bash
-cd /Users/manavcodaty/repos/Focaccia
-cp apps/web/.env.local.example apps/web/.env.local
-```
-
-Then read the local Supabase values:
-
-```bash
-cd /Users/manavcodaty/repos/Focaccia
-DOCKER_HOST=ssh://colima supabase status -o env
-```
-
-Set `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `apps/web/.env.local`, then start the dashboard:
-
-```bash
-cd /Users/manavcodaty/repos/Focaccia/apps/web
-pnpm dev
-```
-
-The organizer dashboard will be available at [http://localhost:3000](http://localhost:3000).
+The organizer dashboard is available at `http://LAN_IP:3000`. The selected Supabase endpoint is `http://LAN_IP:54331`.
 
 #### Terminal 5: start the Enrollment app dev client
 
@@ -96,19 +58,17 @@ Run these from each app directory.
 
 ```bash
 cd /Users/manavcodaty/repos/Focaccia/apps/enrollment
-npx eas build --profile development --platform ios
+npx eas build --profile development-local --platform ios
 ```
 
 #### Gate iOS dev build
 
 ```bash
 cd /Users/manavcodaty/repos/Focaccia/apps/gate
-npx eas build --profile development --platform ios
+npx eas build --profile development-local --platform ios
 ```
 
-Operational note:
-
-- The repository does not currently check in an `eas.json`. On a first run, EAS may prompt to create project metadata or confirm default build settings. Accept the prompt, then continue with the same command.
+Use the corresponding `development-tunnel`, `preview-local`, `preview-tunnel`, or `production-tunnel` profile when appropriate. TestFlight remains not configured because EAS project linkage and verified Apple credentials are absent.
 
 ### Happy Path Walkthrough
 

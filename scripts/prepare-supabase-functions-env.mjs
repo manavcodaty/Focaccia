@@ -4,6 +4,8 @@ import path from "node:path";
 
 const REQUIRED_FACE_PASS_KEYS = [
   "FACE_PASS_SECRET_WRAPPING_KEY_B64URL",
+  "FOCACCIA_CLAIM_CODE_PEPPER",
+  "FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST",
 ];
 
 const REQUIRED_SUPABASE_KEYS = [
@@ -60,7 +62,7 @@ export function prepareFunctionsEnvFiles({ envExampleText, envLocalText }) {
     let value = envLocal.get(key);
 
     if (!value) {
-      if (key === "FACE_PASS_SECRET_WRAPPING_KEY_B64URL") {
+      if (key === "FACE_PASS_SECRET_WRAPPING_KEY_B64URL" || key === "FOCACCIA_CLAIM_CODE_PEPPER") {
         value = generateWrappingKey();
         envLocal.set(key, value);
         generatedSecret = true;
@@ -127,7 +129,7 @@ function main() {
   chmodSync(envLocalPath, 0o600);
 
   if (result.generatedSecret) {
-    console.log("Generated FACE_PASS_SECRET_WRAPPING_KEY_B64URL in supabase/functions/.env.local.");
+    console.log("Generated missing local Face Pass secret material in supabase/functions/.env.local.");
   }
 
   console.log("Wrote supabase/functions/.env for local Edge Functions.");

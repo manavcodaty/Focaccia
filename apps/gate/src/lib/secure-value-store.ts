@@ -6,15 +6,19 @@ export interface SecureValueStore {
   setItem(key: string, value: string): Promise<void>;
 }
 
-function storageKey(eventId: string): string {
+function encryptionStorageKey(eventId: string): string {
   return `face-pass.gate.sk.${eventId}`;
+}
+
+function syncStorageKey(eventId: string): string {
+  return `face-pass.gate.sync-sk.${eventId}`;
 }
 
 export async function loadGatePrivateKey(
   store: SecureValueStore,
   eventId: string,
 ): Promise<Uint8Array | null> {
-  const encoded = await store.getItem(storageKey(eventId));
+  const encoded = await store.getItem(encryptionStorageKey(eventId));
 
   return encoded ? fromBase64Url(encoded) : null;
 }
@@ -24,12 +28,36 @@ export async function saveGatePrivateKey(
   eventId: string,
   privateKey: Uint8Array,
 ): Promise<void> {
-  await store.setItem(storageKey(eventId), await toBase64Url(privateKey));
+  await store.setItem(encryptionStorageKey(eventId), await toBase64Url(privateKey));
 }
 
 export async function deleteGatePrivateKey(
   store: SecureValueStore,
   eventId: string,
 ): Promise<void> {
-  await store.deleteItem(storageKey(eventId));
+  await store.deleteItem(encryptionStorageKey(eventId));
+}
+
+export async function loadGateSyncPrivateKey(
+  store: SecureValueStore,
+  eventId: string,
+): Promise<Uint8Array | null> {
+  const encoded = await store.getItem(syncStorageKey(eventId));
+
+  return encoded ? fromBase64Url(encoded) : null;
+}
+
+export async function saveGateSyncPrivateKey(
+  store: SecureValueStore,
+  eventId: string,
+  privateKey: Uint8Array,
+): Promise<void> {
+  await store.setItem(syncStorageKey(eventId), await toBase64Url(privateKey));
+}
+
+export async function deleteGateSyncPrivateKey(
+  store: SecureValueStore,
+  eventId: string,
+): Promise<void> {
+  await store.deleteItem(syncStorageKey(eventId));
 }

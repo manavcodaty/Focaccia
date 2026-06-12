@@ -124,12 +124,12 @@ const enrollmentDir = import.meta.dirname;
 const env = parseEnvFile(path.join(enrollmentDir, '../../web/.env.local'));
 const localIpv4 = getLocalIpv4Address();
 const supabaseUrl = resolveLocalSupabaseUrl({
-  configuredUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+  configuredUrl: env.NEXT_PUBLIC_FOCACCIA_SUPABASE_URL,
   expoHostUri: localIpv4 ? `${localIpv4}:8081` : null,
 });
 const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-assert.ok(supabaseUrl, 'Missing NEXT_PUBLIC_SUPABASE_URL.');
+assert.ok(supabaseUrl, 'Missing NEXT_PUBLIC_FOCACCIA_SUPABASE_URL.');
 assert.ok(anonKey, 'Missing NEXT_PUBLIC_SUPABASE_ANON_KEY.');
 
 const supabase = createClient(supabaseUrl, anonKey, {

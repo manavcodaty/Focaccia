@@ -1,0 +1,50 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "development-local": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_FOCACCIA_NETWORK_MODE": "local"
+      },
+      "ios": {
+        "buildConfiguration": "Debug"
+      }
+    },
+    "development-tunnel": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_FOCACCIA_NETWORK_MODE": "tunnel"
+      },
+      "ios": {
+        "buildConfiguration": "Debug"
+      }
+    },
+    "preview-local": {
+      "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_FOCACCIA_NETWORK_MODE": "local"
+      }
+    },
+    "preview-tunnel": {
+      "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_FOCACCIA_NETWORK_MODE": "tunnel"
+      }
+    },
+    "production-tunnel": {
+      "distribution": "store",
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_FOCACCIA_NETWORK_MODE": "tunnel"
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@ Focaccia is a privacy-preserving event access prototype built around a simple cl
 
 The repository implements a three-part system:
 
+- a Next.js public ticket application for real attendee accounts and free checkout
 - a Next.js organizer dashboard for event setup and operations
 - an Expo iOS enrollment app that issues attendee passes from on-device face capture
 - an Expo iOS gate app that verifies passes offline with local liveness, local replay checks, and local template matching
@@ -24,6 +25,7 @@ Raw face images, reusable embeddings, and cancelable templates are not stored in
 .
 ├── apps/
 │   ├── web/            # Next.js 16 organizer dashboard
+│   ├── tickets/        # Next.js 16 public event and attendee ticket application
 │   ├── enrollment/     # Expo iOS enrollment app
 │   └── gate/           # Expo iOS gate verifier
 ├── packages/
@@ -65,48 +67,35 @@ Install dependencies from the repository root:
 pnpm install
 ```
 
-Create the local env files:
+Configure the explicit local profile:
 
 ```bash
-cp apps/web/.env.local.example apps/web/.env.local
-cp apps/enrollment/.env.example apps/enrollment/.env.local
-cp supabase/functions/.env.example supabase/functions/.env.local
+cp .env.local.example .env.local
 ```
 
-Create `apps/gate/.env.local` manually with the same keys used by the enrollment app:
+Set the Mac's stable private IPv4 in `.env.local`. On macOS, the recommended topology is Colima with automatic port forwarding disabled:
 
 ```bash
-EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+colima stop
+colima start --port-forwarder none --save-config
 ```
 
-Start Supabase from the repo root:
+Start the local demo stack:
 
 ```bash
-pnpm run db:start
+pnpm demo:local
 ```
 
-Then start the Edge Functions server in a separate terminal:
+The command generates ignored selected env files for web, enrollment, and gate; starts Supabase without Studio; starts Edge Functions; binds the constrained Supabase proxy to `LAN_IP:54331`; and starts the web app on port `3000`. It never prints credentials.
+
+For tunnel mode:
 
 ```bash
-pnpm run db:functions:serve
+cp .env.tunnel.example .env.tunnel.local
+pnpm demo:tunnel
 ```
 
-This extra step matters in this repo. The local workflow assumes an explicit `supabase functions serve --no-verify-jwt` process because the default local Supabase runtime can remain stopped.
-
-Read the local Supabase values:
-
-```bash
-supabase status -o env
-```
-
-Copy the local `ANON_KEY` into:
-
-- `apps/web/.env.local` as `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `apps/enrollment/.env.local` as `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-- `apps/gate/.env.local` as `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-
-The default local URL is `http://127.0.0.1:54321` unless your environment differs.
+See [Dual-mode network runbook](./docs/NETWORK_MODES.md) for zrok reserved names, physical-device checks, EAS profiles, Metro restart rules, and recovery.
 
 ## Running the apps
 
@@ -114,6 +103,12 @@ Organizer dashboard:
 
 ```bash
 pnpm --dir apps/web dev
+```
+
+Public ticket application:
+
+```bash
+pnpm --dir apps/tickets dev
 ```
 
 Enrollment app:
@@ -135,7 +130,7 @@ pnpm --dir apps/enrollment ios
 pnpm --dir apps/gate ios
 ```
 
-The web dashboard runs at [http://localhost:3000](http://localhost:3000).
+In local physical-device mode the web dashboard runs at `http://LAN_IP:3000`; loopback is intentionally rejected from selected mobile configuration.
 
 ## Verification commands
 
@@ -143,6 +138,11 @@ From the repository root:
 
 ```bash
 pnpm run db:verify
+pnpm verify:network-config
+pnpm verify:local-network
+pnpm verify:tunnel-network
+pnpm verify:phase2
+pnpm verify:phase3
 pnpm --filter @face-pass/shared test
 pnpm --filter @face-pass/enrollment typecheck
 pnpm --filter @face-pass/enrollment test:flow
@@ -161,6 +161,8 @@ node scripts/test-edge-functions.ts
 ## Key documents
 
 - [Operations manual](./docs/EPQ_OPERATIONS_MANUAL.md)
+- [Dual-mode network runbook](./docs/NETWORK_MODES.md)
+- [Phase 2 roles, tickets, and gate sync](./docs/PHASE_2_ROLES_TICKETS_AND_GATE_SYNC.md)
 - [Architecture](./docs/ARCHITECTURE.md)
 - [Threat model](./docs/THREAT_MODEL.md)
 - [Privacy by design](./docs/PRIVACY_BY_DESIGN.md)

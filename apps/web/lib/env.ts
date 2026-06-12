@@ -1,41 +1,22 @@
-import { z } from "zod";
+import { parsePublicNetworkConfig, type PublicNetworkConfig } from "@face-pass/shared";
 
-import { resolveBrowserSupabaseUrl } from "@/lib/browser-local-network";
+let cachedEnv: PublicNetworkConfig | null = null;
 
-const publicEnvSchema = z.object({
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-});
-
-type PublicEnv = z.infer<typeof publicEnvSchema>;
-
-let cachedEnv: PublicEnv | null = null;
-
-export function getPublicEnv(): PublicEnv {
+export function getPublicEnv(): PublicNetworkConfig {
   if (cachedEnv) {
     return cachedEnv;
   }
 
-  cachedEnv = publicEnvSchema.parse({
+  cachedEnv = parsePublicNetworkConfig({
+    NEXT_PUBLIC_FOCACCIA_LOCAL_HOST: process.env.NEXT_PUBLIC_FOCACCIA_LOCAL_HOST,
+    NEXT_PUBLIC_FOCACCIA_NETWORK_MODE: process.env.NEXT_PUBLIC_FOCACCIA_NETWORK_MODE,
+    NEXT_PUBLIC_FOCACCIA_SUPABASE_URL: process.env.NEXT_PUBLIC_FOCACCIA_SUPABASE_URL,
+    NEXT_PUBLIC_FOCACCIA_TICKETS_URL: process.env.NEXT_PUBLIC_FOCACCIA_TICKETS_URL,
+    NEXT_PUBLIC_FOCACCIA_WEB_URL: process.env.NEXT_PUBLIC_FOCACCIA_WEB_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  });
+  }, "NEXT_PUBLIC_");
 
   return cachedEnv;
 }
 
-export function getBrowserPublicEnv(): PublicEnv {
-  const env = getPublicEnv();
-
-  if (typeof window === "undefined") {
-    return env;
-  }
-
-  return {
-    ...env,
-    NEXT_PUBLIC_SUPABASE_URL: resolveBrowserSupabaseUrl({
-      browserHostname: window.location.hostname,
-      configuredUrl: env.NEXT_PUBLIC_SUPABASE_URL,
-    }),
-  };
-}
+export const getBrowserPublicEnv = getPublicEnv;

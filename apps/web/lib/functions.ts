@@ -15,10 +15,10 @@ export async function invokeEdgeFunction<T>({
 }) {
   try {
     const env = getBrowserPublicEnv();
-    const response = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/${name}`, {
+    const response = await fetch(`${env.supabaseUrl}/functions/v1/${name}`, {
       body: body ? JSON.stringify(body) : undefined,
       headers: {
-        apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        apikey: env.anonKey,
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },

@@ -6,13 +6,13 @@ import {
   resolveSupabaseUrl,
 } from "../src/lib/function-network.ts";
 
-test("replaces a stale local LAN host with the current Expo host", () => {
+test("does not rewrite an explicitly selected LAN host from Expo metadata", () => {
   const resolved = resolveSupabaseUrl({
     configuredUrl: "http://192.168.0.144:54321",
     expoHostUri: "192.168.0.141:8081",
   });
 
-  assert.equal(resolved, "http://192.168.0.141:54321");
+  assert.equal(resolved, "http://192.168.0.144:54321");
 });
 
 test("preserves configured non-local hosts", () => {
@@ -24,13 +24,20 @@ test("preserves configured non-local hosts", () => {
   assert.equal(resolved, "https://project-ref.supabase.co");
 });
 
-test("replaces localhost with the current Expo host for device builds", () => {
+test("does not silently repair a loopback URL from Expo metadata", () => {
   const resolved = resolveSupabaseUrl({
     configuredUrl: "http://127.0.0.1:54321",
     expoHostUri: "192.168.0.141:8081",
   });
 
-  assert.equal(resolved, "http://192.168.0.141:54321");
+  assert.equal(resolved, "http://127.0.0.1:54321");
+});
+
+test("rejects a missing selected URL instead of inferring one", () => {
+  assert.throws(
+    () => resolveSupabaseUrl({ expoHostUri: "192.168.0.141:8081" }),
+    /never inferred/i,
+  );
 });
 
 test("times out hung requests with an actionable error", async () => {
@@ -47,6 +54,6 @@ test("times out hung requests with an actionable error", async () => {
         timeoutMs: 10,
         url: "http://192.168.0.144:54321/functions/v1/get-enrollment-bundle",
       }),
-    /Unable to reach the enrollment service\..*EXPO_PUBLIC_SUPABASE_URL/i,
+    /Unable to reach the enrollment service\..*EXPO_PUBLIC_FOCACCIA_SUPABASE_URL/i,
   );
 });

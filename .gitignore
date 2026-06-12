@@ -10,6 +10,7 @@ node_modules/
 .next/
 out/
 coverage/
+coverage-*/
 .turbo/
 .cache/
 .parcel-cache/
@@ -34,6 +35,7 @@ pnpm-debug.log*
 # local env files
 .env*.local
 .env
+.focaccia/
 
 # vercel
 .vercel/

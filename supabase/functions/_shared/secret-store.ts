@@ -1,17 +1,18 @@
-import sodium from 'npm:libsodium-wrappers@0.8.2';
-import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.100.0';
-import { fromBase64Url, prepareCrypto, toBase64Url } from './face-pass-shared.ts';
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.100.0";
+import { getSodium } from "../../../packages/shared/src/sodium.deno.ts";
+import {
+  fromBase64Url,
+  prepareCrypto,
+  toBase64Url,
+} from "./face-pass-shared.ts";
 
-import { hiddenApiError } from './api.ts';
-import { getRuntimeConfig } from './env.ts';
-import type { SecretRecord } from './types.ts';
+import { hiddenApiError } from "./api.ts";
+import { getRuntimeConfig } from "./env.ts";
+import type { SecretRecord } from "./types.ts";
 
-const SECRET_BOX_SEPARATOR = '.';
+const SECRET_BOX_SEPARATOR = ".";
 
-const cryptoReady = (async () => {
-  await prepareCrypto();
-  await sodium.ready;
-})();
+const cryptoReady = prepareCrypto();
 
 let wrappingKeyPromise: Promise<Uint8Array> | undefined;
 
@@ -19,15 +20,17 @@ async function getWrappingKey(): Promise<Uint8Array> {
   if (!wrappingKeyPromise) {
     wrappingKeyPromise = (async () => {
       await cryptoReady;
+      const sodium = await getSodium();
 
-      const key = await fromBase64Url(getRuntimeConfig().secretWrappingKeyBase64Url);
+      const key = await fromBase64Url(
+        getRuntimeConfig().secretWrappingKeyBase64Url,
+      );
 
       if (key.length !== sodium.crypto_secretbox_KEYBYTES) {
         throw hiddenApiError({
-          clientMessage: 'Server secret material is unavailable.',
-          code: 'secret_wrapping_key_invalid',
-          message:
-            `FACE_PASS_SECRET_WRAPPING_KEY_B64URL must decode to ${sodium.crypto_secretbox_KEYBYTES} bytes.`,
+          clientMessage: "Server secret material is unavailable.",
+          code: "secret_wrapping_key_invalid",
+          message: `FACE_PASS_SECRET_WRAPPING_KEY_B64URL must decode to ${sodium.crypto_secretbox_KEYBYTES} bytes.`,
         });
       }
 
@@ -38,8 +41,9 @@ async function getWrappingKey(): Promise<Uint8Array> {
   return wrappingKeyPromise;
 }
 
-async function encryptSecret(secret: Uint8Array): Promise<string> {
+export async function encryptServerSecret(secret: Uint8Array): Promise<string> {
   await cryptoReady;
+  const sodium = await getSodium();
 
   const wrappingKey = await getWrappingKey();
   const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
@@ -48,18 +52,20 @@ async function encryptSecret(secret: Uint8Array): Promise<string> {
   return `${await toBase64Url(nonce)}${SECRET_BOX_SEPARATOR}${await toBase64Url(ciphertext)}`;
 }
 
-async function decryptSecret(ciphertextEnvelope: string): Promise<Uint8Array> {
+export async function decryptServerSecret(
+  ciphertextEnvelope: string,
+): Promise<Uint8Array> {
   await cryptoReady;
+  const sodium = await getSodium();
 
-  const [nonceBase64Url, ciphertextBase64Url, extra] = ciphertextEnvelope.split(
-    SECRET_BOX_SEPARATOR,
-  );
+  const [nonceBase64Url, ciphertextBase64Url, extra] =
+    ciphertextEnvelope.split(SECRET_BOX_SEPARATOR);
 
   if (!nonceBase64Url || !ciphertextBase64Url || extra !== undefined) {
     throw hiddenApiError({
-      clientMessage: 'Server secret material is unavailable.',
-      code: 'secret_ciphertext_invalid',
-      message: 'Secret ciphertext envelope is malformed.',
+      clientMessage: "Server secret material is unavailable.",
+      code: "secret_ciphertext_invalid",
+      message: "Secret ciphertext envelope is malformed.",
     });
   }
 
@@ -75,15 +81,15 @@ async function getSecretRecord(
   eventId: string,
 ): Promise<SecretRecord> {
   const { data, error } = await adminClient
-    .from('edge_event_secrets')
-    .select('event_id, sk_sign_event_ciphertext, k_code_event_ciphertext')
-    .eq('event_id', eventId)
+    .from("edge_event_secrets")
+    .select("event_id, sk_sign_event_ciphertext, k_code_event_ciphertext")
+    .eq("event_id", eventId)
     .single();
 
   if (error || !data) {
     throw hiddenApiError({
-      clientMessage: 'Event secret material is unavailable.',
-      code: 'event_secret_missing',
+      clientMessage: "Event secret material is unavailable.",
+      code: "event_secret_missing",
       message: `Missing server-side secret record for event ${eventId}.`,
     });
   }
@@ -96,17 +102,17 @@ export async function createEventSecretRecord(
   eventId: string,
   signingSecret: Uint8Array,
 ): Promise<void> {
-  const encryptedSigningSecret = await encryptSecret(signingSecret);
+  const encryptedSigningSecret = await encryptServerSecret(signingSecret);
 
-  const { error } = await adminClient.from('edge_event_secrets').insert({
+  const { error } = await adminClient.from("edge_event_secrets").insert({
     event_id: eventId,
     sk_sign_event_ciphertext: encryptedSigningSecret,
   });
 
   if (error) {
     throw hiddenApiError({
-      clientMessage: 'Unable to persist server secret material.',
-      code: 'event_secret_persist_failed',
+      clientMessage: "Unable to persist server secret material.",
+      code: "event_secret_persist_failed",
       message: `Failed to persist event secret for ${eventId}: ${error.message}`,
     });
   }
@@ -117,7 +123,7 @@ export async function getSigningSecret(
   eventId: string,
 ): Promise<Uint8Array> {
   const record = await getSecretRecord(adminClient, eventId);
-  return decryptSecret(record.sk_sign_event_ciphertext);
+  return decryptServerSecret(record.sk_sign_event_ciphertext);
 }
 
 export async function setQueueCodeSecret(
@@ -125,20 +131,20 @@ export async function setQueueCodeSecret(
   eventId: string,
   queueCodeSecret: Uint8Array,
 ): Promise<void> {
-  const encryptedQueueCodeSecret = await encryptSecret(queueCodeSecret);
+  const encryptedQueueCodeSecret = await encryptServerSecret(queueCodeSecret);
 
   const { error } = await adminClient
-    .from('edge_event_secrets')
+    .from("edge_event_secrets")
     .update({
       k_code_event_ciphertext: encryptedQueueCodeSecret,
       updated_at: new Date().toISOString(),
     })
-    .eq('event_id', eventId);
+    .eq("event_id", eventId);
 
   if (error) {
     throw hiddenApiError({
-      clientMessage: 'Unable to persist queue code secret.',
-      code: 'queue_code_secret_persist_failed',
+      clientMessage: "Unable to persist queue code secret.",
+      code: "queue_code_secret_persist_failed",
       message: `Failed to persist queue code secret for ${eventId}: ${error.message}`,
     });
   }
@@ -154,5 +160,5 @@ export async function getQueueCodeSecret(
     return null;
   }
 
-  return decryptSecret(record.k_code_event_ciphertext);
+  return decryptServerSecret(record.k_code_event_ciphertext);
 }

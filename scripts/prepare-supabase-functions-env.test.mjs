@@ -12,6 +12,8 @@ test("builds supabase/functions/.env from .env.local and example defaults", () =
       "FACE_PASS_MATCH_THRESHOLD=80",
       "FACE_PASS_LIVENESS_TIMEOUT_MS=4000",
       "FACE_PASS_QUEUE_CODE_DIGITS=8",
+      "FOCACCIA_CLAIM_CODE_PEPPER=replace-with-a-base64url-encoded-32-byte-secret",
+      "FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com",
       "",
     ].join("\n"),
     envLocalText: [
@@ -19,6 +21,8 @@ test("builds supabase/functions/.env from .env.local and example defaults", () =
       "SUPABASE_ANON_KEY=test-anon",
       "SUPABASE_SERVICE_ROLE_KEY=test-service-role",
       "FACE_PASS_SECRET_WRAPPING_KEY_B64URL=existing-secret-value-1234567890123456789012",
+      "FOCACCIA_CLAIM_CODE_PEPPER=existing-pepper-value-12345678901234567890123",
+      "FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com",
       "",
     ].join("\n"),
   });
@@ -31,6 +35,7 @@ test("builds supabase/functions/.env from .env.local and example defaults", () =
   assert.match(result.envText, /^FACE_PASS_MATCH_THRESHOLD=80$/m);
   assert.match(result.envText, /^FACE_PASS_LIVENESS_TIMEOUT_MS=4000$/m);
   assert.match(result.envText, /^FACE_PASS_QUEUE_CODE_DIGITS=8$/m);
+  assert.match(result.envText, /^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com$/m);
   assert.doesNotMatch(result.envText, /^SUPABASE_URL=/m);
 });
 
@@ -41,17 +46,21 @@ test("generates and persists a wrapping key when .env.local is missing it", () =
       "FACE_PASS_MATCH_THRESHOLD=80",
       "FACE_PASS_LIVENESS_TIMEOUT_MS=4000",
       "FACE_PASS_QUEUE_CODE_DIGITS=8",
+      "FOCACCIA_CLAIM_CODE_PEPPER=replace-with-a-base64url-encoded-32-byte-secret",
+      "FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com",
       "",
     ].join("\n"),
     envLocalText: [
       "SUPABASE_URL=http://127.0.0.1:54321",
       "SUPABASE_ANON_KEY=test-anon",
       "SUPABASE_SERVICE_ROLE_KEY=test-service-role",
+      "FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com",
       "",
     ].join("\n"),
   });
 
   assert.equal(result.generatedSecret, true);
   assert.match(result.envText, /^FACE_PASS_SECRET_WRAPPING_KEY_B64URL=[A-Za-z0-9_-]{43}$/m);
+  assert.match(result.envText, /^FOCACCIA_CLAIM_CODE_PEPPER=[A-Za-z0-9_-]{43}$/m);
   assert.match(result.updatedEnvLocalText, /^FACE_PASS_SECRET_WRAPPING_KEY_B64URL=[A-Za-z0-9_-]{43}$/m);
 });

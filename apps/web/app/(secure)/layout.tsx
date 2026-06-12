@@ -18,6 +18,16 @@ export default async function SecureLayout({
     redirect("/login");
   }
 
+  const { data: organizer } = await supabase
+    .from("organizer_profiles")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!organizer) {
+    redirect("/login?error=organizer_required");
+  }
+
   return (
     <AuthProvider initialUser={user}>
       <AppShell>{children}</AppShell>

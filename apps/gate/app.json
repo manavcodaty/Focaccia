@@ -15,7 +15,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.facepass.gate",
       "infoPlist": {
-        "NSCameraUsageDescription": "Face Pass Gate uses the camera to scan attendee passes and complete offline face verification without uploading images."
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true
+        },
+        "NSCameraUsageDescription": "Face Pass Gate uses the camera to scan attendee passes and complete offline face verification without uploading images.",
+        "NSLocalNetworkUsageDescription": "Focaccia connects to services running on the organizer's Mac when Local network mode is selected."
       }
     },
     "plugins": [

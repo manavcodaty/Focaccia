@@ -29,26 +29,7 @@ export function getCurrentServerHostname() {
 }
 
 export function resolveServerSupabaseUrl({ configuredUrl, requestHostname, serverHostname }) {
-  const resolved = new URL(configuredUrl);
-
-  if (
-    requestHostname
-    && requestHostname !== resolved.hostname
-    && isLocalDevelopmentHost(requestHostname)
-    && isLocalDevelopmentHost(resolved.hostname)
-  ) {
-    resolved.hostname = requestHostname;
-    return resolved.origin;
-  }
-
-  if (
-    serverHostname
-    && serverHostname !== resolved.hostname
-    && isPrivateIpv4Host(serverHostname)
-    && isPrivateIpv4Host(resolved.hostname)
-  ) {
-    resolved.hostname = serverHostname;
-  }
-
-  return resolved.origin;
+  void requestHostname;
+  void serverHostname;
+  return new URL(configuredUrl).origin;
 }

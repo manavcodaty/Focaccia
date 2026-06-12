@@ -5,7 +5,7 @@ import path from "node:path";
 
 import { createServerClient } from "@supabase/ssr";
 
-import { getCurrentServerHostname, resolveServerSupabaseUrl } from "./local-network.mjs";
+import { resolveServerSupabaseUrl } from "./local-network.mjs";
 
 function parseEnvFile(filePath) {
   const raw = readFileSync(filePath, "utf8");
@@ -107,12 +107,9 @@ async function fetchWithCookies(url, cookieJar, init = {}) {
 const webDir = import.meta.dirname;
 const env = parseEnvFile(path.join(webDir, "../.env.local"));
 const cookieJar = new Map();
-const webBaseUrl = "http://localhost:3000";
-const requestHostname = new URL(webBaseUrl).hostname;
+const webBaseUrl = new URL(env.NEXT_PUBLIC_FOCACCIA_WEB_URL).origin;
 const supabaseUrl = resolveServerSupabaseUrl({
-  configuredUrl: env.NEXT_PUBLIC_SUPABASE_URL,
-  requestHostname,
-  serverHostname: getCurrentServerHostname(),
+  configuredUrl: env.NEXT_PUBLIC_FOCACCIA_SUPABASE_URL,
 });
 
 const supabase = createServerClient(

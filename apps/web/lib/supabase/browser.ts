@@ -14,8 +14,8 @@ export function createBrowserSupabaseClient(): SupabaseClient {
 
   const env = getBrowserPublicEnv();
   browserClient = createBrowserClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    env.supabaseUrl,
+    env.anonKey,
   );
 
   return browserClient;

@@ -1,76 +1,78 @@
-import { jsonError, jsonSuccess, readJsonBody, respondWithError } from '../_shared/api.ts';
+import { exposedApiError, jsonError, jsonSuccess, respondWithError } from '../_shared/api.ts';
+import { requireAuthenticated } from '../_shared/auth.ts';
+import { claimCodeDigest, protectedServerDigest, validateClaimCode } from '../_shared/claim-code.ts';
 import { handleCors } from '../_shared/cors.ts';
-import { hasEventEnded } from '../_shared/event-lifecycle.ts';
-import { createAdminClient } from '../_shared/supabase.ts';
-import type { EnrollmentBundleResponse } from '../_shared/types.ts';
+import { databaseApiError } from '../_shared/database-errors.ts';
+import { enrollmentSelectorSchema } from '../_shared/schemas.ts';
+import { parseJsonBody } from '../_shared/validation.ts';
 
-const JOIN_CODE_PATTERN = /^[A-Z0-9]{8}$/;
-
-function extractJoinCode(body: { join_code?: string }): string {
-  return (body.join_code ?? '').trim().toUpperCase();
+function requestIp(req: Request): string {
+  return req.headers.get('cf-connecting-ip')
+    ?? req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? 'unknown';
 }
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
-
-  if (corsResponse) {
-    return corsResponse;
-  }
-
-  if (req.method !== 'POST') {
-    return jsonError(
-      405,
-      'method_not_allowed',
-      'Use POST for get-enrollment-bundle.',
-    );
-  }
+  if (corsResponse) return corsResponse;
+  if (req.method !== 'POST') return jsonError(req, 405, 'method_not_allowed', 'Use POST for get-enrollment-bundle.');
 
   try {
-    const body = await readJsonBody<{ join_code?: string }>(req);
-    const joinCode = extractJoinCode(body);
+    const { adminClient, user, userClient } = await requireAuthenticated(req);
+    const body = await parseJsonBody(req, enrollmentSelectorSchema);
+    let query = userClient
+      .from('event_tickets')
+      .select('id, event_id, ticket_type_id, status, generation_count, current_pass_id')
+      .eq('attendee_user_id', user.id)
+      .in('status', ['claimed', 'enrolled']);
 
-    if (!JOIN_CODE_PATTERN.test(joinCode)) {
-      return jsonError(400, 'invalid_join_code', 'join_code must be 8 uppercase alphanumeric characters.');
+    if (body.claim_code) {
+      const [userScope, ipScope] = await Promise.all([
+        protectedServerDigest(`claim:user:${user.id}`),
+        protectedServerDigest(`claim:ip:${requestIp(req)}`),
+      ]);
+      const rateResults = await Promise.all([userScope, ipScope].map((actorScope) =>
+        adminClient.rpc('consume_api_rate_limit', {
+          p_actor_scope: actorScope,
+          p_limit: 10,
+          p_operation: 'claim-code-lookup',
+          p_window_seconds: 600,
+        })
+      ));
+      const rateError = rateResults.find((result) => result.error)?.error;
+      if (rateError) throw databaseApiError(rateError, 'claim_code_rate_limit');
+      if (rateResults.some((result) => !(result.data as { allowed: boolean }).allowed)) {
+        throw exposedApiError(429, 'rate_limit_exceeded', 'Too many claim-code attempts. Try again later.');
+      }
+      query = query.eq('claim_code_digest', await claimCodeDigest(validateClaimCode(body.claim_code)));
+    } else {
+      query = query.eq('id', body.ticket_id);
     }
 
-    const adminClient = createAdminClient();
-    const { data, error } = await adminClient
+    const { data: ticket, error: ticketError } = await query.maybeSingle();
+    if (ticketError) throw ticketError;
+    if (!ticket) return jsonError(req, 404, 'ticket_not_found', 'Ticket not found.');
+
+    const { data: event, error: eventError } = await adminClient
       .from('events')
       .select('event_id, event_salt, pk_gate_event, pk_sign_event, starts_at, ends_at')
-      .eq('join_code', joinCode)
-      .single();
-
-    if (error || !data) {
-      return jsonError(404, 'event_not_found', 'No event found for the provided join code.');
+      .eq('event_id', ticket.event_id)
+      .is('deleted_at', null)
+      .maybeSingle();
+    if (eventError) throw eventError;
+    if (!event) return jsonError(req, 404, 'ticket_not_found', 'Ticket not found.');
+    if (new Date(event.ends_at).getTime() <= Date.now()) {
+      return jsonError(req, 409, 'event_ended', 'This event has ended.');
+    }
+    if (!event.pk_gate_event) {
+      return jsonError(req, 409, 'gate_not_provisioned', 'This event is not yet provisioned for enrollment.');
     }
 
-    if (hasEventEnded(data)) {
-      return jsonError(
-        409,
-        'event_ended',
-        'This event has already ended and cannot accept new attendees.',
-      );
-    }
-
-    if (!data.pk_gate_event) {
-      return jsonError(409, 'gate_not_provisioned', 'This event is not yet provisioned for enrollment.');
-    }
-
-    const response: EnrollmentBundleResponse = {
-      ends_at: data.ends_at,
-      event_id: data.event_id,
-      event_salt: data.event_salt,
-      pk_gate_event: data.pk_gate_event,
-      pk_sign_event: data.pk_sign_event,
-      starts_at: data.starts_at,
-    };
-
-    return jsonSuccess(response);
+    return jsonSuccess(req, { event, ticket });
   } catch (error) {
-    return respondWithError(error, {
+    return respondWithError(req, error, {
       code: 'enrollment_bundle_failed',
       message: 'Unable to load the enrollment bundle.',
-      status: 400,
     });
   }
 });

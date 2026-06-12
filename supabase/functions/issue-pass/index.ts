@@ -1,158 +1,99 @@
 import {
   canonicalJsonSignature,
+  canonicalJsonStringify,
   prepareCrypto,
   toBase64Url,
   type PassPayload,
 } from '../_shared/face-pass-shared.ts';
 
-import { jsonError, jsonSuccess, readJsonBody, respondWithError } from '../_shared/api.ts';
+import { exposedApiError, jsonError, jsonSuccess, respondWithError } from '../_shared/api.ts';
+import { requireAuthenticated } from '../_shared/auth.ts';
 import { handleCors } from '../_shared/cors.ts';
-import { hasEventEnded } from '../_shared/event-lifecycle.ts';
+import { databaseApiError } from '../_shared/database-errors.ts';
+import { operationRequestHash, requireIdempotencyKey, sha256Hex } from '../_shared/idempotency.ts';
 import { computeQueueCode } from '../_shared/queue-code.ts';
+import { issuePassSchema } from '../_shared/schemas.ts';
 import { getQueueCodeSecret, getSigningSecret } from '../_shared/secret-store.ts';
-import { createAdminClient } from '../_shared/supabase.ts';
-import type { EventRecord, IssuePassRequest, IssuePassResponse } from '../_shared/types.ts';
-
-const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
-const JOIN_CODE_PATTERN = /^[A-Z0-9]{8}$/;
+import { parseJsonBody } from '../_shared/validation.ts';
 
 const cryptoReady = prepareCrypto();
 
-function isFiniteInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && Number.isFinite(value);
-}
-
-function validatePassPayload(payload: PassPayload, event: Pick<EventRecord, 'ends_at' | 'event_id' | 'pk_gate_event' | 'starts_at'>): void {
-  if (payload.v !== 1) {
-    throw new Error('payload.v must equal 1.');
-  }
-
-  if (payload.event_id !== event.event_id) {
-    throw new Error('payload.event_id does not match the requested event.');
-  }
-
-  if (!payload.single_use) {
-    throw new Error('payload.single_use must be true.');
-  }
-
-  if (!BASE64URL_PATTERN.test(payload.pass_id) || !BASE64URL_PATTERN.test(payload.nonce)) {
-    throw new Error('pass_id and nonce must be base64url strings.');
-  }
-
-  if (!BASE64URL_PATTERN.test(payload.enc_template)) {
-    throw new Error('enc_template must be base64url encoded.');
-  }
-
-  if (!isFiniteInteger(payload.iat) || !isFiniteInteger(payload.exp)) {
-    throw new Error('iat and exp must be integer UNIX seconds.');
-  }
-
-  if (payload.iat > payload.exp) {
-    throw new Error('iat must not be later than exp.');
-  }
-
-  const eventStartsAtUnix = Math.floor(new Date(event.starts_at).getTime() / 1000);
-  const eventEndsAtUnix = Math.floor(new Date(event.ends_at).getTime() / 1000);
-
-  if (payload.iat < eventStartsAtUnix) {
-    throw new Error('iat must not be earlier than the event start time.');
-  }
-
-  if (payload.exp > eventEndsAtUnix) {
-    throw new Error('exp must not be later than the event end time.');
-  }
-
-  if (hasEventEnded(event)) {
-    throw new Error('This event has already ended and cannot accept new attendees.');
-  }
-
-  if (!event.pk_gate_event) {
-    throw new Error('This event has not been provisioned with a gate device.');
-  }
-}
-
-function extractJoinCode(joinCode: string | undefined): string {
-  return (joinCode ?? '').trim().toUpperCase();
-}
-
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+  if (req.method !== 'POST') return jsonError(req, 405, 'method_not_allowed', 'Use POST for issue-pass.');
 
-  if (corsResponse) {
-    return corsResponse;
-  }
-
-  if (req.method !== 'POST') {
-    return jsonError(405, 'method_not_allowed', 'Use POST for issue-pass.');
-  }
+  let signingSecret: Uint8Array | undefined;
 
   try {
     await cryptoReady;
-
-    const requestBody = await readJsonBody<IssuePassRequest>(req);
-    const payload = requestBody.payload;
-    const joinCode = extractJoinCode(requestBody.join_code);
-
-    if (!JOIN_CODE_PATTERN.test(joinCode)) {
-      return jsonError(
-        400,
-        'invalid_join_code',
-        'join_code must be 8 uppercase alphanumeric characters.',
-      );
+    const { adminClient, user, userClient } = await requireAuthenticated(req);
+    const body = await parseJsonBody(req, issuePassSchema);
+    const payload = body.payload as PassPayload;
+    const { data: ticket, error: ticketError } = await userClient
+      .from('event_tickets')
+      .select('id, event_id, attendee_user_id, status')
+      .eq('id', body.ticket_id)
+      .eq('attendee_user_id', user.id)
+      .maybeSingle();
+    if (ticketError) throw ticketError;
+    if (!ticket) throw exposedApiError(404, 'ticket_not_found', 'Ticket not found.');
+    if (payload.event_id !== ticket.event_id) {
+      throw exposedApiError(422, 'event_mismatch', 'The pass event does not match the ticket.');
     }
 
-    const adminClient = createAdminClient();
     const { data: event, error: eventError } = await adminClient
       .from('events')
       .select('event_id, starts_at, ends_at, pk_gate_event')
-      .eq('event_id', payload.event_id)
-      .eq('join_code', joinCode)
-      .single();
+      .eq('event_id', ticket.event_id)
+      .is('deleted_at', null)
+      .maybeSingle();
+    if (eventError) throw eventError;
+    if (!event) throw exposedApiError(404, 'ticket_not_found', 'Ticket not found.');
+    if (!event.pk_gate_event) throw exposedApiError(409, 'gate_not_provisioned', 'The event gate is not provisioned.');
 
-    if (eventError || !event) {
-      return jsonError(404, 'event_not_found', 'Event not found.');
+    const eventStart = Math.floor(new Date(event.starts_at).getTime() / 1000);
+    const eventEnd = Math.floor(new Date(event.ends_at).getTime() / 1000);
+    if (payload.iat < eventStart || payload.exp > eventEnd || payload.iat >= payload.exp) {
+      throw exposedApiError(422, 'invalid_pass_window', 'The pass validity window does not match the event.');
     }
 
-    validatePassPayload(payload, event);
+    const idempotencyKey = requireIdempotencyKey(req);
+    const requestHash = await operationRequestHash('issue-pass', body);
+    const payloadHash = await sha256Hex(canonicalJsonStringify(payload));
+    signingSecret = await getSigningSecret(adminClient, ticket.event_id);
+    const signature = await toBase64Url(await canonicalJsonSignature(payload, signingSecret));
+    const { data, error } = await userClient.rpc('issue_ticket_pass', {
+      p_idempotency_key: idempotencyKey,
+      p_pass_id: payload.pass_id,
+      p_payload_hash: payloadHash,
+      p_request_hash: requestHash,
+      p_ticket_id: body.ticket_id,
+      p_valid_from: new Date(payload.iat * 1000).toISOString(),
+      p_valid_until: new Date(payload.exp * 1000).toISOString(),
+    });
+    if (error || !data) throw databaseApiError(error, 'issue_pass');
 
-    const signingSecret = await getSigningSecret(adminClient, payload.event_id);
-
+    const queueSecret = await getQueueCodeSecret(adminClient, ticket.event_id);
     try {
-      const signatureBytes = await canonicalJsonSignature(payload, signingSecret);
-      const signature = await toBase64Url(signatureBytes);
-      const queueCodeSecret = await getQueueCodeSecret(adminClient, payload.event_id);
-      const queueCode = queueCodeSecret
-        ? await computeQueueCode(payload.event_id, payload.pass_id, queueCodeSecret)
+      const queueCode = queueSecret
+        ? await computeQueueCode(ticket.event_id, payload.pass_id, queueSecret)
         : undefined;
-
-      const response: IssuePassResponse = {
-        queue_code: queueCode,
+      return jsonSuccess(req, {
+        generation: Number((data as { pass: { generation: number } }).pass.generation),
+        idempotent_replay: Boolean((data as { idempotent_replay: boolean }).idempotent_replay),
+        ...(queueCode ? { queue_code: queueCode } : {}),
         signature,
-      };
-
-      return jsonSuccess(response);
+      }, (data as { idempotent_replay: boolean }).idempotent_replay ? 200 : 201);
     } finally {
-      signingSecret.fill(0);
+      queueSecret?.fill(0);
     }
   } catch (error) {
-    if (error instanceof Error) {
-      const message = error.message;
-      const status = message.includes('not found')
-        ? 404
-        : message.includes('not been provisioned') || message.includes('already ended')
-          ? 409
-          : 400;
-
-      return respondWithError(error, {
-        code: 'issue_pass_failed',
-        message: 'Unable to issue a pass for this event.',
-        status,
-      });
-    }
-
-    return respondWithError(error, {
+    return respondWithError(req, error, {
       code: 'issue_pass_failed',
-      message: 'Unable to issue a pass for this event.',
+      message: 'Unable to issue the pass.',
     });
+  } finally {
+    signingSecret?.fill(0);
   }
 });

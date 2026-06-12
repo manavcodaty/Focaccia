@@ -191,7 +191,12 @@ export async function signInOrganizer(
 
 export async function callProvisionGate(
   auth: OrganizerAuthState,
-  request: { device_name?: string; event_id: string; pk_gate_event: string },
+  request: {
+    device_name?: string;
+    event_id: string;
+    pk_gate_event: string;
+    sync_public_key: string;
+  },
 ): Promise<GateBundle> {
   return invokeFunction<GateBundle>({
     accessToken: auth.accessToken,

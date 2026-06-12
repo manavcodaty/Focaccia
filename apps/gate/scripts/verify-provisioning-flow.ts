@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { networkInterfaces } from 'node:os';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
 
 import { createClient } from '@supabase/supabase-js';
-import { toBase64Url, x25519Keypair } from '@face-pass/shared';
+import { ed25519Keypair, toBase64Url, x25519Keypair } from '@face-pass/shared';
 
 import { createTimeoutFetch, fetchWithTimeout, resolveSupabaseUrl } from '../src/lib/network.ts';
 
@@ -27,6 +28,23 @@ function parseEnvFile(filePath: string): Record<string, string> {
     }
 
     values[trimmed.slice(0, separatorIndex)] = trimmed.slice(separatorIndex + 1);
+  }
+
+  return values;
+}
+
+function parseEnvFileOutput(raw: string): Record<string, string> {
+  const values: Record<string, string> = {};
+
+  for (const line of raw.split(/\r?\n/)) {
+    const separatorIndex = line.indexOf('=');
+
+    if (separatorIndex < 1) continue;
+
+    values[line.slice(0, separatorIndex)] = line
+      .slice(separatorIndex + 1)
+      .trim()
+      .replace(/^"|"$/g, '');
   }
 
   return values;
@@ -101,13 +119,25 @@ async function invokeFunction<T>({
 }
 
 const gateDir = import.meta.dirname;
+const repositoryRoot = path.resolve(gateDir, '../../..');
 const gateEnv = parseEnvFile(path.join(gateDir, '../.env.local'));
 const webEnv = parseEnvFile(path.join(gateDir, '../../web/.env.local'));
-const configuredUrl = gateEnv.EXPO_PUBLIC_SUPABASE_URL;
+const rootEnv = parseEnvFile(path.join(gateDir, '../../../.env.local'));
+const statusEnv = parseEnvFile(path.join(gateDir, '../../../.env.local'));
+Object.assign(
+  statusEnv,
+  parseEnvFileOutput(execFileSync('supabase', ['status', '--workdir', path.join(repositoryRoot, '.focaccia/runtime'), '-o', 'env'], {
+    encoding: 'utf8',
+    env: { ...process.env, DOCKER_HOST: process.env.FOCACCIA_DOCKER_HOST ?? 'ssh://colima' },
+  })),
+);
+const configuredUrl = gateEnv.EXPO_PUBLIC_FOCACCIA_SUPABASE_URL;
 const anonKey = gateEnv.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? webEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const serviceRoleKey = statusEnv.SERVICE_ROLE_KEY;
 
-assert.ok(configuredUrl, 'Missing EXPO_PUBLIC_SUPABASE_URL.');
+assert.ok(configuredUrl, 'Missing EXPO_PUBLIC_FOCACCIA_SUPABASE_URL.');
 assert.ok(anonKey, 'Missing EXPO_PUBLIC_SUPABASE_ANON_KEY.');
+assert.ok(serviceRoleKey, 'Missing local Supabase SERVICE_ROLE_KEY.');
 
 const localIpv4 = getLocalIpv4Address();
 const resolvedUrl = resolveSupabaseUrl({
@@ -128,14 +158,25 @@ const supabase = createClient(resolvedUrl, anonKey, {
   },
 });
 
-const email = `gate-${randomUUID()}@example.com`;
+const email = rootEnv.FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST?.split(',')[0]?.trim();
 const password = `P@ssword-${randomUUID()}`;
 
-const signUpResult = await supabase.auth.signUp({ email, password });
+assert.ok(email, 'FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST must contain an organizer email.');
 
-if (signUpResult.error) {
-  throw signUpResult.error;
-}
+const adminSupabase = createClient(resolvedUrl, serviceRoleKey, {
+  auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
+  global: { fetch: createTimeoutFetch({ errorPrefix: 'Unable to reach local Supabase admin auth.' }) },
+});
+const listedUsers = await adminSupabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+
+if (listedUsers.error) throw listedUsers.error;
+
+const existingUser = listedUsers.data.users.find((user) => user.email?.toLowerCase() === email.toLowerCase());
+const organizerResult = existingUser
+  ? await adminSupabase.auth.admin.updateUserById(existingUser.id, { password })
+  : await adminSupabase.auth.admin.createUser({ email, email_confirm: true, password });
+
+if (organizerResult.error) throw organizerResult.error;
 
 const signInResult = await supabase.auth.signInWithPassword({ email, password });
 
@@ -150,13 +191,16 @@ const endsAt = new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString();
 
 const createdEvent = await invokeFunction<{
   event_id: string;
-  join_code: string;
 }>({
   accessToken,
   anonKey,
   body: {
+    capacity: 10,
+    description: 'Exercises organizer-owned gate provisioning.',
     ends_at: endsAt,
     event_id: eventId,
+    is_listed: false,
+    location: 'Verification Hall',
     name: 'Gate Provisioning Verification Event',
     starts_at: startsAt,
   },
@@ -165,6 +209,7 @@ const createdEvent = await invokeFunction<{
 });
 
 const gateKeypair = await x25519Keypair();
+const syncKeypair = await ed25519Keypair();
 const provisionedGate = await invokeFunction<{
   event_id: string;
   k_code_event?: string;
@@ -184,6 +229,7 @@ const provisionedGate = await invokeFunction<{
     device_name: 'Gate Verification Device',
     event_id: createdEvent.event_id,
     pk_gate_event: await toBase64Url(gateKeypair.publicKey),
+    sync_public_key: await toBase64Url(syncKeypair.publicKey),
   },
   name: 'provision-gate',
   supabaseUrl: resolvedUrl,
@@ -197,7 +243,6 @@ console.log(
   JSON.stringify(
     {
       event_id: createdEvent.event_id,
-      join_code: createdEvent.join_code,
       organizer_email: signInResult.data.user.email,
       provisioned_pk_gate_event: provisionedGate.pk_gate_event,
       resolved_supabase_url: resolvedUrl,
@@ -207,3 +252,8 @@ console.log(
     2,
   ),
 );
+
+gateKeypair.privateKey.fill(0);
+gateKeypair.publicKey.fill(0);
+syncKeypair.privateKey.fill(0);
+syncKeypair.publicKey.fill(0);

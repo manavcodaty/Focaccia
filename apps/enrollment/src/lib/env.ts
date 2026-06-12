@@ -1,10 +1,7 @@
-import Constants from 'expo-constants';
+import { parsePublicNetworkConfig, type PublicNetworkConfig } from '@face-pass/shared';
 
-import { resolveSupabaseUrl } from './function-network';
-
-export interface SupabasePublicEnv {
-  anonKey: string;
-  url: string;
+export interface SupabasePublicEnv extends PublicNetworkConfig {
+  readonly url: string;
 }
 
 let cachedEnv: SupabasePublicEnv | null = null;
@@ -14,21 +11,15 @@ export function getSupabasePublicEnv(): SupabasePublicEnv {
     return cachedEnv;
   }
 
-  const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  const network = parsePublicNetworkConfig({
+    EXPO_PUBLIC_FOCACCIA_LOCAL_HOST: process.env.EXPO_PUBLIC_FOCACCIA_LOCAL_HOST,
+    EXPO_PUBLIC_FOCACCIA_NETWORK_MODE: process.env.EXPO_PUBLIC_FOCACCIA_NETWORK_MODE,
+    EXPO_PUBLIC_FOCACCIA_SUPABASE_URL: process.env.EXPO_PUBLIC_FOCACCIA_SUPABASE_URL,
+    EXPO_PUBLIC_FOCACCIA_TICKETS_URL: process.env.EXPO_PUBLIC_FOCACCIA_TICKETS_URL,
+    EXPO_PUBLIC_FOCACCIA_WEB_URL: process.env.EXPO_PUBLIC_FOCACCIA_WEB_URL,
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  }, 'EXPO_PUBLIC_');
 
-  if (!url || !anonKey) {
-    throw new Error(
-      'Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY for the enrollment app.',
-    );
-  }
-
-  cachedEnv = {
-    anonKey,
-    url: resolveSupabaseUrl({
-      configuredUrl: url,
-      expoHostUri: Constants.expoConfig?.hostUri ?? Constants.platform?.hostUri ?? null,
-    }),
-  };
+  cachedEnv = { ...network, url: network.supabaseUrl };
   return cachedEnv;
 }

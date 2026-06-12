@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 
 import { getFriendlyAuthErrorMessage, getPostAuthSuccessState, type AuthMode } from "@/lib/auth-feedback";
+import { invokeEdgeFunction } from "@/lib/functions";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +21,9 @@ const modeCopy: Record<AuthMode, { cta: string; description: string; title: stri
     title: "Welcome back",
   },
   signup: {
-    cta: "Create organizer",
-    description: "Set up the organizer account that will own event keys and provisioning.",
-    title: "Create organizer access",
+    cta: "Create account",
+    description: "Create an account, then verify that its email is approved for organizer access.",
+    title: "Create an account",
   },
 };
 
@@ -57,6 +58,25 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
       if (nextState.kind === "confirm-email") {
         setPendingConfirmationEmail(email);
         setPassword("");
+        return;
+      }
+
+      const session = response.data.session;
+
+      if (!session) {
+        setErrorMessage("Sign in again to verify organizer access.");
+        return;
+      }
+
+      try {
+        await invokeEdgeFunction({
+          accessToken: session.access_token,
+          body: {},
+          name: "ensure-organizer",
+        });
+      } catch {
+        await supabase.auth.signOut();
+        setErrorMessage("This email is not approved for organizer access.");
         return;
       }
 

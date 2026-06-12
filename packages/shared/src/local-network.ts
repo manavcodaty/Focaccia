@@ -1,36 +1,5 @@
-const LOCAL_SUPABASE_PORT = '54321';
 const DEFAULT_TIMEOUT_MS = 8000;
 type RequestTarget = string | URL | { url: string };
-
-function isPrivateIpv4Host(host: string): boolean {
-  return /^10\./.test(host)
-    || /^192\.168\./.test(host)
-    || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
-}
-
-function isLoopbackHost(host: string): boolean {
-  return host === 'localhost' || host === '127.0.0.1';
-}
-
-function extractHost(hostUri?: string | null): string | null {
-  if (!hostUri) {
-    return null;
-  }
-
-  const trimmed = hostUri.trim();
-
-  if (!trimmed) {
-    return null;
-  }
-
-  const value = trimmed.includes('://') ? trimmed : `http://${trimmed}`;
-
-  try {
-    return new URL(value).hostname;
-  } catch {
-    return null;
-  }
-}
 
 function describeRequestTarget(input: RequestTarget): string {
   if (typeof input === 'string') {
@@ -46,35 +15,17 @@ function describeRequestTarget(input: RequestTarget): string {
 
 export function resolveLocalSupabaseUrl({
   configuredUrl,
-  expoHostUri,
 }: {
   configuredUrl?: string;
   expoHostUri?: string | null;
 }): string {
-  const runtimeHost = extractHost(expoHostUri);
-
-  if (configuredUrl) {
-    const resolved = new URL(configuredUrl);
-
-    if (
-      runtimeHost
-      && runtimeHost !== resolved.hostname
-      && isPrivateIpv4Host(runtimeHost)
-      && (isPrivateIpv4Host(resolved.hostname) || isLoopbackHost(resolved.hostname))
-    ) {
-      resolved.hostname = runtimeHost;
-    }
-
-    return resolved.origin;
-  }
-
-  if (!runtimeHost) {
+  if (!configuredUrl) {
     throw new Error(
-      'Missing EXPO_PUBLIC_SUPABASE_URL for the mobile app, and no Expo host was available to infer it.',
+      'Missing EXPO_PUBLIC_FOCACCIA_SUPABASE_URL. Network URLs are never inferred from Expo host metadata.',
     );
   }
 
-  return `http://${runtimeHost}:${LOCAL_SUPABASE_PORT}`;
+  return new URL(configuredUrl).origin;
 }
 
 export async function fetchWithTimeout({
@@ -107,7 +58,7 @@ export async function fetchWithTimeout({
   } catch (error) {
     if (error instanceof Error && (error.name === 'AbortError' || error instanceof TypeError)) {
       throw new Error(
-        `${errorPrefix} Check EXPO_PUBLIC_SUPABASE_URL and confirm the local Supabase services are reachable at ${describeRequestTarget(input)}.`,
+        `${errorPrefix} Check EXPO_PUBLIC_FOCACCIA_SUPABASE_URL and confirm the selected Supabase service is reachable at ${describeRequestTarget(input)}.`,
       );
     }
 

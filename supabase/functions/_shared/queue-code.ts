@@ -1,6 +1,6 @@
-import sodium from 'npm:libsodium-wrappers@0.8.2';
+import { getSodium } from "../../../packages/shared/src/sodium.deno.ts";
 
-import { getRuntimeConfig } from './env.ts';
+import { getRuntimeConfig } from "./env.ts";
 
 const textEncoder = new TextEncoder();
 
@@ -9,7 +9,7 @@ export async function computeQueueCode(
   passId: string,
   key: Uint8Array,
 ): Promise<string> {
-  await sodium.ready;
+  const sodium = await getSodium();
 
   const payload = textEncoder.encode(`${eventId}:${passId}`);
   const digest = sodium.crypto_generichash(8, payload, key);
@@ -28,5 +28,5 @@ export async function computeQueueCode(
   const digits = getRuntimeConfig().queueCodeDigits;
   const modulus = 10n ** BigInt(digits);
 
-  return (value % modulus).toString().padStart(digits, '0');
+  return (value % modulus).toString().padStart(digits, "0");
 }

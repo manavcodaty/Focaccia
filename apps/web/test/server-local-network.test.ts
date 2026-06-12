@@ -3,54 +3,24 @@ import test from "node:test";
 
 import { resolveServerSupabaseUrl } from "../lib/server-local-network.ts";
 
-test("replaces a stale private Supabase host with the current server LAN host", () => {
+test("does not rewrite the selected local URL from request or server hosts", () => {
   assert.equal(
     resolveServerSupabaseUrl({
-      configuredUrl: "http://192.168.0.144:54321",
-      serverHostname: "192.168.0.141",
-    }),
-    "http://192.168.0.141:54321",
-  );
-});
-
-test("uses the request host for local Supabase so SSR reads the browser auth cookie", () => {
-  assert.equal(
-    resolveServerSupabaseUrl({
-      configuredUrl: "http://127.0.0.1:54321",
+      configuredUrl: "http://192.168.0.195:54331/",
       requestHostname: "localhost",
       serverHostname: "192.168.0.141",
     }),
-    "http://localhost:54321",
+    "http://192.168.0.195:54331",
   );
 });
 
-test("uses the request LAN host for local Supabase when the app is opened from another device", () => {
+test("preserves the selected tunnel URL", () => {
   assert.equal(
     resolveServerSupabaseUrl({
-      configuredUrl: "http://127.0.0.1:54321",
-      requestHostname: "192.168.0.141",
+      configuredUrl: "https://focaccia-api.share.zrok.io/",
+      requestHostname: "localhost",
       serverHostname: "192.168.0.141",
     }),
-    "http://192.168.0.141:54321",
-  );
-});
-
-test("preserves loopback Supabase URLs on the server when there is no request host", () => {
-  assert.equal(
-    resolveServerSupabaseUrl({
-      configuredUrl: "http://127.0.0.1:54321",
-      serverHostname: "192.168.0.141",
-    }),
-    "http://127.0.0.1:54321",
-  );
-});
-
-test("preserves hosted Supabase URLs on the server", () => {
-  assert.equal(
-    resolveServerSupabaseUrl({
-      configuredUrl: "https://project-ref.supabase.co",
-      serverHostname: "192.168.0.141",
-    }),
-    "https://project-ref.supabase.co",
+    "https://focaccia-api.share.zrok.io",
   );
 });

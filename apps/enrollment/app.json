@@ -15,7 +15,12 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.facepass.enrollment",
       "infoPlist": {
-        "NSCameraUsageDescription": "Face Pass uses the front camera to capture your face on-device so it can issue an event-scoped pass. No face image is uploaded or stored."
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true
+        },
+        "NSCameraUsageDescription": "Face Pass uses the front camera to capture your face on-device so it can issue an event-scoped pass. No face image is uploaded or stored.",
+        "NSLocalNetworkUsageDescription": "Focaccia connects to services running on the organizer's Mac when Local network mode is selected."
       }
     },
     "plugins": [

@@ -22,6 +22,20 @@ export const createEventSchema = z.strictObject({
   path: ['ends_at'],
 });
 
+export const updateEventSchema = z.strictObject({
+  capacity: z.number().int().positive().max(1_000_000),
+  description: z.string().trim().max(4000).default(''),
+  ends_at: isoTimestamp,
+  event_id: idSchema,
+  is_listed: z.boolean(),
+  location: z.string().trim().max(300).default(''),
+  name: z.string().trim().min(1).max(200),
+  starts_at: isoTimestamp,
+}).refine((value) => new Date(value.starts_at) < new Date(value.ends_at), {
+  message: 'starts_at must be earlier than ends_at',
+  path: ['ends_at'],
+});
+
 export const publicEventSchema = z.strictObject({ event_id: idSchema });
 
 export const publicEventsSchema = z.strictObject({

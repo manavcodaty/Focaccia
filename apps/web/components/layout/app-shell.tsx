@@ -12,6 +12,7 @@ import { performSecureSignOut } from "@/lib/sign-out";
 function getPageTitle(pathname: string) {
   if (pathname === "/dashboard") return "Dashboard";
   if (pathname === "/events/new") return "Create Event";
+  if (pathname.endsWith("/edit")) return "Edit Event";
   if (pathname.endsWith("/provisioning")) return "Gate Provisioning";
   if (pathname.endsWith("/revocations")) return "Revocations";
   if (pathname.endsWith("/logs")) return "Gate Logs";
@@ -32,16 +33,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const organizer = user?.email?.split("@")[0] ?? "organizer";
 
   return (
-    <div className="min-h-screen bg-mesh relative overflow-hidden">
-      {/* Texture overlay */}
-      <div className="bg-noise absolute inset-0 z-0 opacity-40"></div>
-
-      {/* Decorative Orbs */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-[var(--color-warm-mist)] opacity-30 rounded-full blur-[100px] mix-blend-multiply animate-pulse" style={{ animationDuration: '10s' }}></div>
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[var(--color-fog)] opacity-50 rounded-full blur-[120px] mix-blend-multiply animate-pulse" style={{ animationDuration: '15s', animationDelay: '2s' }}></div>
-
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-50 border-b border-white/20 bg-white/40 backdrop-blur-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+    <div className="min-h-screen bg-[var(--color-canvas)]">
+      <header className="sticky top-0 z-50 border-b border-[var(--color-hint-of-grey)]/25 bg-white/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-[var(--page-max-width)] items-center justify-between px-5 md:px-8">
           {/* Left: Logo + Nav */}
           <div className="flex items-center gap-6">
@@ -73,9 +66,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             {/* Desktop nav links */}
             <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
               {navItems.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href === "/dashboard" && pathname.startsWith("/events/"));
+                const isActive = pathname === item.href
+                  || (item.href === "/dashboard" && pathname.startsWith("/events/") && pathname !== "/events/new");
                 return (
                   <Link
                     key={item.href}
@@ -149,8 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </header>
 
-      {/* Page title bar */}
-      <div className="border-b border-[var(--color-ink)]/[0.04] bg-[var(--color-fog)]/50">
+      <div className="border-b border-[var(--color-hint-of-grey)]/20 bg-[var(--color-fog)]">
         <div className="mx-auto flex h-10 max-w-[var(--page-max-width)] items-center px-5 md:px-8">
           <h1 className="text-[13px] font-medium text-[var(--color-muted-stone)]">
             {title}

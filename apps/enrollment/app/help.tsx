@@ -14,13 +14,13 @@ export default function HelpScreen() {
 
   return (
     <ScreenShell style={styles.screen}>
-      <SectionCard eyebrow="Help" title="Enrollment support">
+      <SectionCard title="Enrollment support">
         <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Ask the organizer for the eight-character join code shown in the dashboard. The code is required before any camera or crypto work starts.
+          Sign in with the account that claimed the ticket. My tickets lists every ticket owned by that account, and an optional claim code can select only a ticket that the same account owns.
         </Text>
       </SectionCard>
 
-      <SectionCard eyebrow="Capture tips" title="For the best face capture">
+      <SectionCard title="For the best face capture">
         <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           1. Use even lighting and remove anything blocking your eyes.
         </Text>
@@ -32,7 +32,7 @@ export default function HelpScreen() {
         </Text>
       </SectionCard>
 
-      <SectionCard eyebrow="Fallback" title="If the QR cannot be scanned later">
+      <SectionCard title="If the QR cannot be scanned later">
         <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           The pass screen includes a copy button for the full token. Gate staff can paste that exact token into the verifier app if camera scanning fails.
         </Text>

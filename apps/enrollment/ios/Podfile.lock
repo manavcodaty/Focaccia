@@ -242,6 +242,8 @@ PODS:
   - ExpoRouter (55.0.11):
     - ExpoModulesCore
     - RNScreens
+  - ExpoSecureStore (55.0.12):
+    - ExpoModulesCore
   - ExpoSplashScreen (55.0.16):
     - ExpoModulesCore
   - ExpoSymbols (55.0.7):
@@ -2504,6 +2506,7 @@ DEPENDENCIES:
   - "ExpoModulesCore (from `../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.0_@react-native+metro-co_76268c435698f6e2a58a5a4c27d1c5f9/node_modules/expo-modules-core`)"
   - "ExpoModulesJSI (from `../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.0_@react-native+metro-co_76268c435698f6e2a58a5a4c27d1c5f9/node_modules/expo-modules-core`)"
   - "ExpoRouter (from `../../../node_modules/.pnpm/expo-router@55.0.11_182821cd5665d83325e1ebf359a78b7e/node_modules/expo-router/ios`)"
+  - "ExpoSecureStore (from `../../../node_modules/.pnpm/expo-secure-store@55.0.12_expo@55.0.12/node_modules/expo-secure-store/ios`)"
   - "ExpoSplashScreen (from `../../../node_modules/.pnpm/expo-splash-screen@55.0.16_expo@55.0.12_typescript@5.9.3/node_modules/expo-splash-screen/ios`)"
   - "ExpoSymbols (from `../../../node_modules/.pnpm/expo-symbols@55.0.7_expo-font@55.0.6_expo@55.0.12_react-native@0.83.4_@babel+core@7.29._6ec57e2c84d77c3f9a0ba507cd64c696/node_modules/expo-symbols/ios`)"
   - "EXUpdatesInterface (from `../../../node_modules/.pnpm/expo-updates-interface@55.1.5_expo@55.0.12/node_modules/expo-updates-interface/ios`)"
@@ -2654,6 +2657,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.0_@react-native+metro-co_76268c435698f6e2a58a5a4c27d1c5f9/node_modules/expo-modules-core"
   ExpoRouter:
     :path: "../../../node_modules/.pnpm/expo-router@55.0.11_182821cd5665d83325e1ebf359a78b7e/node_modules/expo-router/ios"
+  ExpoSecureStore:
+    :path: "../../../node_modules/.pnpm/expo-secure-store@55.0.12_expo@55.0.12/node_modules/expo-secure-store/ios"
   ExpoSplashScreen:
     :path: "../../../node_modules/.pnpm/expo-splash-screen@55.0.16_expo@55.0.12_typescript@5.9.3/node_modules/expo-splash-screen/ios"
   ExpoSymbols:
@@ -2855,6 +2860,7 @@ SPEC CHECKSUMS:
   ExpoModulesCore: 964f01116faf01b68467a6c8ea06e14d65fe7b3c
   ExpoModulesJSI: 0dcd06b8d4b92826d30f52947a03a78f7590b604
   ExpoRouter: a29e3a3479f33ceda0d08136bdd7931b3a7b040c
+  ExpoSecureStore: f5fb965b5aca826e86473bf738948ab50cca66cd
   ExpoSplashScreen: 5d16d7a0ada0671b5c59080b1ce9126c987baee7
   ExpoSymbols: 8b63e859ba013df1f2fc666f535fddb3d5270569
   EXUpdatesInterface: 39d05400a9226c438565dbaaa8447b5f0672ba45

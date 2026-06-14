@@ -37,6 +37,7 @@
     "verify:phase2": "pnpm verify:phase2-schema && pnpm --filter @face-pass/shared test:phase2-coverage && pnpm --filter @face-pass/shared build && node ./scripts/test-phase2.mjs",
     "verify:phase3": "pnpm --filter @face-pass/shared build && node --experimental-strip-types --test --experimental-test-coverage ./supabase/functions/_shared/public-ticketing.test.ts && pnpm --filter @face-pass/tickets test && pnpm --filter @face-pass/tickets typecheck && pnpm --filter @face-pass/tickets build",
     "verify:phase4": "pnpm verify:phase2 && bash ./scripts/verify-phase4-schema.sh && node --experimental-strip-types --test --experimental-test-coverage ./apps/web/test/*.test.ts && pnpm dlx deno test --no-lock --coverage=coverage-phase4 ./supabase/functions/_shared/organizer-csv.test.ts && pnpm dlx deno coverage coverage-phase4 --detailed && pnpm --dir apps/web build && node ./scripts/test-phase4.mjs",
+    "verify:phase5": "pnpm verify:network-config && pnpm verify:local-network && pnpm verify:phase2 && pnpm --dir apps/enrollment test:coverage && pnpm --dir apps/enrollment typecheck && pnpm --dir apps/enrollment export:ios",
     "verify:tunnel-network": "node ./scripts/verify-network.mjs tunnel",
     "postinstall": "node ./scripts/ensure-expo-sqlite-ios-files.mjs"
   }

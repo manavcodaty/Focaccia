@@ -4,73 +4,56 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
-import { scaleFont } from '../src/lib/responsive-metrics';
-import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
+import { generationAllowance } from '../src/lib/ticket-state';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
 
 export default function ConsentScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
-  const { acceptConsent, reset, state } = useEnrollment();
+  const { acceptConsent, state } = useEnrollment();
+  const ticket = state.selectedTicket;
+  const bundle = state.bundle;
 
-  if (!state.bundle) {
+  if (!ticket || !bundle) {
     return (
       <ScreenShell style={styles.screen}>
-        <SectionCard eyebrow="Missing event" title="Start from the join code screen">
-          <Text style={styles.bodyText}>
-            The event bundle is not loaded yet, so enrollment cannot continue from here.
-          </Text>
-          <PrimaryButton
-            label="Back to join code"
-            onPress={() => {
-              reset();
-              router.replace('/');
-            }}
-          />
+        <SectionCard title="Select a ticket first">
+          <Text style={styles.body}>Enrollment can only continue from an owned ticket in My tickets.</Text>
+          <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
         </SectionCard>
       </ScreenShell>
     );
   }
 
+  const allowance = generationAllowance(ticket.generation_count);
+
   return (
     <ScreenShell style={styles.screen}>
-      <SectionCard eyebrow="Consent" title="Review how your pass is created">
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
-          Your face stays on this phone while the app generates a one-time, event-scoped template.
+      <View style={styles.header}>
+        <Text style={styles.title}>
+          {state.intent === 'regeneration' ? 'Replace your event pass' : 'Create your event pass'}
         </Text>
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
-          No face image is uploaded, no reusable embedding is stored, and the final pass can only be verified for {state.bundle.event_id}.
-        </Text>
+        <Text style={styles.subtitle}>{ticket.event.name}</Text>
+      </View>
+
+      <SectionCard title="What stays on this phone">
+        <Text style={styles.body}>The app captures one face image, aligns it, runs the bundled model, and creates the event-scoped template locally.</Text>
+        <Text style={styles.body}>The temporary camera file and aligned crop are deleted immediately after inference. The raw embedding and unencrypted template are wiped after use and are never saved.</Text>
       </SectionCard>
 
-      <SectionCard eyebrow="Event" title="Enrollment details">
-        <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Join code</Text>
-          <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>{state.joinCode}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Event ID</Text>
-          <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>{state.bundle.event_id}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Valid until</Text>
-          <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>
-            {new Date(state.bundle.ends_at).toLocaleString()}
-          </Text>
-        </View>
+      <SectionCard title="What the server receives">
+        <Text style={styles.body}>The server receives the ticket ID and a pass payload containing only the template encrypted to this event’s gate public key. It verifies ticket ownership and signs the payload.</Text>
+        <Text style={styles.body}>The server does not receive the face image, reusable embedding, decrypted template, password, or a stored copy of the final signed token.</Text>
       </SectionCard>
 
-      <SectionCard eyebrow="Before camera starts" title="What you are agreeing to">
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
-          1. The app will request camera access only on the next screen.
-        </Text>
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
-          2. The captured face image is used in memory to issue this pass and is not retained.
-        </Text>
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 23) }]}>
-          3. The pass is single-use and intended only for this event and gate.
-        </Text>
+      <SectionCard title="Ticket and generation">
+        <Detail label="Ticket" value={ticket.ticket_type.name} />
+        <Detail label="Claim code" value={ticket.claim_code} />
+        <Detail label="Generation used" value={`${allowance.used} of 3`} />
+        <Detail label="Remaining after this pass" value={String(Math.max(0, allowance.remaining - 1))} />
+        {state.intent === 'regeneration' ? (
+          <Text style={styles.warning}>The existing pass is revoked only when the replacement is successfully issued.</Text>
+        ) : null}
       </SectionCard>
 
       <View style={styles.actions}>
@@ -87,27 +70,24 @@ export default function ConsentScreen() {
   );
 }
 
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.detail}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  actions: {
-    gap: 12,
-  },
-  bodyText: {
-    ...typography.body,
-    color: palette.ink,
-  },
-  detailLabel: {
-    ...typography.bodyStrong,
-    color: palette.mutedStone,
-  },
-  detailRow: {
-    gap: 4,
-  },
-  detailValue: {
-    ...typography.title,
-    color: palette.ink,
-  },
-  screen: {
-    gap: 18,
-    justifyContent: 'center',
-  },
+  actions: { gap: 12 },
+  body: { ...typography.body, color: palette.ink, fontSize: 15, lineHeight: 23 },
+  detail: { gap: 4 },
+  detailLabel: { ...typography.bodyStrong, color: palette.mutedStone, fontSize: 13 },
+  detailValue: { ...typography.title, color: palette.ink, fontSize: 16 },
+  header: { gap: 6, paddingTop: 8 },
+  screen: { gap: 18 },
+  subtitle: { ...typography.body, color: palette.mutedStone, fontSize: 16 },
+  title: { ...typography.display, color: palette.ink, fontSize: 30, lineHeight: 36 },
+  warning: { ...typography.bodyStrong, color: palette.warning, fontSize: 13, lineHeight: 19 },
 });

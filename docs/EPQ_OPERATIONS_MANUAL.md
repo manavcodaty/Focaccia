@@ -70,6 +70,8 @@ npx eas build --profile development-local --platform ios
 
 Use the corresponding `development-tunnel`, `preview-local`, `preview-tunnel`, or `production-tunnel` profile when appropriate. TestFlight remains not configured because EAS project linkage and verified Apple credentials are absent.
 
+As of June 13, 2026, `eas whoami` reports that this workstation is not logged in and no Expo project identity, Apple signing credentials, App Store Connect application, or installed TestFlight build has been verified. Prepared internal devices are therefore the supported demonstration path. Do not describe TestFlight as available until those checks have objective evidence.
+
 ### Happy Path Walkthrough
 
 #### 1. Organizer creates an event
@@ -113,20 +115,26 @@ What the system does at this step:
 #### 3. Attendee enrolls on their own phone
 
 1. Open the Enrollment app.
-2. Enter the 8-character `join_code`.
-3. Continue to the consent screen and approve the enrollment flow.
-4. Capture the attendee face when prompted.
-5. Wait for the app to process the face locally.
-6. When the pass screen appears, keep the QR token visible.
-7. If needed, copy the full token for manual fallback.
+2. Sign in with the same attendee account used to claim the ticket, or create an attendee account.
+3. Select the owned ticket from `My tickets`. An optional claim code can locate a ticket, but the server still requires authenticated ownership.
+4. Review the ticket status and remaining generation allowance, then continue to consent.
+5. Approve the enrollment flow and capture the attendee face when prompted.
+6. Wait for the app to process the face locally and issue the ticket-bound pass.
+7. When the pass screen appears, keep the QR token visible. If needed, copy the full token for manual fallback.
+8. On a prepared shared device, use `Switch account` when finished. This removes that attendee's local pass and pending issuance records before logout.
 
 What the system does at this step:
 
-- The Enrollment app fetches the public enrollment bundle with `get-enrollment-bundle`.
+- Supabase persists the authenticated session in iOS SecureStore and restores it when the app restarts.
+- `list-my-tickets` returns only tickets owned by the authenticated attendee.
+- `get-enrollment-bundle` validates ticket or normalized claim-code ownership and rejects cancelled or revoked tickets.
 - A local FaceNet model extracts an embedding from the captured image.
 - `cancelableTemplateV1` derives an event-scoped template from the embedding and `EVENT_SALT`.
 - The template is encrypted to `PK_GATE_EVENT`.
-- The app sends only the signed pass payload request to `issue-pass`.
+- The raw embedding and cancelable template are wiped after encrypted payload construction and are never persisted.
+- The app sends only the encrypted ticket-bound payload to `issue-pass`, using a UUID idempotency key that is retained for safe network retries.
+- Each successful regeneration revokes the previous pass. Generation four is rejected by both the UI allowance and the server transaction.
+- Refreshing tickets reconciles organizer reset, cancellation, revocation, and replaced-pass state with local SecureStore records.
 - The final attendee QR contains canonical JSON plus an Ed25519 signature.
 - The temporary image files are deleted immediately after inference, as documented in [docs/PRIVACY_BY_DESIGN.md](/Users/manavcodaty/repos/Focaccia/docs/PRIVACY_BY_DESIGN.md).
 

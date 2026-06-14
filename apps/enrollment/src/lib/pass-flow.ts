@@ -24,6 +24,13 @@ export interface SignedPassResult {
   token: string;
 }
 
+export type SignedPassToken = Omit<SignedPassResult, 'template'>;
+
+export interface PassDraft {
+  payload: PassPayload;
+  template: Uint8Array;
+}
+
 export interface IssueSignedPassFromEmbeddingOptions {
   bundle: EnrollmentBundle;
   embedding: ArrayLike<number>;
@@ -52,13 +59,12 @@ export function tokenSnippet(token: string, edgeLength = 12): string {
   return `${token.slice(0, edgeLength)}...${token.slice(-edgeLength)}`;
 }
 
-export async function issueSignedPassFromEmbedding({
+export async function createPassDraftFromEmbedding({
   bundle,
   embedding,
-  issuePass,
   now = new Date(),
   onPhaseChange,
-}: IssueSignedPassFromEmbeddingOptions): Promise<SignedPassResult> {
+}: Omit<IssueSignedPassFromEmbeddingOptions, 'issuePass'>): Promise<PassDraft> {
   const eventStartsAt = unixSeconds(bundle.starts_at);
   const eventEndsAt = unixSeconds(bundle.ends_at);
   const nowUnix = unixSeconds(now);
@@ -80,7 +86,6 @@ export async function issueSignedPassFromEmbedding({
     randomBytes(12),
   ]);
   let encryptedTemplateBytes: Uint8Array | null = null;
-  let payloadBytes: Uint8Array | null = null;
 
   try {
     const passId = await toBase64Url(passIdBytes);
@@ -104,36 +109,67 @@ export async function issueSignedPassFromEmbedding({
       v: 1,
     };
 
-    onPhaseChange?.('requesting-signature');
-    const { queue_code: queueCode, signature } = await issuePass(payload);
-
-    if (!signature) {
-      throw new Error('The signing service returned an empty signature.');
-    }
-
-    onPhaseChange?.('finalizing-pass');
-    payloadBytes = canonicalJsonBytes(
-      payload as unknown as Record<string, string | number | boolean>,
-    );
-    const token = `${await toBase64Url(payloadBytes)}.${signature}`;
-    const result: SignedPassResult = {
-      payload,
-      signature,
-      template,
-      token,
-    };
-
-    if (queueCode) {
-      result.queueCode = queueCode;
-    }
-
-    return result;
+    return { payload, template };
   } finally {
     encryptedTemplateBytes?.fill(0);
     eventSalt.fill(0);
     gatePublicKey.fill(0);
     nonceBytes.fill(0);
     passIdBytes.fill(0);
-    payloadBytes?.fill(0);
   }
+}
+
+export async function finalizeSignedPass({
+  issueResult,
+  payload,
+  template,
+}: {
+  issueResult: IssuePassResult;
+  payload: PassPayload;
+  template: Uint8Array;
+}): Promise<SignedPassResult> {
+  const signed = await assembleSignedPassToken({ issueResult, payload });
+  return { ...signed, template };
+}
+
+export async function assembleSignedPassToken({
+  issueResult,
+  payload,
+}: {
+  issueResult: IssuePassResult;
+  payload: PassPayload;
+}): Promise<SignedPassToken> {
+  if (!issueResult.signature) {
+    throw new Error('The signing service returned an empty signature.');
+  }
+
+  const payloadBytes = canonicalJsonBytes(
+    payload as unknown as Record<string, string | number | boolean>,
+  );
+  try {
+    const token = `${await toBase64Url(payloadBytes)}.${issueResult.signature}`;
+    return {
+      payload,
+      ...(issueResult.queue_code ? { queueCode: issueResult.queue_code } : {}),
+      signature: issueResult.signature,
+      token,
+    };
+  } finally {
+    payloadBytes.fill(0);
+  }
+}
+
+export async function issueSignedPassFromEmbedding({
+  issuePass,
+  onPhaseChange,
+  ...draftOptions
+}: IssueSignedPassFromEmbeddingOptions): Promise<SignedPassResult> {
+  const draft = await createPassDraftFromEmbedding({
+    ...draftOptions,
+    ...(onPhaseChange ? { onPhaseChange } : {}),
+  });
+  onPhaseChange?.('requesting-signature');
+  const issueResult = await issuePass(draft.payload);
+  onPhaseChange?.('finalizing-pass');
+  return finalizeSignedPass({ issueResult, payload: draft.payload, template: draft.template });
 }

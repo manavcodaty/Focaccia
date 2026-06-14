@@ -1,160 +1,121 @@
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
-import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
-import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
+import { enrollmentApi } from '../src/lib/api';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
 
 export default function PassScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
-  const { reset, state } = useEnrollment();
-  const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
-  const bundle = state.bundle;
+  const { setBundle, state } = useEnrollment();
+  const [message, setMessage] = useState<string | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
   const pass = state.pass;
+  const ticket = state.selectedTicket;
 
-  if (!bundle || !pass) {
+  if (!pass) {
     return (
       <ScreenShell style={styles.screen}>
-        <SectionCard eyebrow="Missing pass" title="No issued pass is available">
-          <Text style={styles.bodyText}>
-            Capture and issuance need to complete before a QR token can be shown here.
-          </Text>
-          <PrimaryButton label="Start again" onPress={() => router.replace('/')} />
+        <SectionCard title="No secure pass is stored">
+          <Text style={styles.body}>Open the ticket and enroll or regenerate on this device.</Text>
+          <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
         </SectionCard>
       </ScreenShell>
     );
   }
 
-  const activeBundle = bundle!;
-  const activePass = pass!;
+  const remaining = Math.max(0, 3 - pass.generation);
 
-  async function handleCopy() {
-    await Clipboard.setStringAsync(activePass.token);
-    setCopiedMessage('Full token copied for typed or pasted fallback.');
+  async function prepareRegeneration() {
+    if (!ticket) return;
+    setIsPreparing(true);
+    setMessage(null);
+    try {
+      const bundle = await enrollmentApi.getEnrollmentBundle({ ticketId: ticket.id });
+      setBundle(bundle, 'regeneration');
+      router.push('/consent');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Unable to prepare regeneration.');
+    } finally {
+      setIsPreparing(false);
+    }
   }
 
   return (
     <ScreenShell style={styles.screen}>
-      <SectionCard eyebrow="Pass ready" title="Your one-time event pass is ready">
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Present this QR code at the gate. The verifier will confirm the signature and match a live face check there.
-        </Text>
-      </SectionCard>
+      <View style={styles.readyHeader}>
+        <Text style={styles.readyLabel}>Pass ready</Text>
+        <Text style={styles.eventName}>{pass.event.name}</Text>
+        <Text style={styles.eventMeta}>{pass.event.location || 'Location to be confirmed'}</Text>
+        <Text style={styles.eventMeta}>{new Date(pass.event.starts_at).toLocaleString()}</Text>
+      </View>
 
-      <SectionCard eyebrow="Event" title={activeBundle.event_id}>
-        <View style={styles.detailRow}>
-          <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Valid until</Text>
-          <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>
-            {new Date(activeBundle.ends_at).toLocaleString()}
-          </Text>
+      <SectionCard title={pass.ticketTypeName}>
+        <Text style={styles.generation}>Generation {pass.generation} of 3</Text>
+        <View style={styles.qrWrap}>
+          <QRCode backgroundColor={palette.canvas} color={palette.ink} quietZone={16} size={260} value={pass.token} />
         </View>
-        {activePass.queueCode ? (
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { fontSize: scaleFont(layout, 14) }]}>Queue code</Text>
-            <Text style={[styles.detailValue, { fontSize: scaleFont(layout, 16) }]}>{activePass.queueCode}</Text>
-          </View>
-        ) : null}
+        {pass.queueCode ? <Text style={styles.queueCode}>{pass.queueCode}</Text> : null}
+        <Text style={styles.validUntil}>Valid until {new Date(pass.event.ends_at).toLocaleString()}</Text>
       </SectionCard>
 
-      <SectionCard eyebrow="QR token" title="Show this at the gate">
-        <View
-          style={[
-            styles.qrWrap,
-            {
-              borderRadius: scaleSpacing(layout, 28, 1.08),
-              padding: scaleSpacing(layout, 18, 1.1),
-            },
-          ]}
-        >
-          <QRCode
-            backgroundColor={palette.card}
-            color={palette.ink}
-            quietZone={18}
-            size={layout.qrSize}
-            value={activePass.token}
-          />
-        </View>
-        <Text style={[styles.snippetLabel, { fontSize: scaleFont(layout, 13) }]}>
-          Manual fallback token snippet
-        </Text>
-        <Text
-          style={[
-            styles.snippetValue,
-            {
-              fontSize: scaleFont(layout, 16),
-              lineHeight: scaleFont(layout, 22),
-            },
-          ]}
-        >
-          {activePass.tokenSnippet}
-        </Text>
-        <PrimaryButton label="Copy full token" onPress={() => void handleCopy()} />
-        {copiedMessage ? <StatusBanner message={copiedMessage} tone="success" /> : null}
-      </SectionCard>
+      <StatusBanner message="Available offline. This signed pass is stored in iOS protected storage on this device." tone="success" />
 
-      <SectionCard eyebrow="Instructions" title="If scanning fails">
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Ask gate staff to paste the full token. The short snippet helps confirm they are entering the right value, but it is not enough on its own.
-        </Text>
-      </SectionCard>
-
-      <View style={styles.actions}>
+      <SectionCard title="Manual fallback">
+        <Text style={styles.body}>If QR scanning fails, gate staff can paste the full signed token into the same offline verification pipeline.</Text>
+        <Text style={styles.snippet}>{pass.tokenSnippet}</Text>
         <PrimaryButton
-          label="Start a new enrollment"
+          label="Copy full signed token"
           onPress={() => {
-            reset();
-            router.replace('/');
+            void Clipboard.setStringAsync(pass.token).then(() => setMessage('Full signed token copied.'));
           }}
           tone="ghost"
         />
+      </SectionCard>
+
+      {message ? <StatusBanner message={message} tone={message.includes('copied') ? 'success' : 'warning'} /> : null}
+
+      <View style={styles.actions}>
+        {ticket && remaining > 0 ? (
+          <PrimaryButton
+            disabled={isPreparing}
+            label={isPreparing ? 'Preparing...' : 'Regenerate pass'}
+            onPress={() => Alert.alert(
+              'Regenerate pass?',
+              `The current pass will be revoked after the replacement is issued. ${remaining} ${remaining === 1 ? 'generation remains' : 'generations remain'}.`,
+              [
+                { style: 'cancel', text: 'Cancel' },
+                { onPress: () => void prepareRegeneration(), style: 'destructive', text: 'Regenerate' },
+              ],
+            )}
+            tone="ghost"
+          />
+        ) : null}
+        {remaining === 0 ? <StatusBanner message="Generation limit reached. The organizer must reset the ticket before another pass can be issued." tone="warning" /> : null}
+        <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
       </View>
     </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  actions: {
-    gap: 12,
-  },
-  bodyText: {
-    ...typography.body,
-    color: palette.ink,
-  },
-  detailLabel: {
-    ...typography.bodyStrong,
-    color: palette.mutedStone,
-  },
-  detailRow: {
-    gap: 4,
-  },
-  detailValue: {
-    ...typography.title,
-    color: palette.ink,
-  },
-  qrWrap: {
-    alignItems: 'center',
-    backgroundColor: palette.card,
-  },
-  screen: {
-    gap: 18,
-  },
-  snippetLabel: {
-    ...typography.title,
-    color: palette.mutedStone,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  snippetValue: {
-    ...typography.title,
-    color: palette.ink,
-  },
+  actions: { gap: 12 },
+  body: { ...typography.body, color: palette.ink, fontSize: 15, lineHeight: 23 },
+  eventMeta: { ...typography.body, color: palette.mutedStone, fontSize: 14 },
+  eventName: { ...typography.display, color: palette.ink, fontSize: 30, lineHeight: 35, textAlign: 'center' },
+  generation: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 15, textAlign: 'center' },
+  qrWrap: { alignItems: 'center', backgroundColor: palette.canvas, borderRadius: 20, padding: 10 },
+  queueCode: { ...typography.title, color: palette.ink, fontSize: 20, letterSpacing: 2, textAlign: 'center' },
+  readyHeader: { alignItems: 'center', backgroundColor: palette.warmMist, borderRadius: 24, gap: 6, padding: 22 },
+  readyLabel: { ...typography.bodyStrong, color: palette.success, fontSize: 14 },
+  screen: { gap: 18 },
+  snippet: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  validUntil: { ...typography.body, color: palette.mutedStone, fontSize: 13, textAlign: 'center' },
 });

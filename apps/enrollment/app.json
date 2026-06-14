@@ -38,6 +38,7 @@
           "enableCoreMLDelegate": true
         }
       ],
+      "expo-secure-store",
       "expo-font"
     ]
   }

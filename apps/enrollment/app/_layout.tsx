@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { EnrollmentProvider } from '../src/state/enrollment-context';
+import { AuthProvider } from '../src/state/auth-context';
 import { palette } from '../src/theme';
 
 void SplashScreen.preventAutoHideAsync();
@@ -50,14 +51,29 @@ export default function RootLayout() {
       >
         <SafeAreaProvider>
           <StatusBar barStyle="dark-content" />
-          <EnrollmentProvider>
-            <Stack
-              screenOptions={{
-                contentStyle: { backgroundColor: 'transparent' },
-                headerShown: false,
-              }}
-            />
-          </EnrollmentProvider>
+          <AuthProvider>
+            <EnrollmentProvider>
+              <Stack
+                screenOptions={{
+                  animation: 'slide_from_right',
+                  contentStyle: { backgroundColor: 'transparent' },
+                  headerBackTitle: 'Back',
+                  headerShadowVisible: false,
+                  headerStyle: { backgroundColor: palette.canvas },
+                  headerTintColor: palette.ink,
+                  headerTitleStyle: { fontFamily: 'IBMPlexSans_600SemiBold' },
+                }}
+              >
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="tickets" options={{ headerShown: false }} />
+                <Stack.Screen name="ticket" options={{ title: 'Ticket' }} />
+                <Stack.Screen name="consent" options={{ title: 'Privacy and consent' }} />
+                <Stack.Screen name="capture" options={{ headerShown: false }} />
+                <Stack.Screen name="pass" options={{ title: 'Event pass' }} />
+                <Stack.Screen name="help" options={{ title: 'Help' }} />
+              </Stack>
+            </EnrollmentProvider>
+          </AuthProvider>
         </SafeAreaProvider>
       </LinearGradient>
     </GestureHandlerRootView>

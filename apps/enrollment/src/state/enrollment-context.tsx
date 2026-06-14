@@ -6,104 +6,98 @@ import {
   type PropsWithChildren,
 } from 'react';
 
-import type { EnrollmentBundle } from '@face-pass/shared';
+import type { EnrollmentBundleSelection } from '../lib/api';
+import type {
+  EnrollmentTicket,
+  StoredEnrollmentPass,
+} from '../lib/ticket-state';
 
-import type { EnrollmentPassRecord, EnrollmentSessionState } from '../lib/types';
+export type IssuanceIntent = 'initial' | 'regeneration';
+
+interface EnrollmentSessionState {
+  bundle: EnrollmentBundleSelection | null;
+  consentAccepted: boolean;
+  intent: IssuanceIntent;
+  pass: StoredEnrollmentPass | null;
+  selectedTicket: EnrollmentTicket | null;
+}
 
 type EnrollmentAction =
-  | {
-      bundle: EnrollmentBundle;
-      joinCode: string;
-      type: 'set-bundle';
-    }
-  | {
-      type: 'accept-consent';
-    }
-  | {
-      pass: EnrollmentPassRecord;
-      type: 'set-pass';
-    }
-  | {
-      type: 'reset';
-    };
+  | { pass: StoredEnrollmentPass | null; ticket: EnrollmentTicket; type: 'select-ticket' }
+  | { bundle: EnrollmentBundleSelection; intent: IssuanceIntent; type: 'set-bundle' }
+  | { type: 'accept-consent' }
+  | { pass: StoredEnrollmentPass; type: 'set-pass' }
+  | { type: 'reset' };
 
 interface EnrollmentContextValue {
   acceptConsent(): void;
   reset(): void;
-  setBundle(joinCode: string, bundle: EnrollmentBundle): void;
-  setPass(pass: EnrollmentPassRecord): void;
+  selectTicket(ticket: EnrollmentTicket, pass: StoredEnrollmentPass | null): void;
+  setBundle(bundle: EnrollmentBundleSelection, intent: IssuanceIntent): void;
+  setPass(pass: StoredEnrollmentPass): void;
   state: EnrollmentSessionState;
 }
 
 const initialState: EnrollmentSessionState = {
   bundle: null,
   consentAccepted: false,
-  joinCode: '',
+  intent: 'initial',
   pass: null,
+  selectedTicket: null,
 };
 
 const EnrollmentContext = createContext<EnrollmentContextValue | null>(null);
 
-function reducer(
-  state: EnrollmentSessionState,
-  action: EnrollmentAction,
-): EnrollmentSessionState {
+function reducer(state: EnrollmentSessionState, action: EnrollmentAction): EnrollmentSessionState {
   switch (action.type) {
+    case 'select-ticket':
+      return {
+        ...initialState,
+        pass: action.pass,
+        selectedTicket: action.ticket,
+      };
     case 'set-bundle':
       return {
+        ...state,
         bundle: action.bundle,
         consentAccepted: false,
-        joinCode: action.joinCode,
-        pass: null,
+        intent: action.intent,
       };
     case 'accept-consent':
-      return {
-        ...state,
-        consentAccepted: true,
-      };
+      return { ...state, consentAccepted: true };
     case 'set-pass':
-      return {
-        ...state,
-        pass: action.pass,
-      };
+      return { ...state, pass: action.pass };
     case 'reset':
       return initialState;
-    default:
-      return state;
   }
 }
 
 export function EnrollmentProvider({ children }: PropsWithChildren) {
   const [state, dispatch] = useReducer(reducer, initialState);
-
-  const value = useMemo<EnrollmentContextValue>(
-    () => ({
-      acceptConsent() {
-        dispatch({ type: 'accept-consent' });
-      },
-      reset() {
-        dispatch({ type: 'reset' });
-      },
-      setBundle(joinCode: string, bundle: EnrollmentBundle) {
-        dispatch({ bundle, joinCode, type: 'set-bundle' });
-      },
-      setPass(pass: EnrollmentPassRecord) {
-        dispatch({ pass, type: 'set-pass' });
-      },
-      state,
-    }),
-    [state],
-  );
+  const value = useMemo<EnrollmentContextValue>(() => ({
+    acceptConsent() {
+      dispatch({ type: 'accept-consent' });
+    },
+    reset() {
+      dispatch({ type: 'reset' });
+    },
+    selectTicket(ticket, pass) {
+      dispatch({ pass, ticket, type: 'select-ticket' });
+    },
+    setBundle(bundle, intent) {
+      dispatch({ bundle, intent, type: 'set-bundle' });
+    },
+    setPass(pass) {
+      dispatch({ pass, type: 'set-pass' });
+    },
+    state,
+  }), [state]);
 
   return <EnrollmentContext.Provider value={value}>{children}</EnrollmentContext.Provider>;
 }
 
 export function useEnrollment() {
   const context = useContext(EnrollmentContext);
-
-  if (!context) {
-    throw new Error('useEnrollment must be used within EnrollmentProvider.');
-  }
-
+  if (!context) throw new Error('useEnrollment must be used within EnrollmentProvider.');
   return context;
 }

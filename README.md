@@ -143,6 +143,7 @@ pnpm verify:local-network
 pnpm verify:tunnel-network
 pnpm verify:phase2
 pnpm verify:phase3
+pnpm verify:phase5
 pnpm --filter @face-pass/shared test
 pnpm --filter @face-pass/enrollment typecheck
 pnpm --filter @face-pass/enrollment test:flow

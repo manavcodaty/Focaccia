@@ -22,6 +22,20 @@ class ExpoSqliteDriver implements SqlDriver {
     const result = await this.database.runAsync(sql, [...params]);
     return { changes: result.changes };
   }
+
+  async transaction<T>(task: (driver: SqlDriver) => Promise<T>): Promise<T> {
+    let value: T | undefined;
+
+    await this.database.withExclusiveTransactionAsync(async (transaction) => {
+      value = await task(new ExpoSqliteDriver(transaction));
+    });
+
+    if (value === undefined) {
+      throw new Error('SQLite transaction completed without a result.');
+    }
+
+    return value;
+  }
 }
 
 let repositoryPromise: Promise<GateRepository> | null = null;

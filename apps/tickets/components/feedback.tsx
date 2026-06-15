@@ -2,9 +2,9 @@ import Link from 'next/link';
 
 export function LoadingEvents() {
   return (
-    <div aria-label="Loading events" aria-live="polite" className="event-list">
-      {[0, 1, 2].map((item) => <div className="event-skeleton" key={item}><span /><span /><span /></div>)}
-    </div>
+    <output aria-label="Loading events" aria-live="polite" className="event-list">
+      {[0, 1, 2].map((item) => <div aria-hidden="true" className="event-skeleton" key={item}><span /><span /><span /></div>)}
+    </output>
   );
 }
 

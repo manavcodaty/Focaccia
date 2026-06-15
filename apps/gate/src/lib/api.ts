@@ -3,7 +3,12 @@ import type { GateBundle } from '@face-pass/shared';
 
 import { getSupabasePublicEnv } from './env';
 import { createTimeoutFetch, fetchWithTimeout } from './network';
-import type { OrganizerAuthState } from './types';
+import type {
+  GateRevocationSnapshot,
+  OrganizerAuthState,
+  SignedGateCheckin,
+  SignedGateRevocationRequest,
+} from './types';
 
 interface ErrorShape {
   code: string;
@@ -21,6 +26,12 @@ interface SuccessResponse<T> {
 }
 
 type FunctionResponse<T> = ErrorResponse | SuccessResponse<T>;
+
+export interface ProvisionedGateBundle extends GateBundle {
+  gate_device_id: string;
+  key_version: number;
+  sync_public_key: string;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -120,7 +131,7 @@ async function invokeFunction<T>({
   body,
   name,
 }: {
-  accessToken: string;
+  accessToken?: string;
   body: unknown;
   name: string;
 }): Promise<T> {
@@ -131,7 +142,7 @@ async function invokeFunction<T>({
       body: JSON.stringify(body),
       headers: {
         apikey: env.anonKey,
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken ?? env.anonKey}`,
         'Content-Type': 'application/json',
       },
       method: 'POST',
@@ -166,6 +177,25 @@ async function invokeFunction<T>({
   return payload.data;
 }
 
+export async function recordGateCheckin(request: SignedGateCheckin): Promise<{
+  checkin: { id: string };
+  idempotent_replay: boolean;
+}> {
+  return invokeFunction({
+    body: request,
+    name: 'record-gate-checkin',
+  });
+}
+
+export async function getGateRevocations(
+  request: SignedGateRevocationRequest,
+): Promise<GateRevocationSnapshot> {
+  return invokeFunction({
+    body: request,
+    name: 'get-gate-revocations',
+  });
+}
+
 export async function signInOrganizer(
   email: string,
   password: string,
@@ -197,8 +227,8 @@ export async function callProvisionGate(
     pk_gate_event: string;
     sync_public_key: string;
   },
-): Promise<GateBundle> {
-  return invokeFunction<GateBundle>({
+): Promise<ProvisionedGateBundle> {
+  return invokeFunction<ProvisionedGateBundle>({
     accessToken: auth.accessToken,
     body: request,
     name: 'provision-gate',

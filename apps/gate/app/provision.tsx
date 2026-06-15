@@ -213,6 +213,7 @@ export default function ProvisionScreen() {
         ) : (
           <>
             <TextInput
+              accessibilityLabel="Organizer email"
               autoCapitalize="none"
               autoCorrect={false}
               onChangeText={setEmail}
@@ -229,6 +230,7 @@ export default function ProvisionScreen() {
               value={email}
             />
             <TextInput
+              accessibilityLabel="Organizer password"
               autoCapitalize="none"
               autoCorrect={false}
               onChangeText={setPassword}
@@ -286,6 +288,7 @@ export default function ProvisionScreen() {
               />
             ) : null}
             <TextInput
+              accessibilityLabel="Gate device name"
               autoCapitalize="words"
               onChangeText={setDeviceName}
               placeholder="Device name"

@@ -1,5 +1,7 @@
 # Security Audit Report
 
+> Historical audit record. The join-code findings below describe the earlier anonymous prototype and are retained as remediation evidence. Current enrollment is authenticated, ticket-owned, and claim-code-assisted as documented in `THREAT_MODEL.md`.
+
 ## Focaccia Monorepo
 
 Audit date: 2026-04-08

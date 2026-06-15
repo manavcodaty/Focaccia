@@ -245,6 +245,7 @@ export default function TicketsScreen() {
               tone="ghost"
             />
             <Pressable
+              accessibilityLabel="Copy account email"
               accessibilityRole="button"
               onPress={() => void Clipboard.setStringAsync(user?.email ?? '')}
               style={({ pressed }) => [styles.copyAccount, pressed ? styles.pressed : null]}

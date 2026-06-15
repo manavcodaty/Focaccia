@@ -250,15 +250,12 @@ where n.nspname is distinct from 'public'
 assert_no_rows "expected authenticated policies are present" "
 with expected(table_name, policy_name, command_name) as (
   values
-    ('events', 'events_owner_select', 'SELECT'),
-    ('events', 'events_owner_insert', 'INSERT'),
-    ('events', 'events_owner_update', 'UPDATE'),
-    ('events', 'events_owner_delete', 'DELETE'),
-    ('gate_devices', 'gate_devices_owner_select', 'SELECT'),
-    ('revocations', 'revocations_owner_select', 'SELECT'),
-    ('revocations', 'revocations_owner_insert', 'INSERT'),
-    ('revocations', 'revocations_owner_update', 'UPDATE'),
-    ('revocations', 'revocations_owner_delete', 'DELETE'),
+    ('events', 'events_organizer_owner_select', 'SELECT'),
+    ('events', 'events_organizer_owner_insert', 'INSERT'),
+    ('events', 'events_organizer_owner_update', 'UPDATE'),
+    ('events', 'events_organizer_owner_delete', 'DELETE'),
+    ('gate_devices', 'gate_devices_organizer_owner_select', 'SELECT'),
+    ('revocations', 'revocations_organizer_owner_select', 'SELECT'),
     ('gate_logs', 'gate_logs_owner_select', 'SELECT')
 )
 select format(

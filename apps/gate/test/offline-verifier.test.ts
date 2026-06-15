@@ -15,6 +15,8 @@ async function createStoredGate(): Promise<StoredGateConfig> {
     event_id: "launch-2030",
     event_name: "Launch 2030",
     event_salt: await toBase64Url(Uint8Array.from({ length: 32 }, (_, index) => index + 1)),
+    gate_device_id: null,
+    key_version: 1,
     last_revocation_sync_at: null,
     pk_gate_event: await toBase64Url(gateKeys.publicKey),
     pk_sign_event: await toBase64Url(signingKeys.publicKey),
@@ -28,6 +30,7 @@ async function createStoredGate(): Promise<StoredGateConfig> {
     },
     provisioned_at: "2030-05-01T17:00:00.000Z",
     starts_at: "2030-05-01T18:00:00.000Z",
+    sync_public_key: null,
   };
 }
 

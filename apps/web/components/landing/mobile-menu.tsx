@@ -28,6 +28,7 @@ export const MobileMenu = ({ className }: MobileMenuProps) => {
     <Dialog.Root modal={false} open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
         <button
+          type="button"
           className={cn(
             "group lg:hidden p-2 text-foreground transition-colors",
             className

@@ -3,15 +3,25 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from 'react';
+import NetInfo from '@react-native-community/netinfo';
+import { AppState } from 'react-native';
 import { ed25519Keypair, x25519Keypair, toBase64Url } from '@face-pass/shared';
 
-import { callProvisionGate, signInOrganizer, syncRevocations } from '../lib/api';
+import {
+  callProvisionGate,
+  getGateRevocations,
+  recordGateCheckin,
+  signInOrganizer,
+} from '../lib/api';
 import { openGateRepository } from '../lib/expo-db';
 import { expoSecureValueStore } from '../lib/expo-secure-store';
 import type { GateRepository } from '../lib/gate-db';
+import { createSignedCheckin, createSignedRevocationRequest } from '../lib/gate-sync';
+import { flushCheckinQueue } from '../lib/gate-sync-runner';
 import {
   decisionToLogEntry,
   destroyPendingVerification,
@@ -21,6 +31,7 @@ import {
 } from '../lib/offline-verifier';
 import {
   loadGatePrivateKey,
+  loadGateSyncPrivateKey,
   saveGatePrivateKey,
   saveGateSyncPrivateKey,
 } from '../lib/secure-value-store';
@@ -50,10 +61,12 @@ interface GateContextValue {
   processToken(token: string, scanStartedAtMs?: number): Promise<VerificationDecision | null>;
   refreshLocalState(): Promise<void>;
   refreshStats(): Promise<void>;
+  retryCheckinSync(): Promise<void>;
   resetLastResult(): void;
   signIn(email: string, password: string): Promise<void>;
   signOut(): void;
   stats: GateStats | null;
+  syncInProgress: boolean;
   syncRevocationCache(): Promise<number>;
 }
 
@@ -69,12 +82,68 @@ export function GateProvider({ children }: PropsWithChildren) {
   const [pendingVerification, setPendingVerification] = useState<PendingVerification | null>(null);
   const [repository, setRepository] = useState<GateRepository | null>(null);
   const [stats, setStats] = useState<GateStats | null>(null);
+  const [syncInProgress, setSyncInProgress] = useState(false);
+  const syncLock = useRef(false);
 
   async function reloadFromRepository(repo: GateRepository): Promise<void> {
     const [nextGate, nextStats] = await Promise.all([repo.getGateConfig(), repo.getStats()]);
 
     setGate(nextGate);
     setStats(nextStats);
+  }
+
+  async function refreshSignedRevocations(
+    repo: GateRepository,
+    currentGate: StoredGateConfig,
+  ): Promise<number> {
+    const privateKey = await loadGateSyncPrivateKey(expoSecureValueStore, currentGate.event_id);
+    if (!privateKey) throw new Error('The gate synchronization key is missing from secure storage.');
+
+    try {
+      const request = await createSignedRevocationRequest({
+        eventId: currentGate.event_id,
+        gateTimestamp: new Date().toISOString(),
+        keyVersion: currentGate.key_version,
+        privateKey,
+      });
+      const snapshot = await getGateRevocations(request);
+      if (snapshot.key_version !== currentGate.key_version) {
+        throw new Error('The revocation snapshot key version does not match this gate.');
+      }
+      await repo.replaceRevocations(
+        currentGate.event_id,
+        snapshot.revocations,
+        snapshot.server_time,
+      );
+      return snapshot.revocations.length;
+    } finally {
+      privateKey.fill(0);
+    }
+  }
+
+  async function synchronizeGate(
+    repo: GateRepository,
+    currentGate: StoredGateConfig,
+    retryBlocked = false,
+  ): Promise<void> {
+    if (syncLock.current) return;
+    syncLock.current = true;
+    setSyncInProgress(true);
+    try {
+      if (retryBlocked) await repo.retryBlockedSyncItems(new Date().toISOString());
+      await flushCheckinQueue({ repository: repo, send: recordGateCheckin });
+      let refreshError: unknown;
+      try {
+        await refreshSignedRevocations(repo, currentGate);
+      } catch (error) {
+        refreshError = error;
+      }
+      await reloadFromRepository(repo);
+      if (refreshError) throw refreshError;
+    } finally {
+      syncLock.current = false;
+      setSyncInProgress(false);
+    }
   }
 
   useEffect(() => {
@@ -101,6 +170,33 @@ export function GateProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!repository || !gate) return undefined;
+
+    let active = AppState.currentState === 'active';
+    let connected = false;
+    const runWhenAvailable = () => {
+      if (active && connected) {
+        void synchronizeGate(repository, gate).catch(() => undefined);
+      }
+    };
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      active = state === 'active';
+      runWhenAvailable();
+    });
+    const networkSubscription = NetInfo.addEventListener((state) => {
+      connected = Boolean(state.isConnected && state.isInternetReachable !== false);
+      runWhenAvailable();
+    });
+    const interval = setInterval(runWhenAvailable, 60_000);
+
+    return () => {
+      clearInterval(interval);
+      appStateSubscription.remove();
+      networkSubscription();
+    };
+  }, [repository, gate?.event_id, gate?.key_version]);
+
   const value = useMemo<GateContextValue>(
     () => ({
       auth,
@@ -118,10 +214,35 @@ export function GateProvider({ children }: PropsWithChildren) {
           let decision = acceptedDecision;
 
           if (acceptedDecision.accepted && acceptedDecision.pass_id) {
-            const wasRecorded = await repository.markPassUsed(
+            const gateTimestamp = new Date().toISOString();
+            const syncPrivateKey = await loadGateSyncPrivateKey(
+              expoSecureValueStore,
               acceptedDecision.event_id,
-              acceptedDecision.pass_id,
-              new Date().toISOString(),
+            );
+            if (!syncPrivateKey) {
+              throw new Error('The gate synchronization key is missing from secure storage.');
+            }
+            let signedCheckin;
+            try {
+              signedCheckin = await createSignedCheckin({
+                eventId: acceptedDecision.event_id,
+                gateTimestamp,
+                passId: acceptedDecision.pass_id,
+                privateKey: syncPrivateKey,
+              });
+            } finally {
+              syncPrivateKey.fill(0);
+            }
+            const wasRecorded = await repository.recordAcceptedDecision(
+              decisionToLogEntry(acceptedDecision, gateTimestamp),
+              {
+                ...signedCheckin,
+                attempt_count: 0,
+                last_error_code: null,
+                next_attempt_at: gateTimestamp,
+                status: 'pending',
+                synced_at: null,
+              },
             );
 
             if (!wasRecorded) {
@@ -132,12 +253,18 @@ export function GateProvider({ children }: PropsWithChildren) {
                 outcome: 'REJECT',
                 reasonCode: 'REPLAY_USED',
               };
+              await repository.insertLog(decisionToLogEntry(decision, gateTimestamp));
             }
+          } else {
+            await repository.insertLog(decisionToLogEntry(decision));
           }
-
-          await repository.insertLog(decisionToLogEntry(decision));
           setLastResult(decision);
           await reloadFromRepository(repository);
+          if (decision.accepted && gate) {
+            setTimeout(() => {
+              void synchronizeGate(repository, gate).catch(() => undefined);
+            }, 0);
+          }
           return decision;
         } finally {
           destroyPendingVerification(pendingVerification);
@@ -199,8 +326,11 @@ export function GateProvider({ children }: PropsWithChildren) {
             ),
           ]);
           await repository.saveGateConfig(storedGate);
-          setGate(storedGate);
-          await reloadFromRepository(repository);
+          try {
+            await refreshSignedRevocations(repository, storedGate);
+          } finally {
+            await reloadFromRepository(repository);
+          }
         } finally {
           encryptionKeyPair.privateKey.fill(0);
           encryptionKeyPair.publicKey.fill(0);
@@ -240,6 +370,9 @@ export function GateProvider({ children }: PropsWithChildren) {
       async processToken(token, scanStartedAtMs) {
         if (!repository || !gate) {
           throw new Error('Provision this gate before scanning passes.');
+        }
+        if (!gate.last_revocation_sync_at) {
+          throw new Error('Refresh revocations successfully before opening the scanner.');
         }
 
         const gatePrivateKey = await loadGatePrivateKey(expoSecureValueStore, gate.event_id);
@@ -297,6 +430,10 @@ export function GateProvider({ children }: PropsWithChildren) {
 
         setStats(await repository.getStats());
       },
+      async retryCheckinSync() {
+        if (!repository || !gate) throw new Error('Gate provisioning is required before sync.');
+        await synchronizeGate(repository, gate, true);
+      },
       resetLastResult() {
         setLastResult(null);
       },
@@ -308,24 +445,18 @@ export function GateProvider({ children }: PropsWithChildren) {
         setAuth(null);
       },
       stats,
+      syncInProgress,
       async syncRevocationCache() {
         if (!repository || !gate) {
           throw new Error('Gate provisioning is required before sync.');
         }
 
-        if (!auth) {
-          throw new Error('Organizer sign-in is required before sync.');
-        }
-
-        const revocations = await syncRevocations(auth, gate.event_id);
-        const syncedAtIso = new Date().toISOString();
-
-        await repository.replaceRevocations(gate.event_id, revocations, syncedAtIso);
+        const count = await refreshSignedRevocations(repository, gate);
         await reloadFromRepository(repository);
-        return revocations.length;
+        return count;
       },
     }),
-    [auth, dbError, dbReady, gate, lastResult, pendingVerification, repository, stats],
+    [auth, dbError, dbReady, gate, lastResult, pendingVerification, repository, stats, syncInProgress],
   );
 
   return <GateContext.Provider value={value}>{children}</GateContext.Provider>;

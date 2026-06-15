@@ -1,451 +1,237 @@
 # EPQ Operations Manual
 
-This manual is the operator reference for the final Face Pass prototype. It covers two things:
+## Operating Claims
 
-1. How to boot and operate the system end to end on a local development stack.
-2. How to run the EPQ evaluation in a way that is repeatable, measurable, and aligned with the implemented codebase.
+- Local mode needs no tunnel.
+- Physical devices use the Mac LAN IP.
+- At-home setup needs the active zrok tunnel and host Mac.
+- Gate decisions remain offline.
+- Revocations made while the gate is disconnected apply after refresh.
+- Audience-owned iPhone installation is conditional on verified Apple distribution.
 
-This document reflects the repository as built, not the original design intent. The current local baseline is Node 24, pnpm 10.33.0, Next.js 16, Expo 55, Supabase local development, and the gate's offline SQLite verifier.
+## 1. Preflight
 
-## Part 1: User Guide
+Required on the host Mac:
 
-### Local Boot Sequence
+- Node.js 24+, pnpm 10.33.0
+- Docker/Colima and Supabase CLI
+- Xcode and prepared iOS development builds
+- same Wi-Fi as classroom devices for local mode
+- no VPN/Private Relay route that prevents LAN access
 
-The authoritative network instructions are in [NETWORK_MODES.md](./NETWORK_MODES.md). Network mode is mandatory and is never inferred from localhost, browser hostnames, Expo metadata, or server interfaces.
-
-Use separate terminals for each long-running process.
-
-#### Terminal 1: install dependencies
+Install once:
 
 ```bash
-cd /Users/manavcodaty/repos/Focaccia
 pnpm install
 ```
 
-#### Terminal 2: start the local stack
+For the recommended Colima topology:
 
 ```bash
-cd /Users/manavcodaty/repos/Focaccia
-cp .env.local.example .env.local
 colima stop
 colima start --port-forwarder none --save-config
+```
+
+## 2. Local Classroom Startup
+
+1. Copy and edit local configuration:
+
+```bash
+cp .env.local.example .env.local
+```
+
+2. Put the Mac's current private IPv4 in all local URLs. Do not use `localhost` or `127.0.0.1` on a physical device.
+
+3. Stop every zrok process. Local verification intentionally fails if one is running.
+
+4. Start the stack:
+
+```bash
 pnpm demo:local
 ```
 
-Replace the example LAN IP before startup. The command starts Supabase, Edge Functions, the constrained LAN proxy, and the web app without printing secrets. PostgreSQL and Studio must have no LAN listener.
-
-The organizer dashboard is available at `http://LAN_IP:3000`. The selected Supabase endpoint is `http://LAN_IP:54331`.
-
-#### Terminal 5: start the Enrollment app dev client
-
-```bash
-cd /Users/manavcodaty/repos/Focaccia/apps/enrollment
-npx expo start --dev-client --clear
-```
-
-#### Terminal 6: start the Gate app dev client
-
-```bash
-cd /Users/manavcodaty/repos/Focaccia/apps/gate
-npx expo start --dev-client --clear
-```
-
-### iOS Dev Build Commands
-
-Run these from each app directory.
-
-#### Enrollment iOS dev build
-
-```bash
-cd /Users/manavcodaty/repos/Focaccia/apps/enrollment
-npx eas build --profile development-local --platform ios
-```
-
-#### Gate iOS dev build
-
-```bash
-cd /Users/manavcodaty/repos/Focaccia/apps/gate
-npx eas build --profile development-local --platform ios
-```
-
-Use the corresponding `development-tunnel`, `preview-local`, `preview-tunnel`, or `production-tunnel` profile when appropriate. TestFlight remains not configured because EAS project linkage and verified Apple credentials are absent.
-
-As of June 13, 2026, `eas whoami` reports that this workstation is not logged in and no Expo project identity, Apple signing credentials, App Store Connect application, or installed TestFlight build has been verified. Prepared internal devices are therefore the supported demonstration path. Do not describe TestFlight as available until those checks have objective evidence.
-
-### Happy Path Walkthrough
-
-#### 1. Organizer creates an event
-
-1. Open [http://localhost:3000/login](http://localhost:3000/login).
-2. Sign up or log in as the Event Organizer.
-3. On the dashboard, click `Create Event`.
-4. Fill in `Event name`, `Event ID`, `Starts at`, and `Ends at`.
-5. Submit `Create event`.
-6. Record the generated `join_code`.
-7. Open the new event detail page and confirm the public values:
-   `PK_SIGN_EVENT` and `EVENT_SALT`.
-
-What the system does at this step:
-
-- The `create-event` Edge Function creates the event row.
-- It generates an event-specific signing keypair.
-- It generates the attendee `join_code`.
-- It stores the event private signing key through the wrapped secret storage pattern documented in [docs/ASSUMPTIONS.md](/Users/manavcodaty/repos/Focaccia/docs/ASSUMPTIONS.md).
-
-#### 2. Gate device is provisioned
-
-1. On the web event detail page, click `Open provisioning page`.
-2. Leave the provisioning QR visible on the organizer dashboard.
-3. On the Gate app, open the provisioning flow.
-4. Sign in with the organizer email and password.
-5. Scan the provisioning QR using the device camera.
-6. Review the decoded public values on the phone:
-   `event_id`, `PK_SIGN_EVENT`, `EVENT_SALT`, `starts_at`, and `ends_at`.
-7. Confirm provisioning.
-8. Wait for the Gate app to transition to the `Scan` screen.
-
-What the system does at this step:
-
-- The Gate app generates its own X25519 keypair locally.
-- `SK_GATE_EVENT` is stored in `expo-secure-store`.
-- Only `PK_GATE_EVENT` is sent to the `provision-gate` Edge Function.
-- The one-gate-per-event rule is enforced server-side.
-- The Gate app stores the offline bundle in local SQLite.
-
-#### 3. Attendee enrolls on their own phone
-
-1. Open the Enrollment app.
-2. Sign in with the same attendee account used to claim the ticket, or create an attendee account.
-3. Select the owned ticket from `My tickets`. An optional claim code can locate a ticket, but the server still requires authenticated ownership.
-4. Review the ticket status and remaining generation allowance, then continue to consent.
-5. Approve the enrollment flow and capture the attendee face when prompted.
-6. Wait for the app to process the face locally and issue the ticket-bound pass.
-7. When the pass screen appears, keep the QR token visible. If needed, copy the full token for manual fallback.
-8. On a prepared shared device, use `Switch account` when finished. This removes that attendee's local pass and pending issuance records before logout.
-
-What the system does at this step:
-
-- Supabase persists the authenticated session in iOS SecureStore and restores it when the app restarts.
-- `list-my-tickets` returns only tickets owned by the authenticated attendee.
-- `get-enrollment-bundle` validates ticket or normalized claim-code ownership and rejects cancelled or revoked tickets.
-- A local FaceNet model extracts an embedding from the captured image.
-- `cancelableTemplateV1` derives an event-scoped template from the embedding and `EVENT_SALT`.
-- The template is encrypted to `PK_GATE_EVENT`.
-- The raw embedding and cancelable template are wiped after encrypted payload construction and are never persisted.
-- The app sends only the encrypted ticket-bound payload to `issue-pass`, using a UUID idempotency key that is retained for safe network retries.
-- Each successful regeneration revokes the previous pass. Generation four is rejected by both the UI allowance and the server transaction.
-- Refreshing tickets reconciles organizer reset, cancellation, revocation, and replaced-pass state with local SecureStore records.
-- The final attendee QR contains canonical JSON plus an Ed25519 signature.
-- The temporary image files are deleted immediately after inference, as documented in [docs/PRIVACY_BY_DESIGN.md](/Users/manavcodaty/repos/Focaccia/docs/PRIVACY_BY_DESIGN.md).
-
-#### 4. Gate verifies the attendee pass
-
-1. On the Gate app, stay on the `Scan` screen.
-2. Scan the attendee QR token.
-3. If the token passes the pre-checks, complete the active liveness prompt.
-4. Let the device capture the verification frame.
-5. Read the final decision on the `Result` screen.
-
-What the gate checks before liveness:
-
-- QR token decodes correctly.
-- Canonical JSON payload is valid.
-- Ed25519 signature verifies against `PK_SIGN_EVENT`.
-- `event_id` matches the provisioned event.
-- `iat` and `exp` are valid for the current event window.
-- The pass is not already marked used in local SQLite.
-- The pass is not in the local revocation cache.
-- The encrypted template can be opened with `SK_GATE_EVENT`.
-
-What the gate checks after liveness:
-
-- The attendee completes the active liveness challenge.
-- A live embedding is extracted with the same FaceNet model used by Enrollment.
-- A live event-scoped template is derived with the same `cancelableTemplateV1`.
-- The gate computes the Hamming distance.
-- If the distance is less than or equal to the displayed gate threshold, the pass is accepted and `pass_id` is written to local SQLite to block replay.
-
-#### 5. Manual fallback if optical QR scanning fails
-
-1. On the Enrollment app pass screen, tap `Copy full token`.
-2. On the Gate app, open `Manual fallback`.
-3. Paste the full token text.
-4. Run the same offline verification flow.
-
-Important:
-
-- The queue code or token snippet is not enough to reconstruct a pass.
-- The gate fallback screen requires the full token string.
-
-## Part 2: EPQ Evaluation Protocol
-
-### Test Session Controls
-
-Apply these controls to every EPQ trial set.
-
-- Provision one gate device to one event before collecting data.
-- Record the displayed match threshold on the Gate app at the start of the session. The current local default is `80`, derived from `FACE_PASS_MATCH_THRESHOLD`, but the protocol should always use the value actually provisioned to the device.
-- Use a fresh pass token for every biometric trial that is intended to measure FAR, FRR, or SAR. This avoids contaminating the metric with the gate's legitimate single-entry replay protection.
-- Keep lighting condition, device model, participant identity, and trial outcome in a separate lab notebook or spreadsheet.
-- Export the gate CSV after each session block so the biometric outcomes and timing data are preserved.
-
-### False Acceptance Rate (FAR) Protocol
-
-#### Objective
-
-Measure how often an impostor can present a valid stolen QR token but their own face and still be incorrectly accepted.
-
-#### Required scenario
-
-- One genuine attendee completes enrollment and receives a valid pass.
-- A different participant presents that genuine attendee's QR code at the gate.
-- The impostor attempts to complete the liveness prompt honestly using their own face.
-
-#### Minimum trial plan
-
-- 10 genuine tokens.
-- 3 impostors per genuine token.
-- 2 attempts per impostor.
-- Minimum dataset: 60 impostor trials.
-
-#### Procedure
-
-1. Enroll the genuine attendee and issue a fresh pass token.
-2. Hand that token to an impostor participant.
-3. On the Gate app, scan the stolen token.
-4. Ask the impostor to complete the liveness prompt normally.
-5. Record the final reason code and Hamming distance.
-6. Repeat with a fresh token for the next trial.
-
-#### Scoring rule
-
-- Count a `false accept` only when the final gate decision is `ACCEPT`.
-- Count a `true reject` when the final decision is `MATCH_FAIL`, `LIVENESS_FAIL`, `DECRYPT_FAIL`, or another reject outcome caused by the gate.
-- Do not include operator errors such as scanning the wrong event QR in the FAR denominator.
-
-#### Formula
+Expected services:
 
 ```text
-FAR = false_accepts / valid_impostor_trials * 100
+http://LAN_IP:3000   organizer dashboard
+http://LAN_IP:3001   public ticket app
+http://LAN_IP:54331  constrained Supabase/Auth/Functions proxy
 ```
 
-### False Rejection Rate (FRR) Protocol
-
-#### Objective
-
-Measure how often a genuine attendee is incorrectly rejected even though they present their own valid pass and real face.
-
-#### Required conditions
-
-Run genuine-user trials under all of the following conditions:
-
-| Condition group | Exact scenario                                             |
-| --------------- | ---------------------------------------------------------- |
-| Baseline        | Neutral indoor lighting, no accessories, front-facing pose |
-| Bright light    | Bright sunlight or strong daylight from the front          |
-| Backlit         | Strong light source behind the participant                 |
-| Low light       | Dim room with reduced facial contrast                      |
-| Glasses         | Same participant wearing glasses if they normally use them |
-| Angle stress    | Slight left yaw, slight right yaw, slight pitch up         |
-
-#### Minimum trial plan
-
-- 10 genuine participants.
-- 1 fresh pass per condition group.
-- Minimum dataset: 60 genuine trials.
-
-#### Procedure
-
-1. Issue a fresh pass for the participant.
-2. Run the scan and liveness flow in the target condition.
-3. Record the final reason code, Hamming distance, and any operator notes.
-4. Repeat for each required condition.
-
-#### Scoring rule
-
-- Count a `false reject` when a genuine participant is rejected despite following instructions and presenting a valid pass.
-- `MATCH_FAIL` and `LIVENESS_FAIL` are both relevant to overall system FRR because the gate experience includes both stages.
-- Analyze the reject distribution by condition to identify the most fragile scenario.
-
-#### Formula
-
-```text
-FRR = false_rejects / valid_genuine_trials * 100
-```
-
-Interpretation note:
-
-- If `MATCH_FAIL` rises in low light or angle stress, the template threshold is likely the limiting factor.
-- If `LIVENESS_FAIL` rises while Hamming distances stay low on successful runs, the liveness UX is the limiting factor.
-
-### Spoof Acceptance Rate (SAR) Protocol
-
-#### Objective
-
-Measure how often the active liveness system can be bypassed using a presentation attack such as a printed photo or another screen.
-
-#### Attack media
-
-Test all of these presentation attack types:
-
-| Attack type             | Exact setup                                                       |
-| ----------------------- | ----------------------------------------------------------------- |
-| Printed photo           | High-resolution face print held in front of the gate camera       |
-| Phone replay            | The genuine attendee's face photo or video shown on another phone |
-| Tablet or laptop replay | The same media shown on a larger bright display                   |
-
-#### Minimum trial plan
-
-- 10 attempts per attack type.
-- Run at least 30 spoof trials in total.
-- Use a fresh valid pass token for each spoof attempt.
-
-#### Procedure
-
-1. Enroll a genuine attendee and create a fresh valid pass token.
-2. Present the token to the gate.
-3. Instead of the real person, present the spoof medium.
-4. Try to satisfy the active challenge using only the spoof medium.
-5. Record the result and reason code.
-
-#### Scoring rule
-
-- Count a `spoof accept` only when the gate returns `ACCEPT`.
-- A `LIVENESS_FAIL` is a successful defense.
-- A `MATCH_FAIL` after liveness is also a successful defense because the attack still fails to gain entry.
-
-#### Formula
-
-```text
-SAR = spoof_accepts / spoof_trials * 100
-```
-
-### Hardware Performance Audit
-
-#### Objective
-
-Use the gate's SQLite-backed CSV export to identify the mobile bottleneck in the offline verify loop.
-
-#### Exact CSV columns exported by the Gate app
-
-The current build exports these columns in this order:
-
-```text
-recorded_at,event_id,pass_ref,outcome,reason_code,scan_ms,decode_ms,verify_ms,replay_ms,revocation_ms,decrypt_ms,liveness_ms,match_ms,total_ms,hamming_distance
-```
-
-#### How to export the CSV
-
-1. Open the Gate app.
-2. Navigate to the `Export` screen.
-3. Use `Copy CSV to clipboard` or `Share CSV file`.
-4. Save the export as `gate-logs.csv`.
-
-#### How to analyze the timings
-
-Use only rows that represent complete runs for the question you are asking.
-
-- For accepted-path performance, filter to `reason_code = ACCEPT`.
-- For liveness stress analysis, inspect both `ACCEPT` and `LIVENESS_FAIL`.
-- For replay protection analysis, inspect `REPLAY_USED` rows separately because they stop before matching.
-
-Example calculation script:
+5. Verify configuration and services:
 
 ```bash
-cd /Users/manavcodaty/repos/Focaccia
-python - <<'PY'
-import csv
-import statistics
-
-with open("gate-logs.csv", newline="") as handle:
-    rows = list(csv.DictReader(handle))
-
-accepted = [row for row in rows if row["reason_code"] == "ACCEPT"]
-
-for column in ("decrypt_ms", "liveness_ms", "match_ms", "total_ms"):
-    values = [int(row[column]) for row in accepted if row[column]]
-    if not values:
-        continue
-    print(
-        column,
-        "mean=", round(statistics.fmean(values), 2),
-        "median=", round(statistics.median(values), 2),
-        "max=", max(values),
-    )
-PY
+pnpm demo:status
+pnpm verify:network-config
+pnpm verify:local-network
 ```
 
-#### Bottleneck interpretation
+The local verifier must report Auth health, allowed CORS, rejected attacker origin, both web apps, and non-exposure of PostgreSQL/Studio.
 
-- `decrypt_ms` isolates the X25519 sealed-box open path.
-- `match_ms` isolates the Hamming-distance comparison and decision stage.
-- `liveness_ms` is the current exported end-to-end live stage. In this build it includes challenge completion time plus capture and on-device inference.
-- The current CSV does not expose a standalone `inference_ms` column. If the EPQ write-up needs inference as a separate measured value, add temporary debug instrumentation before data collection. Do not claim that the current CSV already contains it.
-
-Use this ratio to identify the dominant stage:
-
-```text
-stage_share = average_stage_ms / average_total_ms
-```
-
-The largest stage share is the current hardware bottleneck.
-
-### Offline Constraint Test
-
-#### Objective
-
-Prove that the gate can verify passes without network access and that replay attacks are blocked locally.
-
-#### Preconditions
-
-- The gate must already be provisioned.
-- The gate must already have a revocation sync for the event.
-- At least one attendee must already hold a valid pass.
-
-#### Procedure
-
-1. While the system is still online, complete provisioning and enrollment normally.
-2. On the gate device, open the `Scan` screen and confirm the event bundle is already present.
-3. Put the gate device into Airplane Mode.
-4. Disable Wi-Fi manually if the iPhone leaves Wi-Fi enabled during Airplane Mode.
-5. Stop the local backend services on the host machine:
+6. Start local mobile Metro servers as needed:
 
 ```bash
-pkill -f "supabase functions serve" || true
-pkill -f "next dev" || true
-pkill -f "supabase start" || true
+REACT_NATIVE_PACKAGER_HOSTNAME=LAN_IP pnpm --dir apps/enrollment exec expo start --dev-client --host lan --clear
+REACT_NATIVE_PACKAGER_HOSTNAME=LAN_IP pnpm --dir apps/gate exec expo start --dev-client --host lan --clear
 ```
 
-6. Scan a valid attendee QR on the offline gate.
-7. Complete liveness and confirm the first scan returns `ACCEPT`.
-8. Without issuing a new pass, scan the same QR a second time.
-9. Confirm the second scan returns `REPLAY_USED`.
-10. Export the gate CSV immediately after the two scans.
+Use different Metro ports if both run simultaneously. Grant iOS Local Network and Camera permissions.
 
-#### Expected evidence
+## 3. Tunnel / At-Home Startup
 
-- The first scan succeeds while the gate has no backend connectivity.
-- The second scan is rejected locally as `REPLAY_USED`.
-- The CSV shows both events with the same `pass_ref`, proving that replay blocking is enforced from local SQLite rather than the network.
+The host Mac must remain powered and online because Supabase stays on it.
 
-### Recommended Evidence Pack for the EPQ Write-Up
+1. Install/enable zrok v2 and reserve three stable public names.
+2. Copy `.env.tunnel.example` to `.env.tunnel.local` and set exact HTTPS origins/name selections.
+3. Start and verify:
 
-Collect these artifacts for the final report:
+```bash
+pnpm demo:tunnel
+pnpm verify:tunnel-network
+```
 
-- Screenshot of the organizer dashboard showing the event and provisioning page.
-- Screenshot of the Enrollment app showing the issued QR token.
-- Screenshot of the Gate app result screen for `ACCEPT`, `MATCH_FAIL`, `LIVENESS_FAIL`, and `REPLAY_USED`.
-- Exported `gate-logs.csv`.
-- A trial sheet listing participant ID, condition, outcome, and notes.
-- A short paragraph in the report explaining that the current production CSV exports `liveness_ms` rather than a separate `inference_ms`.
+The verifier must reach Auth, Edge Functions, organizer web, and tickets without an interstitial.
 
-### Definition of a Successful EPQ Demonstration
+### Vercel Ticket Deployment
 
-For the final EPQ demonstration, the system should show all of the following:
+`apps/tickets` may be deployed separately to Vercel. Set its selected tunnel `NEXT_PUBLIC_*` variables, set `FOCACCIA_TUNNEL_TICKETS_URL` to the deployment origin, restart the demo so Auth/CORS use that exact origin, and rerun tunnel verification.
 
-- The organizer can create a new event and recover the `join_code`.
-- The gate can be provisioned exactly once for that event.
-- An attendee can enroll and receive a signed QR pass.
-- The gate can verify the pass fully offline.
-- A second scan of the same pass is rejected as a replay.
-- The exported CSV provides enough timing data to discuss computational cost and identify the dominant stage in the mobile verify loop.
+Current checkout status: zrok, Vercel, and tunnel env are not configured, so do not claim a live remote deployment.
+
+## 4. Organizer Workflow
+
+### Sign In And Role Check
+
+1. Open `http://LAN_IP:3000/login` or the selected tunnel organizer URL.
+2. Sign in with an email present in `FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST`.
+3. `apps/web/app/(secure)/layout.tsx` invokes `ensure-organizer`; non-allowlisted users are denied.
+
+### Create And List Event
+
+1. Dashboard -> **Create event** -> `/events/new`.
+2. Enter name, description, location, start/end, global capacity, and listed state.
+3. Keep General Admission or add ticket types. Price is in GBP; prices above zero display a warning and cannot be checked out.
+4. Submit. `create-event` performs the event/default-ticket transaction.
+5. Confirm the event appears on `apps/tickets` only when listed.
+
+### Provision Gate
+
+1. Event workspace -> **Gate provisioning**.
+2. On the prepared gate app, choose **Provision gate** and sign in as the owning organizer.
+3. Select/enter the event and device name.
+4. The gate generates X25519 encryption and Ed25519 sync keypairs. Only public keys are sent to `provision-gate`.
+5. Confirm the dashboard shows **Provisioned**.
+
+## 5. Attendee Ticket Workflow
+
+1. Open `http://LAN_IP:3001` or the selected HTTPS ticket URL.
+2. Open a listed event and review organizer, time, location, description, active types, GBP price, remaining capacity, privacy notice, and sold-out state.
+3. Create an attendee account or sign in. Email confirmation is disabled in this controlled deployment.
+4. Confirm trusted full name/email and a real `GBP 0` total.
+5. Submit checkout once. The app supplies a UUID-v4 idempotency key and disables repeat submission.
+6. `claim-free-ticket` creates the ticket transactionally or returns the existing idempotent/duplicate result.
+7. Capture evidence from Confirmation and My tickets: claim code, status, and enrollment next step.
+
+Paid types are visible but unavailable. A capacity race may return sold out; it must never oversell.
+
+## 6. Enrollment Workflow
+
+Prepared-device fallback is guaranteed; audience-owned installation is not.
+
+1. Open the enrollment development build.
+2. Sign in with the same attendee account.
+3. **My tickets** lists account-owned tickets using a `FlatList`.
+4. Select a claimed ticket, or enter its claim code. The backend still verifies account ownership.
+5. Review remaining generation allowance.
+6. Read and accept consent.
+7. Capture locally. Temporary image/crop files are deleted after inference; no image/embedding/template is uploaded.
+8. `get-enrollment-bundle` returns ticket-bound event/gate data.
+9. `issue-pass` validates ownership/event/generation/idempotency, revokes an old pass during regeneration, and returns the signed token.
+10. The pass is stored account-scoped in SecureStore and displayed as a QR.
+
+If an organizer reset occurs, refresh My tickets. The old local pass is removed and the ticket returns to `claimed` with generation 0.
+
+### Shared Prepared Enrollment Device
+
+Use **Switch** and choose the clear-local-data option. It deletes only the current attendee's local passes/pending issuance before local sign-out. Then sign in as the next attendee.
+
+## 7. Gate Door-Opening Workflow
+
+### Mandatory Refresh
+
+1. Connect the gate to the selected local/tunnel service.
+2. Open gate Settings/status.
+3. Run revocation refresh successfully.
+4. Confirm cache age. Fresh is <=5 minutes; stale is >5 and <=30; critical is >30 or never refreshed.
+5. The scanner refuses to open if no successful refresh exists.
+
+### Offline Verification
+
+1. Disable Wi-Fi/mobile networking after refresh.
+2. Open scanner and scan the attendee QR.
+3. Complete active liveness.
+4. Observe `ACCEPT` or a plain-English rejection reason.
+5. Scan the same pass again and capture replay rejection.
+
+The decision uses only provisioned keys, cached revocations, local liveness/matching, and SQLite replay state. Network failure cannot change the result.
+
+### Optical Fallback
+
+If QR scanning fails, use the gate's typed/paste token fallback. This is the same signed pass token and runs the same offline verification. It is not a bypass and is not a manual server log-upload path.
+
+## 8. Synchronization And Dashboard Evidence
+
+1. After an offline acceptance, verify the gate shows a pending queue count.
+2. Restore LAN/tunnel connectivity.
+3. The gate automatically flushes due signed items and refreshes revocations. Manual **Retry** may unblock operator-reviewable failures.
+4. Duplicate server receipt is treated as success.
+5. The event dashboard refreshes from `gate_checkins`/activity Realtime changes and a five-second polling fallback.
+6. Confirm checked-in totals and ticket status update without uploading a file.
+
+The queue preserves the original gate time and survives restart.
+
+## 9. Revocation And Reset
+
+- **Cancel**: attendee can cancel only a claimed/enrolled ticket. An enrolled pass is revoked.
+- **Revoke**: organizer can revoke an owned event ticket in claimed/enrolled state. An enrolled pass is revoked.
+- **Reset**: organizer resets an enrolled ticket; old pass is revoked, ticket becomes claimed, generation becomes zero.
+- **Regenerate**: attendee issues a replacement while under the three-generation cap; old pass is revoked first.
+
+If the gate is disconnected, these changes do not affect its current cache. Reconnect and refresh before expecting enforcement.
+
+## 10. CSV Evidence
+
+### Organizer CSV
+
+Event workspace -> export tickets. The audited `export-organizer-tickets` function returns:
+
+```text
+Attendee name, Attendee email, Ticket type, Status,
+Generation, Checked in at, Ticket ID
+```
+
+It excludes biometrics, claim/pass tokens, credentials, and private keys.
+
+### Gate CSV
+
+Gate -> Export. The local CSV contains non-biometric decision outcome, reason, timings, pass references, and Hamming distance for evaluation. Treat pass references and attendee CSV data as restricted EPQ evidence.
+
+## 11. Recovery
+
+- Wrong IP: update `.env.local`, restart demo and Metro with `--clear`.
+- Local Network denied: enable it in iOS Settings, then relaunch.
+- Developer profile blocked: trust the Apple Development profile in device Settings; this is a physical owner action.
+- Auth failure: verify selected Supabase URL and account; never bypass Auth.
+- Edge Function unavailable: verify `demo:status`, then restart `demo:*`.
+- Tunnel outage: restore host Mac/zrok shares, or switch explicitly to local mode with all tunnels stopped.
+- Stale gate cache: reconnect and refresh; do not claim the remote revocation already applies.
+- Blocked queue item: inspect the non-sensitive error, correct configuration/key state, and use Retry.
+- Lost/corrupt gate device: use the prepared fallback gate, reprovision, refresh revocations, and do not reuse deleted replay evidence as if continuous.
+
+## 12. Distribution Status
+
+TestFlight is **not configured**. EAS is not logged in and no App Store Connect/TestFlight artifact is verified. Prepared development devices are the operational fallback. Audience-owned iPhone support may be stated only after Apple distribution is verified.
+
+## 13. Shutdown
+
+Stop demo and Metro processes with `Ctrl+C`. Supabase containers may remain for a faster restart. Do not clear gate app data until replay, queue, and CSV evidence has been exported.

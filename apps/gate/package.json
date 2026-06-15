@@ -7,6 +7,9 @@
     "start": "expo start --dev-client",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
+    "export:ios": "expo export --platform ios --output-dir dist-ios",
+    "test": "node --experimental-strip-types --test ./test/*.test.ts",
+    "test:coverage": "node --experimental-strip-types --test --experimental-test-coverage --test-coverage-include=src/lib/gate-db.ts --test-coverage-include=src/lib/gate-sync.ts --test-coverage-include=src/lib/gate-sync-runner.ts --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-functions=80 ./test/*.test.ts",
     "test:offline": "node --experimental-strip-types ./scripts/verify-offline-flow.ts",
     "test:provisioning": "node --experimental-strip-types ./scripts/verify-provisioning-flow.ts"
   },
@@ -15,6 +18,7 @@
     "@expo/metro-runtime": "55.0.9",
     "@face-pass/shared": "workspace:*",
     "@more-tech/react-native-libsodium": "1.5.6",
+    "@react-native-community/netinfo": "11.4.1",
     "@supabase/supabase-js": "2.100.0",
     "expo": "55.0.12",
     "expo-blur": "~55.0.14",

@@ -1,24 +1,64 @@
-# Assumptions
+# Assumptions And Current Status
 
-## Layer 1 Scope
+This file records implementation assumptions and externally dependent status as of 2026-06-15.
 
-- This repository now contains the Layer 1 infrastructure skeleton only.
-- Application workspaces are initialized as monorepo packages, but application code is intentionally deferred to later layers.
-- The original locked stack constraints from `TRUTH_BASE.md` have been intentionally overridden to adopt Node 24 and the latest stable package releases across the monorepo.
-- This override increases the risk of breaking changes, peer dependency drift, and Expo/iOS native build instability compared with the original pinned stack.
-- The current Expo 55 dependency tree installs successfully on Node 24, but one transitive Expo package still declares a TypeScript 5 peer while the workspace is intentionally pinned to TypeScript 6.0.2 as part of the latest-stable override.
-- Layer 5 keeps the mobile workspaces on Expo 55 instead of downgrading the enrollment app to Expo SDK 54. The user request referenced SDK 54, but the repository had already been moved to a monorepo-wide Expo 55 stack, and splitting one app onto a different Expo native baseline would create a higher-risk mismatch in React Native, config plugin, and dev-build behavior.
-- For `cancelableTemplateV1`, the unspecified `uint16(i)` and `uint16(j)` encodings are treated as big-endian, `BLAKE2b(...)` is taken as a 64-byte digest, and `first_bit(h)` is interpreted as the most significant bit of the first digest byte.
-- Supabase local development on this machine exposes `pgsodium` but not the `vault` extension, and Edge Functions cannot mint new per-event environment secrets at runtime. For Layer 3, `SK_SIGN_EVENT` and the optional `K_CODE_EVENT` are therefore stored via a secure KV pattern: each secret is encrypted in the Edge Function with a project-level 32-byte wrapping key from `supabase/functions/.env.local`, then persisted as ciphertext in a service-role-only `public.edge_event_secrets` table that has no grants for `anon` or `authenticated`.
-- Local verification on this machine still needs two Supabase steps: `supabase start` for the core stack and a separate `supabase functions serve --no-verify-jwt` process for Edge Functions. The current CLI starts the rest of the stack successfully, but `supabase status` continues to report `supabase_edge_runtime_*` as stopped, and local JWT verification at the gateway rejects requests before they reach the handlers. The repository therefore prepares `supabase/functions/.env` from `supabase/functions/.env.local` before both commands so the explicit function server can load the Face Pass secrets consistently.
-- The Gate App provisioning QR payload format was not fixed in the truth base. For Layer 4, the dashboard encodes canonical JSON containing only public event metadata: `v`, `kind`, `event_id`, `name`, `starts_at`, `ends_at`, `pk_sign_event`, `event_salt`, optional `pk_gate_event`, and `issued_at`.
-- The enrollment app bundles `facenet_512.tflite` from `shubham0204/OnDevice-Face-Recognition-Android` under Apache 2.0 as the on-device embedding model. The app assumes a `160x160x3` float32 input normalized to `0..1` and a `512`-float output embedding.
-- Expo + VisionCamera currently expose still photo capture through temporary file URIs. The enrollment pipeline therefore deletes both the captured photo file and the aligned face crop immediately after reading them into memory for TFLite inference, but the capture step is still transiently file-backed at the native API boundary.
-- Layer 6 reuses the exact same `apps/enrollment/assets/models/facenet_512.tflite` asset inside the gate app so enrollment and verification derive templates from an identical FaceNet model. The gate liveness flow follows the same privacy rule as enrollment: the captured still photo and the aligned crop are deleted immediately after inference, even though the native camera bridge is still transiently file-backed.
-- The truth base names a `gate-sync` Edge Function, but Layer 6 does not add a new backend function. Instead, the gate app performs pre-event revocation refresh by reading the `revocations` table directly through organizer-authenticated Supabase RLS, while the actual scan decision path remains fully offline and never depends on the network.
+## Product Scope
 
-## Local Verification Environment
+- The artifact is iOS-only for enrollment and gate operation.
+- There is one active gate device per event and single-entry enforcement per pass.
+- Only GBP zero-price ticket types can be checked out. Paid types remain visible but unavailable.
+- One authenticated attendee can own at most one ticket per event.
+- Ticket states are `claimed`, `enrolled`, `checked_in`, `cancelled`, and `revoked`; `checked_in`, `cancelled`, and `revoked` are terminal.
+- Initial issuance is generation 1. A ticket permits at most three pass generations until an organizer reset returns it to `claimed` with generation 0.
+- Event deletion is a soft delete and unlists the event; retained evidence rows are not removed.
 
-- The repository contract is now pinned to Node 24 and pnpm 10.33.0 in `package.json`.
-- Verification in this layer still centers on the Supabase CLI and container runtime because the application workspaces remain package-level skeletons without runnable product code yet.
-- The gate app's headless offline verifier uses Node 24's experimental `node:sqlite` API to exercise the same local SQLite schema and cryptographic flow in CI-style verification without requiring an iOS simulator or a physical camera feed.
+## Identity And Authority
+
+- Supabase email/password Auth is used with email confirmation disabled for the controlled demonstration.
+- Authentication alone does not grant organizer access. `ensure-organizer` checks `FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST`, and organizer operations enforce event ownership.
+- Attendee email and user ID come from the authenticated Supabase user. Request bodies do not choose identity.
+- A ticket claim code is a recovery/selection aid, not a bearer credential. The signed-in account must own the ticket.
+
+## Biometric And Cryptographic Assumptions
+
+- Enrollment and gate use the same bundled `facenet_512.tflite` model with a `160x160x3` float32 input and 512-float output.
+- VisionCamera exposes still captures through temporary file URIs. Source and aligned crop files are deleted in `finally` after inference; this is transient native file backing, not a claim of a purely memory-only camera API.
+- Cancelable template indices are encoded big-endian, BLAKE2b uses a 64-byte digest, and bit selection uses the most significant bit of the first digest byte.
+- Event signing private keys are encrypted with a runtime wrapping key before service-role-only database storage because local Supabase does not provide the Vault extension used by some hosted deployments.
+- The gate X25519 encryption private key and Ed25519 synchronization private key are separate and stored in iOS SecureStore with device-only accessibility.
+
+## Networking
+
+- Local mode needs no tunnel and requires the Mac and physical devices on the same LAN.
+- Physical devices use the Mac LAN IPv4, never loopback.
+- At-home remote operation needs the host Mac and active zrok HTTPS shares; a separately deployed Vercel ticket app is supported but not linked in this checkout.
+- The constrained LAN/tunnel proxy exists because the local Supabase gateway is treated as host-only. PostgreSQL and Studio are never exposed to the LAN or public internet.
+- Gate decisions remain offline. Enrollment, ticketing, revocation refresh, and synchronization require the selected backend to be reachable.
+
+## Revocations And Synchronization
+
+- The gate must successfully refresh revocations at least once before the scanner opens.
+- Cache state is fresh through 5 minutes, stale after 5 minutes, and critical after 30 minutes or when never refreshed.
+- A disconnected gate cannot know about later revocations. Those revocations apply after the next successful refresh.
+- Accepted check-ins are persisted with the original gate timestamp and a signed idempotent queue item. Retriable failures use bounded backoff; duplicate server receipt is success.
+- Manual file upload is not part of the normal dashboard update path.
+
+## Distribution Status
+
+- Prepared organizer-owned devices are the guaranteed fallback.
+- A local Apple Development profile has been generated for the enrollment bundle and a development build was installed on the paired iPhone, but the device owner must explicitly trust that developer profile before first launch.
+- EAS reports `Not logged in`; neither mobile app has an EAS project ID in `app.json`.
+- No App Store Connect application, external beta review, or installed TestFlight build has been verified.
+- TestFlight status is **not configured**. Audience-owned iPhone installation is conditional on verified Apple distribution and must not be promised from simulator/development evidence alone.
+
+## External Service Status
+
+- `zrok2` and `.env.tunnel.local` are absent on the current workstation.
+- No Vercel CLI or `.vercel/project.json` link is present.
+- Therefore local mode is the currently verified demonstration path; tunnel and Vercel instructions describe implemented configuration paths, not a current deployment claim.
+
+## Retention
+
+- Tickets, passes, revocations, gate check-ins, ticket activity, organizer activity, and non-biometric audit records are retained indefinitely for EPQ evidence unless a future documented deletion procedure is implemented.
+- Gate SQLite logs, replay state, revocation cache, and pending/synced queue records persist on the prepared gate device until the local application data is deliberately reset.
+- Enrollment passes and pending issuance records are account-scoped in SecureStore. Prepared-device account switching can explicitly remove that attendee's local records.

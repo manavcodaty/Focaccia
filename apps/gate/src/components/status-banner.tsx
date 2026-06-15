@@ -15,6 +15,8 @@ export function StatusBanner({
 
   return (
     <View
+      accessibilityLiveRegion={tone === 'neutral' ? 'polite' : 'assertive'}
+      accessible
       style={[
         styles.banner,
         {

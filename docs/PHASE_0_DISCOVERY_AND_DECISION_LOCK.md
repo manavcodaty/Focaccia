@@ -1,5 +1,7 @@
 # Phase 0: Discovery And Decision Lock
 
+> Historical discovery record. Statements labelled current in this document describe the pre-Phase-2 repository and are not current operating behavior. Use `TRUTH_BASE.md`, `ARCHITECTURE.md`, and `EPQ_OPERATIONS_MANUAL.md` for the implemented system.
+
 Date: 2026-06-11
 
 Status: decision-complete; implementation has not started.

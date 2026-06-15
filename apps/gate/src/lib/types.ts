@@ -40,8 +40,54 @@ export interface ProvisioningQrPayload {
 
 export interface StoredGateConfig extends GateBundle {
   event_name: string;
+  gate_device_id: string | null;
+  key_version: number;
   last_revocation_sync_at: string | null;
   provisioned_at: string;
+  sync_public_key: string | null;
+}
+
+export type CheckinSyncStatus = 'blocked' | 'pending' | 'synced';
+
+export interface GateCheckinPayload {
+  decision: 'ACCEPT';
+  event_id: string;
+  gate_timestamp: string;
+  idempotency_key: string;
+  nonce: string;
+  pass_id: string;
+}
+
+export interface SignedGateCheckin extends GateCheckinPayload {
+  signature: string;
+}
+
+export interface GateRevocationRequestPayload {
+  event_id: string;
+  gate_timestamp: string;
+  idempotency_key: string;
+  key_version: number;
+  nonce: string;
+}
+
+export interface SignedGateRevocationRequest extends GateRevocationRequestPayload {
+  signature: string;
+}
+
+export interface PendingCheckinSync extends SignedGateCheckin {
+  attempt_count: number;
+  last_error_code: string | null;
+  next_attempt_at: string;
+  status: CheckinSyncStatus;
+  synced_at: string | null;
+}
+
+export interface GateRevocationSnapshot {
+  idempotent_replay: boolean;
+  key_version: number;
+  revocations: Array<{ pass_id: string; revoked_at: string }>;
+  server_time: string;
+  version: string;
 }
 
 export interface FacePoint {
@@ -136,9 +182,13 @@ export interface GateLogRow {
 }
 
 export interface GateStats {
+  blockedSyncCount: number;
   lastRecordedAt: string | null;
+  lastSyncAt: string | null;
   logCount: number;
+  pendingSyncCount: number;
   revocationCount: number;
+  syncedCheckinCount: number;
   usedPassCount: number;
 }
 
@@ -147,7 +197,9 @@ export interface GateConfigRow {
   event_id: string;
   event_name: string;
   event_salt: string;
+  gate_device_id: string | null;
   k_code_event: string | null;
+  key_version: number;
   last_revocation_sync_at: string | null;
   liveness_timeout_ms: number;
   match_threshold: number;
@@ -158,6 +210,7 @@ export interface GateConfigRow {
   queue_code_enabled: number;
   single_entry: number;
   starts_at: string;
+  sync_public_key: string | null;
   typed_token_fallback: number;
 }
 
@@ -179,12 +232,15 @@ export function configRowToStoredGateConfig(row: GateConfigRow): StoredGateConfi
     event_id: row.event_id,
     event_name: row.event_name,
     event_salt: row.event_salt,
+    gate_device_id: row.gate_device_id,
+    key_version: row.key_version,
     last_revocation_sync_at: row.last_revocation_sync_at,
     pk_gate_event: row.pk_gate_event,
     pk_sign_event: row.pk_sign_event,
     policy,
     provisioned_at: row.provisioned_at,
     starts_at: row.starts_at,
+    sync_public_key: row.sync_public_key,
   };
 
   if (row.k_code_event) {

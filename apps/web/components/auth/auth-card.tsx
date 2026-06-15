@@ -10,7 +10,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -96,9 +96,11 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
   if (pendingConfirmationEmail) {
     return (
       <div className={cn("flex w-full max-w-sm flex-col gap-5", className)} {...props}>
-        <Card className="glass-panel border-white/40 shadow-2xl">
+        <Card className="border-[var(--color-ink)]/[0.1] shadow-[var(--shadow-card)]">
           <CardHeader className="text-center">
-            <CardTitle>Check your email</CardTitle>
+            <h2 className="text-[17px] font-medium tracking-[-0.009em] text-[var(--color-ink)]">
+              Check your email
+            </h2>
             <CardDescription>
               We sent a confirmation link to{" "}
               <span className="font-medium text-[var(--color-ink)]">
@@ -131,7 +133,7 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
 
   return (
     <div className={cn("flex w-full max-w-sm flex-col gap-5", className)} {...props}>
-      <Card className="glass-panel border-white/40 shadow-2xl">
+      <Card className="border-[var(--color-ink)]/[0.1] shadow-[var(--shadow-card)]">
         <CardHeader className="text-center">
           {/* Logo */}
           <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-[12px] bg-[var(--color-ink)]">
@@ -152,7 +154,9 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
               />
             </svg>
           </div>
-          <CardTitle>{copy.title}</CardTitle>
+          <h2 className="text-[17px] font-medium tracking-[-0.009em] text-[var(--color-ink)]">
+            {copy.title}
+          </h2>
           <CardDescription>{copy.description}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -184,7 +188,7 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
-              <p className="text-[12px] text-[var(--color-hint-of-grey)]">
+              <p className="text-[12px] text-[var(--color-muted-stone)]">
                 {mode === "signin"
                   ? "Use the organizer account attached to this event inventory."
                   : "Use at least 8 characters for the organizer password."}
@@ -222,7 +226,7 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
           </form>
         </CardContent>
       </Card>
-      <p className="px-4 text-center text-[12px] text-[var(--color-hint-of-grey)]">
+      <p className="px-4 text-center text-[12px] text-[var(--color-muted-stone)]">
         By continuing, you agree to the organizer terms and privacy expectations for event access.
       </p>
     </div>

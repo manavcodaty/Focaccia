@@ -10,4 +10,5 @@ export interface SqlDriver {
   getAll<T>(sql: string, params?: readonly SqlValue[]): Promise<T[]>;
   getFirst<T>(sql: string, params?: readonly SqlValue[]): Promise<T | null>;
   run(sql: string, params?: readonly SqlValue[]): Promise<SqlRunResult>;
+  transaction<T>(task: (driver: SqlDriver) => Promise<T>): Promise<T>;
 }

@@ -34,7 +34,7 @@ export function SiteHeader() {
           <Link aria-current={pathname === '/privacy' ? 'page' : undefined} href="/privacy">Privacy</Link>
         </nav>
         <div className="header-actions">
-          {loading ? <span className="header-loading" aria-label="Loading account" /> : user ? (
+          {loading ? <output className="header-loading" aria-label="Loading account" /> : user ? (
             <button className="button button-ghost button-compact" disabled={signingOut} onClick={handleSignOut} type="button">
               {signingOut ? 'Signing out' : 'Sign out'}
             </button>

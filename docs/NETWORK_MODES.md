@@ -1,8 +1,129 @@
 # Dual-Mode Network Runbook
 
-Phase 1 supports exactly two explicit modes. No client infers, rewrites, or falls back to another host.
+Focaccia supports exactly `FOCACCIA_NETWORK_MODE=local|tunnel`. The mode is explicit; clients never infer a mode from an available URL and never fall back to another origin.
 
-## Commands
+## Root Variables
+
+Local root configuration:
+
+```text
+FOCACCIA_NETWORK_MODE=local
+FOCACCIA_LOCAL_HOST=LAN_IP
+FOCACCIA_LOCAL_SUPABASE_URL=http://LAN_IP:54331
+FOCACCIA_LOCAL_WEB_URL=http://LAN_IP:3000
+FOCACCIA_LOCAL_TICKETS_URL=http://LAN_IP:3001
+FOCACCIA_DOCKER_HOST=ssh://colima
+FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=<comma-separated exact emails>
+FOCACCIA_CLAIM_CODE_PEPPER=<base64url 32-byte secret>
+```
+
+Tunnel root configuration:
+
+```text
+FOCACCIA_NETWORK_MODE=tunnel
+FOCACCIA_TUNNEL_SUPABASE_URL=https://<api>.share.zrok.io
+FOCACCIA_TUNNEL_WEB_URL=https://<web>.share.zrok.io
+FOCACCIA_TUNNEL_TICKETS_URL=https://<tickets>.share.zrok.io
+FOCACCIA_ZROK_SUPABASE_NAME_SELECTION=public:<api-name>
+FOCACCIA_ZROK_WEB_NAME_SELECTION=public:<web-name>
+FOCACCIA_ZROK_TICKETS_NAME_SELECTION=public:<tickets-name>
+FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=<comma-separated exact emails>
+FOCACCIA_CLAIM_CODE_PEPPER=<base64url 32-byte secret>
+```
+
+The launcher writes ignored selected values for each runtime:
+
+- browser: `NEXT_PUBLIC_FOCACCIA_NETWORK_MODE`, `NEXT_PUBLIC_FOCACCIA_LOCAL_HOST`, `NEXT_PUBLIC_FOCACCIA_SUPABASE_URL`, `NEXT_PUBLIC_FOCACCIA_WEB_URL`, `NEXT_PUBLIC_FOCACCIA_TICKETS_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Expo: `EXPO_PUBLIC_FOCACCIA_NETWORK_MODE`, `EXPO_PUBLIC_FOCACCIA_LOCAL_HOST`, `EXPO_PUBLIC_FOCACCIA_SUPABASE_URL`, `EXPO_PUBLIC_FOCACCIA_WEB_URL`, `EXPO_PUBLIC_FOCACCIA_TICKETS_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- Edge Functions: selected root values plus server-only service-role, wrapping-key, allowlist, and claim-code-pepper values
+
+Only the selected URLs and Supabase anon key enter public bundles. Never place service-role keys, database credentials, organizer allowlists, signing secrets, tunnel credentials, claim-code peppers, or gate private keys in public variables.
+
+## Local Mode
+
+Local mode needs no tunnel. `pnpm demo:local` fails if a zrok process is running.
+
+```text
+phone/browser/enrollment/gate
+  -> http://LAN_IP:3000   organizer dashboard
+  -> http://LAN_IP:3001   public tickets
+  -> http://LAN_IP:54331  constrained Supabase proxy
+proxy
+  -> http://127.0.0.1:54321 host-only Supabase API
+```
+
+Physical devices use the Mac LAN IP. Loopback is valid only for host-internal upstreams and is rejected as a selected physical-device URL.
+
+The proxy permits `/auth/v1`, `/rest/v1`, `/functions/v1`, `/realtime/v1`, and `/storage/v1`, supports Realtime WebSockets, applies a 10 MiB request limit, reflects only exact browser origins, and accepts native requests with no `Origin`. It cannot forward to arbitrary destinations.
+
+Recommended macOS topology:
+
+```bash
+colima stop
+colima start --port-forwarder none --save-config
+cp .env.local.example .env.local
+pnpm demo:local
+pnpm verify:local-network
+```
+
+The launcher creates loopback-only SSH forwards for Supabase API/database access. It checks that PostgreSQL `54322` and Studio `54323` are not reachable at `LAN_IP`. Studio, Logflare, and Vector are not started by the demo.
+
+Physical acceptance requires the Mac and phone on the same Wi-Fi, all tunnels stopped, VPN/Private Relay behavior accounted for, and the local-network permission granted to each iOS app. A second device can first open `http://LAN_IP:54331/auth/v1/health`.
+
+## Tunnel Mode
+
+At-home setup needs both the active zrok tunnel and the host Mac. Supabase remains local to the Mac; zrok exposes only HTTPS fronts for the constrained proxy and web apps.
+
+```bash
+cp .env.tunnel.example .env.tunnel.local
+zrok2 enable
+pnpm demo:tunnel
+pnpm verify:tunnel-network
+```
+
+`demo:tunnel` starts three reserved public shares:
+
+- selected Supabase HTTPS URL -> `http://127.0.0.1:54331`
+- selected organizer HTTPS URL -> `http://127.0.0.1:3000`
+- selected tickets HTTPS URL -> `http://127.0.0.1:3001`
+
+The zrok account/name selections must be verified and stable. The verifier rejects non-HTTPS URLs and any response containing a zrok interstitial.
+
+### Vercel
+
+The ticket application may be deployed separately to Vercel instead of using the ticket zrok share. Configure the Vercel project with the selected tunnel-mode `NEXT_PUBLIC_*` variables and point `FOCACCIA_TUNNEL_TICKETS_URL` at that exact deployment origin. Supabase Auth and CORS must then be regenerated with the same origin.
+
+Current status on this workstation: the Vercel CLI/project link, `zrok2`, and `.env.tunnel.local` are absent. Tunnel and Vercel operation are implemented but not currently configured or pass-verified.
+
+## Auth Redirects And CORS
+
+`demo:*` generates `.focaccia/runtime/supabase/config.toml` for the selected mode:
+
+- Auth `site_url` is the exact selected ticket-app origin.
+- `additional_redirect_urls` contains the exact organizer and ticket origins.
+- email/password signup is enabled; email confirmation is disabled for the controlled EPQ deployment.
+- Edge Function browser CORS accepts only the exact selected organizer and ticket origins.
+- native app requests may omit `Origin`; wildcard browser CORS is not emitted.
+
+Changing an origin requires restarting the demo so the generated Auth/CORS configuration changes with it.
+
+## EAS And iOS Networking
+
+Both mobile apps define:
+
+- `development-local`
+- `development-tunnel`
+- `preview-local`
+- `preview-tunnel`
+- `production-tunnel`
+
+Local profiles select `local`; tunnel profiles select `tunnel`. EAS environment configuration must provide the remaining selected `EXPO_PUBLIC_*` URLs and anon key.
+
+The iOS apps use a narrow ATS exception that permits local networking without globally allowing arbitrary insecure HTTP. Both include `NSLocalNetworkUsageDescription`. Tunnel configuration still requires HTTPS.
+
+Mode or `EXPO_PUBLIC_*` changes require a Metro restart with `--clear`; native configuration changes require a rebuild.
+
+## Status And Health Commands
 
 ```bash
 pnpm demo:local
@@ -13,80 +134,13 @@ pnpm verify:local-network
 pnpm verify:tunnel-network
 ```
 
-`demo:*` builds the shared package, generates `.focaccia/runtime`, writes ignored selected public env files, starts Supabase without Studio, starts Edge Functions, starts the constrained proxy, and starts the organizer web app. `apps/tickets` is checked only when that later-phase app exists.
-
-## Local Mode
-
-Copy `.env.local.example` to `.env.local` and replace the example address with the Mac's stable private IPv4. The selected Supabase URL should use proxy port `54331`.
-
-```text
-physical device -> http://LAN_IP:3000  organizer web
-physical device -> http://LAN_IP:54331 constrained Supabase proxy
-proxy           -> http://127.0.0.1:54321 Supabase API
-```
-
-The proxy permits only `/auth/v1`, `/rest/v1`, `/functions/v1`, `/realtime/v1`, and `/storage/v1`. It rejects unknown browser origins, strips upstream wildcard CORS headers, limits requests to 10 MiB, supports Realtime WebSocket upgrades, and cannot forward arbitrary destinations.
-
-On macOS, use Colima with automatic port forwarding disabled and Docker over SSH:
-
-```bash
-colima stop
-colima start --port-forwarder none --save-config
-```
-
-Set `FOCACCIA_DOCKER_HOST=ssh://colima`. The demo launcher creates one managed SSH forward at `127.0.0.1:54321`. PostgreSQL `54322`, Studio `54323`, and Mailpit `54324` must have no host listener. Docker Desktop's default all-interface published ports fail this requirement.
-
-For a database reset, create a temporary loopback-only `54322` SSH forward, run the reset, and close the forward immediately. Never bind it to the LAN address.
-
-Physical-device acceptance requires the phone and Mac on the same Wi-Fi, every zrok process stopped, and Private Relay/VPN behavior accounted for. From the second device, open `http://LAN_IP:54331/auth/v1/health`, then exercise organizer Auth, an Edge Function, enrollment, and gate provisioning. `pnpm verify:local-network` independently verifies the host-side contract.
-
-## Tunnel Mode
-
-Copy `.env.tunnel.example` to `.env.tunnel.local`. Every selected URL must be HTTPS and externally routable. Install and enable zrok v2, then configure reserved `public:<name>` selections matching the selected `*.share.zrok.io` URLs.
-
-`demo:tunnel` shares only the constrained Supabase proxy and web app. It never shares PostgreSQL or Studio. `verify:tunnel-network` checks HTTPS, Auth, Edge Functions, exact CORS, web reachability, and rejects a raw response containing a zrok interstitial.
-
-## Public And Server Values
-
-Browser and Expo bundles receive only selected `NEXT_PUBLIC_*` or `EXPO_PUBLIC_*` network values plus the Supabase anon key. Service-role keys and the wrapping key exist only in `.focaccia/runtime/functions.env` with mode `0600`; diagnostics never print them.
-
-Supabase Auth is generated per mode. Site URL is the selected tickets origin and redirect allowlisting contains only the exact selected web and tickets origins. Edge Functions derive the same exact browser-origin set from typed server configuration.
-
-### Direct environment reads
-
-- `apps/web/lib/env.ts`, `apps/enrollment/src/lib/env.ts`, and `apps/gate/src/lib/env.ts` are the only client adapters. They read the selected mode, local host, three selected URLs, and anon key, then pass them to the shared parser. They never read server secrets.
-- `scripts/lib/network-environment.mjs` is the root CLI adapter. `demo.mjs` additionally reads `PATH`; `demo-status.mjs` accepts `FOCACCIA_NETWORK_MODE` only to select the env file.
-- `scripts/lan-supabase-proxy.mjs` reads only its bind host, bind port, and exact browser-origin allowlist from launcher-provided values.
-- `supabase/functions/_shared/network-runtime.ts` and `env.ts` are the only Edge adapters. They parse the selected network contract and server-only secrets; individual functions do not read `Deno.env`.
-
-### Intentional loopback endpoints
-
-- `127.0.0.1:54321` is the host-only Supabase API upstream, reached through the managed Colima SSH forward.
-- `127.0.0.1:54331`, `:3000`, and `:3001` are zrok share targets in tunnel mode only.
-- Generated Supabase function configuration uses `127.0.0.1:54321` for server-to-server calls inside the local runtime.
-- Static `supabase/config.toml` loopback values are source defaults only. `demo:*` generates the selected Auth site and redirect origins before startup.
-- Loopback values in tests are fixtures used to prove rejection or no-rewrite behavior; physical-device local configuration rejects them.
-
-## EAS And iOS
-
-Both mobile apps define:
-
-- `development-local`
-- `development-tunnel`
-- `preview-local`
-- `preview-tunnel`
-- `production-tunnel`
-
-Local profiles set mode `local`; tunnel profiles set mode `tunnel`. EAS environment values must supply the remaining selected public URLs and anon key. iOS keeps global ATS disabled, permits local networking, and includes a purpose-specific local-network usage description.
-
-Changing mode or any `EXPO_PUBLIC_*` value requires stopping Metro and restarting with `--clear`. Changes to `app.json`, `Info.plist`, ATS, entitlements, or native dependencies require a new dev-client/EAS build. A Metro restart alone cannot apply native configuration.
-
-TestFlight status: **not configured**. Neither app contains committed EAS project linkage or verified Apple signing/App Store Connect credentials, so TestFlight cannot be claimed as available in Phase 1.
+Verification covers selected mode/host/URLs, TCP reachability, Auth health, Edge Function CORS, unauthorized-origin rejection, organizer web, ticket health, hidden database/Studio ports, and zrok interstitial detection without printing credentials.
 
 ## Recovery
 
-- Invalid or mixed URLs: fix the selected root env; the validator intentionally provides no fallback.
-- Stale Supabase containers: `demo:*` backs up and restarts an unhealthy generated runtime.
-- Port `54331` unavailable: stop the conflicting process; do not change the allowlisted proxy to a forward proxy.
-- Mode switch: stop the demo, stop both Metro servers, change the selected env, restart the demo, restart Metro with `--clear`, and rebuild native clients when native configuration changed.
-- Tunnel failure: local mode remains independent and must be tested with all tunnel processes stopped.
+- Wrong mode or mixed origins: fix the selected root env; there is no automatic fallback.
+- Mac IP changed: update every local URL, stop the demo and Metro, restart the demo, restart Metro with `--clear`, and rebuild only if native configuration changed.
+- Port conflict: stop the conflicting process; do not weaken the proxy or expose PostgreSQL/Studio.
+- Tunnel failure: keep the host Mac running, restore all three shares or the Vercel ticket deployment, then rerun `verify:tunnel-network`.
+- Local fallback: stop every zrok process, select local env, and run `demo:local`; local mode is independent of Vercel and zrok.
+- Gate outage: entry decisions still work offline from provisioned keys and cached revocations. Check-ins remain queued until connectivity returns.

@@ -15,6 +15,7 @@ import {
 } from '@face-pass/shared';
 
 import { GateRepository } from '../src/lib/gate-db.ts';
+import { createSignedCheckin } from '../src/lib/gate-sync.ts';
 import {
   decisionToLogEntry,
   destroyPendingVerification,
@@ -51,6 +52,18 @@ class NodeSqliteDriver implements SqlDriver {
   async run(sql: string, params: readonly SqlValue[] = []): Promise<SqlRunResult> {
     const result = this.database.prepare(sql).run(...params) as { changes?: number };
     return { changes: result.changes ?? 0 };
+  }
+
+  async transaction<T>(task: (driver: SqlDriver) => Promise<T>): Promise<T> {
+    this.database.exec('begin immediate');
+    try {
+      const result = await task(this);
+      this.database.exec('commit');
+      return result;
+    } catch (error) {
+      this.database.exec('rollback');
+      throw error;
+    }
   }
 }
 
@@ -133,6 +146,7 @@ async function main(): Promise<void> {
   const nowUnix = Math.floor(Date.now() / 1000);
   const eventSalt = secureRandomBytes(32);
   const signingKeys = await ed25519Keypair();
+  const syncKeys = await ed25519Keypair();
   const gateKeys = await x25519Keypair();
   const provisioningQr = canonicalJsonStringify({
     ends_at: new Date((nowUnix + 7200) * 1000).toISOString(),
@@ -151,6 +165,8 @@ async function main(): Promise<void> {
     event_id: provisioningPayload.event_id,
     event_name: provisioningPayload.name,
     event_salt: provisioningPayload.event_salt,
+    gate_device_id: null,
+    key_version: 1,
     last_revocation_sync_at: null,
     pk_gate_event: await toBase64Url(gateKeys.publicKey),
     pk_sign_event: provisioningPayload.pk_sign_event,
@@ -164,6 +180,7 @@ async function main(): Promise<void> {
     },
     provisioned_at: new Date().toISOString(),
     starts_at: provisioningPayload.starts_at,
+    sync_public_key: await toBase64Url(syncKeys.publicKey),
   };
 
   await repository.saveGateConfig(storedGate);
@@ -203,8 +220,25 @@ async function main(): Promise<void> {
   assert.equal(acceptedDecision.accepted, true, 'matching embedding should accept');
   assert.equal(acceptedDecision.reasonCode, 'ACCEPT');
   assert.equal(acceptedDecision.hammingDistance, 0, 'same embedding should produce identical template');
-  await repository.markPassUsed(eventId, firstPassId, new Date().toISOString());
-  await repository.insertLog(decisionToLogEntry(acceptedDecision));
+  const gateTimestamp = new Date().toISOString();
+  const signedCheckin = await createSignedCheckin({
+    eventId,
+    gateTimestamp,
+    passId: firstPassId,
+    privateKey: syncKeys.privateKey,
+  });
+  assert.equal(await repository.recordAcceptedDecision(
+    decisionToLogEntry(acceptedDecision, gateTimestamp),
+    {
+      ...signedCheckin,
+      attempt_count: 0,
+      last_error_code: null,
+      next_attempt_at: gateTimestamp,
+      status: 'pending',
+      synced_at: null,
+    },
+  ), true);
+  assert.equal((await repository.listDueSyncItems(gateTimestamp)).length, 1);
   destroyPendingVerification(firstPrepared.pending);
 
   const replayPrepared = await prepareOfflineVerification({
@@ -279,13 +313,14 @@ async function main(): Promise<void> {
 
   console.log('offline gate verification passed');
   console.log(`event_id=${eventId}`);
-  console.log(`accepted_pass_id=${firstPassId}`);
   console.log(`csv_lines=${csv.split('\n').length}`);
 
   await repository.close();
   eventSalt.fill(0);
   signingKeys.privateKey.fill(0);
   signingKeys.publicKey.fill(0);
+  syncKeys.privateKey.fill(0);
+  syncKeys.publicKey.fill(0);
   gateKeys.privateKey.fill(0);
   gateKeys.publicKey.fill(0);
   enrolledEmbedding.fill(0);

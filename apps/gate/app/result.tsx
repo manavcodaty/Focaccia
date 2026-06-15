@@ -53,7 +53,7 @@ export default function ResultScreen() {
           ]}
         >
           {lastResult.accepted
-            ? 'The pass was verified entirely offline and the replay marker is now stored locally.'
+            ? 'The pass was verified offline. Its replay marker and signed check-in are stored locally for automatic synchronization.'
             : 'The gate rejected the pass before entry was granted.'}
         </Text>
       </SectionCard>

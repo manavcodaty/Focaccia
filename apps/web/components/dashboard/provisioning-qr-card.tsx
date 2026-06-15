@@ -63,7 +63,7 @@ export function ProvisioningQrCard({
 
             <TabsContent value="qr">
               <div className="scan-grid relative flex min-h-[22rem] flex-col items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-6">
-                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(circle_at_top,rgba(0,102,255,0.08),transparent_50%)]" />
+                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(circle_at_top,rgba(251,225,209,0.72),transparent_55%)]" />
                 <div className="relative rounded-xl border border-[color:var(--border)] bg-white p-3.5 shadow-[var(--shadow-elevated)]">
                   <QRCode size={220} value={qrValue} />
                 </div>

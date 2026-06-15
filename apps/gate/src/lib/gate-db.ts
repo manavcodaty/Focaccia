@@ -6,6 +6,7 @@ import {
   type GateLogEntry,
   type GateLogRow,
   type GateStats,
+  type PendingCheckinSync,
   type StoredGateConfig,
 } from './types.ts';
 import type { SqlDriver, SqlValue } from './sqlite-port.ts';
@@ -14,7 +15,9 @@ const SCHEMA_SQL = `
 create table if not exists gate_config (
   event_id text primary key,
   event_name text not null,
+  gate_device_id text,
   event_salt text not null,
+  key_version integer not null default 1,
   pk_gate_event text not null,
   pk_sign_event text not null,
   starts_at text not null,
@@ -27,7 +30,8 @@ create table if not exists gate_config (
   queue_code_digits integer,
   k_code_event text,
   provisioned_at text not null,
-  last_revocation_sync_at text
+  last_revocation_sync_at text,
+  sync_public_key text
 );
 
 create table if not exists used_passes (
@@ -63,6 +67,24 @@ create table if not exists scan_logs (
   total_ms integer not null,
   hamming_distance integer
 );
+
+create table if not exists checkin_sync_queue (
+  idempotency_key text primary key,
+  event_id text not null,
+  pass_id text not null,
+  decision text not null check (decision = 'ACCEPT'),
+  gate_timestamp text not null,
+  nonce text not null,
+  signature text not null,
+  attempt_count integer not null default 0 check (attempt_count >= 0),
+  next_attempt_at text not null,
+  status text not null default 'pending' check (status in ('pending', 'blocked', 'synced')),
+  last_error_code text,
+  synced_at text
+);
+
+create index if not exists checkin_sync_queue_due_idx
+  on checkin_sync_queue (status, next_attempt_at);
 `;
 
 const USED_PASSES_SCHEMA_SQL = `
@@ -94,7 +116,9 @@ function rowParams(config: StoredGateConfig): SqlValue[] {
   return [
     config.event_id,
     config.event_name,
+    config.gate_device_id,
     config.event_salt,
+    config.key_version,
     config.pk_gate_event,
     config.pk_sign_event,
     config.starts_at,
@@ -108,7 +132,71 @@ function rowParams(config: StoredGateConfig): SqlValue[] {
     config.k_code_event ?? null,
     config.provisioned_at,
     config.last_revocation_sync_at,
+    config.sync_public_key,
   ];
+}
+
+async function ensureColumn(
+  driver: SqlDriver,
+  table: string,
+  column: string,
+  definition: string,
+): Promise<void> {
+  const columns = await driver.getAll<{ name: string }>(`pragma table_info(${table})`);
+  if (!columns.some((candidate) => candidate.name === column)) {
+    await driver.run(`alter table ${table} add column ${column} ${definition}`);
+  }
+}
+
+async function insertLog(driver: SqlDriver, entry: GateLogEntry): Promise<void> {
+  await driver.run(
+    `insert into scan_logs (
+      recorded_at, event_id, pass_id, pass_ref, outcome, reason_code,
+      scan_ms, decode_ms, verify_ms, replay_ms, revocation_ms, decrypt_ms,
+      liveness_ms, match_ms, total_ms, hamming_distance
+    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      entry.recorded_at,
+      entry.event_id,
+      entry.pass_id,
+      entry.pass_ref,
+      entry.outcome,
+      entry.reason_code,
+      entry.timings.scan_ms,
+      entry.timings.decode_ms,
+      entry.timings.verify_ms,
+      entry.timings.replay_ms,
+      entry.timings.revocation_ms,
+      entry.timings.decrypt_ms,
+      entry.timings.liveness_ms,
+      entry.timings.match_ms,
+      entry.timings.total_ms,
+      entry.hamming_distance,
+    ],
+  );
+}
+
+async function insertQueueItem(driver: SqlDriver, item: PendingCheckinSync): Promise<void> {
+  await driver.run(
+    `insert into checkin_sync_queue (
+      idempotency_key, event_id, pass_id, decision, gate_timestamp, nonce,
+      signature, attempt_count, next_attempt_at, status, last_error_code, synced_at
+    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      item.idempotency_key,
+      item.event_id,
+      item.pass_id,
+      item.decision,
+      item.gate_timestamp,
+      item.nonce,
+      item.signature,
+      item.attempt_count,
+      item.next_attempt_at,
+      item.status,
+      item.last_error_code,
+      item.synced_at,
+    ],
+  );
 }
 
 function csvEscape(value: string | number | null): string {
@@ -129,6 +217,10 @@ export class GateRepository {
 
   async migrate(): Promise<void> {
     await this.driver.exec(SCHEMA_SQL);
+    await ensureColumn(this.driver, 'gate_config', 'gate_device_id', 'text');
+    await ensureColumn(this.driver, 'gate_config', 'key_version', 'integer default 1');
+    await ensureColumn(this.driver, 'gate_config', 'sync_public_key', 'text');
+    await this.driver.run('update gate_config set key_version = 1 where key_version is null');
     await this.driver.exec(USED_PASSES_SCHEMA_SQL);
   }
 
@@ -143,7 +235,9 @@ export class GateRepository {
       `select
         event_id,
         event_name,
+        gate_device_id,
         event_salt,
+        key_version,
         pk_gate_event,
         pk_sign_event,
         starts_at,
@@ -156,7 +250,8 @@ export class GateRepository {
         queue_code_digits,
         k_code_event,
         provisioned_at,
-        last_revocation_sync_at
+        last_revocation_sync_at,
+        sync_public_key
       from gate_config
       limit 1`,
     );
@@ -170,7 +265,9 @@ export class GateRepository {
       `insert into gate_config (
         event_id,
         event_name,
+        gate_device_id,
         event_salt,
+        key_version,
         pk_gate_event,
         pk_sign_event,
         starts_at,
@@ -183,8 +280,9 @@ export class GateRepository {
         queue_code_digits,
         k_code_event,
         provisioned_at,
-        last_revocation_sync_at
-      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        last_revocation_sync_at,
+        sync_public_key
+      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       rowParams(config),
     );
   }
@@ -198,16 +296,16 @@ export class GateRepository {
     revocations: ReadonlyArray<{ pass_id: string; revoked_at: string }>,
     syncedAtIso: string,
   ): Promise<void> {
-    await this.driver.run('delete from revocation_cache where event_id = ?', [eventId]);
-
-    for (const row of revocations) {
-      await this.driver.run(
-        'insert into revocation_cache (event_id, pass_id, revoked_at) values (?, ?, ?)',
-        [eventId, row.pass_id, row.revoked_at],
-      );
-    }
-
-    await this.updateRevocationSyncTimestamp(syncedAtIso);
+    await this.driver.transaction(async (driver) => {
+      await driver.run('delete from revocation_cache where event_id = ?', [eventId]);
+      for (const row of revocations) {
+        await driver.run(
+          'insert into revocation_cache (event_id, pass_id, revoked_at) values (?, ?, ?)',
+          [eventId, row.pass_id, row.revoked_at],
+        );
+      }
+      await driver.run('update gate_config set last_revocation_sync_at = ?', [syncedAtIso]);
+    });
   }
 
   async isPassRevoked(eventId: string, passId: string): Promise<boolean> {
@@ -236,44 +334,82 @@ export class GateRepository {
     return result.changes > 0;
   }
 
+  async recordAcceptedDecision(
+    entry: GateLogEntry,
+    syncItem: PendingCheckinSync,
+  ): Promise<boolean> {
+    if (!entry.pass_id || entry.outcome !== 'ACCEPT' || syncItem.pass_id !== entry.pass_id) {
+      throw new Error('Accepted gate decisions require one matching pass ID.');
+    }
+
+    return this.driver.transaction(async (driver) => {
+      const replayMarker = await driver.run(
+        'insert or ignore into used_passes (event_id, pass_id, accepted_at) values (?, ?, ?)',
+        [entry.event_id, entry.pass_id, syncItem.gate_timestamp],
+      );
+      if (replayMarker.changes === 0) return false;
+
+      await insertLog(driver, entry);
+      await insertQueueItem(driver, syncItem);
+      return true;
+    });
+  }
+
   async insertLog(entry: GateLogEntry): Promise<void> {
+    await insertLog(this.driver, entry);
+  }
+
+  async listDueSyncItems(nowIso: string, limit = 20): Promise<PendingCheckinSync[]> {
+    return this.driver.getAll<PendingCheckinSync>(
+      `select * from checkin_sync_queue
+       where status = 'pending' and next_attempt_at <= ?
+       order by gate_timestamp asc limit ?`,
+      [nowIso, limit],
+    );
+  }
+
+  async getNextSyncAttemptAt(): Promise<string | null> {
+    const row = await this.driver.getFirst<{ next_attempt_at: string }>(
+      `select next_attempt_at from checkin_sync_queue
+       where status = 'pending' order by next_attempt_at asc limit 1`,
+    );
+    return row?.next_attempt_at ?? null;
+  }
+
+  async markSyncRetry(
+    idempotencyKey: string,
+    attemptCount: number,
+    nextAttemptAt: string,
+    errorCode: string,
+  ): Promise<void> {
     await this.driver.run(
-      `insert into scan_logs (
-        recorded_at,
-        event_id,
-        pass_id,
-        pass_ref,
-        outcome,
-        reason_code,
-        scan_ms,
-        decode_ms,
-        verify_ms,
-        replay_ms,
-        revocation_ms,
-        decrypt_ms,
-        liveness_ms,
-        match_ms,
-        total_ms,
-        hamming_distance
-      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        entry.recorded_at,
-        entry.event_id,
-        entry.pass_id,
-        entry.pass_ref,
-        entry.outcome,
-        entry.reason_code,
-        entry.timings.scan_ms,
-        entry.timings.decode_ms,
-        entry.timings.verify_ms,
-        entry.timings.replay_ms,
-        entry.timings.revocation_ms,
-        entry.timings.decrypt_ms,
-        entry.timings.liveness_ms,
-        entry.timings.match_ms,
-        entry.timings.total_ms,
-        entry.hamming_distance,
-      ],
+      `update checkin_sync_queue set attempt_count = ?, next_attempt_at = ?,
+       last_error_code = ?, status = 'pending' where idempotency_key = ?`,
+      [attemptCount, nextAttemptAt, errorCode, idempotencyKey],
+    );
+  }
+
+  async markSyncBlocked(idempotencyKey: string, errorCode: string): Promise<void> {
+    await this.driver.run(
+      `update checkin_sync_queue set attempt_count = attempt_count + 1,
+       last_error_code = ?, status = 'blocked' where idempotency_key = ?`,
+      [errorCode, idempotencyKey],
+    );
+  }
+
+  async retryBlockedSyncItems(nowIso: string): Promise<void> {
+    await this.driver.run(
+      `update checkin_sync_queue set status = 'pending', next_attempt_at = ?,
+       last_error_code = null where status = 'blocked'`,
+      [nowIso],
+    );
+  }
+
+  async markSyncSucceeded(idempotencyKey: string, syncedAtIso: string): Promise<void> {
+    await this.driver.run(
+      `update checkin_sync_queue set status = 'synced', synced_at = ?,
+       last_error_code = null where idempotency_key = ?`,
+      [syncedAtIso, idempotencyKey],
     );
   }
 
@@ -305,21 +441,33 @@ export class GateRepository {
   async getStats(): Promise<GateStats> {
     const counts = await this.driver.getFirst<{
       lastRecordedAt: string | null;
+      lastSyncAt: string | null;
       logCount: number;
+      blockedSyncCount: number;
+      pendingSyncCount: number;
       revocationCount: number;
+      syncedCheckinCount: number;
       usedPassCount: number;
     }>(
       `select
         (select count(*) from scan_logs) as logCount,
         (select count(*) from used_passes) as usedPassCount,
         (select count(*) from revocation_cache) as revocationCount,
+        (select count(*) from checkin_sync_queue where status = 'pending') as pendingSyncCount,
+        (select count(*) from checkin_sync_queue where status = 'blocked') as blockedSyncCount,
+        (select count(*) from checkin_sync_queue where status = 'synced') as syncedCheckinCount,
+        (select max(synced_at) from checkin_sync_queue where status = 'synced') as lastSyncAt,
         (select recorded_at from scan_logs order by recorded_at desc, id desc limit 1) as lastRecordedAt`,
     );
 
     return {
+      blockedSyncCount: counts?.blockedSyncCount ?? 0,
       lastRecordedAt: counts?.lastRecordedAt ?? null,
+      lastSyncAt: counts?.lastSyncAt ?? null,
       logCount: counts?.logCount ?? 0,
+      pendingSyncCount: counts?.pendingSyncCount ?? 0,
       revocationCount: counts?.revocationCount ?? 0,
+      syncedCheckinCount: counts?.syncedCheckinCount ?? 0,
       usedPassCount: counts?.usedPassCount ?? 0,
     };
   }

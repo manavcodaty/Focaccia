@@ -33,7 +33,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const organizer = user?.email?.split("@")[0] ?? "organizer";
 
   return (
-    <div className="min-h-screen bg-[var(--color-canvas)]">
+    <div className="min-h-[100dvh] bg-[var(--color-canvas)]">
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <header className="sticky top-0 z-50 border-b border-[var(--color-hint-of-grey)]/25 bg-white/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-[var(--page-max-width)] items-center justify-between px-5 md:px-8">
           {/* Left: Logo + Nav */}
@@ -92,6 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {organizer}
             </span>
             <button
+              type="button"
               onClick={() => void performSecureSignOut(supabase).then(() => window.location.assign("/login"))}
               className="hidden items-center gap-1.5 rounded-[9999px] px-3 py-1.5 text-[13px] text-[var(--color-muted-stone)] transition-colors hover:bg-[var(--color-fog)] hover:text-[var(--color-ink)] md:flex"
               aria-label="Sign out"
@@ -102,6 +106,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             {/* Mobile menu toggle */}
             <button
+              type="button"
               className="flex size-9 items-center justify-center rounded-[9999px] text-[var(--color-ink)] md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
@@ -130,6 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="mt-3 flex items-center justify-between border-t border-[var(--color-ink)]/[0.06] pt-3">
               <span className="text-[13px] text-[var(--color-muted-stone)]">{organizer}</span>
               <button
+                type="button"
                 onClick={() => void performSecureSignOut(supabase).then(() => window.location.assign("/login"))}
                 className="flex items-center gap-1.5 rounded-[9999px] px-3 py-1.5 text-[13px] text-[var(--color-muted-stone)] hover:text-[var(--color-ink)]"
               >
@@ -150,7 +156,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Main content */}
-      <main className="flex flex-1 flex-col px-5 py-8 md:px-8 md:py-10">
+      <main id="main-content" className="flex flex-1 flex-col px-5 py-8 md:px-8 md:py-10">
         <div className="mx-auto w-full max-w-[var(--page-max-width)]">
           {children}
         </div>

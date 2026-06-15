@@ -106,3 +106,12 @@ export const gateCheckinSchema = z.strictObject({
   pass_id: base64Url22Schema,
   signature: z.string().regex(/^[A-Za-z0-9_-]{86}$/),
 });
+
+export const gateRevocationRequestSchema = z.strictObject({
+  event_id: idSchema,
+  gate_timestamp: isoTimestamp,
+  idempotency_key: z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/),
+  key_version: z.number().int().positive(),
+  nonce: base64Url22Schema,
+  signature: z.string().regex(/^[A-Za-z0-9_-]{86}$/),
+});

@@ -1,5 +1,7 @@
 # Focaccia End-to-End EPQ Build Prompt Pack
 
+> Historical implementation prompt pack. It records requested phases and pass gates, not current deployment status or operating instructions. Use `TRUTH_BASE.md`, `NETWORK_MODES.md`, and `EPQ_OPERATIONS_MANUAL.md` for implemented behavior.
+
 Execute these prompts in order. The Global Contract applies to every phase. Do not begin a later phase until the current phase's pass gate has been met and evidenced.
 
 ## Global Contract

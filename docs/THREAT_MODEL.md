@@ -1,284 +1,198 @@
-# THREAT_MODEL.md
+# Focaccia Threat Model
 
-## One-Time Face Pass — Threat Model
+## Scope And Assets
 
-## 1. Purpose and Scope
+This model covers public ticketing, organizer administration, attendee enrollment, offline gate verification, revocation refresh, and signed check-in synchronization.
 
-This threat model identifies six concrete security threats, labelled **T1–T6**, that are directly relevant to the One-Time Face Pass design. The focus is not on generic web risk alone, but on the high-value security properties claimed by the system:
-- no reusable biometric storage,
-- resistance to QR interception,
-- resistance to replay,
-- offline enforcement integrity,
-- liveness assurance,
-- bounded damage under backend compromise.
+Protected assets include:
 
-The analysis assumes the locked architecture defined in the truth base and the PRD.
+- organizer/attendee accounts and event ownership
+- tickets, claim codes, passes, check-ins, and audit evidence
+- event signing private keys and wrapping key
+- gate X25519 and Ed25519 private keys
+- face captures, embeddings, cancelable templates, and encrypted pass templates
+- gate replay/revocation state and synchronization queue
+- exact network origins and server-only credentials
 
----
+## Trust Boundaries
 
-## 2. Security Objectives
+1. Anonymous browser to public catalogue
+2. Authenticated attendee to owned ticket/pass operations
+3. Authenticated organizer to allowlist and owned-event operations
+4. Public clients to Supabase Auth/Edge Functions through exact CORS
+5. Enrollment device temporary camera/memory boundary
+6. Gate SecureStore/SQLite/offline verifier boundary
+7. Edge Functions to service-role data and encrypted event secrets
+8. Gate signed synchronization to the server
 
-The threat model evaluates whether the architecture preserves the following objectives:
+## Threats And Controls
 
-1. **Biometric confidentiality** — raw face images, embeddings, and templates must not be centrally exposed.
-2. **Pass authenticity** — only the trusted server may issue valid passes.
-3. **Gate-only decryptability** — only the gate device may decrypt the protected template.
-4. **Single-use enforcement** — a successful pass must not be reusable.
-5. **Offline correctness** — entry decisions must remain trustworthy even without a live network connection.
-6. **Operational auditability** — failure and override paths must remain visible in logs.
+### T1: Unauthorized Organizer Access
 
----
+Risk: an ordinary authenticated attendee attempts event administration or access to another organizer's data.
 
-## 3. Threat Inventory
+Controls:
 
-## T1. Biometric Theft from Enrollment or Backend Systems
+- server-only exact email allowlist in `ensure-organizer`
+- separate organizer profile
+- organizer check plus event ownership in Edge Functions/RLS
+- no allowlist value in public bundles, logs, or responses
+- audited organizer mutations
 
-### Threat Description
-An attacker attempts to extract raw biometric material, reusable embeddings, or usable template data from the enrollment device, backend, or server-side storage. The goal is to steal identity-linked biometric material for future impersonation or cross-event tracking.
+Residual risk: compromise of an allowlisted organizer account grants that account's owned-event authority.
 
-### Attack Surface
-- camera frames during capture,
-- aligned face crops,
-- intermediate embedding vectors,
-- backend request/response bodies,
-- logs or analytics,
-- database rows.
+### T2: Ticket Theft Or Claim-Code Brute Force
 
-### Why This Matters
-This is the most serious privacy threat. If the system stored reusable biometric data centrally, it would fail its core academic and architectural claim.
+Risk: an attacker uses a leaked/guessed code to enroll or recover another attendee's pass.
 
-### Implemented Mitigations
-1. **On-device inference only**
-   - The face embedding model runs locally on the attendee phone and gate phone.
-   - Raw face data never needs to be uploaded to the backend.
+Controls:
 
-2. **No biometric persistence policy**
-   - Raw images, crops, embeddings, and templates are not stored in database tables, logs, analytics, or exported CSV files.
+- 64 bits of random claim-code input
+- HMAC-SHA256 digest with server-only pepper and encrypted display value
+- non-enumerating errors and rate-limited lookup
+- authenticated ownership is mandatory even with a valid code
+- one ticket per attendee/event
 
-3. **Cancelable template transformation**
-   - The biometric representation is transformed into a 256-bit event-scoped template using `EVENT_SALT`.
-   - This prevents direct reuse of the raw embedding.
+Residual risk: an attacker controlling the attendee account can use its tickets.
 
-4. **Template encryption in token**
-   - Even the transformed template is sealed to the gate public key before it leaves the enrollment device.
+### T3: Capacity Oversell Or Duplicate Mutations
 
-5. **Non-biometric log design**
-   - Logs contain only timing values, reason codes, Hamming distance, and truncated pass-hash metadata.
+Risk: concurrent checkout oversells an event/type, or retries create duplicate tickets/passes/check-ins.
 
-### Residual Risk
-A fully compromised attendee device could still inspect transient in-memory data during enrollment. The architecture reduces server-side and at-rest risk strongly, but cannot completely eliminate endpoint compromise risk on an untrusted personal phone.
+Controls:
 
----
+- transactional PostgreSQL capacity checks/locks
+- event and ticket-type capacity constraints
+- unique attendee/event ticket identity
+- UUID-v4 idempotency keys bound to canonical request hashes
+- unique active pass, ticket generation, event/pass, nonce, and check-in identities
 
-## T2. QR Interception or Screenshot Theft
+Residual risk: denial of service can delay legitimate requests without violating capacity.
 
-### Threat Description
-An attacker steals the QR token by screenshotting it, shoulder-surfing it, or intercepting it while it is displayed or manually shared. The attacker then attempts to use the token to gain entry or recover biometric material.
+### T4: Central Biometric Theft
 
-### Attack Surface
-- QR display on attendee phone,
-- copied token text,
-- fallback paste flow,
-- visible device screen in public queues.
+Risk: backend/database compromise exposes reusable face data.
 
-### Why This Matters
-A plain signed QR alone would be transferable. If the token could be reused directly, the system would provide little additional security over ordinary digital tickets.
+Controls:
 
-### Implemented Mitigations
-1. **Encrypted template payload**
-   - `enc_template` is protected using X25519 sealed-box encryption to `PK_GATE_EVENT`.
-   - A stolen QR does not reveal the underlying template unless the attacker also compromises the gate private key.
+- local capture, inference, template generation, liveness, and comparison
+- no central image, embedding, reusable template, or decrypted template storage
+- cancelable event-scoped template
+- X25519 sealed-box encryption to the gate public key
+- temporary files deleted and sensitive buffers wiped
 
-2. **Biometric binding at the gate**
-   - The token alone is not enough.
-   - The attacker must also pass liveness and facial matching against the encrypted template.
+Residual risk: a compromised enrollment/gate device can access values during active processing.
 
-3. **Single-use policy**
-   - Even a valid token is intended for one successful acceptance only.
+### T5: Stolen Or Copied Pass
 
-4. **Event-specific signing and timing checks**
-   - The token is valid only for the correct event and validity window.
+Risk: a screenshot/copy is presented by another person.
 
-5. **Manual fallback uses the same token**
-   - The paste-token fallback does not weaken the trust model because it validates the same signed payload.
+Controls:
 
-### Residual Risk
-If an attacker steals a token before the legitimate user enters and also resembles the legitimate face closely enough to pass the threshold, some risk remains. The architecture substantially reduces transferability, but like all face-based systems it remains probabilistic rather than mathematically perfect.
+- canonical server Ed25519 signature
+- event and validity binding
+- encrypted template readable only by the provisioned gate
+- active liveness and local face match
+- single-entry replay marker
 
----
+Residual risk: prototype-grade liveness can be weaker than commercial presentation-attack detection.
 
-## T3. Replay Attack After Successful Entry
+### T6: Replay After Entry
 
-### Threat Description
-An attacker or legitimate attendee attempts to reuse a previously accepted token to gain entry a second time. This may involve repeated scanning, copied token reuse, or deliberate queue re-entry.
+Risk: an accepted pass is used again, including while offline.
 
-### Attack Surface
-- repeated QR presentation,
-- copied token presented by another device,
-- multiple attempts against the same gate.
+Controls:
 
-### Why This Matters
-The truth base explicitly requires single-entry only. Failure here would violate a locked product constraint.
+- composite `(event_id, pass_id)` SQLite replay key
+- atomic used-pass insertion before accepted sync
+- database unique gate check-in identity
+- server idempotency treats duplicate receipt as success
 
-### Implemented Mitigations
-1. **Local `used_passes` store**
-   - After a successful accept, the gate inserts `pass_id` into local SQLite.
+Residual risk: deleting/corrupting gate app data removes local replay evidence; prepared-device controls are required.
 
-2. **Replay check before biometric evaluation**
-   - During verification, the gate checks `used_passes` before liveness and matching.
+### T7: Gate Tampering Or Key Theft
 
-3. **Offline authoritative enforcement**
-   - Replay resistance does not depend on backend connectivity.
+Risk: an attacker extracts private keys, alters cached state, or fabricates check-ins.
 
-4. **Explicit reason code**
-   - Reuse attempts are rejected as `REPLAY_USED`, creating measurable evidence in evaluation logs.
+Controls:
 
-### Residual Risk
-Because the architecture is intentionally single-gate only, replay enforcement is reliable within that design. A multi-gate event would require distributed used-pass synchronisation, but that is explicitly out of scope.
+- separate X25519 and Ed25519 private keys in device-only SecureStore
+- only public keys stored server-side
+- signed canonical check-in/refresh requests
+- server validation of key, event, timestamp, nonce, idempotency, and request hash
+- no service-role credential or organizer token in autonomous queue rows
 
----
+Residual risk: a fully compromised unlocked gate device remains a high-impact threat.
 
-## T4. Offline Gate Tampering or Local State Manipulation
+### T8: Synchronization Tampering Or Replay
 
-### Threat Description
-An attacker with physical or software access to the gate device attempts to tamper with local verification logic, extract `SK_GATE_EVENT`, modify the revocation cache, disable replay checks, or force false accepts while offline.
+Risk: queued check-ins are modified, replayed, or assigned to the wrong event.
 
-### Attack Surface
-- compromised gate device,
-- jailbroken iPhone or debug instrumentation,
-- tampered local SQLite files,
-- modified app binary.
+Controls:
 
-### Why This Matters
-The gate is the final enforcement point. If it can be bypassed locally, the offline trust claim breaks down.
+- Ed25519 detached signature over canonical payload
+- event-bound active public key
+- five-minute server freshness check and provisioned-at bound
+- nonce ledger and idempotency conflict detection
+- server resolves ticket ID from event/pass
+- permanent validation failures blocked rather than retried forever
 
-### Implemented Mitigations
-1. **Gate private key stored only on-device**
-   - `SK_GATE_EVENT` is generated on the gate phone and stored in secure iOS storage rather than in the backend.
+Residual risk: synchronization availability depends on the selected backend, but offline decisions do not.
 
-2. **One gate per event**
-   - The architecture deliberately limits decryption capability to one device, reducing exposure surface.
+### T9: Stale Revocation Cache
 
-3. **Signed payload verification**
-   - Even a tampered local state store cannot forge a valid server signature.
+Risk: a pass revoked after the last refresh is accepted while the gate is disconnected.
 
-4. **Separation of powers**
-   - The gate can decrypt templates, but cannot mint new valid tokens because it lacks `SK_SIGN_EVENT`.
+Controls:
 
-5. **Audit log requirement**
-   - Acceptance, rejection, and manual override paths are logged, making suspicious patterns reviewable after the event.
+- mandatory successful refresh before scanner opening
+- visible age and fresh/stale/critical states
+- automatic refresh while online
+- clear operator warning and runbook
+- eventual application after connectivity returns
 
-6. **Revocation and policy sync before offline operation**
-   - The gate takes a snapshot of revocations and policy before disconnection, reducing reliance on mutable live state.
+Residual risk: this limitation is fundamental. There is no instant remote revocation for a disconnected gate.
 
-### Residual Risk
-A fully compromised gate device remains a serious endpoint risk. This architecture reduces blast radius by making the compromise event-scoped and single-device-scoped, but it cannot guarantee security against a malicious gate operator with deep device-level control.
+### T10: Network Exposure Or Origin Confusion
 
----
+Risk: server secrets leak, clients mix local/tunnel URLs, or LAN services expose PostgreSQL/Studio.
 
-## T5. Active Liveness Spoofing
+Controls:
 
-### Threat Description
-An attacker presents a static photo, replayed video, mask, or another presentation attack to satisfy the face match without being the enrolled attendee.
+- typed explicit `local|tunnel` parsing and fail-fast URL validation
+- loopback rejection for physical local selection
+- HTTPS required for tunnel mode
+- constrained proxy and hidden database/Studio ports
+- exact Auth redirects and browser CORS; native no-Origin support
+- no mode fallback or URL inference
 
-### Attack Surface
-- phone or tablet screens showing a face,
-- printed photos,
-- pre-recorded head movement clips,
-- low-effort presentation attacks at the entry point.
+Residual risk: tunnel/host outages stop online ticketing/enrollment/refresh/sync until recovery.
 
-### Why This Matters
-If the system only matched face appearance and ignored presentation attacks, a copied token plus a spoofed face could defeat the design.
+### T11: CSV Formula Or Sensitive-Field Leakage
 
-### Implemented Mitigations
-1. **Active liveness challenge**
-   - The gate requires one randomly selected action such as blink twice, turn head left then centre, or look up then centre.
+Risk: exported data executes spreadsheet formulas or includes credentials/biometrics.
 
-2. **Time-bounded completion**
-   - The user must satisfy the challenge within four seconds.
+Controls:
 
-3. **Continuous tracking requirement**
-   - The face must remain tracked during the challenge; tracking loss resets the prompt.
+- fixed organizer CSV fields
+- spreadsheet formula prefix neutralization
+- no claim code, token, biometric, credential, or private-key fields
+- audited/rate-limited export
 
-4. **Challenge randomness**
-   - Because the challenge is chosen per attempt, a static image or simple deterministic replay is less likely to succeed.
+Residual risk: attendee names/emails are personal data and exports must be handled as evidence with restricted access.
 
-5. **Biometric matching still required afterward**
-   - Liveness alone does not grant entry; the live face must still match the protected template.
+### T12: Distribution Misrepresentation
 
-### Residual Risk
-The liveness subsystem is intentionally basic rather than enterprise-grade. Sophisticated spoofing attacks using high-quality video or advanced masks may still present residual risk. This is acceptable within the prototype scope, but should be acknowledged explicitly in academic evaluation.
+Risk: simulator/development success is presented as arbitrary audience-owned iPhone support.
 
----
+Controls:
 
-## T6. Backend Compromise or Secret Exposure
+- prepared devices are the guaranteed fallback
+- explicit EAS/TestFlight status
+- audience-owned installation claimed only after Apple credentials, App Store Connect, distribution, and any external beta review are verified
 
-### Threat Description
-An attacker compromises backend infrastructure, reads database tables, or attempts to obtain event signing secrets. The attacker’s goal is to mint fraudulent passes, inspect event metadata, or weaken privacy guarantees.
+Current residual status: TestFlight is not configured.
 
-### Attack Surface
-- Supabase project environment,
-- Edge Functions,
-- secret storage,
-- database rows,
-- function logs.
+## Security Conclusions
 
-### Why This Matters
-The backend is the signing authority. If its signing secrets were handled badly, an attacker could forge passes that appear valid to the gate.
-
-### Implemented Mitigations
-1. **Private signing key never stored in database**
-   - `SK_SIGN_EVENT` is kept only in secure Edge secret infrastructure, not in relational tables.
-
-2. **Public/private separation**
-   - Only `PK_SIGN_EVENT` is stored in the events table and distributed outward.
-
-3. **Server-signing only architecture**
-   - Enrollment and gate clients cannot self-sign or reissue tokens.
-
-4. **Minimal public enrollment bundle**
-   - The public enrollment bundle exposes only what is needed: public keys, event salt, and event metadata.
-
-5. **Encrypted template design**
-   - Even backend compromise of public tables does not reveal usable template plaintext because the template is sealed to the gate public key before submission.
-
-6. **RLS and organizer scoping**
-   - Database access to event rows, revocations, and logs is restricted to the organizer who owns the event.
-
-### Residual Risk
-A catastrophic backend-secret compromise involving `SK_SIGN_EVENT` would allow fraudulent pass issuance for that event. However, it still would not automatically reveal raw biometrics because biometric data is never centrally stored, and the token’s template remains encrypted to the gate key.
-
----
-
-## 4. Cross-Threat Mitigation Matrix
-
-| Threat | Primary Security Goal at Risk | Main Mitigation Category |
-|---|---|---|
-| T1 Biometric theft | Biometric confidentiality | On-device inference, no persistence, cancelable template, encrypted token |
-| T2 QR interception | Token transfer resistance | Gate-only encryption, liveness, face match, single-use policy |
-| T3 Replay attack | Single-use enforcement | Local used-pass store, offline replay check |
-| T4 Gate tampering | Offline integrity | Secure key storage, one gate per event, signed payloads, auditability |
-| T5 Liveness spoofing | Presentation attack resistance | Active challenge-response liveness with tracking and time window |
-| T6 Backend compromise | Pass authenticity and event control | Server-side secret isolation, no DB private keys, minimal public bundles |
-
----
-
-## 5. Architectural Security Conclusions
-
-The One-Time Face Pass design does not claim perfect biometric security. Instead, it makes a narrower and more defensible claim: that **biometric event entry can be implemented with materially stronger privacy and theft resistance than ordinary QR tickets or centrally stored face-recognition systems**.
-
-Across T1–T6, the architecture’s strongest security decisions are:
-- not storing biometrics centrally,
-- sealing the template to the gate device,
-- separating signing from decryption,
-- keeping gate verification offline and authoritative,
-- enforcing single-use locally,
-- adding active liveness before final match.
-
-Its main residual risks remain endpoint compromise and probabilistic biometric error, both of which should be surfaced honestly in the evaluation and discussion sections of the EPQ artefact.
-
----
-
-## 6. Final Threat Model Statement
-
-The threat model shows that the system’s key protections are not isolated features but layered controls. A stolen QR alone is insufficient because it lacks decryptability and live biometric presence. A backend data leak is less damaging because biometrics are not stored centrally. A replay attempt fails because acceptance state is enforced locally offline. This layered structure is what allows One-Time Face Pass to support its central academic claim: that convenience, offline usability, and improved privacy can coexist when biometric data is transformed, compartmentalised, and cryptographically bound to the event and gate context.
+Focaccia's strongest properties are server-derived authority, transactional ticket/pass state, no central biometric comparison, encrypted event-scoped templates, and offline replay-aware gate decisions. The principal residual risks are device compromise, prototype liveness strength, personal-data handling in evidence exports, service availability for online stages, and unavoidable revocation staleness while disconnected.

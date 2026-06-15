@@ -42,7 +42,7 @@ export function NavMain({
                   isActive={isActive}
                   className={
                     isActive
-                      ? "bg-[color:var(--sidebar-primary)] text-[color:var(--sidebar-primary-foreground)] hover:bg-[color:var(--sidebar-primary)]/90 hover:text-[color:var(--sidebar-primary-foreground)] shadow-[0_1px_3px_rgba(0,102,255,0.25)]"
+                      ? "bg-[color:var(--sidebar-primary)] text-[color:var(--sidebar-primary-foreground)] hover:bg-[color:var(--sidebar-primary)]/90 hover:text-[color:var(--sidebar-primary-foreground)] shadow-[0_1px_3px_rgba(93,42,26,0.18)]"
                       : "text-[color:var(--sidebar-foreground)]/70 hover:text-[color:var(--sidebar-foreground)]"
                   }
                 >

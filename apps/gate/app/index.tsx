@@ -9,8 +9,10 @@ import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { formatTimestamp, snippet } from '../src/lib/display';
+import { formatCacheAge } from '../src/lib/gate-sync';
 import { scaleFont } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
+import { useRevocationCache } from '../src/lib/use-revocation-cache';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
@@ -18,6 +20,8 @@ export default function GateHomeScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const { auth, dbError, dbReady, gate, signOut, stats } = useGate();
+  const cache = useRevocationCache(gate?.last_revocation_sync_at ?? null);
+  const scannerReady = Boolean(gate?.last_revocation_sync_at);
 
   return (
     <ScreenShell>
@@ -51,6 +55,14 @@ export default function GateHomeScreen() {
 
       {!dbReady ? <StatusBanner message="Opening local gate storage..." tone="neutral" /> : null}
       {dbError ? <StatusBanner message={dbError} tone="danger" /> : null}
+      {gate && cache.state !== 'fresh' ? (
+        <StatusBanner
+          message={cache.state === 'critical'
+            ? 'Revocation cache is critical. Refresh before opening the doors.'
+            : 'Revocation cache is stale. Refresh before admitting attendees.'}
+          tone="warning"
+        />
+      ) : null}
 
       <SectionCard eyebrow="Status" title={gate ? gate.event_name : 'Gate not provisioned'}>
         <StatusChip
@@ -77,11 +89,15 @@ export default function GateHomeScreen() {
           label={auth ? 'Organizer authenticated' : 'Signed out'}
           tone={auth ? 'success' : 'warning'}
         />
-        <MetricRow label="Auth state" value={auth ? 'Ready for provisioning and sync' : 'Local-only'} />
+        <MetricRow
+          label="Auth state"
+          value={auth ? 'Provisioning authorized' : gate ? 'Signed device sync available' : 'Signed out'}
+        />
         <MetricRow
           label="Revocation sync"
           value={gate ? formatTimestamp(gate.last_revocation_sync_at) : 'No gate bundle yet'}
         />
+        <MetricRow label="Cache age" value={formatCacheAge(cache.ageMs)} />
         {auth ? (
           <PrimaryButton
             label="Sign out organizer"
@@ -95,6 +111,9 @@ export default function GateHomeScreen() {
         <MetricRow label="Accepted passes" value={String(stats?.usedPassCount ?? 0)} />
         <MetricRow label="Revocations cached" value={String(stats?.revocationCount ?? 0)} />
         <MetricRow label="Log rows" value={String(stats?.logCount ?? 0)} />
+        <MetricRow label="Check-ins awaiting sync" value={String(stats?.pendingSyncCount ?? 0)} />
+        <MetricRow label="Check-ins needing retry" value={String(stats?.blockedSyncCount ?? 0)} />
+        <MetricRow label="Check-ins synchronized" value={String(stats?.syncedCheckinCount ?? 0)} />
         <MetricRow
           label="Last log"
           value={formatTimestamp(stats?.lastRecordedAt ?? null)}
@@ -103,7 +122,8 @@ export default function GateHomeScreen() {
 
       <View style={styles.actions}>
         <PrimaryButton
-          label={gate ? 'Open scanner' : 'Provision this gate'}
+          disabled={Boolean(gate) && !scannerReady}
+          label={gate ? (scannerReady ? 'Open scanner' : 'Refresh before scanning') : 'Provision this gate'}
           onPress={() => router.push(gate ? '/scan' : '/provision')}
         />
         <PrimaryButton

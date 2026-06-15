@@ -49,6 +49,7 @@ export default function FallbackScreen() {
         ) : null}
         {error ? <StatusBanner message={error} tone="danger" /> : null}
         <TextInput
+          accessibilityLabel="Full pass token"
           autoCapitalize="none"
           autoCorrect={false}
           multiline

@@ -437,7 +437,7 @@ assert.equal(postResetGeneration.result.json.data.generation, 1);
 const gatePayload = {
   decision: 'ACCEPT',
   event_id: mainEvent.event_id,
-  gate_timestamp: new Date().toISOString(),
+  gate_timestamp: new Date(Date.now() - 1_000).toISOString(),
   idempotency_key: randomUUID(),
   nonce: await randomBase64Url(16),
   pass_id: postResetGeneration.payload.pass_id,
@@ -450,6 +450,43 @@ async function signedGateRequest(payload, privateKey = gateSyncKeys.privateKey) 
 }
 
 const signedCheckin = await signedGateRequest(gatePayload);
+
+const gateRevocationPayload = {
+  event_id: mainEvent.event_id,
+  gate_timestamp: new Date().toISOString(),
+  idempotency_key: randomUUID(),
+  key_version: provision.json.data.key_version,
+  nonce: await randomBase64Url(16),
+};
+const signedRevocationRequest = await signedGateRequest(gateRevocationPayload);
+const initialRevocations = await invoke('get-gate-revocations', { body: signedRevocationRequest });
+assert.equal(initialRevocations.response.status, 200, JSON.stringify(initialRevocations.json));
+assert.equal(initialRevocations.json.data.key_version, provision.json.data.key_version);
+assert.ok(Array.isArray(initialRevocations.json.data.revocations));
+assert.ok(initialRevocations.json.data.revocations.length >= 3);
+for (const row of initialRevocations.json.data.revocations) {
+  assert.deepEqual(Object.keys(row).sort(), ['pass_id', 'revoked_at']);
+}
+const revocationReplay = await invoke('get-gate-revocations', { body: signedRevocationRequest });
+assert.equal(revocationReplay.response.status, 200, JSON.stringify(revocationReplay.json));
+assert.equal(revocationReplay.json.data.idempotent_replay, true);
+const tamperedRevocation = await invoke('get-gate-revocations', {
+  body: { ...signedRevocationRequest, key_version: provision.json.data.key_version + 1 },
+});
+assert.equal(tamperedRevocation.response.status, 403);
+assert.equal(tamperedRevocation.json.error.code, 'unknown_gate_key');
+const staleRevocationPayload = {
+  ...gateRevocationPayload,
+  gate_timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+  idempotency_key: randomUUID(),
+  nonce: await randomBase64Url(16),
+};
+const staleRevocations = await invoke('get-gate-revocations', {
+  body: await signedGateRequest(staleRevocationPayload),
+});
+assert.equal(staleRevocations.response.status, 409);
+assert.equal(staleRevocations.json.error.code, 'stale_gate_timestamp');
+
 const checkin = await invoke('record-gate-checkin', { body: signedCheckin });
 assert.equal(checkin.response.status, 201, JSON.stringify(checkin.json));
 const checkinReplay = await invoke('record-gate-checkin', { body: signedCheckin });
@@ -518,6 +555,19 @@ const revoke = await invoke('revoke-ticket', {
 assert.equal(revoke.response.status, 200, JSON.stringify(revoke.json));
 assertNoClaimSecrets(revoke.json.data.ticket);
 assert.equal(revoke.json.data.ticket.status, 'revoked');
+const revocationSnapshotPayload = {
+  event_id: revocationEvent.event_id,
+  gate_timestamp: new Date(Date.now() - 1_000).toISOString(),
+  idempotency_key: randomUUID(),
+  key_version: revocationProvision.json.data.key_version,
+  nonce: await randomBase64Url(16),
+};
+const revocationSnapshot = await invoke('get-gate-revocations', {
+  body: await signedGateRequest(revocationSnapshotPayload, revocationSyncKeys.privateKey),
+});
+assert.equal(revocationSnapshot.response.status, 200, JSON.stringify(revocationSnapshot.json));
+assert.equal(revocationSnapshot.json.data.revocations.length, 1);
+assert.equal(revocationSnapshot.json.data.revocations[0].pass_id, revocationPayload.pass_id);
 const revocations = await adminRows(
   'revocations',
   `select=event_id,pass_id,ticket_id&ticket_id=eq.${revocationClaim.json.data.ticket.id}`,

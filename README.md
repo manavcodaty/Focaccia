@@ -1,177 +1,126 @@
 # Focaccia
 
-Focaccia is a privacy-preserving event access prototype built around a simple claim: biometric entry does not need a central face database.
+Focaccia is a privacy-preserving event-entry EPQ artifact. Attendees browse listed events, create an account, claim a real free ticket, enroll on iOS, receive a signed event pass, and present it to an iOS gate that makes the entry decision offline.
 
-The repository implements a three-part system:
+The system has four applications:
 
-- a Next.js public ticket application for real attendee accounts and free checkout
-- a Next.js organizer dashboard for event setup and operations
-- an Expo iOS enrollment app that issues attendee passes from on-device face capture
-- an Expo iOS gate app that verifies passes offline with local liveness, local replay checks, and local template matching
+- `apps/tickets`: public Next.js event catalogue, attendee authentication, free checkout, My tickets, cancellation, and recovery
+- `apps/web`: organizer-only Next.js dashboard for events, ticket types, tickets, gate provisioning, reset/revocation, activity, and CSV export
+- `apps/enrollment`: Expo iOS attendee app for owned-ticket selection, consent, local face processing, pass issuance, regeneration, and secure pass storage
+- `apps/gate`: Expo iOS gate app for provisioning, revocation refresh, offline signature/replay/revocation/liveness/face checks, and durable signed synchronization
 
-Raw face images, reusable embeddings, and cancelable templates are not stored in Supabase. The backend handles event administration and pass signing. The gate device handles the sensitive offline verification path.
+`packages/shared` contains deterministic crypto, template, type, and network helpers. Supabase supplies email/password Auth, PostgreSQL/RLS, Realtime, and Edge Functions.
 
-## How it works
+## End-To-End Flow
 
-1. An organizer creates an event in the dashboard.
-2. The backend generates an event-scoped join code, event salt, and signing keypair.
-3. A gate device provisions itself from a QR payload and uploads only its public key.
-4. An attendee uses the enrollment app to derive an event-scoped template on-device and request a signed pass.
-5. The gate app verifies the signed token offline, decrypts the protected template locally, runs liveness, compares the live template, and blocks replay with local SQLite state.
+1. An allowlisted organizer signs in and creates an event. General Admission is created by default.
+2. The organizer lists the event and provisions one gate. Provisioning creates separate X25519 template-encryption and Ed25519 synchronization keys; private keys stay on the gate device.
+3. An attendee browses `apps/tickets`, creates an account, and claims one free ticket for the event.
+4. Checkout returns a ticket-scoped claim code. The code can select a ticket, but authenticated ownership is always required.
+5. The attendee signs into `apps/enrollment` with the same account, selects the owned ticket, consents, and captures locally.
+6. The app derives an event-scoped cancelable template, encrypts it to the gate public key, and requests a server-signed pass. Raw images, embeddings, and decrypted templates are not sent to Supabase.
+7. The gate refreshes revocations before doors open, then can disconnect completely. It verifies the pass, blocks replay, runs liveness and local matching, and records `ACCEPT` or `REJECT` locally.
+8. An accepted check-in is atomically queued with its original gate time. When connectivity returns, the gate signs and synchronizes it; the organizer dashboard updates automatically.
 
-## Repository layout
+Gate decisions remain offline. A cancellation or revocation made while the gate is disconnected takes effect only after the next successful revocation refresh.
 
-```text
-.
-├── apps/
-│   ├── web/            # Next.js 16 organizer dashboard
-│   ├── tickets/        # Next.js 16 public event and attendee ticket application
-│   ├── enrollment/     # Expo iOS enrollment app
-│   └── gate/           # Expo iOS gate verifier
-├── packages/
-│   └── shared/         # shared crypto, template, network, and type utilities
-├── supabase/
-│   ├── functions/      # Edge Functions for event creation, provisioning, issuance, revocation
-│   └── migrations/     # schema, constraints, and RLS policies
-├── docs/               # architecture, threat model, privacy, evaluation, operations manual
-├── Auth-Card/          # standalone UI prototype, not part of the pnpm workspace
-├── Dashboard/          # standalone UI prototype, not part of the pnpm workspace
-└── Landing Page/       # standalone marketing prototype, not part of the pnpm workspace
-```
-
-## Tech stack
-
-- Node.js 24+
-- pnpm 10.33+
-- Next.js 16 + React 19
-- Expo 55 + React Native 0.83
-- Supabase local development + Edge Functions
-- libsodium for crypto primitives
-- TFLite face embedding model on mobile
-
-## Prerequisites
-
-Before you run the stack locally, install:
+## Requirements
 
 - Node.js `>=24`
-- `pnpm >=10.33`
-- Docker
+- pnpm `10.33.0`
+- Docker or Colima
 - Supabase CLI
-- Xcode and an iOS simulator if you want to run the mobile apps
+- Xcode for iOS builds and simulators
+- Expo development builds, not Expo Go
+- `zrok2` only for tunnel mode
 
-## Getting started
+Current principal versions are Next.js `16.2.6`, React `19.2.x`, Expo `55.0.12`, React Native `0.83.4`, and Supabase JS `2.100.0`.
 
-Install dependencies from the repository root:
+## Local Mode
+
+Local mode needs no tunnel. The Mac and every physical device must use the same LAN/Wi-Fi, and physical devices use the Mac's private IPv4 address rather than `localhost` or `127.0.0.1`.
 
 ```bash
 pnpm install
-```
-
-Configure the explicit local profile:
-
-```bash
 cp .env.local.example .env.local
-```
-
-Set the Mac's stable private IPv4 in `.env.local`. On macOS, the recommended topology is Colima with automatic port forwarding disabled:
-
-```bash
-colima stop
-colima start --port-forwarder none --save-config
-```
-
-Start the local demo stack:
-
-```bash
 pnpm demo:local
 ```
 
-The command generates ignored selected env files for web, enrollment, and gate; starts Supabase without Studio; starts Edge Functions; binds the constrained Supabase proxy to `LAN_IP:54331`; and starts the web app on port `3000`. It never prints credentials.
+Set these root values in `.env.local`:
 
-For tunnel mode:
+```text
+FOCACCIA_NETWORK_MODE=local
+FOCACCIA_LOCAL_HOST=LAN_IP
+FOCACCIA_LOCAL_SUPABASE_URL=http://LAN_IP:54331
+FOCACCIA_LOCAL_WEB_URL=http://LAN_IP:3000
+FOCACCIA_LOCAL_TICKETS_URL=http://LAN_IP:3001
+FOCACCIA_DOCKER_HOST=ssh://colima
+FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com
+FOCACCIA_CLAIM_CODE_PEPPER=<base64url 32-byte secret or generated runtime value>
+```
+
+`demo:local` rejects a running zrok process, starts Supabase without Studio, starts Edge Functions, exposes only the constrained Supabase proxy on `LAN_IP:54331`, and binds both web apps to `0.0.0.0`. PostgreSQL `54322` and Studio `54323` must not be reachable from the LAN.
+
+```bash
+pnpm demo:status
+pnpm verify:network-config
+pnpm verify:local-network
+```
+
+## Tunnel Mode
+
+At-home or remote setup needs the host Mac to remain powered, online, and running the local Supabase stack plus active zrok shares.
 
 ```bash
 cp .env.tunnel.example .env.tunnel.local
 pnpm demo:tunnel
+pnpm verify:tunnel-network
 ```
 
-See [Dual-mode network runbook](./docs/NETWORK_MODES.md) for zrok reserved names, physical-device checks, EAS profiles, Metro restart rules, and recovery.
+Tunnel URLs must be HTTPS. `demo:tunnel` uses reserved zrok v2 shares for the constrained Supabase proxy, organizer app, and ticket app. The reserved account must be verified so raw browser/API requests do not receive an interstitial.
 
-## Running the apps
+`apps/tickets` can instead be deployed separately to Vercel by supplying the same selected `NEXT_PUBLIC_*` values. No Vercel project is linked in this checkout, so a Vercel deployment is not currently verified.
 
-Organizer dashboard:
-
-```bash
-pnpm --dir apps/web dev
-```
-
-Public ticket application:
-
-```bash
-pnpm --dir apps/tickets dev
-```
-
-Enrollment app:
-
-```bash
-pnpm --dir apps/enrollment start
-```
-
-Gate app:
-
-```bash
-pnpm --dir apps/gate start
-```
-
-Useful mobile commands:
+## Mobile Builds
 
 ```bash
 pnpm --dir apps/enrollment ios
 pnpm --dir apps/gate ios
 ```
 
-In local physical-device mode the web dashboard runs at `http://LAN_IP:3000`; loopback is intentionally rejected from selected mobile configuration.
+Both apps provide `development-local`, `development-tunnel`, `preview-local`, `preview-tunnel`, and `production-tunnel` EAS profiles. EAS supplies only the mode; the selected URLs and Supabase anon key must also exist in the matching EAS environment.
 
-## Verification commands
+Changing `FOCACCIA_NETWORK_MODE` or any `EXPO_PUBLIC_*` value requires stopping Metro and restarting with `--clear`. Changes to `app.json`, ATS, local-network permissions, entitlements, or native dependencies require a rebuilt development client.
 
-From the repository root:
+Prepared organizer-owned iPhones are the guaranteed fallback. Audience-owned iPhone installation is conditional on verified Apple distribution. EAS is not logged in, no EAS project/App Store Connect/TestFlight build is linked, and TestFlight status is **not configured**.
+
+## Verification
 
 ```bash
-pnpm run db:verify
+pnpm db:verify
 pnpm verify:network-config
 pnpm verify:local-network
 pnpm verify:tunnel-network
 pnpm verify:phase2
 pnpm verify:phase3
+pnpm verify:phase4
 pnpm verify:phase5
-pnpm --filter @face-pass/shared test
-pnpm --filter @face-pass/enrollment typecheck
-pnpm --filter @face-pass/enrollment test:flow
-pnpm --filter @face-pass/gate typecheck
-pnpm --filter @face-pass/gate test:offline
-pnpm --filter @face-pass/gate test:provisioning
+pnpm verify:phase6
 ```
 
-To run the end-to-end Edge Function integration script, build the shared package first and keep the local Supabase stack running:
+Run `verify:tunnel-network` only after tunnel configuration is active. It fails closed when the HTTPS URLs, services, CORS, or zrok response are wrong.
 
-```bash
-pnpm --filter @face-pass/shared build
-node scripts/test-edge-functions.ts
-```
-
-## Key documents
+## Evidence And Operations
 
 - [Operations manual](./docs/EPQ_OPERATIONS_MANUAL.md)
-- [Dual-mode network runbook](./docs/NETWORK_MODES.md)
-- [Phase 2 roles, tickets, and gate sync](./docs/PHASE_2_ROLES_TICKETS_AND_GATE_SYNC.md)
+- [Network modes](./docs/NETWORK_MODES.md)
 - [Architecture](./docs/ARCHITECTURE.md)
-- [Threat model](./docs/THREAT_MODEL.md)
 - [Privacy by design](./docs/PRIVACY_BY_DESIGN.md)
-- [Assumptions](./docs/ASSUMPTIONS.md)
-- [Evaluation plan](./docs/EVALUATION_PLAN.md)
+- [Threat model](./docs/THREAT_MODEL.md)
+- [Assumptions and current status](./docs/ASSUMPTIONS.md)
+- [Evaluation and evidence checklist](./docs/EVALUATION_PLAN.md)
+- [Phase 9 final dual-mode acceptance](./docs/PHASE_9_FINAL_DUAL_MODE_ACCEPTANCE.md)
+- [Artifact report](./docs/EPQ_ARTIFACT_REPORT.md)
+- [Phase 8 verification record](./docs/PHASE_8_DOCUMENTATION_AND_EPQ_EVIDENCE.md)
 
-## Notes
-
-- The workspace package name is `face-pass`, but the product branding across the apps is `Focaccia`.
-- `apps/*` and `packages/*` are the only directories included in the pnpm workspace.
-- The top-level `Auth-Card`, `Dashboard`, and `Landing Page` folders are separate prototypes and are not required to boot the main system.
+The root `Auth-Card`, `Dashboard`, `Landing Page`, and `other/` folders are prototypes or supporting material and are not required to run the product workspaces.

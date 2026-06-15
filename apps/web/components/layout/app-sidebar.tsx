@@ -8,7 +8,6 @@ import {
   IconPlus,
 } from "@tabler/icons-react"
 
-import { Logo } from "@/components/landing/logo"
 import { NavMain } from "@/components/layout/nav-main"
 import { NavSecondary } from "@/components/layout/nav-secondary"
 import { NavUser } from "@/components/layout/nav-user"
@@ -55,7 +54,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-0 h-auto"
             >
               <Link href="/dashboard" className="flex items-center gap-2.5">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-[color:var(--sidebar-primary)] shadow-[0_1px_3px_rgba(0,102,255,0.3)]">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-[color:var(--sidebar-primary)] shadow-[0_1px_3px_rgba(93,42,26,0.18)]">
                   <svg viewBox="0 0 16 16" fill="none" className="size-4">
                     <path d="M8 2.5a5 5 0 00-5 5v1.75C3 12.6 5.4 14.7 8 15.5c2.6-.8 5-2.9 5-6.25V7.5a5 5 0 00-5-5z" fill="rgba(255,255,255,0.2)" stroke="white" strokeWidth="1.2"/>
                     <path d="M6 8.5l1.5 1.5 3-3.5" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>

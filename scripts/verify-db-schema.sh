@@ -79,7 +79,12 @@ assert_exact() {
 
 assert_no_rows "required public tables exist" "
 with expected(table_name) as (
-  values ('events'), ('gate_devices'), ('revocations'), ('gate_logs')
+  values
+    ('events'),
+    ('gate_devices'),
+    ('revocations'),
+    ('gate_logs'),
+    ('edge_event_secrets')
 )
 select e.table_name
 from expected e
@@ -229,7 +234,12 @@ where c.constraint_name is null;
 
 assert_no_rows "row level security is enabled and forced on every table" "
 with expected(table_name) as (
-  values ('events'), ('gate_devices'), ('revocations'), ('gate_logs')
+  values
+    ('events'),
+    ('gate_devices'),
+    ('revocations'),
+    ('gate_logs'),
+    ('edge_event_secrets')
 )
 select format(
   '%s has relrowsecurity=%s relforcerowsecurity=%s',
@@ -275,7 +285,12 @@ where p.policyname is null;
 
 assert_no_rows "anon has no direct table privileges" "
 with expected(table_name) as (
-  values ('events'), ('gate_devices'), ('revocations'), ('gate_logs')
+  values
+    ('events'),
+    ('gate_devices'),
+    ('revocations'),
+    ('gate_logs'),
+    ('edge_event_secrets')
 ),
 privileges(privilege_type) as (
   values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')
@@ -304,7 +319,11 @@ with expected(table_name, privilege_type, should_have) as (
     ('gate_logs', 'SELECT', true),
     ('gate_logs', 'INSERT', false),
     ('gate_logs', 'UPDATE', false),
-    ('gate_logs', 'DELETE', false)
+    ('gate_logs', 'DELETE', false),
+    ('edge_event_secrets', 'SELECT', false),
+    ('edge_event_secrets', 'INSERT', false),
+    ('edge_event_secrets', 'UPDATE', false),
+    ('edge_event_secrets', 'DELETE', false)
 )
 select format(
   'authenticated expected %s=%s on %s but found %s',
@@ -315,6 +334,14 @@ select format(
 )
 from expected e
 where has_table_privilege('authenticated', format('public.%I', e.table_name), e.privilege_type) is distinct from e.should_have;
+"
+
+assert_no_rows "edge event secrets expose no client policies" "
+select format('%s policy %s unexpectedly grants %s to %s', tablename, policyname, cmd, roles)
+from pg_policies
+where schemaname = 'public'
+  and tablename = 'edge_event_secrets'
+  and (roles && array['anon', 'authenticated', 'public']::name[]);
 "
 
 info "Running Supabase catalog lint..."

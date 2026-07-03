@@ -21,6 +21,14 @@ apps/*/dist/
 apps/*/.expo/
 dist-test/
 
+# graphify
+graphify-out/
+.graphify/
+.graphify-cache/
+graphify.json
+graphify.config.*
+.understand-anything/
+
 # misc
 .DS_Store
 *.pem

@@ -21,7 +21,7 @@
     }
   },
   "scripts": {
-    "demo:local": "pnpm --filter @face-pass/shared build && node ./scripts/demo.mjs local",
+    "demo:local": "node ./scripts/auto-update-ip.mjs && pnpm --filter @face-pass/shared build && node ./scripts/demo.mjs local",
     "demo:tunnel": "pnpm --filter @face-pass/shared build && node ./scripts/demo.mjs tunnel",
     "demo:status": "pnpm --filter @face-pass/shared build && node ./scripts/demo-status.mjs",
     "db:init": "supabase init --yes",

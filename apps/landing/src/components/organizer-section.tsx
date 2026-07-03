@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Reveal } from "@/components/reveal";
 import { CommandDemo, ReadinessList } from "@/components/animated-demos";
+import { getLandingPortalLinks } from "@/lib/portal-links";
 
 export function OrganizerSection() {
+  const portalLinks = getLandingPortalLinks();
+
   return (
     <section id="organizers" className="section-shell scroll-mt-28">
       <div className="section-heading-grid">
-        <Reveal><p className="section-kicker">For organizers</p></Reveal>
         <Reveal delay={0.05} className="max-w-3xl">
           <h2 className="section-title">Run the room, not the queue.</h2>
           <p className="section-copy">Create the event, provision the gate, watch readiness, and export the evidence from one calm operating surface.</p>
@@ -22,7 +24,7 @@ export function OrganizerSection() {
             <div className="flex flex-col gap-5 border-b border-ink/10 pb-6 lg:flex-row lg:items-center">
               <div><p className="text-xs font-medium text-terracotta">Event operations</p><h3 className="mt-2 text-2xl font-medium tracking-[-0.035em] text-ink">Summer Assembly</h3></div>
               <div className="lg:ml-auto lg:w-[460px]"><CommandDemo /></div>
-              <Button asChild variant="outline"><Link href="/organizer/login">Open dashboard <ArrowUpRight className="size-4 stroke-[1.5]" /></Link></Button>
+              <Button asChild variant="outline"><Link href={portalLinks.organizerHref}>Open dashboard <ArrowUpRight className="size-4 stroke-[1.5]" /></Link></Button>
             </div>
 
             <div className="grid gap-8 py-7 lg:grid-cols-[1.05fr_0.95fr]">
@@ -45,13 +47,13 @@ export function OrganizerSection() {
               </div>
             </div>
 
-            <div className="grid gap-4 border-t border-ink/10 pt-6 md:grid-cols-[1fr_auto] md:items-center">
-              <div className="flex gap-3 overflow-hidden" aria-label="Recent attendance stream">
+            <div className="grid gap-4 border-t border-ink/10 pt-6 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div className="flex flex-wrap gap-3" aria-label="Recent attendance stream">
                 {["Pass admitted", "Replay blocked", "Decision queued"].map((label, index) => (
                   <div key={label} className="flex min-w-fit items-center gap-2 rounded-full bg-fog px-4 py-2 text-xs text-muted-stone"><span className="grid size-5 place-items-center rounded-full bg-canvas text-terracotta shadow-hairline"><Check className="size-3 stroke-[2]" /></span>{label}<span className="text-hint">{index + 1}m</span></div>
                 ))}
               </div>
-              <Button variant="ghost"><Download className="size-4 stroke-[1.5]" /> Export CSV</Button>
+              <Button variant="ghost" className="justify-self-start lg:justify-self-end"><Download className="size-4 stroke-[1.5]" /> Export CSV</Button>
             </div>
           </div>
         </div>

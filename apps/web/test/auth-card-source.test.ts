@@ -32,3 +32,11 @@ test("uses a document navigation after successful auth so the dashboard sees fre
   assert.doesNotMatch(source, /router\.push\(nextState\.href\)/);
   assert.doesNotMatch(source, /router\.refresh\(\)/);
 });
+
+test("catches thrown Supabase auth network errors instead of leaving them in the console", () => {
+  const source = readFileSync(authCardPath, "utf8");
+
+  assert.match(source, /catch \(error\)/);
+  assert.match(source, /getFriendlyAuthErrorMessage\(message, mode\)/);
+  assert.match(source, /setErrorMessage\(getFriendlyAuthErrorMessage\(message, mode\)\)/);
+});

@@ -26,7 +26,7 @@ export function EventSearchDemo() {
 
 export function TicketDemo() {
   return (
-    <div className="flex min-h-44 flex-col justify-between rounded-[20px] bg-ink p-5 text-canvas">
+    <div className="flex min-h-52 flex-col justify-between rounded-[20px] bg-ink p-5 text-canvas">
       <div className="flex items-center justify-between">
         <span className="text-xs text-white/55">FOCACCIA PASS</span>
         <TicketCheck className="size-5 stroke-[1.5]" />
@@ -36,6 +36,17 @@ export function TicketDemo() {
         <div className="mt-4 flex items-center gap-2 text-xs text-white/65">
           <span className="size-1.5 rounded-full bg-[#fbe1d1]" />
           Ownership verified before enrollment
+        </div>
+        <p className="mt-2 max-w-sm text-xs leading-5 text-white/55">Enrollment opens only after the attendee account owns this event-scoped ticket.</p>
+        <div className="mt-5 grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
+          <div className="rounded-2xl bg-white/[0.06] px-3 py-2">
+            <p className="text-[11px] uppercase tracking-[0.08em] text-white/40">Ticket</p>
+            <p className="mt-1 text-xs font-medium text-white/80">General admission</p>
+          </div>
+          <div className="rounded-2xl bg-white/[0.06] px-3 py-2">
+            <p className="text-[11px] uppercase tracking-[0.08em] text-white/40">Limit</p>
+            <p className="mt-1 text-xs font-medium text-white/80">1 per attendee</p>
+          </div>
         </div>
       </div>
     </div>
@@ -68,16 +79,50 @@ export const EnrollmentDemo = memo(EnrollmentDemoComponent);
 function GateDecisionDemoComponent() {
   const reduced = useReducedMotion();
   return (
-    <div className="relative flex min-h-48 flex-col items-center justify-center overflow-hidden rounded-[20px] bg-fog text-center">
-      <m.span
-        animate={reduced ? undefined : { transform: ["scale(1)", "scale(1.06)", "scale(1)"] }}
-        transition={{ duration: 2.2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-        className="grid size-16 place-items-center rounded-full bg-canvas text-terracotta shadow-soft"
-      >
-        <ShieldCheck className="size-8 stroke-[1.4]" />
-      </m.span>
-      <p className="mt-4 text-lg font-medium text-ink">Admit</p>
-      <p className="mt-1 text-xs text-muted-stone">Verified offline at Gate A</p>
+    <div className="relative min-h-72 overflow-hidden rounded-[20px] border border-ink/[0.06] bg-fog p-4">
+      <m.div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-6 left-0 w-20 bg-gradient-to-r from-transparent via-warm-mist/60 to-transparent"
+        animate={reduced ? undefined : { x: ["-35%", "360%"] }}
+        transition={{ duration: 4.8, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+      />
+      <div className="relative flex items-center justify-between text-xs text-light-steel">
+        <span>Gate A</span>
+        <span className="rounded-full bg-canvas px-3 py-1 shadow-hairline">Offline</span>
+      </div>
+      <div className="relative mt-4 rounded-2xl bg-canvas p-4 shadow-hairline">
+        <div className="flex items-center gap-3">
+          <m.span
+            animate={reduced ? undefined : { transform: ["scale(1)", "scale(1.05)", "scale(1)"] }}
+            transition={{ duration: 2.8, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+            className="grid size-14 shrink-0 place-items-center rounded-full bg-warm-mist text-terracotta shadow-hairline"
+          >
+            <ShieldCheck className="size-7 stroke-[1.4]" />
+          </m.span>
+          <div className="min-w-0">
+            <p className="text-lg font-medium text-ink">Admit</p>
+            <p className="mt-1 text-xs leading-5 text-muted-stone">Verified offline at Gate A</p>
+          </div>
+          <span className="ml-auto rounded-full bg-fog px-3 py-1 text-xs text-muted-stone">Local</span>
+        </div>
+      </div>
+      <div className="relative mt-3 grid grid-cols-3 gap-2 text-[11px] text-muted-stone">
+        {["Pass", "Liveness", "Replay"].map((label, index) => (
+          <div key={label} className="rounded-2xl bg-canvas px-3 py-2 shadow-hairline">
+            <div className="flex items-center gap-1.5"><Check className="size-3 stroke-[2] text-terracotta" />{label}</div>
+            <m.div
+              aria-hidden="true"
+              className="mt-2 h-1 rounded-full bg-terracotta"
+              initial={{ width: reduced ? "100%" : "44%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: reduced ? 0 : 1.1, delay: index * 0.18, ease: [0.23, 1, 0.32, 1] }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="relative mt-3 rounded-2xl bg-canvas/80 p-3 text-xs leading-5 text-muted-stone shadow-hairline">
+        Signed decision stays on the device until sync returns.
+      </div>
     </div>
   );
 }
@@ -159,8 +204,14 @@ function SyncQueueComponent() {
   return (
     <div className="grid gap-2">
       <AnimatePresence initial={false}>
-        {items.map((item) => (
-          <m.div layout key={item.id} className="flex items-center gap-3 rounded-2xl bg-fog px-4 py-3" transition={{ type: "spring", stiffness: 180, damping: 24 }}>
+        {items.map((item, index) => (
+          <m.div
+            layout
+            key={item.id}
+            animate={{ backgroundColor: tick % 3 === index ? "#fff7f2" : "#f7f7f8", scale: tick % 3 === index ? 1.008 : 1 }}
+            className="flex items-center gap-3 rounded-2xl px-4 py-3"
+            transition={{ backgroundColor: { duration: 0.45, ease: [0.23, 1, 0.32, 1] }, layout: { type: "spring", stiffness: 160, damping: 28 }, scale: { duration: 0.45, ease: [0.23, 1, 0.32, 1] } }}
+          >
             {item.online ? <Cloud className="size-4 stroke-[1.5] text-terracotta" /> : <CloudOff className="size-4 stroke-[1.5] text-light-steel" />}
             <span className="text-sm text-ink">{item.label}</span>
             <span className="ml-auto text-xs text-light-steel">{item.state}</span>

@@ -24,7 +24,14 @@ export function SpotlightCard({ children, className }: { children: ReactNode; cl
       transition={{ type: "spring", stiffness: 260, damping: 24 }}
       className="h-full"
     >
-      <Card className={cn("spotlight-card relative h-full overflow-hidden", className)}>{children}</Card>
+      <Card
+        className={cn(
+          "spotlight-card relative h-full overflow-hidden transition-[border-color,box-shadow] duration-300 hover:border-terracotta/20 hover:shadow-[0_0_0_1px_rgba(93,42,26,0.08),0_28px_70px_-42px_rgba(23,25,28,0.36)]",
+          className,
+        )}
+      >
+        {children}
+      </Card>
     </m.div>
   );
 }

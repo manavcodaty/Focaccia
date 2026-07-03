@@ -28,6 +28,14 @@ test("preserves unknown auth errors so the UI can show the backend detail", () =
   );
 });
 
+test("maps thrown Supabase fetch failures to an actionable local-network message", () => {
+  const message = getFriendlyAuthErrorMessage("Failed to fetch", "signup");
+
+  assert.match(message, /Unable to reach the organizer sign-in service/i);
+  assert.match(message, /Focaccia network mode and Supabase URL/i);
+  assert.match(message, /restart the local Supabase stack/i);
+});
+
 test("redirects successful sign-in and auto-confirmed sign-up to the dashboard", () => {
   assert.deepEqual(getPostAuthSuccessState("signin", true), {
     href: "/dashboard",

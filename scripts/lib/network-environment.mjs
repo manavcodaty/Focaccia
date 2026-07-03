@@ -72,7 +72,7 @@ function serializePublicEnv(prefix, config, anonKey) {
 }
 
 export function writeSelectedPublicEnv(config, anonKey) {
-  for (const app of ['web', 'tickets']) {
+  for (const app of ['landing', 'web', 'tickets']) {
     writeFileSync(
       path.join(repoRoot, `apps/${app}/.env.local`),
       serializePublicEnv('NEXT_PUBLIC_', config, anonKey),

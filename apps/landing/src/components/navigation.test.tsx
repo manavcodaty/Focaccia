@@ -6,8 +6,8 @@ describe("Navigation", () => {
   it("exposes section links and conversion destinations", () => {
     render(<Navigation />);
     expect(screen.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "#how-it-works");
-    expect(screen.getByRole("link", { name: "Browse events" })).toHaveAttribute("href", "/events");
-    expect(screen.getAllByRole("link", { name: "For organizers" }).some((link) => link.getAttribute("href") === "/organizer/login")).toBe(true);
+    expect(screen.getByRole("link", { name: "Browse events" })).toHaveAttribute("href", "http://127.0.0.1:3001");
+    expect(screen.getAllByRole("link", { name: "For organizers" }).some((link) => link.getAttribute("href") === "http://127.0.0.1:3000/login")).toBe(true);
   });
 
   it("opens and closes the mobile menu", async () => {

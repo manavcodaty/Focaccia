@@ -133,6 +133,7 @@ test('iOS networking permits LAN without globally disabling ATS', () => {
 
 test('public runtime adapters do not read server-only environment variables', () => {
   const sources = [
+    'apps/landing/src/lib/portal-links.ts',
     'apps/web/lib/env.ts',
     'apps/tickets/lib/env.ts',
     'apps/enrollment/src/lib/env.ts',
@@ -141,4 +142,11 @@ test('public runtime adapters do not read server-only environment variables', ()
 
   assert.doesNotMatch(sources, /SERVICE_ROLE|ORGANIZER_EMAIL_ALLOWLIST|SECRET_WRAPPING|DATABASE_URL/);
   assert.doesNotMatch(sources, /process\.env\[[^\]]+\]/);
+});
+
+test('selected public browser env is generated for landing, organizer, and tickets apps', () => {
+  const source = readFileSync(path.join(root, 'scripts/lib/network-environment.mjs'), 'utf8');
+
+  assert.match(source, /for \(const app of \['landing', 'web', 'tickets'\]\)/);
+  assert.match(source, /serializePublicEnv\('NEXT_PUBLIC_', config, anonKey\)/);
 });

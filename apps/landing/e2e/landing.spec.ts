@@ -17,13 +17,13 @@ test("landing page navigation, FAQ, and layout remain usable", async ({ page }) 
 
 test("conversion links preserve their destinations", async ({ page }) => {
   await page.goto("/");
-  const attendeeLinks = page.locator('a[href="/events"]');
-  const organizerLinks = page.locator('a[href="/organizer/login"]');
+  const attendeeLinks = page.locator('a[href="http://127.0.0.1:3001"]');
+  const organizerLinks = page.locator('a[href="http://127.0.0.1:3000/login"]');
 
   expect(await attendeeLinks.count()).toBeGreaterThan(0);
   expect(await organizerLinks.count()).toBeGreaterThan(0);
-  expect(await attendeeLinks.evaluateAll((links) => links.every((link) => link.getAttribute("href") === "/events"))).toBe(true);
-  expect(await organizerLinks.evaluateAll((links) => links.every((link) => link.getAttribute("href") === "/organizer/login"))).toBe(true);
+  expect(await attendeeLinks.evaluateAll((links) => links.every((link) => link.getAttribute("href") === "http://127.0.0.1:3001"))).toBe(true);
+  expect(await organizerLinks.evaluateAll((links) => links.every((link) => link.getAttribute("href") === "http://127.0.0.1:3000/login"))).toBe(true);
 });
 
 test("mobile menu is keyboard and touch accessible", async ({ page }) => {

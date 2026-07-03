@@ -5,9 +5,11 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CrowdCanvas } from "@/components/crowd-canvas";
+import { getLandingPortalLinks } from "@/lib/portal-links";
 
 export function Hero() {
   const reducedMotion = useReducedMotion();
+  const portalLinks = getLandingPortalLinks();
   const entrance = reducedMotion
     ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
     : { initial: { opacity: 0, transform: "translateY(20px)" }, animate: { opacity: 1, transform: "translateY(0px)" } };
@@ -36,7 +38,7 @@ export function Hero() {
           className="mt-8 flex flex-col items-center gap-3 sm:flex-row"
         >
           <Button asChild size="lg" className="group">
-            <Link href="/events">
+            <Link href={portalLinks.attendeeHref}>
               Browse Events
               <span className="grid size-7 place-items-center rounded-full bg-white/12 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
                 <ArrowUpRight className="size-4 stroke-[1.5]" />
@@ -44,7 +46,7 @@ export function Hero() {
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <Link href="/organizer/login">For Organizers</Link>
+            <Link href={portalLinks.organizerHref}>For Organizers</Link>
           </Button>
         </m.div>
       </div>

@@ -5,8 +5,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { navLinks } from "@/lib/content";
+import { getLandingPortalLinks } from "@/lib/portal-links";
 
 export function Navigation() {
+  const portalLinks = getLandingPortalLinks();
+
   return (
     <header className="fixed inset-x-0 top-0 z-30 px-3 pt-3 sm:px-5 sm:pt-5">
       <nav aria-label="Primary" className="mx-auto flex h-16 max-w-[1180px] items-center rounded-full border border-white/70 bg-white/85 px-3 shadow-nav backdrop-blur-xl sm:px-4">
@@ -24,10 +27,10 @@ export function Navigation() {
 
         <div className="ml-auto hidden items-center gap-2 sm:flex lg:ml-4">
           <Button asChild variant="ghost" size="sm">
-            <Link href="/organizer/login">For organizers</Link>
+            <Link href={portalLinks.organizerHref}>For organizers</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/events">Browse events</Link>
+            <Link href={portalLinks.attendeeHref}>Browse events</Link>
           </Button>
         </div>
 
@@ -51,8 +54,8 @@ export function Navigation() {
                 ))}
               </div>
               <div className="mt-8 grid gap-3">
-                <SheetClose asChild><Button asChild><Link href="/events">Browse events</Link></Button></SheetClose>
-                <SheetClose asChild><Button asChild variant="outline"><Link href="/organizer/login">For organizers</Link></Button></SheetClose>
+                <SheetClose asChild><Button asChild><Link href={portalLinks.attendeeHref}>Browse events</Link></Button></SheetClose>
+                <SheetClose asChild><Button asChild variant="outline"><Link href={portalLinks.organizerHref}>For organizers</Link></Button></SheetClose>
               </div>
             </SheetContent>
           </Sheet>

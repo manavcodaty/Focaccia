@@ -21,6 +21,15 @@ export function getFriendlyAuthErrorMessage(message: string, mode: AuthMode): st
   const normalized = message.trim().toLowerCase();
 
   if (
+    normalized === "failed to fetch" ||
+    normalized.includes("networkerror") ||
+    normalized.includes("network request failed") ||
+    normalized.includes("load failed")
+  ) {
+    return "Unable to reach the organizer sign-in service. Check the selected Focaccia network mode and Supabase URL, then restart the local Supabase stack.";
+  }
+
+  if (
     mode === "signin" &&
     (normalized.includes("invalid login credentials") ||
       normalized.includes("invalid credentials"))

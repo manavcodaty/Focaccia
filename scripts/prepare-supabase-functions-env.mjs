@@ -96,6 +96,12 @@ export function prepareFunctionsEnvFiles({ envExampleText, envLocalText }) {
     outputEntries.push([key, value]);
   }
 
+  for (const [key, value] of envLocal.entries()) {
+    if (key.startsWith("FOCACCIA_") && !REQUIRED_FACE_PASS_KEYS.includes(key)) {
+      outputEntries.push([key, value]);
+    }
+  }
+
   return {
     envText: serializeEnv(outputEntries),
     generatedSecret,

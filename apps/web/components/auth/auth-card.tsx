@@ -43,10 +43,20 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
     setIsSubmitting(true);
 
     try {
-      const response =
-        mode === "signin"
-          ? await supabase.auth.signInWithPassword({ email, password })
-          : await supabase.auth.signUp({ email, password });
+      let response:
+        | Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>
+        | Awaited<ReturnType<typeof supabase.auth.signUp>>;
+
+      try {
+        response =
+          mode === "signin"
+            ? await supabase.auth.signInWithPassword({ email, password })
+            : await supabase.auth.signUp({ email, password });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to fetch";
+        setErrorMessage(getFriendlyAuthErrorMessage(message, mode));
+        return;
+      }
 
       if (response.error) {
         setErrorMessage(getFriendlyAuthErrorMessage(response.error.message, mode));

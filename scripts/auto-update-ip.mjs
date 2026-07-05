@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { chmodSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,5 +53,6 @@ if (newIp && newIp !== configuredIp) {
   const updatedText = envText
     .replace(new RegExp(configuredIp.replace(/\./g, '\\.'), 'g'), newIp);
     
-  writeFileSync(envLocalPath, updatedText, 'utf8');
+  writeFileSync(envLocalPath, updatedText, { encoding: 'utf8', mode: 0o600 });
+  chmodSync(envLocalPath, 0o600);
 }

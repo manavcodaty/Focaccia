@@ -58,6 +58,7 @@ function issuanceMessage(error: unknown): string {
 export default function CaptureScreen() {
   const router = useRouter();
   const camera = useRef<Camera>(null);
+  const captureInFlight = useRef(false);
   const device = useCameraDevice('front');
   const { hasPermission, requestPermission } = useCameraPermission();
   const { user } = useAuth();
@@ -114,7 +115,18 @@ export default function CaptureScreen() {
   }
 
   async function handleIssue() {
-    if (!user || !ticket || !selection || (!hasPending && (!camera.current || !modelReady))) return;
+    if (
+      captureInFlight.current ||
+      isProcessing ||
+      !user ||
+      !ticket ||
+      !selection ||
+      (!hasPending && (!camera.current || !modelReady))
+    ) {
+      return;
+    }
+
+    captureInFlight.current = true;
     setCaptureError(null);
     setIsProcessing(true);
     setProcessingPhase(null);
@@ -184,6 +196,7 @@ export default function CaptureScreen() {
       setHasPending(Boolean(await passVault.loadPending(user.id, ticket.id)));
       setCaptureError(issuanceMessage(error));
     } finally {
+      captureInFlight.current = false;
       setIsProcessing(false);
       setProcessingPhase(null);
     }
@@ -201,7 +214,7 @@ export default function CaptureScreen() {
 
           {!hasPending ? (
             <View style={styles.cameraStage}>
-              <Camera ref={camera} device={device!} isActive={!isProcessing} photo style={StyleSheet.absoluteFill} />
+              <Camera ref={camera} device={device!} isActive={true} photo style={StyleSheet.absoluteFill} />
               <View style={styles.cameraTint} />
               <CameraGuide ready={modelReady && !isProcessing} />
             </View>

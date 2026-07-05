@@ -129,6 +129,28 @@ test('persists gate configuration, revocations, logs, and non-sensitive CSV outp
   assert.equal((await repository.getStats()).revocationCount, 1);
 });
 
+test('does not persist queue-code event secrets in gate configuration SQLite', async () => {
+  const database = new DatabaseSync(':memory:');
+  const repository = new GateRepository(new NodeSqliteDriver(database));
+  await repository.migrate();
+
+  await repository.saveGateConfig({
+    ...gateConfig,
+    k_code_event: 'queue-code-secret-that-must-not-be-stored',
+    policy: {
+      ...gateConfig.policy,
+      queue_code_digits: 8,
+      queue_code_enabled: true,
+    },
+  });
+
+  const row = database.prepare('select k_code_event from gate_config limit 1').get() as {
+    k_code_event: string | null;
+  };
+  assert.equal(row.k_code_event, null);
+  assert.equal((await repository.getGateConfig())?.k_code_event, undefined);
+});
+
 test('migrates an existing gate_config table with signed-sync columns', async () => {
   const database = new DatabaseSync(':memory:');
   database.exec(`

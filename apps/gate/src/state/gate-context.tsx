@@ -20,7 +20,7 @@ import {
 import { openGateRepository } from '../lib/expo-db';
 import { expoSecureValueStore } from '../lib/expo-secure-store';
 import type { GateRepository } from '../lib/gate-db';
-import { createSignedCheckin, createSignedRevocationRequest } from '../lib/gate-sync';
+import { cacheFreshness, createSignedCheckin, createSignedRevocationRequest } from '../lib/gate-sync';
 import { flushCheckinQueue } from '../lib/gate-sync-runner';
 import {
   decisionToLogEntry,
@@ -46,6 +46,7 @@ import type {
 
 interface GateContextValue {
   auth: OrganizerAuthState | null;
+  cancelPendingVerification(): void;
   completePendingVerification(
     liveEmbedding: ArrayLike<number>,
     livenessMs: number,
@@ -200,10 +201,16 @@ export function GateProvider({ children }: PropsWithChildren) {
   const value = useMemo<GateContextValue>(
     () => ({
       auth,
+      cancelPendingVerification() {
+        destroyPendingVerification(pendingVerification);
+        setPendingVerification(null);
+      },
       async completePendingVerification(liveEmbedding, livenessMs) {
         if (!repository || !pendingVerification) {
           throw new Error('No pending verification is ready.');
         }
+
+        let keepPendingForRetry = false;
 
         try {
           const acceptedDecision = await finalizeOfflineVerification({
@@ -212,6 +219,12 @@ export function GateProvider({ children }: PropsWithChildren) {
             pending: pendingVerification,
           });
           let decision = acceptedDecision;
+
+          if (decision.reasonCode === 'MATCH_FAIL') {
+            keepPendingForRetry = true;
+            setLastResult(null);
+            return decision;
+          }
 
           if (acceptedDecision.accepted && acceptedDecision.pass_id) {
             const gateTimestamp = new Date().toISOString();
@@ -267,8 +280,10 @@ export function GateProvider({ children }: PropsWithChildren) {
           }
           return decision;
         } finally {
-          destroyPendingVerification(pendingVerification);
-          setPendingVerification(null);
+          if (!keepPendingForRetry) {
+            destroyPendingVerification(pendingVerification);
+            setPendingVerification(null);
+          }
         }
       },
       async completeProvisioning(payload, deviceName) {
@@ -307,10 +322,19 @@ export function GateProvider({ children }: PropsWithChildren) {
 
           const bundle = await callProvisionGate(auth, request);
           const storedGate: StoredGateConfig = {
-            ...bundle,
+            ends_at: bundle.ends_at,
+            event_id: bundle.event_id,
+            event_salt: bundle.event_salt,
             event_name: payload.name,
+            gate_device_id: bundle.gate_device_id,
+            key_version: bundle.key_version,
             last_revocation_sync_at: null,
+            pk_gate_event: bundle.pk_gate_event,
+            pk_sign_event: bundle.pk_sign_event,
+            policy: bundle.policy,
             provisioned_at: new Date().toISOString(),
+            starts_at: bundle.starts_at,
+            sync_public_key: bundle.sync_public_key,
           };
 
           await Promise.all([
@@ -371,7 +395,7 @@ export function GateProvider({ children }: PropsWithChildren) {
         if (!repository || !gate) {
           throw new Error('Provision this gate before scanning passes.');
         }
-        if (!gate.last_revocation_sync_at) {
+        if (cacheFreshness(gate.last_revocation_sync_at).state !== 'fresh') {
           throw new Error('Refresh revocations successfully before opening the scanner.');
         }
 

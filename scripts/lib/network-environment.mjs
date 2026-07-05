@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { parseRootNetworkConfig } from '../../packages/shared/dist/network-config.js';
@@ -73,19 +73,15 @@ function serializePublicEnv(prefix, config, anonKey) {
 
 export function writeSelectedPublicEnv(config, anonKey) {
   for (const app of ['landing', 'web', 'tickets']) {
-    writeFileSync(
-      path.join(repoRoot, `apps/${app}/.env.local`),
-      serializePublicEnv('NEXT_PUBLIC_', config, anonKey),
-      { mode: 0o600 },
-    );
+    const envPath = path.join(repoRoot, `apps/${app}/.env.local`);
+    writeFileSync(envPath, serializePublicEnv('NEXT_PUBLIC_', config, anonKey), { mode: 0o600 });
+    chmodSync(envPath, 0o600);
   }
 
   for (const app of ['enrollment', 'gate']) {
-    writeFileSync(
-      path.join(repoRoot, `apps/${app}/.env.local`),
-      serializePublicEnv('EXPO_PUBLIC_', config, anonKey),
-      { mode: 0o600 },
-    );
+    const envPath = path.join(repoRoot, `apps/${app}/.env.local`);
+    writeFileSync(envPath, serializePublicEnv('EXPO_PUBLIC_', config, anonKey), { mode: 0o600 });
+    chmodSync(envPath, 0o600);
   }
 }
 

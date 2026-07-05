@@ -22,7 +22,14 @@ const TUNNEL_ENV = {
 describe('parseRootNetworkConfig', () => {
   test('accepts local mode and normalizes trailing slashes', () => {
     expect(parseRootNetworkConfig(LOCAL_ENV)).toEqual({
-      browserOrigins: ['http://192.168.1.50:3000', 'http://192.168.1.50:3001'],
+      browserOrigins: [
+        'http://192.168.1.50:3000',
+        'http://192.168.1.50:3001',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+      ],
       diagnosticLabel: 'Local network',
       localHost: '192.168.1.50',
       mode: 'local',
@@ -110,7 +117,14 @@ describe('parsePublicNetworkConfig', () => {
 
     expect(parsed).toEqual({
       anonKey: 'public-anon-key',
-      browserOrigins: ['http://192.168.1.50:3000', 'http://192.168.1.50:3001'],
+      browserOrigins: [
+        'http://192.168.1.50:3000',
+        'http://192.168.1.50:3001',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+      ],
       diagnosticLabel: 'Local network',
       localHost: '192.168.1.50',
       mode: 'local',

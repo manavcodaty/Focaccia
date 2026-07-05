@@ -39,7 +39,10 @@ export function SiteHeader() {
               {signingOut ? 'Signing out' : 'Sign out'}
             </button>
           ) : (
-            <Link className="button button-primary button-compact" href="/login">Sign in</Link>
+            <Link className="button button-primary button-compact button-with-dot" href="/login">
+              Sign in
+              <span aria-hidden="true" />
+            </Link>
           )}
         </div>
       </div>

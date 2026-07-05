@@ -129,7 +129,7 @@ function rowParams(config: StoredGateConfig): SqlValue[] {
     numberToBoolean(config.policy.typed_token_fallback),
     numberToBoolean(config.policy.queue_code_enabled),
     queueCodeDigits(config),
-    config.k_code_event ?? null,
+    null,
     config.provisioned_at,
     config.last_revocation_sync_at,
     config.sync_public_key,

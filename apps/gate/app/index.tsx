@@ -21,7 +21,7 @@ export default function GateHomeScreen() {
   const layout = useResponsiveLayout();
   const { auth, dbError, dbReady, gate, signOut, stats } = useGate();
   const cache = useRevocationCache(gate?.last_revocation_sync_at ?? null);
-  const scannerReady = Boolean(gate?.last_revocation_sync_at);
+  const scannerReady = cache.state === 'fresh';
 
   return (
     <ScreenShell>

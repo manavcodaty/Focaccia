@@ -10,6 +10,7 @@ import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { formatTimestamp } from '../src/lib/display';
 import { formatCacheAge } from '../src/lib/gate-sync';
+import { effectiveLivenessTimeoutMs } from '../src/lib/liveness';
 import { scaleFont } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useRevocationCache } from '../src/lib/use-revocation-cache';
@@ -33,6 +34,7 @@ export default function SettingsScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cache = useRevocationCache(gate?.last_revocation_sync_at ?? null);
+  const livenessTimeoutMs = gate ? effectiveLivenessTimeoutMs(gate.policy.liveness_timeout_ms) : null;
 
   async function handleSync() {
     setError(null);
@@ -76,7 +78,7 @@ export default function SettingsScreen() {
         />
         <MetricRow
           label="Liveness timeout"
-          value={gate ? `${gate.policy.liveness_timeout_ms} ms` : 'Unavailable'}
+          value={livenessTimeoutMs ? `${Math.round(livenessTimeoutMs / 1000)} seconds` : 'Unavailable'}
         />
         <MetricRow
           label="Typed fallback"

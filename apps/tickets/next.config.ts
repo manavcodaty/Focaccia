@@ -1,6 +1,28 @@
 import type { NextConfig } from 'next';
 import path from 'node:path';
 
+const securityHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "style-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "connect-src 'self' http: https: ws: wss:",
+      "form-action 'self'",
+    ].join('; '),
+  },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+] as const;
+
 function selectedDevelopmentHost(): string[] {
   const selectedUrl = process.env.NEXT_PUBLIC_FOCACCIA_TICKETS_URL;
   if (!selectedUrl) return [];
@@ -15,6 +37,14 @@ function selectedDevelopmentHost(): string[] {
 const nextConfig: NextConfig = {
   allowedDevOrigins: selectedDevelopmentHost(),
   poweredByHeader: false,
+  async headers() {
+    return [
+      {
+        headers: [...securityHeaders],
+        source: '/:path*',
+      },
+    ];
+  },
   transpilePackages: ['@face-pass/shared'],
   turbopack: {
     root: path.resolve(import.meta.dirname, '../..'),

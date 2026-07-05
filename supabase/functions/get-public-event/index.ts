@@ -1,5 +1,7 @@
-import { jsonError, jsonSuccess, respondWithError } from '../_shared/api.ts';
+import { exposedApiError, jsonError, jsonSuccess, respondWithError } from '../_shared/api.ts';
+import { protectedServerDigest } from '../_shared/claim-code.ts';
 import { handleCors } from '../_shared/cors.ts';
+import { databaseApiError } from '../_shared/database-errors.ts';
 import { ACTIVE_TICKET_STATUSES, buildPublicEvent } from '../_shared/public-ticketing.ts';
 import { publicEventSchema } from '../_shared/schemas.ts';
 import { createAdminClient } from '../_shared/supabase.ts';
@@ -13,6 +15,16 @@ Deno.serve(async (req) => {
   try {
     const body = await parseJsonBody(req, publicEventSchema);
     const admin = createAdminClient();
+    const { data: rateLimit, error: rateError } = await admin.rpc('consume_api_rate_limit', {
+      p_actor_scope: await protectedServerDigest('public-events:anonymous'),
+      p_limit: 600,
+      p_operation: 'get-public-event',
+      p_window_seconds: 600,
+    });
+    if (rateError) throw databaseApiError(rateError, 'public_event_rate_limit');
+    if (!(rateLimit as { allowed: boolean }).allowed) {
+      throw exposedApiError(429, 'rate_limit_exceeded', 'Too many public event requests. Try again later.');
+    }
     const { data: event, error } = await admin
       .from('events')
       .select('event_id, name, description, location, capacity, starts_at, ends_at, created_at, created_by')

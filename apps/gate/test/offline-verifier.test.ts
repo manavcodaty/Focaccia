@@ -1,9 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { ed25519Keypair, prepareCrypto, toBase64Url, x25519Keypair } from "@face-pass/shared";
+import {
+  canonicalJsonBytes,
+  ed25519Keypair,
+  ed25519SignDetached,
+  prepareCrypto,
+  toBase64Url,
+  x25519Keypair,
+  x25519Seal,
+} from "@face-pass/shared";
 
-import { prepareOfflineVerification } from "../src/lib/offline-verifier.ts";
+import {
+  effectiveMatchThreshold,
+  prepareOfflineVerification,
+} from "../src/lib/offline-verifier.ts";
 import type { StoredGateConfig } from "../src/lib/types.ts";
 
 async function createStoredGate(): Promise<StoredGateConfig> {
@@ -32,6 +43,44 @@ async function createStoredGate(): Promise<StoredGateConfig> {
     starts_at: "2030-05-01T18:00:00.000Z",
     sync_public_key: null,
   };
+}
+
+async function createSignedToken({
+  event,
+  gatePublicKey,
+  signingPrivateKey,
+  template,
+}: {
+  event: StoredGateConfig;
+  gatePublicKey: Uint8Array;
+  signingPrivateKey: Uint8Array;
+  template: Uint8Array;
+}): Promise<string> {
+  const encryptedTemplate = await x25519Seal(template, gatePublicKey);
+
+  try {
+    const payload = {
+      enc_template: await toBase64Url(encryptedTemplate),
+      event_id: event.event_id,
+      exp: 1_906_500_000,
+      iat: 1_893_000_000,
+      nonce: await toBase64Url(Uint8Array.from({ length: 12 }, (_value, index) => index + 1)),
+      pass_id: "pass-with-short-template",
+      single_use: true,
+      v: 1,
+    } as const;
+    const payloadBytes = canonicalJsonBytes(payload);
+    const signature = await ed25519SignDetached(payloadBytes, signingPrivateKey);
+
+    try {
+      return `${await toBase64Url(payloadBytes)}.${await toBase64Url(signature)}`;
+    } finally {
+      payloadBytes.fill(0);
+      signature.fill(0);
+    }
+  } finally {
+    encryptedTemplate.fill(0);
+  }
 }
 
 test("prepareOfflineVerification rejects malformed tokens without throwing", async () => {
@@ -77,4 +126,43 @@ test("prepareOfflineVerification rejects oversized tokens early", async () => {
   }
 
   assert.equal(result.decision.reasonCode, "BAD_TOKEN");
+});
+
+test("prepareOfflineVerification rejects decrypted templates with an invalid byte length", async () => {
+  await prepareCrypto();
+  const signingKeys = await ed25519Keypair();
+  const gateKeys = await x25519Keypair();
+  const event = await createStoredGate();
+  event.pk_sign_event = await toBase64Url(signingKeys.publicKey);
+  event.pk_gate_event = await toBase64Url(gateKeys.publicKey);
+  const token = await createSignedToken({
+    event,
+    gatePublicKey: gateKeys.publicKey,
+    signingPrivateKey: signingKeys.privateKey,
+    template: Uint8Array.of(1),
+  });
+
+  const result = await prepareOfflineVerification({
+    checkReplay: async () => false,
+    checkRevoked: async () => false,
+    event,
+    gatePrivateKey: gateKeys.privateKey,
+    now: new Date("2030-05-01T19:00:00.000Z"),
+    scanStartedAtMs: Date.parse("2030-05-01T19:00:00.000Z"),
+    token,
+  });
+
+  assert.equal(result.ok, false);
+
+  if (result.ok) {
+    throw new Error("Invalid template unexpectedly reached the liveness stage.");
+  }
+
+  assert.equal(result.decision.reasonCode, "DECRYPT_FAIL");
+});
+
+test("effective match threshold is field-tolerant for older provisioned gates", () => {
+  assert.equal(effectiveMatchThreshold(80), 112);
+  assert.equal(effectiveMatchThreshold(112), 112);
+  assert.equal(effectiveMatchThreshold(120), 120);
 });

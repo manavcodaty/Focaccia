@@ -78,6 +78,21 @@ function parseUrl(raw, name, mode, localHost) {
     }
     return parsed.origin;
 }
+function localBrowserOriginAliases() {
+    return [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+    ];
+}
+function buildBrowserOrigins(mode, webUrl, ticketsUrl) {
+    return Array.from(new Set([
+        webUrl,
+        ticketsUrl,
+        ...(mode === 'local' ? localBrowserOriginAliases() : []),
+    ]));
+}
 function parseSelectedNetworkConfig({ localHostValue, modeValue, supabaseUrlValue, ticketsUrlValue, valueNames, webUrlValue, }) {
     const mode = parseMode(modeValue);
     let localHost;
@@ -105,7 +120,7 @@ function parseSelectedNetworkConfig({ localHostValue, modeValue, supabaseUrlValu
         }
     }
     const config = {
-        browserOrigins: [webUrl, ticketsUrl],
+        browserOrigins: buildBrowserOrigins(mode, webUrl, ticketsUrl),
         diagnosticLabel: mode === 'local' ? 'Local network' : 'Tunnel',
         mode,
         supabaseUrl,

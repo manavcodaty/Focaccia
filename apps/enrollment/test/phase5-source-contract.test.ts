@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -53,4 +54,30 @@ test('enrollment production sources do not log sensitive values', () => {
   ]) {
     assert.doesNotMatch(source(file), /console\.(?:log|debug|info|warn|error)/, file);
   }
+});
+
+test('manual fallback clipboard token is cleared after a short TTL', () => {
+  const passScreen = source('apps/enrollment/app/pass.tsx');
+
+  assert.match(passScreen, /PASS_TOKEN_CLIPBOARD_TTL_MS = 60_000/);
+  assert.match(passScreen, /Clipboard\.getStringAsync\(\)/);
+  assert.match(passScreen, /currentValue === token/);
+  assert.match(passScreen, /Clipboard\.setStringAsync\(''\)/);
+});
+
+test('face capture keeps the native camera active while processing the photo request', () => {
+  const captureScreen = source('apps/enrollment/app/capture.tsx');
+
+  assert.match(captureScreen, /takePhoto\(\{\s*enableShutterSound: false\s*\}\)/);
+  assert.match(captureScreen, /<Camera\b[^>]*isActive=\{true\}/s);
+  assert.doesNotMatch(captureScreen, /<Camera\b[^>]*isActive=\{!isProcessing\}/s);
+});
+
+test('tracked FaceNet model matches the checked-in checksum manifest', () => {
+  const manifest = source('apps/enrollment/assets/models/facenet_512.tflite.sha256').trim();
+  const [expectedHash, filename] = manifest.split(/\s+/);
+  const model = readFileSync(path.join(root, 'apps/enrollment/assets/models/facenet_512.tflite'));
+
+  assert.equal(filename, 'facenet_512.tflite');
+  assert.equal(createHash('sha256').update(model).digest('hex'), expectedHash);
 });

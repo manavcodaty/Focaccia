@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { buildPublicEvent, organizerLabelFromEmail } from './public-ticketing.ts';
@@ -74,4 +75,17 @@ test('event sellout disables every ticket type', () => {
   assert.equal(result.remaining_capacity, 0);
   assert.equal(result.sold_out, true);
   assert.equal(result.ticket_types.every((type) => type.sold_out && !type.checkout_available), true);
+});
+
+test('public event endpoints rate-limit anonymous service-role reads', () => {
+  const sources = [
+    readFileSync(new URL('../get-public-event/index.ts', import.meta.url), 'utf8'),
+    readFileSync(new URL('../get-public-events/index.ts', import.meta.url), 'utf8'),
+  ];
+
+  for (const source of sources) {
+    assert.match(source, /consume_api_rate_limit/);
+    assert.match(source, /public-events:anonymous/);
+    assert.match(source, /rate_limit_exceeded/);
+  }
 });

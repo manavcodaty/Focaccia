@@ -22,6 +22,23 @@ test("local dashboard development allows the selected physical-device host", () 
   assert.match(config, /allowedDevOrigins/);
 });
 
+test("dashboard app emits baseline browser security headers", () => {
+  const config = source("next.config.ts");
+
+  for (const required of [
+    "poweredByHeader: false",
+    "headers()",
+    "Content-Security-Policy",
+    "frame-ancestors 'none'",
+    "X-Content-Type-Options",
+    "Referrer-Policy",
+    "X-Frame-Options",
+    "Permissions-Policy",
+  ]) {
+    assert.match(config, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+});
+
 test("event workspace includes edit, public URL, tickets, types, audit, and CSV surfaces", () => {
   const page = source("app/(secure)/events/[eventId]/page.tsx");
   const workspace = source("components/dashboard/event-operations-workspace.tsx");

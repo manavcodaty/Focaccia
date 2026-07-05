@@ -17,7 +17,7 @@ export type GateReasonCode =
 
 export type GateOutcome = 'ACCEPT' | 'REJECT';
 
-export type LivenessChallengeType = 'blink-twice' | 'look-up' | 'turn-left';
+export type LivenessChallengeType = 'steady-face';
 
 export interface OrganizerAuthState {
   accessToken: string;

@@ -64,8 +64,8 @@ export function writeRuntimeFunctionsEnv(config, { anonKey, serviceRoleKey }, so
   }
 
   const entries = {
-    FACE_PASS_LIVENESS_TIMEOUT_MS: '4000',
-    FACE_PASS_MATCH_THRESHOLD: '80',
+    FACE_PASS_LIVENESS_TIMEOUT_MS: '20000',
+    FACE_PASS_MATCH_THRESHOLD: '112',
     FACE_PASS_QUEUE_CODE_DIGITS: '8',
     FACE_PASS_SECRET_WRAPPING_KEY_B64URL: getOrCreateSecret('secret-wrapping-key'),
     FACE_PASS_SUPABASE_ANON_KEY: anonKey,

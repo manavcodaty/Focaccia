@@ -1,4 +1,32 @@
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
+
+function parseEnvFile(): Record<string, string> {
+  const envPath = path.join(process.cwd(), ".env.local");
+  if (!existsSync(envPath)) return {};
+
+  return Object.fromEntries(
+    readFileSync(envPath, "utf8")
+      .split(/\r?\n/)
+      .flatMap((line) => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) return [];
+        const separator = trimmed.indexOf("=");
+        if (separator < 1) return [];
+        return [[trimmed.slice(0, separator), trimmed.slice(separator + 1).replace(/^"|"$/g, "")]];
+      }),
+  );
+}
+
+function selectedOrigin(value: string | undefined, fallback: string): string {
+  return new URL(value?.trim() || fallback).origin;
+}
+
+function normalizeHref(value: string | null): string {
+  if (!value) return "";
+  return value.replace(/\/$/, "");
+}
 
 test("landing page navigation, FAQ, and layout remain usable", async ({ page }) => {
   await page.goto("/");
@@ -17,13 +45,25 @@ test("landing page navigation, FAQ, and layout remain usable", async ({ page }) 
 
 test("conversion links preserve their destinations", async ({ page }) => {
   await page.goto("/");
-  const attendeeLinks = page.locator('a[href="http://127.0.0.1:3001"]');
-  const organizerLinks = page.locator('a[href="http://127.0.0.1:3000/login"]');
+  const env = parseEnvFile();
+  const ticketsOrigin = selectedOrigin(env.NEXT_PUBLIC_FOCACCIA_TICKETS_URL, "http://127.0.0.1:3001");
+  const webOrigin = selectedOrigin(env.NEXT_PUBLIC_FOCACCIA_WEB_URL, "http://127.0.0.1:3000");
+  const organizerHref = `${webOrigin}/login`;
+  const attendeeLinks = page.getByRole("link", { name: /browse events/i });
+  const organizerLinks = page.getByRole("link", { name: /for organizers|open dashboard/i });
 
   expect(await attendeeLinks.count()).toBeGreaterThan(0);
   expect(await organizerLinks.count()).toBeGreaterThan(0);
-  expect(await attendeeLinks.evaluateAll((links) => links.every((link) => link.getAttribute("href") === "http://127.0.0.1:3001"))).toBe(true);
-  expect(await organizerLinks.evaluateAll((links) => links.every((link) => link.getAttribute("href") === "http://127.0.0.1:3000/login"))).toBe(true);
+  expect(await attendeeLinks.evaluateAll((links, expected) => links.every((link) => link.getAttribute("href")?.replace(/\/$/, "") === expected), normalizeHref(ticketsOrigin))).toBe(true);
+  expect(
+    await organizerLinks.evaluateAll(
+      (links, expected) => links
+        .map((link) => link.getAttribute("href")?.replace(/\/$/, "") ?? "")
+        .filter((href) => href.startsWith("http"))
+        .every((href) => href === expected),
+      normalizeHref(organizerHref),
+    ),
+  ).toBe(true);
 });
 
 test("mobile menu is keyboard and touch accessible", async ({ page }) => {

@@ -20,6 +20,7 @@ import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
+import { effectiveLivenessTimeoutMs } from '../src/lib/liveness';
 import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
@@ -165,6 +166,7 @@ export default function ScanScreen() {
     top: layout.isLandscape ? '24%' : '27%',
     width: layout.isLandscape ? '72%' : '80%',
   };
+  const livenessTimeoutMs = effectiveLivenessTimeoutMs(gate.policy.liveness_timeout_ms);
 
   return (
     <ScreenShell style={styles.screen} variant="wide">
@@ -235,7 +237,7 @@ export default function ScanScreen() {
                 />
               </View>
               <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
-              <MetricRow label="Liveness timeout" value={`${gate.policy.liveness_timeout_ms} ms`} />
+              <MetricRow label="Liveness timeout" value={`${Math.round(livenessTimeoutMs / 1000)} seconds`} />
               <StatusBanner
                 message={error ?? status}
                 tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
@@ -286,7 +288,7 @@ export default function ScanScreen() {
               />
             </View>
             <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
-            <MetricRow label="Liveness timeout" value={`${gate.policy.liveness_timeout_ms} ms`} />
+            <MetricRow label="Liveness timeout" value={`${Math.round(livenessTimeoutMs / 1000)} seconds`} />
             <StatusBanner
               message={error ?? status}
               tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}

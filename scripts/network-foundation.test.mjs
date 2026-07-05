@@ -149,4 +149,19 @@ test('selected public browser env is generated for landing, organizer, and ticke
 
   assert.match(source, /for \(const app of \['landing', 'web', 'tickets'\]\)/);
   assert.match(source, /serializePublicEnv\('NEXT_PUBLIC_', config, anonKey\)/);
+  assert.match(source, /chmodSync\(envPath, 0o600\)/);
+});
+
+test('dependency security overrides live in pnpm workspace config for the active pnpm version', () => {
+  const workspace = readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8');
+  const manifest = readFileSync(path.join(root, 'package.json'), 'utf8');
+
+  assert.match(workspace, /^overrides:/m);
+  assert.match(workspace, /@babel\/core@7\.29\.0': 7\.29\.6/);
+  assert.match(workspace, /brace-expansion@1\.1\.12: 1\.1\.13/);
+  assert.match(workspace, /js-yaml@4\.1\.1: 4\.2\.0/);
+  assert.match(workspace, /postcss@8\.4\.31: 8\.5\.10/);
+  assert.match(workspace, /undici@7\.27\.2: 7\.28\.0/);
+  assert.match(workspace, /ws@8\.20\.1: 8\.21\.0/);
+  assert.doesNotMatch(manifest, /"pnpm"\s*:\s*\{/);
 });

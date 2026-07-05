@@ -30,12 +30,7 @@ export function TicketDetailPage({ ticketId, confirmation = false }: { confirmat
     try {
       const result = await ticketApi.listMyTickets(session.access_token);
       const found = result.tickets.find((item) => item.id === ticketId) ?? null;
-      if (!found && typeof sessionStorage !== 'undefined') {
-        const snapshot = sessionStorage.getItem(`focaccia:ticket:${ticketId}`);
-        setTicket(snapshot ? JSON.parse(snapshot) as OwnedTicket : null);
-      } else {
-        setTicket(found);
-      }
+      setTicket(found);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Unable to load this ticket.');
     } finally {

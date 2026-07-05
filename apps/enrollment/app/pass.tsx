@@ -12,6 +12,27 @@ import { enrollmentApi } from '../src/lib/api';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
 
+const PASS_TOKEN_CLIPBOARD_TTL_MS = 60_000;
+
+async function copyPassTokenToClipboard(
+  token: string,
+  onCopied: () => void,
+  setTimer: typeof setTimeout = setTimeout,
+) {
+  await Clipboard.setStringAsync(token);
+  onCopied();
+  setTimer(() => {
+    void Clipboard.getStringAsync()
+      .then((currentValue) => {
+        if (currentValue === token) {
+          return Clipboard.setStringAsync('');
+        }
+        return undefined;
+      })
+      .catch(() => undefined);
+  }, PASS_TOKEN_CLIPBOARD_TTL_MS);
+}
+
 export default function PassScreen() {
   const router = useRouter();
   const { setBundle, state } = useEnrollment();
@@ -74,7 +95,7 @@ export default function PassScreen() {
         <PrimaryButton
           label="Copy full signed token"
           onPress={() => {
-            void Clipboard.setStringAsync(pass.token).then(() => setMessage('Full signed token copied.'));
+            void copyPassTokenToClipboard(pass.token, () => setMessage('Full signed token copied briefly.'));
           }}
           tone="ghost"
         />

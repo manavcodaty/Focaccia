@@ -21,7 +21,9 @@ import {
 } from './types.ts';
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
+const MIN_MATCH_THRESHOLD = 112;
 const MAX_TOKEN_LENGTH = 4096;
+const TEMPLATE_BYTES = 32;
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
 
@@ -344,26 +346,34 @@ export async function prepareOfflineVerification({
     }
 
     const decryptStartedAt = nowMs();
+    let encryptedTemplate: Uint8Array | null = null;
+    let gatePublicKey: Uint8Array | null = null;
+    let decryptedTemplate: Uint8Array | null = null;
 
     try {
-      const [gatePublicKey, encryptedTemplate] = await Promise.all([
+      [gatePublicKey, encryptedTemplate] = await Promise.all([
         fromBase64Url(event.pk_gate_event),
         fromBase64Url(payload.enc_template),
       ]);
-      const decryptedTemplate = await x25519SealOpen(
+      decryptedTemplate = await x25519SealOpen(
         encryptedTemplate,
         gatePublicKey,
         gatePrivateKey,
       );
 
-      encryptedTemplate.fill(0);
-      gatePublicKey.fill(0);
       timings.decrypt_ms = roundDuration(nowMs() - decryptStartedAt);
+
+      if (decryptedTemplate.length !== TEMPLATE_BYTES) {
+        throw new Error('Decrypted template length did not match the expected template size.');
+      }
+
+      const pendingTemplate = decryptedTemplate;
+      decryptedTemplate = null;
 
       return {
         ok: true,
         pending: {
-          decryptedTemplate,
+          decryptedTemplate: pendingTemplate,
           event,
           passRef,
           payload,
@@ -384,6 +394,10 @@ export async function prepareOfflineVerification({
         decision: buildRejectedDecision(event, 'DECRYPT_FAIL', timings, payload.pass_id, passRef),
         ok: false,
       };
+    } finally {
+      encryptedTemplate?.fill(0);
+      gatePublicKey?.fill(0);
+      decryptedTemplate?.fill(0);
     }
   } finally {
     payloadBytes?.fill(0);
@@ -425,13 +439,19 @@ export async function finalizeOfflineVerification({
       passId: pending.payload.pass_id,
       passRef: pending.passRef,
       reasonCode:
-        distance <= pending.event.policy.match_threshold ? 'ACCEPT' : 'MATCH_FAIL',
+        distance <= effectiveMatchThreshold(pending.event.policy.match_threshold)
+          ? 'ACCEPT'
+          : 'MATCH_FAIL',
       timings,
     });
   } finally {
     eventSalt.fill(0);
     liveTemplate.fill(0);
   }
+}
+
+export function effectiveMatchThreshold(threshold: number): number {
+  return Math.max(threshold, MIN_MATCH_THRESHOLD);
 }
 
 export function recordLivenessFailure(

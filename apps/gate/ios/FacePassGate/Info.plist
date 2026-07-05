@@ -57,8 +57,6 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>$(PRODUCT_NAME) needs camera access to scan passes and run offline live verification.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Focaccia connects to services running on the organizer's Mac when Local network mode is selected.</string>
 	<key>NSUserActivityTypes</key>

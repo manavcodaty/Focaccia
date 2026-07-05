@@ -21,7 +21,13 @@ import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
-import { challengeInstruction, createChallenge, hasTimedOut, pickChallenge, type LivenessProgress } from '../src/lib/liveness';
+import {
+  createChallenge,
+  effectiveLivenessTimeoutMs,
+  hasTimedOut,
+  pickChallenge,
+  type LivenessProgress,
+} from '../src/lib/liveness';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
 import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
@@ -37,7 +43,7 @@ function verificationStatus(isProcessing: boolean, modelReady: boolean): string 
     return 'Loading the face model and crypto runtime.';
   }
 
-  return 'Ask the attendee to complete the prompt, then capture when ready.';
+  return 'Ask the attendee to face the camera, keep their eyes open, and hold still.';
 }
 
 function FallbackCard({
@@ -73,7 +79,12 @@ export default function LivenessScreen() {
   const camera = useRef<Camera>(null);
   const device = useCameraDevice('back');
   const layout = useResponsiveLayout();
-  const { completePendingVerification, failLiveness, pendingVerification } = useGate();
+  const {
+    cancelPendingVerification,
+    completePendingVerification,
+    failLiveness,
+    pendingVerification,
+  } = useGate();
   const { hasPermission, requestPermission } = useCameraPermission();
   const [challenge, setChallenge] = useState<LivenessProgress>(() =>
     createChallenge(pickChallenge()));
@@ -147,7 +158,14 @@ export default function LivenessScreen() {
       });
 
       try {
-        await completePendingVerification(embedding, Date.now() - challenge.startedAt);
+        const decision = await completePendingVerification(embedding, Date.now() - challenge.startedAt);
+
+        if (decision.reasonCode === 'MATCH_FAIL') {
+          setProcessingError(decision.hint);
+          setIsProcessing(false);
+          return;
+        }
+
         router.replace('/result');
       } finally {
         embedding.fill(0);
@@ -156,6 +174,11 @@ export default function LivenessScreen() {
       setProcessingError(error instanceof Error ? error.message : 'Live matching failed.');
       setIsProcessing(false);
     }
+  }
+
+  function cancelVerification() {
+    cancelPendingVerification();
+    router.replace('/scan');
   }
 
   if (!pendingVerification) {
@@ -215,6 +238,9 @@ export default function LivenessScreen() {
     top: layout.isLandscape ? '20%' : '18%',
     width: layout.isLandscape ? '64%' : '68%',
   };
+  const timeoutMs = effectiveLivenessTimeoutMs(
+    pendingVerification.event.policy.liveness_timeout_ms,
+  );
 
   return (
     <ScreenShell style={styles.screen} variant="wide">
@@ -280,7 +306,7 @@ export default function LivenessScreen() {
                   },
                 ]}
               >
-                {challengeInstruction(challenge.type)}
+                Hold still for live face matching.
               </Text>
               <Text
                 style={[
@@ -291,13 +317,13 @@ export default function LivenessScreen() {
                   },
                 ]}
               >
-                Ask the attendee to complete the prompt, then capture one verification frame. The gate
-                generates a live template, deletes the temporary image, and compares locally.
+                Ask the attendee to face the camera with eyes open. Capture a clear frame while they
+                hold still; the gate deletes the temporary image after local matching.
               </Text>
             </View>
 
-            <SectionCard eyebrow="Challenge" title="Active liveness in progress">
-              <StatusChip label={challenge.type.replace('-', ' ')} tone="warning" />
+            <SectionCard eyebrow="Live capture" title="Ready for a clear frame">
+              <StatusChip label="steady face" tone="warning" />
               {modelError ? <StatusBanner message={modelError} tone="danger" /> : null}
               {processingError ? <StatusBanner message={processingError} tone="danger" /> : null}
               {!modelReady && !modelError ? (
@@ -311,7 +337,7 @@ export default function LivenessScreen() {
               <MetricRow label="Status" value={verificationStatus(isProcessing, modelReady)} />
               <MetricRow
                 label="Timeout"
-                value={`${pendingVerification.event.policy.liveness_timeout_ms} ms`}
+                value={`${Math.round(timeoutMs / 1000)} seconds`}
               />
             </SectionCard>
 
@@ -323,7 +349,7 @@ export default function LivenessScreen() {
                   void handleVerificationCapture();
                 }}
               />
-              <PrimaryButton label="Cancel verification" onPress={() => router.replace('/scan')} tone="ghost" />
+              <PrimaryButton label="Cancel verification" onPress={cancelVerification} tone="ghost" />
             </View>
           </View>
         </View>
@@ -340,7 +366,7 @@ export default function LivenessScreen() {
                 },
               ]}
             >
-              {challengeInstruction(challenge.type)}
+              Hold still for live face matching.
             </Text>
             <Text
               style={[
@@ -351,13 +377,13 @@ export default function LivenessScreen() {
                 },
               ]}
             >
-              Ask the attendee to complete the prompt, then capture one verification frame. The gate
-              generates a live template, deletes the temporary image, and compares locally.
+              Ask the attendee to face the camera with eyes open. Capture a clear frame while they
+              hold still; the gate deletes the temporary image after local matching.
             </Text>
           </View>
 
-          <SectionCard eyebrow="Challenge" title="Active liveness in progress">
-            <StatusChip label={challenge.type.replace('-', ' ')} tone="warning" />
+          <SectionCard eyebrow="Live capture" title="Ready for a clear frame">
+            <StatusChip label="steady face" tone="warning" />
             {modelError ? <StatusBanner message={modelError} tone="danger" /> : null}
             {processingError ? <StatusBanner message={processingError} tone="danger" /> : null}
             {!modelReady && !modelError ? (
@@ -371,7 +397,7 @@ export default function LivenessScreen() {
             <MetricRow label="Status" value={verificationStatus(isProcessing, modelReady)} />
             <MetricRow
               label="Timeout"
-              value={`${pendingVerification.event.policy.liveness_timeout_ms} ms`}
+              value={`${Math.round(timeoutMs / 1000)} seconds`}
             />
           </SectionCard>
 
@@ -424,7 +450,7 @@ export default function LivenessScreen() {
                 void handleVerificationCapture();
               }}
             />
-            <PrimaryButton label="Cancel verification" onPress={() => router.replace('/scan')} tone="ghost" />
+            <PrimaryButton label="Cancel verification" onPress={cancelVerification} tone="ghost" />
           </View>
         </>
       )}

@@ -6,7 +6,7 @@ import {
 
 const LOCAL_ENV = {
   FOCACCIA_LOCAL_HOST: '192.168.1.50',
-  FOCACCIA_LOCAL_SUPABASE_URL: 'http://192.168.1.50:54321/',
+  FOCACCIA_LOCAL_SUPABASE_URL: 'http://192.168.1.50:54331/',
   FOCACCIA_LOCAL_TICKETS_URL: 'http://192.168.1.50:3001/',
   FOCACCIA_LOCAL_WEB_URL: 'http://192.168.1.50:3000/',
   FOCACCIA_NETWORK_MODE: 'local',
@@ -33,7 +33,7 @@ describe('parseRootNetworkConfig', () => {
       diagnosticLabel: 'Local network',
       localHost: '192.168.1.50',
       mode: 'local',
-      supabaseUrl: 'http://192.168.1.50:54321',
+      supabaseUrl: 'http://192.168.1.50:54331',
       ticketsUrl: 'http://192.168.1.50:3001',
       webUrl: 'http://192.168.1.50:3000',
     });
@@ -76,7 +76,7 @@ describe('parseRootNetworkConfig', () => {
       parseRootNetworkConfig({
         ...LOCAL_ENV,
         FOCACCIA_LOCAL_HOST: host,
-        FOCACCIA_LOCAL_SUPABASE_URL: `http://${host}:54321`,
+        FOCACCIA_LOCAL_SUPABASE_URL: `http://${host}:54331`,
         FOCACCIA_LOCAL_TICKETS_URL: `http://${host}:3001`,
         FOCACCIA_LOCAL_WEB_URL: `http://${host}:3000`,
       }),
@@ -107,7 +107,7 @@ describe('parsePublicNetworkConfig', () => {
     const parsed = parsePublicNetworkConfig({
       EXPO_PUBLIC_FOCACCIA_LOCAL_HOST: '192.168.1.50',
       EXPO_PUBLIC_FOCACCIA_NETWORK_MODE: 'local',
-      EXPO_PUBLIC_FOCACCIA_SUPABASE_URL: 'http://192.168.1.50:54321',
+      EXPO_PUBLIC_FOCACCIA_SUPABASE_URL: 'http://192.168.1.50:54331',
       EXPO_PUBLIC_FOCACCIA_TICKETS_URL: 'http://192.168.1.50:3001',
       EXPO_PUBLIC_FOCACCIA_WEB_URL: 'http://192.168.1.50:3000',
       EXPO_PUBLIC_SUPABASE_ANON_KEY: 'public-anon-key',
@@ -128,10 +128,19 @@ describe('parsePublicNetworkConfig', () => {
       diagnosticLabel: 'Local network',
       localHost: '192.168.1.50',
       mode: 'local',
-      supabaseUrl: 'http://192.168.1.50:54321',
+      supabaseUrl: 'http://192.168.1.50:54331',
       ticketsUrl: 'http://192.168.1.50:3001',
       webUrl: 'http://192.168.1.50:3000',
     });
     expect(JSON.stringify(parsed)).not.toMatch(/allowlist|service-role|must-not-leak/);
+  });
+
+  test('rejects direct Supabase API ports for physical-device local mode', () => {
+    expect(() =>
+      parseRootNetworkConfig({
+        ...LOCAL_ENV,
+        FOCACCIA_LOCAL_SUPABASE_URL: 'http://192.168.1.50:54321',
+      }),
+    ).toThrow(/constrained proxy port 54331/);
   });
 });

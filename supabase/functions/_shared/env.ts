@@ -117,7 +117,7 @@ export function getRuntimeConfig(): RuntimeConfig {
         'FACE_PASS_SUPABASE_SERVICE_ROLE_KEY',
       ),
       secretWrappingKeyBase64Url,
-      matchThreshold: parsePositiveInteger('FACE_PASS_MATCH_THRESHOLD', 112),
+      matchThreshold: parsePositiveInteger('FACE_PASS_MATCH_THRESHOLD', 80),
       livenessTimeoutMs: parsePositiveInteger('FACE_PASS_LIVENESS_TIMEOUT_MS', 20_000),
       queueCodeDigits: parsePositiveInteger('FACE_PASS_QUEUE_CODE_DIGITS', 8),
       claimCodePepperBase64Url,

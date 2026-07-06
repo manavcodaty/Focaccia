@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
@@ -9,12 +9,15 @@ import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { enrollmentApi } from '../src/lib/api';
 import {
+  checkedInConfirmation,
   generationAllowance,
   ticketAction,
   ticketStatusPresentation,
 } from '../src/lib/ticket-state';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
+
+const APPROVED_ROUTE = '/approved' as Href;
 
 export default function TicketDetailScreen() {
   const router = useRouter();
@@ -37,6 +40,7 @@ export default function TicketDetailScreen() {
   const action = ticketAction(ticket, state.pass);
   const status = ticketStatusPresentation(ticket.status);
   const allowance = generationAllowance(ticket.generation_count);
+  const confirmation = checkedInConfirmation(ticket);
 
   async function startEnrollment(intent: 'initial' | 'regeneration') {
     setIsLoading(true);
@@ -88,7 +92,9 @@ export default function TicketDetailScreen() {
 
       {ticket.status === 'cancelled' ? <StatusBanner message="This ticket was cancelled and cannot be enrolled." tone="warning" /> : null}
       {ticket.status === 'revoked' ? <StatusBanner message="The organizer revoked this ticket. Any saved pass has been removed." tone="warning" /> : null}
-      {ticket.status === 'checked_in' ? <StatusBanner message="This ticket has already been checked in. Checked-in tickets are terminal." tone="neutral" /> : null}
+      {confirmation ? (
+        <StatusBanner message="The gate has processed and approved this ticket. Open the approval receipt for the final record." tone="success" />
+      ) : null}
       {action === 'regenerate' ? <StatusBanner message="No usable pass for this ticket is stored on this device. Regeneration revokes the previous pass and uses another generation." tone="warning" /> : null}
       {error ? <StatusBanner message={error} tone="warning" /> : null}
 
@@ -120,6 +126,9 @@ export default function TicketDetailScreen() {
         ) : null}
         {action === 'generation-limit' ? (
           <PrimaryButton disabled label="Generation limit reached" onPress={() => {}} />
+        ) : null}
+        {confirmation ? (
+          <PrimaryButton label="View approval receipt" onPress={() => router.push(APPROVED_ROUTE)} />
         ) : null}
       </View>
     </ScreenShell>

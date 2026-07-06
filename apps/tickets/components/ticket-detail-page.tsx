@@ -88,9 +88,9 @@ export function TicketDetailPage({ ticketId, confirmation = false }: { confirmat
           </div>
           <div className="ticket-perforation" aria-hidden="true" />
           <div className="claim-code-panel">
-            <small>Claim code</small>
-            <strong>{ticket.claim_code}</strong>
-            <CopyCodeButton code={ticket.claim_code} />
+            <small>{ticket.claim_code ? 'Claim code' : 'Claim code unavailable'}</small>
+            <strong>{ticket.claim_code || `Ends ${ticket.claim_code_hint}`}</strong>
+            {ticket.claim_code ? <CopyCodeButton code={ticket.claim_code} /> : <p>Claim-code recovery is unavailable because this local ticket was encrypted with older server secret material.</p>}
           </div>
         </section>
 

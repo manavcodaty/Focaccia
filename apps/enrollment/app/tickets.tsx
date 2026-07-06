@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
@@ -26,6 +26,8 @@ import {
 import { useAuth } from '../src/state/auth-context';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
+
+const APPROVED_ROUTE = '/approved' as Href;
 
 function ticketFromStoredPass(pass: StoredEnrollmentPass): EnrollmentTicket {
   return {
@@ -135,7 +137,7 @@ export default function TicketsScreen() {
       offline={offlineTicketIds.has(item.id)}
       onPress={() => {
         selectTicket(item, passes[item.id] ?? null);
-        router.push('/ticket');
+        router.push(item.status === 'checked_in' ? APPROVED_ROUTE : '/ticket');
       }}
       ticket={item}
     />

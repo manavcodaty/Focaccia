@@ -9,7 +9,7 @@ test("builds supabase/functions/.env from .env.local and example defaults", () =
   const result = prepareFunctionsEnvFiles({
     envExampleText: [
       "FACE_PASS_SECRET_WRAPPING_KEY_B64URL=replace-with-a-base64url-encoded-32-byte-secret",
-      "FACE_PASS_MATCH_THRESHOLD=112",
+      "FACE_PASS_MATCH_THRESHOLD=80",
       "FACE_PASS_LIVENESS_TIMEOUT_MS=20000",
       "FACE_PASS_QUEUE_CODE_DIGITS=8",
       "FOCACCIA_CLAIM_CODE_PEPPER=replace-with-a-base64url-encoded-32-byte-secret",
@@ -32,7 +32,7 @@ test("builds supabase/functions/.env from .env.local and example defaults", () =
     result.envText,
     /^FACE_PASS_SECRET_WRAPPING_KEY_B64URL=existing-secret-value-1234567890123456789012/m,
   );
-  assert.match(result.envText, /^FACE_PASS_MATCH_THRESHOLD=112$/m);
+  assert.match(result.envText, /^FACE_PASS_MATCH_THRESHOLD=80$/m);
   assert.match(result.envText, /^FACE_PASS_LIVENESS_TIMEOUT_MS=20000$/m);
   assert.match(result.envText, /^FACE_PASS_QUEUE_CODE_DIGITS=8$/m);
   assert.match(result.envText, /^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com$/m);
@@ -43,7 +43,7 @@ test("generates and persists a wrapping key when .env.local is missing it", () =
   const result = prepareFunctionsEnvFiles({
     envExampleText: [
       "FACE_PASS_SECRET_WRAPPING_KEY_B64URL=replace-with-a-base64url-encoded-32-byte-secret",
-      "FACE_PASS_MATCH_THRESHOLD=112",
+      "FACE_PASS_MATCH_THRESHOLD=80",
       "FACE_PASS_LIVENESS_TIMEOUT_MS=20000",
       "FACE_PASS_QUEUE_CODE_DIGITS=8",
       "FOCACCIA_CLAIM_CODE_PEPPER=replace-with-a-base64url-encoded-32-byte-secret",

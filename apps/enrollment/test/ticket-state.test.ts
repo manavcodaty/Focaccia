@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  checkedInConfirmation,
   generationAllowance,
   reconcilePassWithTicket,
   ticketAction,
@@ -68,6 +69,18 @@ test('maps every ticket status to plain-language presentation', () => {
   assert.deepEqual(ticketStatusPresentation('revoked'), { label: 'Revoked', tone: 'danger' });
 });
 
+test('builds explicit approval copy only after a gate check-in', () => {
+  assert.equal(checkedInConfirmation(ticket()), null);
+  assert.deepEqual(checkedInConfirmation(ticket({
+    checked_in_at: '2026-06-14T19:15:00.000Z',
+    status: 'checked_in',
+  })), {
+    body: 'The gate authenticated this pass and recorded entry for Summer Market.',
+    processedAt: '2026-06-14T19:15:00.000Z',
+    title: 'Ticket processed and approved',
+  });
+});
+
 test('calculates the three-generation allowance and blocks a fourth pass', () => {
   assert.deepEqual(generationAllowance(0), { remaining: 3, used: 0 });
   assert.deepEqual(generationAllowance(2), { remaining: 1, used: 2 });
@@ -108,6 +121,10 @@ test('detects organizer reset and invalidates an old local pass', () => {
 });
 
 test('reconciliation removes terminal or replaced passes and leaves an absent pass alone', () => {
+  assert.deepEqual(reconcilePassWithTicket(ticket({ status: 'checked_in' }), storedPass()), {
+    discardPass: true,
+    reason: 'terminal-ticket',
+  });
   assert.deepEqual(reconcilePassWithTicket(ticket({ status: 'revoked' }), storedPass()), {
     discardPass: true,
     reason: 'terminal-ticket',

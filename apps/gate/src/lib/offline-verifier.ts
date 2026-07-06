@@ -21,7 +21,7 @@ import {
 } from './types.ts';
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
-const MIN_MATCH_THRESHOLD = 112;
+const MAX_MATCH_THRESHOLD = 80;
 const MAX_TOKEN_LENGTH = 4096;
 const TEMPLATE_BYTES = 32;
 const textDecoder = new TextDecoder();
@@ -451,7 +451,7 @@ export async function finalizeOfflineVerification({
 }
 
 export function effectiveMatchThreshold(threshold: number): number {
-  return Math.max(threshold, MIN_MATCH_THRESHOLD);
+  return Math.min(threshold, MAX_MATCH_THRESHOLD);
 }
 
 export function recordLivenessFailure(

@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
+    "dev": "node ../../scripts/sync-ticket-dev-env.mjs && next dev --hostname 0.0.0.0 --port 3000",
     "start": "next start"
   },
   "dependencies": {

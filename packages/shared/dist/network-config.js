@@ -112,8 +112,8 @@ function parseSelectedNetworkConfig({ localHostValue, modeValue, supabaseUrlValu
     const ticketsUrl = parseUrl(requireValue(selectedEnv, valueNames.ticketsUrl, mode), valueNames.ticketsUrl, mode, localHost);
     if (mode === 'local') {
         const supabasePort = new URL(supabaseUrl).port;
-        if (supabasePort !== '54321' && supabasePort !== '54331') {
-            throw new NetworkConfigError('invalid_local_supabase_port', `${valueNames.supabaseUrl} must use port 54321 or the constrained proxy port 54331.`);
+        if (supabasePort !== '54331') {
+            throw new NetworkConfigError('invalid_local_supabase_port', `${valueNames.supabaseUrl} must use the constrained proxy port 54331.`);
         }
         if (new URL(webUrl).port !== '3000' || new URL(ticketsUrl).port !== '3001') {
             throw new NetworkConfigError('invalid_local_app_port', 'Local web and tickets URLs must use ports 3000 and 3001 respectively.');

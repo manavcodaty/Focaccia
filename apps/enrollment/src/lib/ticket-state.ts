@@ -96,6 +96,22 @@ export function generationAllowance(generationCount: number): {
   return { remaining: 3 - used, used };
 }
 
+export function checkedInConfirmation(ticket: EnrollmentTicket): {
+  body: string;
+  processedAt: string | null;
+  title: string;
+} | null {
+  if (ticket.status !== 'checked_in') {
+    return null;
+  }
+
+  return {
+    body: `The gate authenticated this pass and recorded entry for ${ticket.event.name}.`,
+    processedAt: ticket.checked_in_at,
+    title: 'Ticket processed and approved',
+  };
+}
+
 export function ticketAction(
   ticket: EnrollmentTicket,
   storedPass: StoredEnrollmentPass | null,
@@ -130,7 +146,7 @@ export function reconcilePassWithTicket(
     return { discardPass: true, reason: 'organizer-reset' };
   }
 
-  if (ticket.status === 'cancelled' || ticket.status === 'revoked') {
+  if (ticket.status === 'checked_in' || ticket.status === 'cancelled' || ticket.status === 'revoked') {
     return { discardPass: true, reason: 'terminal-ticket' };
   }
 

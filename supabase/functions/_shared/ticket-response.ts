@@ -10,6 +10,28 @@ export function sanitizeTicketRecord(
   return safeTicket;
 }
 
+export async function recoverTicketClaimCode(
+  ticket: Record<string, unknown>,
+  decryptClaimCode: (ciphertext: string) => Promise<string>,
+): Promise<string> {
+  const ciphertext = ticket.claim_code_ciphertext;
+
+  if (typeof ciphertext !== 'string' || ciphertext.length === 0) {
+    return '';
+  }
+
+  try {
+    return await decryptClaimCode(ciphertext);
+  } catch (error) {
+    console.error(
+      `Unable to decrypt claim code for ticket ${String(ticket.id ?? 'unknown')}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return '';
+  }
+}
+
 export function sanitizeTicketResult(data: unknown): unknown {
   if (typeof data !== 'object' || data === null || !('ticket' in data)) {
     return data;

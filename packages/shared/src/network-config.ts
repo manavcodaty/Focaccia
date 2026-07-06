@@ -213,10 +213,10 @@ function parseSelectedNetworkConfig({
   if (mode === 'local') {
     const supabasePort = new URL(supabaseUrl).port;
 
-    if (supabasePort !== '54321' && supabasePort !== '54331') {
+    if (supabasePort !== '54331') {
       throw new NetworkConfigError(
         'invalid_local_supabase_port',
-        `${valueNames.supabaseUrl} must use port 54321 or the constrained proxy port 54331.`,
+        `${valueNames.supabaseUrl} must use the constrained proxy port 54331.`,
       );
     }
 

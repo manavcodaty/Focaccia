@@ -4,7 +4,7 @@ import { handleCors } from '../_shared/cors.ts';
 import { decryptClaimCode } from '../_shared/claim-code.ts';
 import { emptyBodySchema } from '../_shared/schemas.ts';
 import { createAdminClient } from '../_shared/supabase.ts';
-import { sanitizeTicketRecord } from '../_shared/ticket-response.ts';
+import { recoverTicketClaimCode, sanitizeTicketRecord } from '../_shared/ticket-response.ts';
 import { parseJsonBody } from '../_shared/validation.ts';
 
 Deno.serve(async (req) => {
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
     const tickets = await Promise.all((data ?? []).map(async (ticket) => ({
       ...sanitizeTicketRecord(ticket),
-      claim_code: await decryptClaimCode(ticket.claim_code_ciphertext),
+      claim_code: await recoverTicketClaimCode(ticket, decryptClaimCode),
       event: (eventResult.data ?? []).find((event) => event.event_id === ticket.event_id) ?? null,
       ticket_type: (typeResult.data ?? []).find((type) => type.id === ticket.ticket_type_id) ?? null,
     })));

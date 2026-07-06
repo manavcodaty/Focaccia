@@ -53,7 +53,7 @@ export function MyTicketsPage() {
                 <article className="owned-ticket fade-section" style={{ animationDelay: `${index * 55}ms` }}>
                   <div><StatusPill status={ticket.status} /><h2>{ticket.event?.name ?? 'Event ticket'}</h2><p>{ticket.ticket_type?.name ?? 'Admission'}</p></div>
                   <div className="owned-ticket-meta"><span>{ticket.event ? formatEventDate(ticket.event.starts_at, ticket.event.ends_at) : 'Date unavailable'}</span><span>{ticket.event?.location || 'Location unavailable'}</span></div>
-                  <div className="owned-ticket-recovery"><small>Claim code</small><strong>{ticket.claim_code}</strong><span><b>Next step:</b> {state.nextStep}</span></div>
+                  <div className="owned-ticket-recovery"><small>{ticket.claim_code ? 'Claim code' : 'Claim code unavailable'}</small><strong>{ticket.claim_code || `Ends ${ticket.claim_code_hint}`}</strong><span><b>Next step:</b> {ticket.claim_code ? state.nextStep : 'Open this ticket for recovery options.'}</span></div>
                   <Link aria-label={`Open ticket for ${ticket.event?.name ?? 'event'}`} className="round-link" href={`/tickets/${ticket.id}`}><ArrowIcon /></Link>
                 </article>
               </RevealItem>

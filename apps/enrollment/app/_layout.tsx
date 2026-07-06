@@ -67,6 +67,7 @@ export default function RootLayout() {
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="tickets" options={{ headerShown: false }} />
                 <Stack.Screen name="ticket" options={{ title: 'Ticket' }} />
+                <Stack.Screen name="approved" options={{ title: 'Approved' }} />
                 <Stack.Screen name="consent" options={{ title: 'Privacy and consent' }} />
                 <Stack.Screen name="capture" options={{ headerShown: false }} />
                 <Stack.Screen name="pass" options={{ title: 'Event pass' }} />

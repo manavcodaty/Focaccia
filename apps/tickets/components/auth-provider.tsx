@@ -42,6 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<AttendeeProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
 
+  const handleAuthLoadError = useCallback(() => {
+    setProfile(null);
+    setLoading(false);
+  }, []);
+
   const applySession = useCallback(async (nextSession: Session | null) => {
     setSession(nextSession);
     if (!nextSession) {
@@ -58,12 +63,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    void supabase.auth.getSession().then(({ data }) => applySession(data.session));
+    void supabase.auth.getSession()
+      .then(({ data }) => applySession(data.session))
+      .catch(handleAuthLoadError);
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      void applySession(nextSession);
+      void applySession(nextSession).catch(handleAuthLoadError);
     });
     return () => data.subscription.unsubscribe();
-  }, [applySession]);
+  }, [applySession, handleAuthLoadError]);
 
   const value = useMemo<AuthContextValue>(() => ({
     loading,

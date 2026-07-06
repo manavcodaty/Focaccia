@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  cancelableTemplateV1,
   canonicalJsonBytes,
   ed25519Keypair,
   ed25519SignDetached,
@@ -13,6 +14,7 @@ import {
 
 import {
   effectiveMatchThreshold,
+  finalizeOfflineVerification,
   prepareOfflineVerification,
 } from "../src/lib/offline-verifier.ts";
 import type { StoredGateConfig } from "../src/lib/types.ts";
@@ -162,7 +164,57 @@ test("prepareOfflineVerification rejects decrypted templates with an invalid byt
 });
 
 test("effective match threshold is field-tolerant for older provisioned gates", () => {
-  assert.equal(effectiveMatchThreshold(80), 112);
-  assert.equal(effectiveMatchThreshold(112), 112);
-  assert.equal(effectiveMatchThreshold(120), 120);
+  assert.equal(effectiveMatchThreshold(50), 50);
+  assert.equal(effectiveMatchThreshold(80), 80);
+  assert.equal(effectiveMatchThreshold(112), 80);
+});
+
+test("finalizeOfflineVerification rejects false accepts above the strict threshold cap", async () => {
+  await prepareCrypto();
+  const eventSalt = Uint8Array.from({ length: 32 }, (_, index) => index + 1);
+  const event = await createStoredGate();
+  event.event_salt = await toBase64Url(eventSalt);
+  event.policy.match_threshold = 112;
+  const liveEmbedding = Float32Array.from(
+    { length: 128 },
+    (_value, index) => Math.sin((index + 1) / 5) * 0.7 + Math.cos((index + 1) / 13) * 0.3,
+  );
+  const enrolledTemplate = await cancelableTemplateV1(liveEmbedding, eventSalt);
+
+  for (let index = 0; index < 11; index += 1) {
+    enrolledTemplate[index] ^= 0xff;
+  }
+
+  const decision = await finalizeOfflineVerification({
+    liveEmbedding,
+    livenessMs: 250,
+    pending: {
+      decryptedTemplate: enrolledTemplate,
+      event,
+      passRef: "false-accept-pass",
+      payload: {
+        enc_template: "unused",
+        event_id: event.event_id,
+        exp: 1_906_500_000,
+        iat: 1_893_000_000,
+        nonce: "unused",
+        pass_id: "false-accept-pass",
+        single_use: true,
+        v: 1,
+      },
+      timings: {
+        decode_ms: 1,
+        decrypt_ms: 1,
+        replay_ms: 1,
+        revocation_ms: 1,
+        scan_ms: 1,
+        verify_ms: 1,
+      },
+      token: "unused",
+    },
+  });
+
+  assert.equal(decision.hammingDistance, 88);
+  assert.equal(decision.reasonCode, "MATCH_FAIL");
+  assert.equal(decision.accepted, false);
 });

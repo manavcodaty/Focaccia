@@ -28,6 +28,7 @@ function localSupabase() {
 const { API_URL, ANON_KEY, SERVICE_ROLE_KEY } = localSupabase();
 const runId = randomUUID().replace(/-/g, '').slice(0, 8);
 const defaultSourceIp = `2001:db8:${runId.slice(0, 4)}:${runId.slice(4)}::1`;
+const localOrganizerTestPassword = process.env.FOCACCIA_LOCAL_ORGANIZER_TEST_PASSWORD ?? 'FocacciaLocal2026!';
 
 async function jsonResponse(response) {
   const text = await response.text();
@@ -55,7 +56,7 @@ async function signUp(email) {
 }
 
 async function authenticateAllowlisted(email) {
-  const password = `P@ssword-${randomUUID()}`;
+  const password = localOrganizerTestPassword;
   const listResponse = await fetch(`${API_URL}/auth/v1/admin/users?page=1&per_page=1000`, {
     headers: {
       apikey: SERVICE_ROLE_KEY,
@@ -302,9 +303,13 @@ assert.equal(replayClaim.json.data.claim_code, firstClaim.json.data.claim_code);
 const conflictingReplay = await claim(attendees[0], mainEvent, paidType.json.data.id, checkoutKey);
 assert.equal(conflictingReplay.response.status, 409, JSON.stringify(conflictingReplay.json));
 assert.equal(conflictingReplay.json.error.code, 'idempotency_conflict');
-const duplicateClaim = await claim(attendees[0], mainEvent, mainEvent.ticket_type.id);
-assert.equal(duplicateClaim.response.status, 409);
-assert.equal(duplicateClaim.json.error.code, 'ticket_already_exists');
+const additionalClaims = await Promise.all(
+  Array.from({ length: 3 }, () => claim(attendees[0], mainEvent, mainEvent.ticket_type.id)),
+);
+assert.deepEqual(additionalClaims.map((result) => result.response.status), [201, 201, 201]);
+const overLimitClaim = await claim(attendees[0], mainEvent, mainEvent.ticket_type.id);
+assert.equal(overLimitClaim.response.status, 409);
+assert.equal(overLimitClaim.json.error.code, 'ticket_limit_reached');
 
 const isolatedList = await invoke('list-my-tickets', { accessToken: attendees[1].accessToken });
 assert.equal(isolatedList.response.status, 200);
@@ -318,7 +323,8 @@ assert.ok(organizerTwoEvents.every((event) => event.created_by === organizerTwo.
 const attendeeEvents = await userRows(attendees[0], 'events', 'select=event_id');
 assert.equal(attendeeEvents.length, 0);
 const attendeeTickets = await userRows(attendees[0], 'event_tickets', 'select=id,attendee_user_id');
-assert.deepEqual(attendeeTickets.map((ticket) => ticket.id), [firstClaim.json.data.ticket.id]);
+assert.equal(attendeeTickets.length, 4);
+assert.ok(attendeeTickets.some((ticket) => ticket.id === firstClaim.json.data.ticket.id));
 assert.ok(attendeeTickets.every((ticket) => ticket.attendee_user_id === attendees[0].userId));
 
 const finalSeatEvent = await createEvent(organizer, 'final_seat', { capacity: 1 });

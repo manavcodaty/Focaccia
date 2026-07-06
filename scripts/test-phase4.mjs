@@ -22,6 +22,7 @@ function localSupabase() {
 
 const { API_URL, ANON_KEY, SERVICE_ROLE_KEY } = localSupabase();
 const runId = randomUUID().replaceAll('-', '').slice(0, 8);
+const localOrganizerTestPassword = process.env.FOCACCIA_LOCAL_ORGANIZER_TEST_PASSWORD ?? 'FocacciaLocal2026!';
 
 async function jsonResponse(response) {
   const text = await response.text();
@@ -33,7 +34,7 @@ async function jsonResponse(response) {
 }
 
 async function authenticateAllowlisted(email) {
-  const password = `P@ssword-${randomUUID()}`;
+  const password = localOrganizerTestPassword;
   const usersResponse = await fetch(`${API_URL}/auth/v1/admin/users?page=1&per_page=1000`, {
     headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
   });

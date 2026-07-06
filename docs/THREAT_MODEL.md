@@ -51,7 +51,7 @@ Controls:
 - HMAC-SHA256 digest with server-only pepper and encrypted display value
 - non-enumerating errors and rate-limited lookup
 - authenticated ownership is mandatory even with a valid code
-- one ticket per attendee/event
+- four active tickets per attendee/event
 
 Residual risk: an attacker controlling the attendee account can use its tickets.
 

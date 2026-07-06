@@ -22,11 +22,11 @@ test('every ticket state has plain-English status and next-step copy', () => {
   assert.equal(statusCopy('revoked').tone, 'danger');
 });
 
-test('checkout errors distinguish capacity, duplicate, paid, and unknown failures', () => {
+test('checkout errors distinguish capacity, ticket limits, paid, and unknown failures', () => {
   assert.match(checkoutErrorMessage('event_sold_out'), /final place/);
   assert.match(checkoutErrorMessage('ticket_type_sold_out'), /final place/);
   assert.match(checkoutErrorMessage('capacity_exhausted'), /final place/);
   assert.match(checkoutErrorMessage('paid_ticket_not_supported'), /Paid ticket/);
-  assert.match(checkoutErrorMessage('ticket_already_exists'), /already hold/);
+  assert.match(checkoutErrorMessage('ticket_limit_reached'), /four tickets/);
   assert.match(checkoutErrorMessage('other'), /could not be completed/);
 });

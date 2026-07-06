@@ -20,7 +20,7 @@ const ERROR_MAP: Readonly<Record<string, { status: number; message: string }>> =
   pass_not_active: { status: 409, message: 'The pass is no longer active.' },
   pass_not_found: { status: 404, message: 'Pass not found.' },
   stale_gate_timestamp: { status: 409, message: 'The gate timestamp is outside the accepted window.' },
-  ticket_already_exists: { status: 409, message: 'You already have a ticket for this event.' },
+  ticket_limit_reached: { status: 409, message: 'You already have four tickets for this event.' },
   ticket_not_found: { status: 404, message: 'Ticket not found.' },
   ticket_state_conflict: { status: 409, message: 'The ticket cannot be changed from its current state.' },
   ticket_type_not_available: { status: 404, message: 'Ticket type not found.' },

@@ -140,9 +140,9 @@ flowchart LR
   the server-only allowlist, and every organizer mutation checks event ownership.
 - Ticket checkout and pass issuance require an authenticated attendee and
   server-derived ownership. A claim code never transfers ownership.
-- The database serializes final-seat checkout and enforces one ticket per
-  attendee per event, ticket capacities, legal state transitions, and a maximum
-  of three pass generations per reset cycle.
+- The database serializes final-seat checkout and enforces four active tickets
+  per attendee per event, ticket capacities, legal state transitions, and a
+  maximum of three pass generations per reset cycle.
 - Raw face images, embeddings, decrypted templates, and reusable biometrics do
   not enter Supabase, browser applications, logs, check-in payloads, or the sync
   queue.

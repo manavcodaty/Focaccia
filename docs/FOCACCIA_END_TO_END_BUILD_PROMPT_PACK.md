@@ -148,7 +148,7 @@ TICKET MODEL
 - Organizers can add ticket types and prices.
 - Currency is GBP.
 - A ticket type with price > 0 is visible as unavailable but cannot be checked out.
-- One attendee can hold at most one ticket per event, enforced by a database unique constraint.
+- One attendee can hold at most four active tickets per event, enforced by the ticket claim transaction and a database trigger.
 - Every event has global capacity.
 - Ticket types may have optional capacity; enforce both event and type capacities transactionally.
 - General Admission defaults to the event capacity.
@@ -354,7 +354,7 @@ Add new timestamped migrations without rewriting history.
 
 Implement organizer_profiles, attendee_profiles, event fields, event_ticket_types, event_tickets, ticket_activity_log, gate sync public keys/nonces, idempotency records, and gate check-ins.
 
-Implement database constraints and transactional operations for roles, ownership, one ticket per attendee/event, capacities, statuses, generation limits, unique pass/check-in identities, and paid-ticket blocking.
+Implement database constraints and transactional operations for roles, ownership, four active tickets per attendee/event, capacities, statuses, generation limits, unique pass/check-in identities, and paid-ticket blocking.
 
 Implement Edge Functions or equivalent operations:
 

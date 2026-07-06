@@ -35,7 +35,7 @@ Supabase Auth provides email/password identity. Attendee profiles derive email/u
 
 ### Ticketing
 
-Events have global capacity; ticket types may have optional capacity. Checkout is transactional and one attendee can hold one ticket per event. Paid types are shown but blocked. UUID-v4 idempotency keys prevent duplicate tickets, passes, resets, cancellations, and check-ins.
+Events have global capacity; ticket types may have optional capacity. Checkout is transactional and one attendee can hold up to four active tickets per event. Paid types are shown but blocked. UUID-v4 idempotency keys prevent duplicate tickets from retries, passes, resets, cancellations, and check-ins.
 
 Ticket lifecycle:
 

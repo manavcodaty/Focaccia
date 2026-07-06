@@ -162,7 +162,7 @@ revoked -> terminal
 ```
 
 - `claimed`, `enrolled`, and `checked_in` consume event/type capacity. `cancelled` and `revoked` release capacity. Historical rows remain indefinitely.
-- Each attendee has at most one ticket per event through `unique(event_id, attendee_user_id)`.
+- Each attendee has at most four active tickets per event through the ticket claim transaction and `event_tickets_holder_limit` trigger.
 - Initial issuance changes `claimed -> enrolled`, creates generation 1, and sets `current_pass_id`.
 - Regeneration is allowed only from `enrolled`, revokes the previous active pass in the same transaction, creates the next generation, and preserves `enrolled`.
 - Maximum lifetime generation is 3. `generation_count` is monotonic except organizer reset, which explicitly revokes the active pass, clears `current_pass_id`, sets ticket to `claimed`, and resets `generation_count` to 0 as required by the Global Contract. Historical pass rows remain.

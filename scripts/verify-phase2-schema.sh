@@ -66,7 +66,6 @@ where actual.column_name is null;
 assert_empty "Phase 2 uniqueness constraints and indexes exist" "
 with expected(name) as (
   values
-    ('event_tickets_event_attendee_key'),
     ('event_tickets_claim_code_digest_key'),
     ('event_passes_event_pass_key'),
     ('event_passes_ticket_generation_key'),
@@ -77,6 +76,37 @@ select expected.name
 from expected
 left join pg_constraint constraint_row on constraint_row.conname = expected.name
 where constraint_row.oid is null;
+"
+
+assert_empty "Phase 2 ticket holder limit guard exists" "
+with expected(kind, name) as (
+  values
+    ('index', 'event_tickets_attendee_event_idx'),
+    ('trigger', 'event_tickets_holder_limit')
+),
+actual(kind, name) as (
+  select 'index', relation.relname
+  from pg_class relation
+  join pg_namespace namespace on namespace.oid = relation.relnamespace
+  where namespace.nspname = 'public'
+    and relation.relkind = 'i'
+    and relation.relname = 'event_tickets_attendee_event_idx'
+  union all
+  select 'trigger', trigger_row.tgname
+  from pg_trigger trigger_row
+  join pg_class table_row on table_row.oid = trigger_row.tgrelid
+  join pg_namespace namespace on namespace.oid = table_row.relnamespace
+  where namespace.nspname = 'public'
+    and table_row.relname = 'event_tickets'
+    and trigger_row.tgname = 'event_tickets_holder_limit'
+    and not trigger_row.tgisinternal
+)
+select format('%s:%s', expected.kind, expected.name)
+from expected
+left join actual
+  on actual.kind = expected.kind
+ and actual.name = expected.name
+where actual.name is null;
 "
 
 assert_empty "Phase 2 tables enforce RLS" "

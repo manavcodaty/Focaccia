@@ -53,7 +53,7 @@ Paid ticket types remain publicly visible but checkout is rejected while payment
 
 Database constraints and transactional RPCs enforce:
 
-- one ticket per attendee/event
+- four active tickets per attendee/event
 - event and optional ticket-type capacities without final-seat oversell
 - unique claim-code digest
 - one active pass per ticket

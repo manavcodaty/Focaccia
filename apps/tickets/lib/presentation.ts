@@ -64,8 +64,8 @@ export function checkoutErrorMessage(code: string): string {
   if (code === 'paid_ticket_not_supported') {
     return 'Paid ticket checkout is not available in this EPQ deployment.';
   }
-  if (code === 'ticket_already_exists') {
-    return 'You already hold a ticket for this event. Open My tickets to continue.';
+  if (code === 'ticket_limit_reached') {
+    return 'You already hold four tickets for this event. Open My tickets to manage them.';
   }
   return 'Checkout could not be completed. Your place has not been reserved.';
 }

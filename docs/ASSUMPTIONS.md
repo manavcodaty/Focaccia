@@ -7,7 +7,7 @@ This file records implementation assumptions and externally dependent status as 
 - The artifact is iOS-only for enrollment and gate operation.
 - There is one active gate device per event and single-entry enforcement per pass.
 - Only GBP zero-price ticket types can be checked out. Paid types remain visible but unavailable.
-- One authenticated attendee can own at most one ticket per event.
+- One authenticated attendee can own at most four active tickets per event.
 - Ticket states are `claimed`, `enrolled`, `checked_in`, `cancelled`, and `revoked`; `checked_in`, `cancelled`, and `revoked` are terminal.
 - Initial issuance is generation 1. A ticket permits at most three pass generations until an organizer reset returns it to `claimed` with generation 0.
 - Event deletion is a soft delete and unlists the event; retained evidence rows are not removed.

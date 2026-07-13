@@ -36,12 +36,12 @@ export default function ConsentScreen() {
         <Text style={styles.subtitle}>{ticket.event.name}</Text>
       </View>
 
-      <SectionCard title="What stays on this phone">
-        <Text style={styles.body}>The app captures one face image, aligns it, runs the bundled model, and creates the event-scoped template locally.</Text>
-        <Text style={styles.body}>The temporary camera file and aligned crop are deleted immediately after inference. The raw embedding and unencrypted template are wiped after use and are never saved.</Text>
+      <SectionCard eyebrow="On-device processing" title="What happens on your iPhone" tone="subtle">
+        <Text style={styles.body}>The app captures one face image, aligns it, runs the bundled model on-device, and creates the event-scoped template locally.</Text>
+        <Text style={styles.body}>Native capture can create a temporary file and aligned crop. The app deletes them best-effort after inference; raw face images, the reusable embedding, and the unencrypted template are not saved as account records.</Text>
       </SectionCard>
 
-      <SectionCard title="What the server receives">
+      <SectionCard eyebrow="Signing boundary" title="What the server receives">
         <Text style={styles.body}>The server receives the ticket ID and a pass payload containing only the template encrypted to this event’s gate public key. It verifies ticket ownership and signs the payload.</Text>
         <Text style={styles.body}>The server does not receive the face image, reusable embedding, decrypted template, password, or a stored copy of the final signed token.</Text>
       </SectionCard>

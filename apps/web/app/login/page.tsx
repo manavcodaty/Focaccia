@@ -20,7 +20,7 @@ export default async function LoginPage() {
       </header>
 
       <main id="main-content" className="mx-auto grid max-w-[var(--page-max-width)] gap-10 px-5 py-12 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-20">
-        <section className="max-w-xl rounded-[24px] bg-[var(--color-warm-mist)] p-7 sm:p-10">
+        <section className="max-w-xl rounded-[var(--radius-panel)] bg-[var(--color-warm-mist)] p-7 sm:p-10">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-terracotta)]">Organizer access</p>
           <h1 className="display-heading mt-4 text-4xl leading-tight sm:text-5xl">Run the event without putting a face on the network.</h1>
           <p className="mt-6 text-base leading-7 text-[var(--color-muted-stone)]">Create events, provision one trusted gate, review ticket state, and synchronize signed check-ins from a role-protected console.</p>

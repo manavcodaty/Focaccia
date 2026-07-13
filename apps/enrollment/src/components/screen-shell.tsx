@@ -3,6 +3,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   View,
   type ViewStyle,
@@ -19,18 +20,19 @@ export function ScreenShell({
   style,
 }: {
   children: ReactNode;
-  variant?: 'default' | 'wide';
+  variant?: 'camera' | 'default' | 'wide';
   scroll?: boolean;
   style?: ViewStyle;
 }) {
   const layout = useResponsiveLayout();
+  const backgroundColor = variant === 'camera' ? palette.surfaceInverse : palette.background;
   const content = (
     <View
       style={[
         styles.content,
         {
           gap: layout.sectionGap,
-          maxWidth: variant === 'wide' ? layout.wideContentMaxWidth : layout.contentMaxWidth,
+          maxWidth: variant === 'wide' || variant === 'camera' ? layout.wideContentMaxWidth : layout.contentMaxWidth,
           paddingHorizontal: layout.horizontalPadding,
           paddingVertical: layout.verticalPadding,
         },
@@ -42,7 +44,11 @@ export function ScreenShell({
   );
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+    <SafeAreaView
+      edges={['top', 'bottom', 'left', 'right']}
+      style={[styles.safeArea, { backgroundColor }]}
+    >
+      <StatusBar barStyle={variant === 'camera' ? 'light-content' : 'dark-content'} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboard}
@@ -74,7 +80,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   safeArea: {
-    backgroundColor: palette.background,
     flex: 1,
   },
   scrollContent: {

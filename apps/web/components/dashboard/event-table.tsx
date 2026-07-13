@@ -12,13 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getEventLifecycleState, type EventLifecyclePhase } from "@/lib/event-lifecycle";
 import { invokeEdgeFunction } from "@/lib/functions";
 import { buildPublicTicketUrl, filterOrganizerEvents } from "@/lib/organizer-dashboard";
 import type { DashboardEventSummary } from "@/lib/types";
-
-const SELECT_CLASS = "h-10 rounded-[16px] border border-[var(--color-hint-of-grey)]/40 bg-white px-3 text-sm outline-none focus:border-[var(--color-terracotta)] focus:ring-2 focus:ring-[var(--color-warm-mist)]";
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -65,8 +64,14 @@ export function EventTable({ events, ticketsUrl }: { events: DashboardEventSumma
     <div className="space-y-4">
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_12rem]">
         <div className="relative"><Search className="absolute left-3 top-3 size-4 text-[var(--color-hint-of-grey)]" /><Input aria-label="Search events" className="pl-9" onChange={(event) => setQuery(event.target.value)} placeholder="Search by event name or ID" value={query} /></div>
-        <select aria-label="Filter lifecycle" className={SELECT_CLASS} onChange={(event) => setLifecycle(event.target.value as EventLifecyclePhase | "all")} value={lifecycle}><option value="all">All lifecycles</option><option value="upcoming">Upcoming</option><option value="active">Live</option><option value="ended">Ended</option></select>
-        <select aria-label="Filter listing" className={SELECT_CLASS} onChange={(event) => setListed(event.target.value as "all" | "listed" | "unlisted")} value={listed}><option value="all">All visibility</option><option value="listed">Listed</option><option value="unlisted">Unlisted</option></select>
+        <Select onValueChange={(value) => setLifecycle(value as EventLifecyclePhase | "all")} value={lifecycle}>
+          <SelectTrigger aria-label="Filter lifecycle" className="w-full"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All lifecycles</SelectItem><SelectItem value="upcoming">Upcoming</SelectItem><SelectItem value="active">Live</SelectItem><SelectItem value="ended">Ended</SelectItem></SelectContent>
+        </Select>
+        <Select onValueChange={(value) => setListed(value as "all" | "listed" | "unlisted")} value={listed}>
+          <SelectTrigger aria-label="Filter listing" className="w-full"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All visibility</SelectItem><SelectItem value="listed">Listed</SelectItem><SelectItem value="unlisted">Unlisted</SelectItem></SelectContent>
+        </Select>
       </div>
       <p className="text-xs text-[var(--color-muted-stone)] md:hidden" id="event-roster-scroll-help">
         Swipe the event roster left and right to review capacity, tickets, gate state, sync time, and actions.

@@ -1,46 +1,48 @@
-/**
- * Focaccia Gate App — Steep / Warm, Crisp Canvas Theme
- * Derived from docs/DESIGN.md
- */
-
+/** Shared warm-civic tokens tuned for fast gate operations. */
 export const palette = {
-  // Core DESIGN.md tokens
-  canvas: '#FFFFFF',
-  ink: '#17191C',
-  graphite: '#000000',
-  warmMist: '#FBE1D1',
-  terracotta: '#5D2A1A',
-  fog: '#F7F7F8',
-  mutedStone: '#4C4C4C',
-  lightSteel: '#777B86',
-  hintOfGrey: '#A3A6AF',
-  duskLink: '#8B8C8D',
+  canvas: '#FFFDFC',
+  surface: '#FFFFFF',
+  surfaceSubtle: '#F7F4F1',
+  surfaceClay: '#F4DED2',
+  ink: '#1D1917',
+  mutedStone: '#625B56',
+  lightSteel: '#817973',
+  hintOfGrey: '#817973',
+  border: '#DED8D3',
+  borderStrong: '#BDB4AD',
+  clay: '#7B3F2C',
+  clayPressed: '#673323',
+  warmMist: '#F4DED2',
 
-  // Semantic aliases
-  background: '#FFFFFF',
+  // Compatibility aliases used by existing route controllers and styles.
+  graphite: '#1D1917',
+  terracotta: '#7B3F2C',
+  fog: '#F7F4F1',
+  duskLink: '#6C4B3F',
+  background: '#FFFDFC',
   card: '#FFFFFF',
-  accent: '#FBE1D1',
-  accentStrong: '#5D2A1A',
+  accent: '#F4DED2',
+  accentStrong: '#7B3F2C',
 
-  // Gate-specific status
-  accept: '#2A7D5A',
-  acceptSoft: '#E5F4EC',
-  acceptBorder: '#A7DCC6',
-  alert: '#B74B33',
-  alertSoft: '#FDE3DB',
-  alertBorder: '#E9B9AB',
-  warning: '#8A5B14',
-  warningSoft: '#F5E6CB',
-  warningBorder: '#E5C88A',
+  accept: '#176747',
+  acceptSoft: '#E7F4ED',
+  acceptBorder: '#A7D6C0',
+  alert: '#9D3525',
+  alertSoft: '#FBE8E3',
+  alertBorder: '#E4B3A8',
+  warning: '#7A4D06',
+  warningSoft: '#F8ECD4',
+  warningBorder: '#DEC284',
+  neutralSoft: '#F1EEEB',
+  neutralBorder: '#D5CEC8',
 
-  // Overlays & camera
-  overlay: 'rgba(23, 25, 28, 0.18)',
-  scanFrame: '#FFFFFF',
-  panel: '#F7F7F8',
-
-  // Inverse (for scan overlays)
-  surfaceInverseSoft: 'rgba(23, 25, 28, 0.74)',
-  textInverse: '#FFFFFF',
+  overlay: 'rgba(29, 25, 23, 0.3)',
+  scanFrame: '#FFFDFC',
+  panel: '#F7F4F1',
+  surfaceInverse: '#1D1917',
+  surfaceInverseSoft: 'rgba(29, 25, 23, 0.88)',
+  textInverse: '#FFFDFC',
+  textInverseMuted: '#D9D1CB',
 } as const;
 
 export const fontFamilies = {
@@ -51,26 +53,11 @@ export const fontFamilies = {
 } as const;
 
 export const typography = {
-  body: {
-    fontFamily: fontFamilies.body,
-    fontWeight: '400' as const,
-  },
-  bodyMedium: {
-    fontFamily: fontFamilies.medium,
-    fontWeight: '500' as const,
-  },
-  bodyStrong: {
-    fontFamily: fontFamilies.semibold,
-    fontWeight: '600' as const,
-  },
-  display: {
-    fontFamily: fontFamilies.bold,
-    fontWeight: '700' as const,
-  },
-  title: {
-    fontFamily: fontFamilies.bold,
-    fontWeight: '600' as const,
-  },
+  body: { fontFamily: fontFamilies.body, fontWeight: '400' as const },
+  bodyMedium: { fontFamily: fontFamilies.medium, fontWeight: '500' as const },
+  bodyStrong: { fontFamily: fontFamilies.semibold, fontWeight: '600' as const },
+  display: { fontFamily: fontFamilies.bold, fontWeight: '700' as const },
+  title: { fontFamily: fontFamilies.semibold, fontWeight: '600' as const },
 } as const;
 
 export const spacing = {
@@ -82,23 +69,22 @@ export const spacing = {
   xl: 24,
   xxl: 32,
   section: 40,
+  spacious: 48,
 } as const;
 
 export const radii = {
   sm: 8,
+  control: 12,
   md: 12,
+  field: 14,
   lg: 16,
+  panel: 18,
   xl: 20,
-  card: 24,
-  button: 9999,
+  card: 20,
+  button: 14,
+  status: 999,
 } as const;
 
-const gateTheme = {
-  fontFamilies,
-  palette,
-  radii,
-  spacing,
-  typography,
-} as const;
+const gateTheme = { fontFamilies, palette, radii, spacing, typography } as const;
 
 export default gateTheme;

@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -14,6 +15,7 @@ import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
 export default function ExportScreen() {
+  const router = useRouter();
   const layout = useResponsiveLayout();
   const { exportLogsCsv, gate } = useGate();
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -68,13 +70,13 @@ export default function ExportScreen() {
 
   return (
     <ScreenShell>
-      <SectionCard eyebrow="Export" title="Operational logs only">
+      <SectionCard eyebrow="Evidence export" title="Operational records only" tone="subtle">
         <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           CSV export contains timings, event IDs, pass references, outcomes, and reason codes. It
           never includes biometric templates or captured images.
         </Text>
-        {feedback ? <StatusBanner message={feedback} tone="success" /> : null}
-        {error ? <StatusBanner message={error} tone="danger" /> : null}
+        {feedback ? <StatusBanner message={feedback} title="Export ready" tone="success" /> : null}
+        {error ? <StatusBanner message={error} title="Export failed" tone="danger" /> : null}
       </SectionCard>
 
       <View style={styles.actions}>
@@ -93,6 +95,7 @@ export default function ExportScreen() {
           }}
           tone="ghost"
         />
+        <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
       </View>
     </ScreenShell>
   );

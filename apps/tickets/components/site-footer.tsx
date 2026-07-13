@@ -4,8 +4,8 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="footer-inner">
-        <p>Focaccia tickets. Free checkout for the controlled EPQ deployment.</p>
-        <div><Link href="/privacy">Privacy</Link><span aria-hidden="true">·</span><Link href="/">Events</Link></div>
+        <div><strong>Focaccia tickets</strong><p>Free event tickets for the controlled EPQ deployment.</p></div>
+        <nav aria-label="Footer navigation"><Link href="/">Discover</Link><Link href="/tickets">My tickets</Link><Link href="/privacy">Privacy</Link></nav>
       </div>
     </footer>
   );

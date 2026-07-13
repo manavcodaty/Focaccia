@@ -1,8 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { AlertCircle, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { ticketApi } from '@/lib/api';
 
 import { useAuth } from './auth-provider';
@@ -36,11 +41,11 @@ export function ProfileForm() {
 
   return (
     <div className="auth-card fade-section">
-      <div className="auth-heading"><p className="overline">Profile required</p><h1 className="display-heading">Confirm your name.</h1><p>Your ticket email is fixed to <strong>{user.email}</strong>. Add the full name that should own the ticket.</p></div>
+      <div className="auth-heading"><p className="overline">Profile required</p><h1 className="display-heading">Confirm your name</h1><p>Your ticket email is fixed to <strong>{user.email}</strong>. Add the full name that should own the ticket.</p></div>
       <form action={submit} className="auth-form">
-        <label>Full name<input autoComplete="name" name="full_name" required type="text" /></label>
-        {error ? <div className="form-error" role="alert">{error}</div> : null}
-        <button className="button button-primary button-wide" disabled={pending} type="submit">{pending ? 'Saving' : 'Save profile'}</button>
+        <Field><FieldLabel htmlFor="full-name"><UserRound />Full name</FieldLabel><Input autoComplete="name" id="full-name" maxLength={120} name="full_name" required type="text" /><FieldDescription>This trusted name will own every ticket you claim.</FieldDescription></Field>
+        {error ? <Alert variant="destructive"><AlertCircle /><AlertTitle>Profile could not be saved</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
+        <Button className="w-full" disabled={pending} size="lg" type="submit">{pending ? 'Saving…' : 'Save profile'}</Button>
       </form>
     </div>
   );

@@ -32,8 +32,8 @@ export function RevealItem({ children }: { children: React.ReactNode }) {
   return (
     <m.div
       variants={{
-        hidden: { opacity: 0, transform: 'translateY(14px)' },
-        visible: { opacity: 1, transform: 'translateY(0px)', transition: { duration: 0.42, ease: [0.23, 1, 0.32, 1] } },
+        hidden: { opacity: 0, transform: 'translateY(8px)' },
+        visible: { opacity: 1, transform: 'translateY(0px)', transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] } },
       }}
     >
       {children}

@@ -2,76 +2,74 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { scaleFont, scaleSpacing } from '../lib/responsive-metrics';
 import { useResponsiveLayout } from '../lib/use-responsive-layout';
-import { palette, typography } from '../theme';
+import { palette, radii, typography } from '../theme';
 
 export function StatusBanner({
   message,
+  title,
   tone = 'neutral',
 }: {
   message: string;
-  tone?: 'neutral' | 'success' | 'warning';
+  title?: string;
+  tone?: 'danger' | 'neutral' | 'success' | 'warning';
 }) {
   const layout = useResponsiveLayout();
+  const toneStyle = tone === 'success'
+    ? styles.success
+    : tone === 'warning'
+      ? styles.warning
+      : tone === 'danger'
+        ? styles.danger
+        : styles.neutral;
+  const markerStyle = tone === 'success'
+    ? styles.markerSuccess
+    : tone === 'warning'
+      ? styles.markerWarning
+      : tone === 'danger'
+        ? styles.markerDanger
+        : styles.markerNeutral;
 
   return (
     <View
       accessibilityLiveRegion={tone === 'neutral' ? 'polite' : 'assertive'}
+      accessibilityRole={tone === 'danger' ? 'alert' : 'summary'}
       accessible
       style={[
         styles.banner,
         {
-          borderRadius: 16,
+          borderRadius: radii.panel,
+          gap: scaleSpacing(layout, 10, 1.06),
           paddingHorizontal: scaleSpacing(layout, 16, 1.06),
           paddingVertical: scaleSpacing(layout, 14, 1.06),
         },
-        tone === 'success'
-          ? styles.successBanner
-          : tone === 'warning'
-            ? styles.warningBanner
-            : styles.neutralBanner,
+        toneStyle,
       ]}
     >
-      <Text
-        style={[
-          styles.message,
-          {
-            fontSize: scaleFont(layout, 14),
-            lineHeight: scaleFont(layout, 20),
-          },
-          tone === 'success'
-            ? styles.successText
-            : tone === 'warning'
-              ? styles.warningText
-              : styles.neutralText,
-        ]}
-      >
-        {message}
-      </Text>
+      <View style={[styles.marker, markerStyle]} />
+      <View style={styles.copy}>
+        {title ? <Text style={[styles.title, { fontSize: scaleFont(layout, 14) }]}>{title}</Text> : null}
+        <Text style={[styles.message, { fontSize: scaleFont(layout, 14), lineHeight: scaleFont(layout, 20) }]}>{message}</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  banner: {},
-  message: {
-    ...typography.bodyStrong,
+  banner: {
+    alignItems: 'stretch',
+    borderWidth: 1,
+    flexDirection: 'row',
   },
-  neutralBanner: {
-    backgroundColor: palette.fog,
-  },
-  neutralText: {
-    color: palette.ink,
-  },
-  successBanner: {
-    backgroundColor: palette.successSoft,
-  },
-  successText: {
-    color: palette.success,
-  },
-  warningBanner: {
-    backgroundColor: palette.warningSoft,
-  },
-  warningText: {
-    color: palette.warning,
-  },
+  copy: { flex: 1, gap: 3 },
+  danger: { backgroundColor: palette.dangerSoft, borderColor: palette.dangerBorder },
+  marker: { borderRadius: radii.status, borderWidth: 0, width: 3 },
+  markerDanger: { backgroundColor: palette.danger },
+  markerNeutral: { backgroundColor: palette.mutedStone },
+  markerSuccess: { backgroundColor: palette.success },
+  markerWarning: { backgroundColor: palette.warning },
+  message: { ...typography.body, color: palette.ink },
+  neutral: { backgroundColor: palette.neutralSoft, borderColor: palette.neutralBorder },
+  success: { backgroundColor: palette.successSoft, borderColor: palette.successBorder },
+  title: { ...typography.bodyStrong, color: palette.ink },
+  warning: { backgroundColor: palette.warningSoft, borderColor: palette.warningBorder },
 });

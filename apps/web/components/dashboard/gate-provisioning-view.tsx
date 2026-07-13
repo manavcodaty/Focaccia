@@ -24,7 +24,6 @@ export interface GateProvisioningViewProps {
   backHref: string;
   eventId: string;
   eventName: string;
-  eventSalt: string;
   gates: ProvisionedGateSummary[];
   phase: EventLifecyclePhase;
 }
@@ -33,7 +32,6 @@ export function GateProvisioningView({
   backHref,
   eventId,
   eventName,
-  eventSalt,
   gates,
   phase,
 }: GateProvisioningViewProps) {
@@ -64,23 +62,17 @@ export function GateProvisioningView({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-4">
-              <p className="text-xs font-medium text-[color:var(--muted-foreground)]">Event</p>
-              <p className="mt-1.5 text-sm font-medium text-[color:var(--foreground)]">{eventName}</p>
-              <p className="mt-0.5 token-mono text-xs text-[color:var(--muted-foreground)]">{eventId}</p>
-            </div>
-            <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-4">
-              <p className="text-xs font-medium text-[color:var(--muted-foreground)]">EVENT_SALT</p>
-              <p className="mt-1.5 token-mono break-all text-xs leading-5 text-[color:var(--foreground)]">{eventSalt}</p>
-            </div>
+          <div className="border-l-2 border-[color:var(--primary)] pl-4">
+            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[color:var(--muted-foreground)]">Assigned event</p>
+            <p className="mt-1.5 text-base font-semibold text-[color:var(--foreground)]">{eventName}</p>
+            <p className="mt-1 token-mono text-xs text-[color:var(--muted-foreground)]">{eventId}</p>
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Provision Gate Instructions</CardTitle>
+          <CardTitle>Provision gate instructions</CardTitle>
           <CardDescription>
             {isClosed
               ? "Provisioning has been closed because the event already ended."
@@ -155,11 +147,9 @@ export function GateProvisioningView({
                       {gate.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>
-                  <div className="mt-3 rounded-lg border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-3">
-                    <p className="token-mono break-all text-xs leading-5 text-[color:var(--foreground)]">
-                      {gate.publicKey}
-                    </p>
-                  </div>
+                  <p className="mt-3 text-xs leading-5 text-[color:var(--muted-foreground)]">
+                    The bound public key is available in advanced cryptographic details.
+                  </p>
                 </div>
               ))}
             </div>

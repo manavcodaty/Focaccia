@@ -158,7 +158,7 @@ This plan governs a presentation-layer rebuild of `apps/tickets`, `apps/web`, `a
 
 ## 13. Screenshot matrix
 
-Local evidence lives in ignored `.focaccia/ui-redesign/`.
+Local evidence lives outside Git in `/Users/manavcodaty/.codex/visualizations/2026/07/13/019f5a4b-73f0-7c82-9ff7-faab055e0bdc/web-review/`. The migration ledger distinguishes saved final-state captures from routes exercised only through browser interaction.
 
 | App | Required rendered evidence |
 | --- | --- |

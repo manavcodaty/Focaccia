@@ -243,7 +243,7 @@ export default function LivenessScreen() {
   );
 
   return (
-    <ScreenShell style={styles.screen} variant="wide">
+    <ScreenShell style={styles.screen} variant="scanner">
       {layout.isLandscape ? (
         <View
           style={[
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     ...typography.title,
-    color: palette.terracotta,
+    color: palette.warmMist,
     fontSize: 12,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -519,10 +519,10 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...typography.body,
-    color: palette.mutedStone,
+    color: palette.textInverseMuted,
   },
   title: {
     ...typography.display,
-    color: palette.ink,
+    color: palette.textInverse,
   },
 });

@@ -3,164 +3,167 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Menu, Plus, X } from "lucide-react";
-import { useState } from "react";
+import {
+  CalendarDays,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Plus,
+  ShieldCheck,
+} from "lucide-react";
 
 import { useAuth } from "@/components/providers/auth-provider";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 import { performSecureSignOut } from "@/lib/sign-out";
 
 function getPageTitle(pathname: string) {
   if (pathname === "/dashboard") return "Dashboard";
-  if (pathname === "/events/new") return "Create Event";
-  if (pathname.endsWith("/edit")) return "Edit Event";
-  if (pathname.endsWith("/provisioning")) return "Gate Provisioning";
+  if (pathname === "/events/new") return "Create event";
+  if (pathname.endsWith("/edit")) return "Edit event";
+  if (pathname.endsWith("/provisioning")) return "Gate provisioning";
   if (pathname.endsWith("/revocations")) return "Revocations";
-  if (pathname.endsWith("/logs")) return "Gate Logs";
-  if (pathname.startsWith("/events/")) return "Event Overview";
-  return "Focaccia";
+  if (pathname.endsWith("/logs")) return "Gate logs";
+  if (pathname.startsWith("/events/")) return "Event workspace";
+  return "Organizer";
 }
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Create Event", href: "/events/new", icon: Plus },
-];
+  { href: "/dashboard", icon: LayoutDashboard, label: "Events" },
+  { href: "/events/new", icon: Plus, label: "Create event" },
+] as const;
+
+function isCurrentRoute(pathname: string, href: string) {
+  if (href === "/events/new") return pathname === href;
+  return pathname === "/dashboard" || (pathname.startsWith("/events/") && pathname !== "/events/new");
+}
+
+function Brand() {
+  return (
+    <Link
+      aria-label="Focaccia Organizer dashboard"
+      className="flex min-h-11 items-center gap-3 rounded-[var(--radius-control)] px-1 text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+      href="/dashboard"
+    >
+      <span className="grid size-9 place-items-center rounded-[10px] bg-primary text-primary-foreground shadow-[var(--shadow-keyline)]">
+        <ShieldCheck aria-hidden="true" className="size-4" />
+      </span>
+      <span>
+        <span className="block text-[15px] font-semibold tracking-[-0.02em]">Focaccia</span>
+        <span className="block text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Organizer</span>
+      </span>
+    </Link>
+  );
+}
+
+function NavLinks({ mobile = false }: { mobile?: boolean }) {
+  const pathname = usePathname();
+
+  return (
+    <nav aria-label={mobile ? "Mobile organizer navigation" : "Organizer navigation"} className="space-y-1">
+      {navItems.map((item) => {
+        const current = isCurrentRoute(pathname, item.href);
+        const link = (
+          <Link
+            aria-current={current ? "page" : undefined}
+            className={cn(
+              "flex min-h-11 items-center gap-3 rounded-[var(--radius-control)] px-3 text-sm font-medium transition-colors duration-150",
+              current
+                ? "bg-primary text-primary-foreground shadow-[var(--shadow-keyline)]"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+            )}
+            href={item.href}
+          >
+            <item.icon aria-hidden="true" className="size-4" />
+            {item.label}
+          </Link>
+        );
+
+        return mobile ? (
+          <SheetClose asChild key={item.href}>{link}</SheetClose>
+        ) : (
+          <div key={item.href}>{link}</div>
+        );
+      })}
+    </nav>
+  );
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { supabase, user } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const title = getPageTitle(pathname);
-  const organizer = user?.email?.split("@")[0] ?? "organizer";
+  const organizerEmail = user?.email ?? "Organizer account";
+  const signOut = () => void performSecureSignOut(supabase).then(() => window.location.assign("/login"));
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--color-canvas)]">
-      <a className="skip-link" href="#main-content">
-        Skip to main content
-      </a>
-      <header className="sticky top-0 z-50 border-b border-[var(--color-hint-of-grey)]/25 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-[var(--page-max-width)] items-center justify-between px-5 md:px-8">
-          {/* Left: Logo + Nav */}
-          <div className="flex items-center gap-6">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 text-[15px] font-medium tracking-[-0.009em] text-[var(--color-ink)]"
-            >
-              <div className="flex size-7 items-center justify-center rounded-lg bg-[var(--color-ink)]">
-                <svg viewBox="0 0 16 16" fill="none" className="size-3.5">
-                  <path
-                    d="M8 2.5a5 5 0 00-5 5v1.75C3 12.6 5.4 14.7 8 15.5c2.6-.8 5-2.9 5-6.25V7.5a5 5 0 00-5-5z"
-                    fill="rgba(255,255,255,0.15)"
-                    stroke="white"
-                    strokeWidth="1.2"
-                  />
-                  <path
-                    d="M6 8.5l1.5 1.5 3-3.5"
-                    stroke="white"
-                    strokeWidth="1.3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                  />
-                </svg>
-              </div>
-              Focaccia
-            </Link>
+    <div className="min-h-[100dvh] bg-background text-foreground lg:flex">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
 
-            {/* Desktop nav links */}
-            <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href
-                  || (item.href === "/dashboard" && pathname.startsWith("/events/") && pathname !== "/events/new");
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-1.5 rounded-[9999px] px-3.5 py-1.5 text-[14px] transition-colors duration-150 ${
-                      isActive
-                        ? "bg-[var(--color-fog)] font-medium text-[var(--color-ink)]"
-                        : "text-[var(--color-muted-stone)] hover:bg-[var(--color-fog)] hover:text-[var(--color-ink)]"
-                    }`}
-                  >
-                    {item.icon && <item.icon className="size-3.5" />}
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
+      <aside className="hidden w-[17rem] shrink-0 border-r border-border bg-card p-5 lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:flex-col">
+        <Brand />
+        <div className="mt-8">
+          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Workspace</p>
+          <NavLinks />
+        </div>
+        <div className="mt-auto border-t border-border pt-5">
+          <p className="truncate px-3 text-xs text-muted-foreground" title={organizerEmail}>{organizerEmail}</p>
+          <Button className="mt-2 w-full justify-start" onClick={signOut} variant="ghost">
+            <LogOut aria-hidden="true" />
+            Sign out
+          </Button>
+        </div>
+      </aside>
+
+      <div className="min-w-0 flex-1">
+        <header className="sticky top-0 z-40 border-b border-border bg-background/96 lg:hidden">
+          <div className="flex min-h-16 items-center justify-between gap-3 px-5">
+            <Brand />
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button aria-label="Open organizer navigation" size="icon" variant="outline">
+                  <Menu aria-hidden="true" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-[min(88vw,22rem)] bg-card" side="right">
+                <SheetHeader className="border-b border-border">
+                  <SheetTitle>Organizer navigation</SheetTitle>
+                  <SheetDescription>Manage events and gate readiness.</SheetDescription>
+                </SheetHeader>
+                <div className="p-4"><NavLinks mobile /></div>
+                <SheetFooter className="border-t border-border">
+                  <p className="truncate text-xs text-muted-foreground" title={organizerEmail}>{organizerEmail}</p>
+                  <Button className="justify-start" onClick={signOut} variant="ghost">
+                    <LogOut aria-hidden="true" />
+                    Sign out
+                  </Button>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
           </div>
+        </header>
 
-          {/* Right: User + Actions */}
-          <div className="flex items-center gap-3">
-            <span className="hidden text-[13px] text-[var(--color-muted-stone)] md:block">
-              {organizer}
-            </span>
-            <button
-              type="button"
-              onClick={() => void performSecureSignOut(supabase).then(() => window.location.assign("/login"))}
-              className="hidden items-center gap-1.5 rounded-[9999px] px-3 py-1.5 text-[13px] text-[var(--color-muted-stone)] transition-colors hover:bg-[var(--color-fog)] hover:text-[var(--color-ink)] md:flex"
-              aria-label="Sign out"
-            >
-              <LogOut className="size-3.5" />
-              Sign out
-            </button>
-
-            {/* Mobile menu toggle */}
-            <button
-              type="button"
-              className="flex size-9 items-center justify-center rounded-[9999px] text-[var(--color-ink)] md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            >
-              {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-            </button>
+        <div className="border-b border-border bg-secondary/70">
+          <div className="mx-auto flex min-h-12 max-w-[var(--page-max-width)] items-center gap-2 px-5 md:px-8">
+            <CalendarDays aria-hidden="true" className="size-4 text-primary" />
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
           </div>
         </div>
 
-        {/* Mobile dropdown */}
-        {mobileMenuOpen && (
-          <div className="border-t border-[var(--color-ink)]/[0.06] bg-[var(--color-canvas)] px-5 pb-4 pt-3 md:hidden">
-            <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-[16px] px-3 py-2.5 text-[15px] text-[var(--color-ink)] transition-colors hover:bg-[var(--color-fog)]"
-                >
-                  {item.icon && <item.icon className="size-4" />}
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-            <div className="mt-3 flex items-center justify-between border-t border-[var(--color-ink)]/[0.06] pt-3">
-              <span className="text-[13px] text-[var(--color-muted-stone)]">{organizer}</span>
-              <button
-                type="button"
-                onClick={() => void performSecureSignOut(supabase).then(() => window.location.assign("/login"))}
-                className="flex items-center gap-1.5 rounded-[9999px] px-3 py-1.5 text-[13px] text-[var(--color-muted-stone)] hover:text-[var(--color-ink)]"
-              >
-                <LogOut className="size-3.5" />
-                Sign out
-              </button>
-            </div>
-          </div>
-        )}
-      </header>
-
-      <div className="border-b border-[var(--color-hint-of-grey)]/20 bg-[var(--color-fog)]">
-        <div className="mx-auto flex h-10 max-w-[var(--page-max-width)] items-center px-5 md:px-8">
-          <h1 className="text-[13px] font-medium text-[var(--color-muted-stone)]">
-            {title}
-          </h1>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <main id="main-content" className="flex flex-1 flex-col px-5 py-8 md:px-8 md:py-10">
-        <div className="mx-auto w-full max-w-[var(--page-max-width)]">
+        <main className="mx-auto w-full max-w-[var(--page-max-width)] px-5 py-8 md:px-8 md:py-10" id="main-content">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

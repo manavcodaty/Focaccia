@@ -1,50 +1,50 @@
-/**
- * Focaccia Enrollment App — Steep / Warm, Crisp Canvas Theme
- * Derived from docs/DESIGN.md
- */
-
+/** Shared warm-civic tokens for the attendee wallet and enrollment flow. */
 export const palette = {
-  // Core DESIGN.md tokens
-  canvas: '#FFFFFF',
-  ink: '#17191C',
-  graphite: '#000000',
-  warmMist: '#FBE1D1',
-  terracotta: '#5D2A1A',
-  fog: '#F7F7F8',
-  mutedStone: '#4C4C4C',
-  lightSteel: '#777B86',
-  hintOfGrey: '#A3A6AF',
-  duskLink: '#8B8C8D',
+  canvas: '#FFFDFC',
+  surface: '#FFFFFF',
+  surfaceSubtle: '#F7F4F1',
+  surfaceClay: '#F4DED2',
+  ink: '#1D1917',
+  mutedStone: '#625B56',
+  lightSteel: '#817973',
+  hintOfGrey: '#817973',
+  border: '#DED8D3',
+  borderStrong: '#BDB4AD',
+  clay: '#7B3F2C',
+  clayPressed: '#673323',
+  warmMist: '#F4DED2',
 
-  // Semantic aliases
-  background: '#FFFFFF',
+  // Compatibility aliases used by route controllers and existing view styles.
+  graphite: '#1D1917',
+  terracotta: '#7B3F2C',
+  fog: '#F7F4F1',
+  duskLink: '#6C4B3F',
+  background: '#FFFDFC',
   card: '#FFFFFF',
-  accent: '#FBE1D1',
-  accentStrong: '#5D2A1A',
+  accent: '#F4DED2',
+  accentStrong: '#7B3F2C',
 
-  // Status
-  success: '#2A7D5A',
-  successSoft: '#E5F4EC',
-  successBorder: '#A7DCC6',
-  danger: '#B74B33',
-  dangerSoft: '#FDE3DB',
-  dangerBorder: '#E9B9AB',
-  warning: '#8A5B14',
-  warningSoft: '#F5E6CB',
-  warningBorder: '#E5C88A',
+  success: '#176747',
+  successSoft: '#E7F4ED',
+  successBorder: '#A7D6C0',
+  danger: '#9D3525',
+  dangerSoft: '#FBE8E3',
+  dangerBorder: '#E4B3A8',
+  warning: '#7A4D06',
+  warningSoft: '#F8ECD4',
+  warningBorder: '#DEC284',
+  neutralSoft: '#F1EEEB',
+  neutralBorder: '#D5CEC8',
 
-  // Overlays & camera
-  overlay: 'rgba(23, 25, 28, 0.24)',
-  frame: 'rgba(255, 255, 255, 0.5)',
-  frameReady: 'rgba(229, 244, 236, 0.45)',
-  frameSoft: 'rgba(255, 255, 255, 0.18)',
-
-  // Inverse (for dark surfaces like processing overlays)
-  surfaceInverse: '#17191C',
-  surfaceInverseSoft: 'rgba(23, 25, 28, 0.82)',
-  textInverse: '#FFFFFF',
-  textInverseMuted: 'rgba(255, 255, 255, 0.8)',
-  textInverseSubtle: 'rgba(255, 255, 255, 0.78)',
+  overlay: 'rgba(29, 25, 23, 0.28)',
+  frame: 'rgba(255, 255, 255, 0.72)',
+  frameReady: '#A7D6C0',
+  frameSoft: 'rgba(255, 255, 255, 0.24)',
+  surfaceInverse: '#1D1917',
+  surfaceInverseSoft: 'rgba(29, 25, 23, 0.88)',
+  textInverse: '#FFFDFC',
+  textInverseMuted: '#D9D1CB',
+  textInverseSubtle: '#BDB4AD',
 } as const;
 
 export const fontFamilies = {
@@ -55,26 +55,11 @@ export const fontFamilies = {
 } as const;
 
 export const typography = {
-  body: {
-    fontFamily: fontFamilies.body,
-    fontWeight: '400' as const,
-  },
-  bodyMedium: {
-    fontFamily: fontFamilies.medium,
-    fontWeight: '500' as const,
-  },
-  bodyStrong: {
-    fontFamily: fontFamilies.semibold,
-    fontWeight: '600' as const,
-  },
-  display: {
-    fontFamily: fontFamilies.bold,
-    fontWeight: '700' as const,
-  },
-  title: {
-    fontFamily: fontFamilies.bold,
-    fontWeight: '600' as const,
-  },
+  body: { fontFamily: fontFamilies.body, fontWeight: '400' as const },
+  bodyMedium: { fontFamily: fontFamilies.medium, fontWeight: '500' as const },
+  bodyStrong: { fontFamily: fontFamilies.semibold, fontWeight: '600' as const },
+  display: { fontFamily: fontFamilies.bold, fontWeight: '700' as const },
+  title: { fontFamily: fontFamilies.semibold, fontWeight: '600' as const },
 } as const;
 
 export const spacing = {
@@ -86,23 +71,23 @@ export const spacing = {
   xl: 24,
   xxl: 32,
   section: 40,
+  spacious: 48,
 } as const;
 
 export const radii = {
   sm: 8,
+  control: 12,
   md: 12,
+  field: 14,
   lg: 16,
+  panel: 18,
   xl: 20,
-  card: 24,
-  button: 9999,
+  card: 20,
+  credential: 26,
+  button: 14,
+  status: 999,
 } as const;
 
-const enrollmentTheme = {
-  fontFamilies,
-  palette,
-  radii,
-  spacing,
-  typography,
-} as const;
+const enrollmentTheme = { fontFamilies, palette, radii, spacing, typography } as const;
 
 export default enrollmentTheme;

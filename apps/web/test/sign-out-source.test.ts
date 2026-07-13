@@ -3,22 +3,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const navUserSource = readFileSync(
-  path.join(import.meta.dirname, "../components/layout/nav-user.tsx"),
-  "utf8",
-);
-const userMenuSource = readFileSync(
-  path.join(import.meta.dirname, "../components/layout/user-menu.tsx"),
+const shellSource = readFileSync(
+  path.join(import.meta.dirname, "../components/layout/app-shell.tsx"),
   "utf8",
 );
 
-for (const [name, source] of [
-  ["nav-user", navUserSource],
-  ["user-menu", userMenuSource],
-] as const) {
-  test(`${name} hard-redirects organizers to the public landing page after sign-out`, () => {
-    assert.match(source, /getPostSignOutState\(\)/);
-    assert.match(source, /window\.location\.replace\(nextState\.href\)/);
-    assert.doesNotMatch(source, /router\.push\(/);
-  });
-}
+test("the production organizer shell clears the secure session before a document navigation", () => {
+  assert.match(shellSource, /performSecureSignOut\(supabase\)/);
+  assert.match(shellSource, /window\.location\.assign\("\/login"\)/);
+  assert.doesNotMatch(shellSource, /router\.push\(/);
+});

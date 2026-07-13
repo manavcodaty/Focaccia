@@ -37,8 +37,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,8 +54,6 @@ import type {
   OrganizerTicket,
   TicketStatus,
 } from "@/lib/types";
-
-const SELECT_CLASS = "h-10 rounded-[16px] border border-[var(--color-hint-of-grey)]/40 bg-white px-3 text-sm text-[var(--color-ink)] outline-none focus:border-[var(--color-terracotta)] focus:ring-2 focus:ring-[var(--color-warm-mist)]";
 
 function formatTimestamp(value: string | null): string {
   if (!value) return "Never";
@@ -201,7 +201,7 @@ function TicketTypeDialog({ eventId, ticketType }: { eventId: string; ticketType
             <div><label className="mb-2 block text-sm font-medium" htmlFor="ticket-type-name">Name</label><Input id="ticket-type-name" maxLength={120} onChange={(event) => setName(event.target.value)} value={name} /></div>
             <div><label className="mb-2 block text-sm font-medium" htmlFor="ticket-type-description">Description</label><Textarea id="ticket-type-description" maxLength={1000} onChange={(event) => setDescription(event.target.value)} value={description} /></div>
             <div className="grid gap-4 sm:grid-cols-2"><div><label className="mb-2 block text-sm font-medium" htmlFor="ticket-type-price">Price in GBP</label><Input id="ticket-type-price" min="0" onChange={(event) => setPrice(event.target.value)} step="0.01" type="number" value={price} /></div><div><label className="mb-2 block text-sm font-medium" htmlFor="ticket-type-capacity">Optional type capacity</label><Input id="ticket-type-capacity" min="1" onChange={(event) => setCapacity(event.target.value)} placeholder="Uses event capacity" type="number" value={capacity} /></div></div>
-            <label className="flex items-center gap-3 text-sm"><input checked={active} className="size-4 accent-[var(--color-terracotta)]" onChange={(event) => setActive(event.target.checked)} type="checkbox" />Active and visible</label>
+            <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius-field)] bg-secondary px-3 text-sm"><Checkbox checked={active} onCheckedChange={(checked) => setActive(checked === true)} />Active and visible</label>
             {pricePenceFromInput(price) > 0 ? <Alert><AlertTitle>Paid checkout is unavailable</AlertTitle><AlertDescription>This type is visible in the public app, but attendees cannot check out.</AlertDescription></Alert> : null}
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button disabled={pending} onClick={() => void submit()}>{pending ? "Saving…" : "Save ticket type"}</Button></DialogFooter>
@@ -267,8 +267,16 @@ export function EventOperationsWorkspace({ operations, publicTicketUrl, networkL
         <div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link href={`/events/${event.event_id}/edit`}><Pencil className="size-4" />Edit event</Link></Button><Button asChild><Link href={publicTicketUrl} target="_blank">Public event<ExternalLink className="size-4" /></Link></Button></div>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {[ ["Claimed", operations.counts.claimed], ["Enrolled", operations.counts.enrolled], ["Checked in", operations.counts.checked_in], ["Cancelled", operations.counts.cancelled], ["Revoked", operations.counts.revoked] ].map(([label, value]) => <div className="rounded-[20px] border border-[var(--color-hint-of-grey)]/25 bg-white p-4" key={label}><p className="text-xs text-[var(--color-muted-stone)]">{label}</p><p className="mt-2 text-3xl font-medium tabular-nums">{value}</p></div>)}
+      <section
+        aria-label="Ticket state summary"
+        className="grid grid-cols-2 gap-x-6 gap-y-5 border-y border-[var(--color-hint-of-grey)]/25 py-5 sm:grid-cols-5 sm:gap-y-0"
+      >
+        {[ ["Claimed", operations.counts.claimed], ["Enrolled", operations.counts.enrolled], ["Checked in", operations.counts.checked_in], ["Cancelled", operations.counts.cancelled], ["Revoked", operations.counts.revoked] ].map(([label, value]) => (
+          <div className="min-w-0 sm:border-l sm:border-[var(--color-hint-of-grey)]/25 sm:pl-5 sm:first:border-l-0 sm:first:pl-0" key={label}>
+            <p className="text-xs font-medium uppercase tracking-[0.08em] text-[var(--color-muted-stone)]">{label}</p>
+            <p className="mt-2 text-3xl font-medium tabular-nums text-[var(--color-ink)]">{value}</p>
+          </div>
+        ))}
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.4fr_0.6fr]">
@@ -286,7 +294,11 @@ export function EventOperationsWorkspace({ operations, publicTicketUrl, networkL
         <TabsList className="w-full justify-start overflow-x-auto"><TabsTrigger value="tickets">Tickets</TabsTrigger><TabsTrigger value="types">Ticket types</TabsTrigger><TabsTrigger value="activity">Activity history</TabsTrigger></TabsList>
         <TabsContent className="min-w-0" value="tickets">
           <Card className="min-w-0"><CardHeader><div className="flex flex-wrap items-end justify-between gap-4"><div><CardTitle>Ticket table</CardTitle><CardDescription>Trusted attendee profiles, pass generations, and terminal states.</CardDescription></div><Button disabled={exporting} onClick={() => void exportCsv()} variant="outline"><Download className="size-4" />{exporting ? "Exporting…" : "Export CSV"}</Button></div></CardHeader><CardContent>
-            <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_14rem]"><div className="relative"><Search className="absolute left-3 top-3 size-4 text-[var(--color-hint-of-grey)]" /><Input aria-label="Search attendees" className="pl-9" onChange={(event) => setQuery(event.target.value)} placeholder="Search name or email" value={query} /></div><select aria-label="Filter status" className={SELECT_CLASS} onChange={(event) => setStatus(event.target.value as TicketStatus | "all")} value={status}><option value="all">All statuses</option>{["claimed", "enrolled", "checked_in", "cancelled", "revoked"].map((value) => <option key={value} value={value}>{statusLabel(value as TicketStatus)}</option>)}</select><select aria-label="Filter ticket type" className={SELECT_CLASS} onChange={(event) => setTicketType(event.target.value)} value={ticketType}><option value="all">All ticket types</option>{operations.ticket_types.map((type) => <option key={type.id} value={type.name}>{type.name}</option>)}</select></div>
+            <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_14rem]">
+              <div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-[var(--color-hint-of-grey)]" /><Input aria-label="Search attendees" className="pl-9" onChange={(event) => setQuery(event.target.value)} placeholder="Search name or email" value={query} /></div>
+              <Select onValueChange={(value) => setStatus(value as TicketStatus | "all")} value={status}><SelectTrigger aria-label="Filter status" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{["claimed", "enrolled", "checked_in", "cancelled", "revoked"].map((value) => <SelectItem key={value} value={value}>{statusLabel(value as TicketStatus)}</SelectItem>)}</SelectContent></Select>
+              <Select onValueChange={setTicketType} value={ticketType}><SelectTrigger aria-label="Filter ticket type" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All ticket types</SelectItem>{operations.ticket_types.map((type) => <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>)}</SelectContent></Select>
+            </div>
             <div className="overflow-x-auto rounded-[16px] border border-[var(--color-hint-of-grey)]/25"><Table><TableHeader><TableRow><TableHead>Attendee</TableHead><TableHead>Ticket</TableHead><TableHead>Status</TableHead><TableHead>Generation</TableHead><TableHead>Pass</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filteredTickets.map((ticket) => <TableRow key={ticket.id}><TableCell><p className="font-medium">{ticket.attendee_name}</p><p className="text-xs text-[var(--color-muted-stone)]">{ticket.attendee_email}</p></TableCell><TableCell><p>{ticket.ticket_type_name}</p><p className="text-xs text-[var(--color-muted-stone)]">{formatPrice(ticket.ticket_type_price_pence)}</p></TableCell><TableCell><Badge variant={statusVariant(ticket.status)}>{statusLabel(ticket.status)}</Badge></TableCell><TableCell className="tabular-nums">{ticket.generation_count} of 3</TableCell><TableCell className="token-mono max-w-36 truncate text-xs">{ticket.current_pass_id ?? "—"}</TableCell><TableCell><div className="flex justify-end gap-2">{ticket.status === "enrolled" ? <TicketActionDialog action="reset" ticket={ticket} /> : null}{ticket.status === "claimed" || ticket.status === "enrolled" ? <TicketActionDialog action="revoke" ticket={ticket} /> : null}</div></TableCell></TableRow>)}{filteredTickets.length === 0 ? <TableRow><TableCell className="py-10 text-center text-[var(--color-muted-stone)]" colSpan={6}>No tickets match these filters.</TableCell></TableRow> : null}</TableBody></Table></div>
           </CardContent></Card>
         </TabsContent>
@@ -298,7 +310,14 @@ export function EventOperationsWorkspace({ operations, publicTicketUrl, networkL
         </TabsContent>
       </Tabs>
 
-      <section className="grid gap-3 sm:grid-cols-3">{summaryCards.map(({ icon: Icon, label, value }) => <div className="flex items-center gap-3 rounded-[16px] bg-[var(--color-fog)] p-4" key={label}><Icon className="size-4 text-[var(--color-terracotta)]" /><div><p className="text-xs text-[var(--color-muted-stone)]">{label}</p><p className="font-medium tabular-nums">{value}</p></div></div>)}</section>
+      <section aria-label="Operational evidence summary" className="grid border-y border-[var(--color-hint-of-grey)]/25 sm:grid-cols-3">
+        {summaryCards.map(({ icon: Icon, label, value }) => (
+          <div className="flex items-center gap-3 border-b border-[var(--color-hint-of-grey)]/25 py-4 last:border-b-0 sm:border-b-0 sm:border-l sm:px-5 sm:first:border-l-0 sm:first:pl-0" key={label}>
+            <Icon aria-hidden="true" className="size-4 text-[var(--color-terracotta)]" />
+            <div><p className="text-xs text-[var(--color-muted-stone)]">{label}</p><p className="font-medium tabular-nums">{value}</p></div>
+          </div>
+        ))}
+      </section>
     </div>
   );
 }

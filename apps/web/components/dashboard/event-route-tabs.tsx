@@ -23,10 +23,11 @@ export function EventRouteTabs({ eventId }: { eventId: string }) {
 
         return (
           <Link
+            aria-current={isActive ? "page" : undefined}
             className={cn(
-              "rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-200",
+              "min-h-10 rounded-[var(--radius-control)] px-3.5 py-2.5 text-sm font-medium transition-colors duration-150",
               isActive
-                ? "bg-[color:var(--card)] text-[color:var(--foreground)] shadow-[var(--shadow-card)]"
+                ? "bg-[color:var(--card)] text-[color:var(--foreground)] shadow-[var(--shadow-keyline)]"
                 : "text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]",
             )}
             href={href}

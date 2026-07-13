@@ -25,7 +25,7 @@ import {
 } from '../src/lib/ticket-state';
 import { useAuth } from '../src/state/auth-context';
 import { useEnrollment } from '../src/state/enrollment-context';
-import { palette, typography } from '../src/theme';
+import { palette, radii, typography } from '../src/theme';
 
 const APPROVED_ROUTE = '/approved' as Href;
 
@@ -212,7 +212,7 @@ export default function TicketsScreen() {
         />
       </View>
 
-      {message ? <StatusBanner message={message} tone="warning" /> : null}
+      {message ? <StatusBanner message={message} title="Ticket update" tone="warning" /> : null}
       <View style={styles.listHeading}>
         <Text style={styles.listTitle}>Your tickets</Text>
         <Text style={styles.listHint}>Pull down to refresh organizer changes.</Text>
@@ -269,21 +269,22 @@ const styles = StyleSheet.create({
   account: { ...typography.body, color: palette.mutedStone, fontSize: 13 },
   accountButton: {
     alignItems: 'center',
-    borderColor: palette.ink,
-    borderRadius: 9999,
+    backgroundColor: palette.surface,
+    borderColor: palette.borderStrong,
+    borderRadius: radii.control,
     borderWidth: 1,
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: 16,
   },
   accountButtonLabel: { ...typography.bodyStrong, color: palette.ink, fontSize: 14 },
-  claimBlock: { backgroundColor: palette.fog, borderRadius: 24, gap: 12, padding: 18 },
+  claimBlock: { backgroundColor: palette.surfaceClay, borderColor: palette.clay, borderRadius: radii.panel, borderWidth: StyleSheet.hairlineWidth, gap: 12, padding: 18 },
   claimHelp: { ...typography.body, color: palette.mutedStone, fontSize: 13, lineHeight: 19 },
   claimInput: {
     ...typography.bodyStrong,
-    backgroundColor: palette.canvas,
-    borderColor: palette.hintOfGrey,
-    borderRadius: 16,
+    backgroundColor: palette.surface,
+    borderColor: palette.borderStrong,
+    borderRadius: radii.field,
     borderWidth: 1,
     color: palette.ink,
     fontSize: 18,
@@ -296,18 +297,18 @@ const styles = StyleSheet.create({
   copyAccount: { alignItems: 'center', minHeight: 44, justifyContent: 'center' },
   copyAccountText: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 14 },
   emptyBody: { ...typography.body, color: palette.mutedStone, fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  emptyState: { alignItems: 'center', backgroundColor: palette.fog, borderRadius: 24, gap: 8, padding: 28 },
+  emptyState: { alignItems: 'center', backgroundColor: palette.surfaceSubtle, borderColor: palette.border, borderRadius: radii.panel, borderWidth: 1, gap: 8, padding: 28 },
   emptyTitle: { ...typography.title, color: palette.ink, fontSize: 20 },
   footer: { gap: 12, paddingBottom: 20, paddingTop: 28 },
   header: { gap: 20, paddingBottom: 18 },
-  listContent: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 10 },
+  listContent: { alignSelf: 'center', flexGrow: 1, maxWidth: 680, paddingHorizontal: 20, paddingTop: 12, width: '100%' },
   listHeading: { gap: 4 },
   listHint: { ...typography.body, color: palette.mutedStone, fontSize: 13 },
   listTitle: { ...typography.title, color: palette.ink, fontSize: 20 },
   pressed: { opacity: 0.7, transform: [{ scale: 0.98 }] },
   safeArea: { backgroundColor: palette.canvas, flex: 1 },
   separator: { height: 12 },
-  title: { ...typography.display, color: palette.ink, fontSize: 34, lineHeight: 40 },
+  title: { ...typography.display, color: palette.ink, fontSize: 36, letterSpacing: -0.6, lineHeight: 41 },
   titleBlock: { flex: 1, gap: 2 },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: 16 },
 });

@@ -59,6 +59,7 @@ export default function ApprovedScreen() {
 
       <StatusBanner
         message="This ticket is closed. The gate decision has been recorded and the reusable pass is no longer shown."
+        title="Checked in"
         tone="success"
       />
 
@@ -131,10 +132,10 @@ const styles = StyleSheet.create({
   receipt: {
     alignItems: 'center',
     backgroundColor: palette.canvas,
-    borderColor: 'rgba(23, 25, 28, 0.08)',
-    borderRadius: radii.card,
+    borderColor: palette.successBorder,
+    borderRadius: radii.credential,
     borderWidth: 1,
-    boxShadow: '0px 16px 32px rgba(4, 23, 43, 0.08)',
+    boxShadow: '0px 12px 28px rgba(29, 25, 23, 0.08)',
     gap: 14,
     paddingHorizontal: 22,
     paddingVertical: 30,

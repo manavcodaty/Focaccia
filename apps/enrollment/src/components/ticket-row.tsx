@@ -5,7 +5,7 @@ import {
   ticketStatusPresentation,
   type EnrollmentTicket,
 } from '../lib/ticket-state';
-import { palette, typography } from '../theme';
+import { palette, radii, typography } from '../theme';
 
 export const TicketRow = memo(function TicketRow({
   offline = false,
@@ -44,7 +44,16 @@ export const TicketRow = memo(function TicketRow({
                   ? styles.statusWarning
                   : styles.statusNeutral,
           ]}>
-            <Text style={styles.statusText}>{status.label}</Text>
+            <Text style={[
+              styles.statusText,
+              status.tone === 'success'
+                ? styles.statusTextSuccess
+                : status.tone === 'danger'
+                  ? styles.statusTextDanger
+                  : status.tone === 'warning'
+                    ? styles.statusTextWarning
+                    : null,
+            ]}>{status.label}</Text>
           </View>
         </View>
         <Text numberOfLines={1} style={styles.meta}>{ticket.event.location || 'Location to be confirmed'}</Text>
@@ -63,7 +72,7 @@ const styles = StyleSheet.create({
   dateBlock: {
     alignItems: 'center',
     backgroundColor: palette.warmMist,
-    borderRadius: 12,
+    borderRadius: radii.control,
     justifyContent: 'center',
     minHeight: 64,
     width: 58,
@@ -76,18 +85,21 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
   row: {
     backgroundColor: palette.canvas,
-    borderColor: 'rgba(23, 25, 28, 0.08)',
-    borderRadius: 20,
+    borderColor: palette.border,
+    borderRadius: radii.panel,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 14,
     minHeight: 128,
     padding: 14,
   },
-  status: { borderRadius: 9999, paddingHorizontal: 9, paddingVertical: 5 },
-  statusDanger: { backgroundColor: palette.dangerSoft },
-  statusNeutral: { backgroundColor: palette.fog },
-  statusSuccess: { backgroundColor: palette.successSoft },
+  status: { borderRadius: radii.status, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 5 },
+  statusDanger: { backgroundColor: palette.dangerSoft, borderColor: palette.dangerBorder },
+  statusNeutral: { backgroundColor: palette.neutralSoft, borderColor: palette.neutralBorder },
+  statusSuccess: { backgroundColor: palette.successSoft, borderColor: palette.successBorder },
   statusText: { ...typography.bodyStrong, color: palette.ink, fontSize: 11 },
-  statusWarning: { backgroundColor: palette.warningSoft },
+  statusTextDanger: { color: palette.danger },
+  statusTextSuccess: { color: palette.success },
+  statusTextWarning: { color: palette.warning },
+  statusWarning: { backgroundColor: palette.warningSoft, borderColor: palette.warningBorder },
 });

@@ -58,3 +58,14 @@ test('ticket overlays stay opaque instead of reintroducing glass effects', async
 
   assert.doesNotMatch(`${sheet}\n${alertDialog}`, /backdrop-blur/);
 });
+
+test('ticket form and empty-state primitives preserve ref and element contracts', async () => {
+  const input = await source('components/ui/input.tsx');
+  const empty = await source('components/ui/empty.tsx');
+  const skeleton = await source('components/ui/skeleton.tsx');
+
+  assert.match(input, /forwardRef<HTMLInputElement/);
+  assert.match(input, /ref=\{ref\}/);
+  assert.doesNotMatch(`${empty}\n${skeleton}`, /React\.ComponentProps/);
+  assert.match(empty, /<p[\s\S]*?data-slot="empty-description"/);
+});

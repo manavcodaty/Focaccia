@@ -70,3 +70,17 @@ test('organizer overlays stay opaque instead of reintroducing glass effects', as
 
   assert.doesNotMatch(`${dialog}\n${sheet}\n${alertDialog}`, /backdrop-blur/);
 });
+
+test('organizer form and empty-state primitives preserve ref and element contracts', async () => {
+  const input = await source('components/ui/input.tsx');
+  const textarea = await source('components/ui/textarea.tsx');
+  const empty = await source('components/ui/empty.tsx');
+  const skeleton = await source('components/ui/skeleton.tsx');
+
+  assert.match(input, /forwardRef<HTMLInputElement/);
+  assert.match(input, /ref=\{ref\}/);
+  assert.match(textarea, /forwardRef<\s*HTMLTextAreaElement/);
+  assert.match(textarea, /ref=\{ref\}/);
+  assert.doesNotMatch(`${empty}\n${skeleton}`, /React\.ComponentProps/);
+  assert.match(empty, /<p[\s\S]*?data-slot="empty-description"/);
+});

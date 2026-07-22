@@ -169,7 +169,7 @@ export default function ScanScreen() {
   const livenessTimeoutMs = effectiveLivenessTimeoutMs(gate.policy.liveness_timeout_ms);
 
   return (
-    <ScreenShell style={styles.screen} variant="wide">
+    <ScreenShell style={styles.screen} variant="scanner">
       {layout.isLandscape ? (
         <View
           style={[
@@ -230,7 +230,7 @@ export default function ScanScreen() {
 
             <SectionCard eyebrow="Status" title="Scanner live">
               <View style={styles.statusRow}>
-                <StatusChip label="Offline-ready" tone="success" />
+                <StatusChip label="Offline ready" tone="success" />
                 <StatusChip
                   label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'}
                   tone="warning"
@@ -247,6 +247,7 @@ export default function ScanScreen() {
             <View style={styles.footerActions}>
               <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
               <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
+              <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
             </View>
           </View>
         </View>
@@ -281,7 +282,7 @@ export default function ScanScreen() {
 
           <SectionCard eyebrow="Status" title="Scanner live">
             <View style={styles.statusRow}>
-              <StatusChip label="Offline-ready" tone="success" />
+              <StatusChip label="Offline ready" tone="success" />
               <StatusChip
                 label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'}
                 tone="warning"
@@ -319,6 +320,7 @@ export default function ScanScreen() {
           <View style={styles.footerActions}>
             <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
             <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
+            <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
           </View>
         </>
       )}
@@ -348,7 +350,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     ...typography.title,
-    color: palette.terracotta,
+    color: palette.warmMist,
     fontSize: 12,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -394,13 +396,13 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...typography.body,
-    color: palette.mutedStone,
+    color: palette.textInverseMuted,
     fontSize: 15,
     lineHeight: 22,
   },
   title: {
     ...typography.display,
-    color: palette.ink,
+    color: palette.textInverse,
     fontSize: 32,
     lineHeight: 36,
   },

@@ -10,6 +10,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -205,11 +206,7 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
               </p>
             </div>
 
-            {errorMessage && (
-              <div className="rounded-[16px] border border-[var(--danger)]/20 bg-[var(--danger-soft)] px-4 py-3 text-center text-[13px] text-[var(--danger)]">
-                {errorMessage}
-              </div>
-            )}
+            {errorMessage ? <Alert variant="destructive"><AlertDescription>{errorMessage}</AlertDescription></Alert> : null}
 
             <Button className="w-full" disabled={isSubmitting} type="submit">
               {isSubmitting ? (
@@ -224,14 +221,15 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
 
             <p className="text-center text-[13px] text-[var(--color-muted-stone)]">
               {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
-              <button
+              <Button
                 disabled={isSubmitting}
                 type="button"
-                className="font-medium text-[var(--color-ink)] underline underline-offset-2 hover:text-[var(--color-terracotta)]"
+                className="h-auto min-h-0 px-1 py-0 align-baseline"
                 onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
+                variant="link"
               >
                 {mode === "signin" ? "Sign up" : "Sign in"}
-              </button>
+              </Button>
             </p>
           </form>
         </CardContent>

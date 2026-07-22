@@ -3,18 +3,28 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, '../..');
-const config = getDefaultConfig(projectRoot);
 
-config.resolver.assetExts.push('tflite');
-config.watchFolders = config.watchFolders ?? [];
+module.exports = (async () => {
+  const {
+    prepareGateNetwork,
+    shouldPrepareGateNetwork,
+  } = await import('../../scripts/gate-network-bootstrap.mjs');
+  if (shouldPrepareGateNetwork()) {
+    await prepareGateNetwork();
+  }
 
-if (!config.watchFolders.includes(workspaceRoot)) {
-  config.watchFolders.push(workspaceRoot);
-}
+  const config = getDefaultConfig(projectRoot);
+  config.resolver.assetExts.push('tflite');
+  config.watchFolders = config.watchFolders ?? [];
 
-config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, 'node_modules'),
-  path.resolve(workspaceRoot, 'node_modules'),
-];
+  if (!config.watchFolders.includes(workspaceRoot)) {
+    config.watchFolders.push(workspaceRoot);
+  }
 
-module.exports = config;
+  config.resolver.nodeModulesPaths = [
+    path.resolve(projectRoot, 'node_modules'),
+    path.resolve(workspaceRoot, 'node_modules'),
+  ];
+
+  return config;
+})();

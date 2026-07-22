@@ -59,10 +59,11 @@ export default function SettingsScreen() {
           label={gate ? 'Provisioned' : 'Provisioning required'}
           tone={gate ? 'success' : 'warning'}
         />
-        {feedback ? <StatusBanner message={feedback} tone="success" /> : null}
-        {error ? <StatusBanner message={error} tone="danger" /> : null}
+        {feedback ? <StatusBanner message={feedback} title="Sync complete" tone="success" /> : null}
+        {error ? <StatusBanner message={error} title="Sync failed" tone="danger" /> : null}
         <StatusBanner
           message="Revocations created while this gate is disconnected cannot affect entry decisions until a later successful refresh."
+          title={cache.state === 'fresh' ? 'Offline ready' : 'Refresh required'}
           tone={cache.state === 'fresh' ? 'neutral' : 'warning'}
         />
         <MetricRow label="Organizer" value={auth?.email ?? 'Signed out'} />
@@ -86,7 +87,7 @@ export default function SettingsScreen() {
         />
       </SectionCard>
 
-      <SectionCard eyebrow="Local store" title="SQLite counters">
+      <SectionCard eyebrow="Check-in sync" title={(stats?.pendingSyncCount ?? 0) > 0 ? 'Sync pending' : 'Queue clear'} tone="subtle">
         <MetricRow label="Used passes" value={String(stats?.usedPassCount ?? 0)} />
         <MetricRow label="Revocations" value={String(stats?.revocationCount ?? 0)} />
         <MetricRow label="Log rows" value={String(stats?.logCount ?? 0)} />

@@ -71,10 +71,22 @@ test('normalizes stale direct Supabase ports to the constrained proxy', () => {
 
   try {
     mkdirSync(path.join(root, 'apps/enrollment'), { recursive: true });
+    mkdirSync(path.join(root, 'apps/gate'), { recursive: true });
     mkdirSync(path.join(root, 'apps/tickets'), { recursive: true });
     mkdirSync(path.join(root, 'apps/web'), { recursive: true });
     writeFileSync(
       path.join(root, 'apps/enrollment/.env.local'),
+      [
+        'EXPO_PUBLIC_FOCACCIA_NETWORK_MODE=local',
+        'EXPO_PUBLIC_FOCACCIA_LOCAL_HOST=192.168.1.20',
+        'EXPO_PUBLIC_FOCACCIA_SUPABASE_URL=http://192.168.1.20:54321',
+        'EXPO_PUBLIC_FOCACCIA_WEB_URL=http://192.168.1.20:3000',
+        'EXPO_PUBLIC_FOCACCIA_TICKETS_URL=http://192.168.1.20:3001',
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(
+      path.join(root, 'apps/gate/.env.local'),
       [
         'EXPO_PUBLIC_FOCACCIA_NETWORK_MODE=local',
         'EXPO_PUBLIC_FOCACCIA_LOCAL_HOST=192.168.1.20',
@@ -120,10 +132,13 @@ test('normalizes stale direct Supabase ports to the constrained proxy', () => {
     });
 
     const enrollmentEnv = readFileSync(path.join(root, 'apps/enrollment/.env.local'), 'utf8');
+    const gateEnv = readFileSync(path.join(root, 'apps/gate/.env.local'), 'utf8');
     const ticketsEnv = readFileSync(path.join(root, 'apps/tickets/.env.local'), 'utf8');
     const webEnv = readFileSync(path.join(root, 'apps/web/.env.local'), 'utf8');
 
     assert.match(enrollmentEnv, /^EXPO_PUBLIC_FOCACCIA_SUPABASE_URL=http:\/\/192\.168\.1\.73:54331$/m);
+    assert.match(gateEnv, /^EXPO_PUBLIC_FOCACCIA_LOCAL_HOST=192\.168\.1\.73$/m);
+    assert.match(gateEnv, /^EXPO_PUBLIC_FOCACCIA_SUPABASE_URL=http:\/\/192\.168\.1\.73:54331$/m);
     assert.match(ticketsEnv, /^NEXT_PUBLIC_FOCACCIA_SUPABASE_URL=http:\/\/192\.168\.1\.73:54331$/m);
     assert.match(webEnv, /^NEXT_PUBLIC_FOCACCIA_SUPABASE_URL=http:\/\/192\.168\.1\.73:54331$/m);
   } finally {

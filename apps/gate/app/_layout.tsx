@@ -17,8 +17,6 @@ import { palette } from '../src/theme';
 
 void SplashScreen.preventAutoHideAsync();
 
-import { LinearGradient } from 'expo-linear-gradient';
-
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     IBMPlexSans_400Regular,
@@ -39,25 +37,17 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <LinearGradient
-        colors={['#ffffff', '#fbe1d1', '#f7f7f8']}
-        locations={[0, 0.6, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.root}
-      >
-        <SafeAreaProvider>
-          <StatusBar barStyle="dark-content" />
-          <GateProvider>
-            <Stack
-              screenOptions={{
-                contentStyle: { backgroundColor: 'transparent' },
-                headerShown: false,
-              }}
-            />
-          </GateProvider>
-        </SafeAreaProvider>
-      </LinearGradient>
+      <SafeAreaProvider>
+        <StatusBar barStyle="dark-content" />
+        <GateProvider>
+          <Stack
+            screenOptions={{
+              contentStyle: { backgroundColor: palette.canvas },
+              headerShown: false,
+            }}
+          />
+        </GateProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

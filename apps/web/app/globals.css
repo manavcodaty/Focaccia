@@ -1,99 +1,90 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* ─── Steep / Warm, Crisp Canvas — from docs/DESIGN.md ─── */
-  --color-canvas: #ffffff;
-  --color-ink: #17191c;
-  --color-graphite: #000000;
-  --color-warm-mist: #fbe1d1;
-  --color-terracotta: #5d2a1a;
-  --color-fog: #f7f7f8;
-  --color-muted-stone: #4c4c4c;
-  --color-light-steel: #777b86;
-  --color-hint-of-grey: #a3a6af;
-  --color-dusk-link: #8b8c8d;
+  color-scheme: light;
 
-  /* ─── Mapped to shadcn/Radix semantic tokens ─── */
-  --background: var(--color-canvas);
-  --foreground: var(--color-ink);
-  --card: var(--color-canvas);
-  --card-foreground: var(--color-ink);
-  --popover: var(--color-canvas);
-  --popover-foreground: var(--color-ink);
-  --primary: var(--color-ink);
-  --primary-foreground: var(--color-canvas);
-  --secondary: var(--color-fog);
-  --secondary-foreground: var(--color-ink);
-  --muted: var(--color-fog);
-  --muted-foreground: var(--color-muted-stone);
-  --accent: var(--color-warm-mist);
-  --accent-foreground: var(--color-terracotta);
-  --destructive: #b74b33;
-  --destructive-foreground: #fff8f4;
-  --border: var(--color-hint-of-grey);
-  --input: var(--color-hint-of-grey);
-  --ring: var(--color-ink);
-  --radius: 24px;
+  /* Warm civic utility palette. Legacy aliases keep route code readable. */
+  --background: #fffdfc;
+  --foreground: #1d1917;
+  --card: #ffffff;
+  --card-foreground: #1d1917;
+  --popover: #ffffff;
+  --popover-foreground: #1d1917;
+  --primary: #7b3f2c;
+  --primary-foreground: #fffaf7;
+  --secondary: #f7f4f1;
+  --secondary-foreground: #302925;
+  --muted: #f1eeeb;
+  --muted-foreground: #625b56;
+  --accent: #f4ded2;
+  --accent-foreground: #633223;
+  --destructive: #a23f2d;
+  --destructive-foreground: #fffaf7;
+  --border: #ded8d3;
+  --input: #bdb4ad;
+  --ring: #7b3f2c;
 
-  /* ─── Semantic status ─── */
-  --danger: #b74b33;
-  --danger-soft: #fde3db;
-  --success: #236b4d;
-  --success-soft: #e5f4ec;
-  --warning: #8a5b14;
-  --warning-soft: #f5e6cb;
+  --color-canvas: #fffdfc;
+  --color-ink: #1d1917;
+  --color-graphite: #1d1917;
+  --color-warm-mist: #f4ded2;
+  --color-terracotta: #7b3f2c;
+  --color-fog: #f7f4f1;
+  --color-muted-stone: #625b56;
+  --color-light-steel: #817973;
+  --color-hint-of-grey: #9b918a;
+  --color-dusk-link: #6c4b3f;
 
-  /* ─── Typography ─── */
-  --font-sohne: 'Sohne', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-signifier: 'Signifier', Georgia, 'Times New Roman', serif;
+  --danger: #a23f2d;
+  --danger-soft: #f9e3dc;
+  --success: #176747;
+  --success-soft: #e7f4ed;
+  --warning: #7a4d06;
+  --warning-soft: #f8ecd4;
 
-  /* ─── Spacing (DESIGN.md base unit 4px) ─── */
-  --spacing-4: 4px;
-  --spacing-8: 8px;
-  --spacing-12: 12px;
-  --spacing-16: 16px;
-  --spacing-20: 20px;
-  --spacing-24: 24px;
-  --spacing-28: 28px;
-  --spacing-32: 32px;
-  --spacing-40: 40px;
-  --spacing-64: 64px;
-  --spacing-80: 80px;
-  --spacing-96: 96px;
+  --chart-1: #7b3f2c;
+  --chart-2: #b66d4f;
+  --chart-3: #2f684f;
+  --chart-4: #855c19;
+  --chart-5: #756861;
+  --sidebar: #fbf7f4;
+  --sidebar-foreground: #1d1917;
+  --sidebar-primary: #7b3f2c;
+  --sidebar-primary-foreground: #fffaf7;
+  --sidebar-accent: #f4ded2;
+  --sidebar-accent-foreground: #633223;
+  --sidebar-border: #ded8d3;
+  --sidebar-ring: #7b3f2c;
 
-  /* ─── Layout ─── */
-  --page-max-width: 1280px;
-  --section-gap: 80px;
-  --card-padding: 20px;
-  --element-gap: 8px;
+  /* Geometry is tied to purpose, not a single decorative radius. */
+  --radius: 0.75rem;
+  --radius-control: 0.625rem;
+  --radius-field: 0.75rem;
+  --radius-panel: 1rem;
+  --radius-tag: 999px;
+  --radius-cards: var(--radius-panel);
+  --radius-inputs: var(--radius-field);
+  --radius-buttons: var(--radius-control);
+  --radius-default: var(--radius-panel);
 
-  /* ─── Border Radius (DESIGN.md) ─── */
-  --radius-cards: 24px;
-  --radius-images: 12px;
-  --radius-inputs: 16px;
-  --radius-buttons: 9999px;
-  --radius-default: 24px;
-
-  /* ─── Elevation (DESIGN.md) ─── */
-  --shadow-subtle: rgba(4, 23, 43, 0.03) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 4px, rgba(0, 0, 0, 0.02) 0px 8px 16px;
-  --shadow-card: rgba(4, 23, 43, 0.04) 0px 0px 0px 1px, rgba(0, 0, 0, 0.06) 0px 4px 8px -2px, rgba(0, 0, 0, 0.04) 0px 12px 24px -4px;
-  --shadow-card-hover: rgba(4, 23, 43, 0.06) 0px 0px 0px 1px, rgba(0, 0, 0, 0.08) 0px 8px 16px -4px, rgba(0, 0, 0, 0.06) 0px 24px 40px -8px;
-  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  --page-max-width: 90rem;
+  --shadow-keyline: 0 1px 2px rgb(50 35 28 / 0.08);
+  --shadow-float: 0 14px 40px rgb(50 35 28 / 0.11), 0 2px 8px rgb(50 35 28 / 0.06);
+  --shadow-subtle: var(--shadow-keyline);
+  --shadow-card: var(--shadow-keyline);
+  --shadow-card-hover: 0 8px 24px rgb(50 35 28 / 0.1);
 }
 
 @utility container {
   margin-inline: auto;
-  padding-inline: 1rem;
+  padding-inline: 1.25rem;
 
   @media (width >= 768px) {
     padding-inline: 2rem;
-  }
-
-  @media (width >= 1280px) {
-    padding-inline: 3rem;
   }
 }
 
@@ -117,174 +108,140 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
-  /* Sidebar tokens — light canvas sidebar */
-  --color-sidebar: var(--color-fog);
-  --color-sidebar-foreground: var(--color-ink);
-  --color-sidebar-primary: var(--color-ink);
-  --color-sidebar-primary-foreground: var(--color-canvas);
-  --color-sidebar-accent: var(--color-warm-mist);
-  --color-sidebar-accent-foreground: var(--color-terracotta);
-  --color-sidebar-border: rgba(0, 0, 0, 0.08);
-  --color-sidebar-ring: var(--color-ink);
-
-  --font-sans: var(--font-sohne);
-  --font-display: var(--font-signifier);
-  --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', ui-monospace, monospace;
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-geist);
+  --font-display: var(--font-sentient);
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", ui-monospace, monospace;
+  --font-heading: var(--font-geist);
+  --radius-sm: 0.375rem;
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-field);
+  --radius-xl: var(--radius-panel);
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.5rem;
+  --radius-4xl: 1.75rem;
 }
 
 @layer base {
   * {
-    @apply border-border/30 outline-ring/50;
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-background text-foreground;
+    min-height: 100vh;
+    font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.012em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
   }
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  min-height: 100vh;
-  color: var(--foreground);
-  font-family: var(--font-sohne);
-  font-weight: 400;
-  letter-spacing: -0.009em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: var(--background);
-}
-
-a,
-button {
-  cursor: pointer;
-}
-
 :where(a, button, input, select, textarea):focus-visible {
-  outline: 3px solid var(--color-ink);
-  outline-offset: 3px;
+  outline: 3px solid color-mix(in srgb, var(--ring) 34%, transparent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-warm-mist);
+  color: var(--foreground);
 }
 
 .skip-link {
   position: fixed;
-  left: 1rem;
-  top: 1rem;
+  inset: 0 auto auto 1rem;
   z-index: 100;
   min-height: 44px;
-  transform: translateY(-180%);
-  border-radius: 9999px;
-  background: var(--color-ink);
-  color: var(--color-canvas);
+  transform: translateY(-150%);
+  border-radius: var(--radius-control);
+  background: var(--foreground);
+  color: var(--background);
   padding: 0.75rem 1rem;
-  font-weight: 600;
+  font-weight: 650;
   transition: transform 150ms ease;
 }
 
 .skip-link:focus {
-  transform: translateY(0);
+  transform: translateY(1rem);
 }
 
-::selection {
-  background: rgba(93, 42, 26, 0.12);
-}
-
-/* ─── Display headings (Signifier treatment) ─── */
 .display-heading {
-  font-family: var(--font-signifier);
-  font-weight: 400;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
+  font-family: var(--font-sentient), Georgia, serif;
+  font-weight: 200;
+  letter-spacing: -0.045em;
 }
 
-/* ─── Monospace code / token display ─── */
+.eyebrow {
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  line-height: 1.25rem;
+  text-transform: uppercase;
+}
+
 .token-mono {
-  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', ui-monospace, monospace;
-  font-feature-settings: "tnum" 1;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-feature-settings: "tnum" 1, "zero" 1;
   letter-spacing: 0.01em;
 }
 
-/* ─── Page entrance animations ─── */
 .fade-section {
-  animation: fadeSection 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-section 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.fade-delay-1 {
-  animation-delay: 60ms;
-}
+.fade-delay-1 { animation-delay: 50ms; }
+.fade-delay-2 { animation-delay: 100ms; }
+.fade-delay-3 { animation-delay: 150ms; }
 
-.fade-delay-2 {
-  animation-delay: 120ms;
-}
-
-.fade-delay-3 {
-  animation-delay: 180ms;
-}
-
-@keyframes fadeSection {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ─── Smooth micro-transitions for interactive elements ─── */
-.transition-premium {
-  transition-property: color, background-color, border-color, box-shadow, transform, opacity, filter;
-  transition-duration: 300ms;
-  transition-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
-}
-
+.transition-premium,
 .hover-lift {
-  transition: transform 300ms cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 300ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
 }
 
 .hover-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: var(--shadow-card-hover);
 }
 
-/* ─── Noise texture overlay ─── */
-.bg-noise {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 150px;
-  opacity: 0.035;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-}
-
-/* ─── Button magic hover ─── */
-.btn-magic {
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
-}
-
 .btn-magic:active {
-  transform: scale(0.97);
+  transform: translateY(1px);
 }
 
-/* ─── Reduced motion support ─── */
+@keyframes fade-section {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .fade-section {
-    animation: none;
-    opacity: 1;
-  }
-
-  .transition-premium, .hover-lift, .hover-lift:hover, .btn-magic {
-    transition-duration: 0ms;
-    transform: none !important;
-  }
-
-  html {
-    scroll-behavior: auto;
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

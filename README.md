@@ -124,5 +124,3 @@ Run `verify:tunnel-network` only after tunnel configuration is active. It fails 
 - [Phase 8 verification record](./docs/PHASE_8_DOCUMENTATION_AND_EPQ_EVIDENCE.md)
 
 The root `Auth-Card`, `Dashboard`, `Landing Page`, and `other/` folders are prototypes or supporting material and are not required to run the product workspaces.
-
-Made by Manav Codaty

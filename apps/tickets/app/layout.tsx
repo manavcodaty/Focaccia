@@ -1,11 +1,16 @@
 import type { Metadata, Viewport } from 'next';
+import { Geist } from 'next/font/google';
 import localFont from 'next/font/local';
 
 import { AuthProvider } from '@/components/auth-provider';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 import './globals.css';
+
+const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 const sentient = localFont({
   display: 'swap',
@@ -21,18 +26,20 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#ffffff',
+  themeColor: '#fffdfc',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className={sentient.variable} lang="en">
+    <html className={cn('font-sans', geist.variable, sentient.variable)} lang="en">
       <body>
-        <AuthProvider>
-          <SiteHeader />
-          {children}
-          <SiteFooter />
-        </AuthProvider>
+        <TooltipProvider>
+          <AuthProvider>
+            <SiteHeader />
+            {children}
+            <SiteFooter />
+          </AuthProvider>
+        </TooltipProvider>
       </body>
     </html>
   );

@@ -3,7 +3,6 @@
 import { Info, ScanLine } from "lucide-react";
 import QRCode from "react-qr-code";
 
-import { CopyButton } from "@/components/dashboard/copy-button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -12,17 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function ProvisioningQrCard({
   isClosed,
   isProvisioned,
-  payloadLabel,
   qrValue,
 }: {
   isClosed?: boolean;
   isProvisioned: boolean;
-  payloadLabel: string;
   qrValue: string;
 }) {
   return (
@@ -55,38 +51,14 @@ export function ProvisioningQrCard({
             </p>
           </div>
         ) : (
-          <Tabs defaultValue="qr">
-            <TabsList>
-              <TabsTrigger value="qr">QR payload</TabsTrigger>
-              <TabsTrigger value="raw">Raw payload</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="qr">
-              <div className="scan-grid relative flex min-h-[22rem] flex-col items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-6">
-                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(circle_at_top,rgba(251,225,209,0.72),transparent_55%)]" />
-                <div className="relative rounded-xl border border-[color:var(--border)] bg-white p-3.5 shadow-[var(--shadow-elevated)]">
-                  <QRCode size={220} value={qrValue} />
-                </div>
-                <p className="relative mt-4 max-w-md text-center text-[0.8125rem] leading-relaxed text-[color:var(--muted-foreground)]">
-                  Once the device scans and registers its key, the event is permanently gate-bound.
-                </p>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="raw">
-              <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <Badge variant="outline">{payloadLabel}</Badge>
-                  <CopyButton label="Provisioning payload copied." value={qrValue} />
-                </div>
-                <div className="mt-3 rounded-lg border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-3">
-                  <pre className="token-mono overflow-x-auto whitespace-pre-wrap break-all text-xs leading-6 text-[color:var(--foreground)]">
-                    {qrValue}
-                  </pre>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+          <div className="scan-grid relative flex min-h-[22rem] flex-col items-center justify-center rounded-[16px] border border-[color:var(--border)] bg-[color:var(--muted)]/25 p-6">
+            <div className="relative rounded-[12px] border border-[color:var(--border)] bg-white p-3.5 shadow-[var(--shadow-keyline)]">
+              <QRCode size={220} value={qrValue} />
+            </div>
+            <p className="relative mt-4 max-w-md text-center text-[0.8125rem] leading-relaxed text-[color:var(--muted-foreground)]">
+              Once the device scans and registers its key, the event is permanently gate-bound.
+            </p>
+          </div>
         )}
 
         <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-3.5">

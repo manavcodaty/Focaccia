@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { scaleFont, scaleSpacing } from '../lib/responsive-metrics';
 import { useResponsiveLayout } from '../lib/use-responsive-layout';
-import { palette, typography } from '../theme';
+import { palette, radii, typography } from '../theme';
 
 export function PrimaryButton({
   disabled = false,
@@ -27,9 +27,9 @@ export function PrimaryButton({
       style={({ pressed }) => [
         styles.button,
         {
-          borderRadius: 9999,
+          borderRadius: radii.button,
           minHeight: scaleSpacing(layout, 56, 1.08),
-          paddingHorizontal: scaleSpacing(layout, 24, 1.08),
+          paddingHorizontal: scaleSpacing(layout, 22, 1.08),
         },
         tone === 'ghost'
           ? styles.ghostButton
@@ -40,15 +40,11 @@ export function PrimaryButton({
         pressed && !disabled ? styles.pressed : null,
       ]}
     >
-      <Text
-        style={[
-          styles.label,
-          { fontSize: scaleFont(layout, 16) },
-          tone === 'ghost' ? styles.ghostLabel : styles.primaryLabel,
-        ]}
-      >
-        {label}
-      </Text>
+      <Text style={[
+        styles.label,
+        { fontSize: scaleFont(layout, 16) },
+        tone === 'ghost' ? styles.ghostLabel : styles.inverseLabel,
+      ]}>{label}</Text>
     </Pressable>
   );
 }
@@ -56,36 +52,15 @@ export function PrimaryButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
+    borderWidth: 1,
     justifyContent: 'center',
   },
-  dangerButton: {
-    backgroundColor: palette.alert,
-  },
-  disabled: {
-    opacity: 0.40,
-  },
-  ghostButton: {
-    backgroundColor: 'transparent',
-    borderColor: palette.ink,
-    borderWidth: 1,
-  },
-  ghostLabel: {
-    color: palette.ink,
-  },
-  label: {
-    ...typography.title,
-    fontSize: 16,
-    letterSpacing: -0.1,
-  },
-  pressed: {
-    transform: [{ scale: 0.98 }],
-    opacity: 0.9,
-  },
-  primaryButton: {
-    backgroundColor: palette.ink,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-  },
-  primaryLabel: {
-    color: palette.textInverse,
-  },
+  dangerButton: { backgroundColor: palette.alert, borderColor: palette.alert },
+  disabled: { opacity: 0.55 },
+  ghostButton: { backgroundColor: palette.surface, borderColor: palette.borderStrong },
+  ghostLabel: { color: palette.ink },
+  inverseLabel: { color: palette.textInverse },
+  label: { ...typography.bodyStrong, letterSpacing: -0.1 },
+  pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  primaryButton: { backgroundColor: palette.clay, borderColor: palette.clay },
 });

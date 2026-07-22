@@ -3,75 +3,46 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { scaleFont, scaleSpacing } from '../lib/responsive-metrics';
 import { useResponsiveLayout } from '../lib/use-responsive-layout';
-import { palette, typography } from '../theme';
+import { palette, radii, typography } from '../theme';
 
 export function SectionCard({
   children,
   eyebrow,
   title,
+  tone = 'default',
 }: {
   children: ReactNode;
   eyebrow?: string;
   title?: string;
+  tone?: 'default' | 'subtle' | 'warning';
 }) {
   const layout = useResponsiveLayout();
 
   return (
     <View
+      accessibilityRole="summary"
       style={[
         styles.card,
         {
-          borderRadius: 24,
+          borderRadius: radii.panel,
           gap: scaleSpacing(layout, 14, 1.05),
           padding: scaleSpacing(layout, 20, 1.12),
         },
+        tone === 'subtle' ? styles.subtle : null,
+        tone === 'warning' ? styles.warning : null,
       ]}
     >
-      {eyebrow ? (
-        <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 11) }]}>
-          {eyebrow}
-        </Text>
-      ) : null}
-      {title ? (
-        <Text
-          style={[
-            styles.title,
-            {
-              fontSize: scaleFont(layout, 22, 1.12),
-              lineHeight: scaleFont(layout, 28, 1.12),
-            },
-          ]}
-        >
-          {title}
-        </Text>
-      ) : null}
-      <View style={[styles.body, { gap: scaleSpacing(layout, 14, 1.05) }]}>
-        {children}
-      </View>
+      {eyebrow ? <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 11) }]}>{eyebrow}</Text> : null}
+      {title ? <Text style={[styles.title, { fontSize: scaleFont(layout, 21, 1.12), lineHeight: scaleFont(layout, 27, 1.12) }]}>{title}</Text> : null}
+      <View style={{ gap: scaleSpacing(layout, 14, 1.05) }}>{children}</View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  body: {},
-  card: {
-    backgroundColor: palette.card,
-    borderColor: 'rgba(0, 0, 0, 0.05)',
-    borderWidth: 1,
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.08)',
-  },
-  eyebrow: {
-    ...typography.title,
-    color: palette.terracotta,
-    fontSize: 11,
-    letterSpacing: 2.0,
-    textTransform: 'uppercase',
-  },
-  title: {
-    ...typography.title,
-    color: palette.ink,
-    fontSize: 22,
-    letterSpacing: -0.2,
-    lineHeight: 28,
-  },
+  card: { backgroundColor: palette.surface, borderColor: palette.border, borderWidth: 1 },
+  eyebrow: { ...typography.bodyStrong, color: palette.clay, letterSpacing: 1.6, textTransform: 'uppercase' },
+  subtle: { backgroundColor: palette.surfaceSubtle, borderColor: palette.surfaceSubtle },
+  title: { ...typography.title, color: palette.ink, letterSpacing: -0.35 },
+  warning: { backgroundColor: palette.warningSoft, borderColor: palette.warningBorder },
 });

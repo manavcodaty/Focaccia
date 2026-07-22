@@ -27,6 +27,21 @@ test('auth and pass material use SecureStore rather than AsyncStorage', () => {
   assert.doesNotMatch(`${secureStorage}\n${supabase}`, /AsyncStorage/);
 });
 
+test('persisted auth restoration handles stale refresh tokens before auto-refresh starts', () => {
+  const authContext = source('apps/enrollment/src/state/auth-context.tsx');
+  const manifest = JSON.parse(source('apps/enrollment/package.json')) as {
+    scripts: Record<string, string>;
+  };
+  const supabase = source('apps/enrollment/src/lib/supabase.ts');
+
+  assert.match(supabase, /autoRefreshToken:\s*false/);
+  assert.match(supabase, /createDeferredAuthStorage/);
+  assert.match(supabase, /storage:\s*supabaseAuthStorage\.storage/);
+  assert.match(authContext, /restoreEnrollmentSession\(supabase\.auth,\s*supabaseAuthStorage\)/);
+  assert.match(authContext, /\.catch\(/);
+  assert.match(manifest.scripts['test:coverage'], /src\/lib\/auth-session\.ts/);
+});
+
 test('iOS networking is local-only and tunnel profiles remain HTTPS-selected', () => {
   const app = JSON.parse(source('apps/enrollment/app.json')) as {
     expo: { ios: { infoPlist: Record<string, unknown> } };

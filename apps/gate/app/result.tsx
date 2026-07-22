@@ -33,16 +33,22 @@ export default function ResultScreen() {
   }
 
   return (
-    <ScreenShell>
-      <SectionCard
-        eyebrow="Decision"
-        title={lastResult.accepted ? 'Entry accepted' : 'Entry rejected'}
+    <ScreenShell variant={lastResult.accepted ? 'accepted' : 'rejected'}>
+      <View
+        accessibilityLabel={`${lastResult.accepted ? 'Entry accepted' : 'Entry rejected'}. ${lastResult.hint}`}
+        accessibilityLiveRegion="assertive"
+        accessibilityRole="alert"
+        style={[styles.decision, lastResult.accepted ? styles.accepted : styles.rejected]}
       >
+        <Text style={styles.decisionEyebrow}>Gate decision</Text>
+        <Text style={[styles.decisionTitle, { fontSize: scaleFont(layout, 46, 1.12), lineHeight: scaleFont(layout, 50, 1.12) }]}>
+          {lastResult.accepted ? 'Entry accepted' : 'Entry rejected'}
+        </Text>
         <StatusChip
           label={lastResult.reasonCode}
           tone={decisionTone(lastResult)}
         />
-        <StatusBanner message={lastResult.hint} tone={decisionTone(lastResult)} />
+        <StatusBanner message={lastResult.hint} title="Operator note" tone={decisionTone(lastResult)} />
         <Text
           style={[
             styles.headline,
@@ -56,7 +62,7 @@ export default function ResultScreen() {
             ? 'The pass was verified offline. Its replay marker and signed check-in are stored locally for automatic synchronization.'
             : 'The gate rejected the pass before entry was granted.'}
         </Text>
-      </SectionCard>
+      </View>
 
       <SectionCard eyebrow="Metrics" title="Verification timings">
         <MetricRow label="Scan" value={formatDuration(lastResult.timings.scan_ms)} />
@@ -81,7 +87,7 @@ export default function ResultScreen() {
 
       <View style={styles.actions}>
         <PrimaryButton
-          label="Back to scanner"
+          label="Scan next pass"
           onPress={() => {
             resetLastResult();
             router.replace('/scan');
@@ -99,11 +105,23 @@ export default function ResultScreen() {
 }
 
 const styles = StyleSheet.create({
+  accepted: { borderColor: palette.acceptBorder },
   actions: {
     gap: 12,
   },
+  decision: {
+    backgroundColor: palette.surface,
+    borderRadius: 20,
+    borderWidth: 2,
+    gap: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 30,
+  },
+  decisionEyebrow: { ...typography.bodyStrong, color: palette.clay, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' },
+  decisionTitle: { ...typography.display, color: palette.ink, letterSpacing: -0.7 },
   headline: {
     ...typography.body,
     color: palette.ink,
   },
+  rejected: { borderColor: palette.alertBorder },
 });

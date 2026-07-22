@@ -9,7 +9,7 @@ import { StatusBanner } from '../src/components/status-banner';
 import { scaleFont } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
-import { palette, typography } from '../src/theme';
+import { palette, radii, typography } from '../src/theme';
 
 export default function FallbackScreen() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function FallbackScreen() {
 
   return (
     <ScreenShell>
-      <SectionCard eyebrow="Fallback" title="Paste the full pass token">
+      <SectionCard eyebrow="Scanner recovery" title="Paste the full pass token" tone="subtle">
         <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           This screen accepts the full QR token text when optical scanning fails. The short queue
           code is not enough to reconstruct a pass offline.
@@ -44,10 +44,11 @@ export default function FallbackScreen() {
         {!gate ? (
           <StatusBanner
             message="Provision the gate before using manual fallback."
+            title="Needs setup"
             tone="warning"
           />
         ) : null}
-        {error ? <StatusBanner message={error} tone="danger" /> : null}
+        {error ? <StatusBanner message={error} title="Token rejected" tone="danger" /> : null}
         <TextInput
           accessibilityLabel="Full pass token"
           autoCapitalize="none"
@@ -92,8 +93,8 @@ const styles = StyleSheet.create({
   tokenInput: {
     ...typography.body,
     backgroundColor: palette.card,
-    borderColor: palette.hintOfGrey,
-    borderRadius: 20,
+    borderColor: palette.borderStrong,
+    borderRadius: radii.field,
     borderWidth: 1,
     color: palette.ink,
     padding: 16,

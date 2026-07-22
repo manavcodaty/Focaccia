@@ -15,7 +15,7 @@ import { ScreenShell } from '../src/components/screen-shell';
 import { StatusBanner } from '../src/components/status-banner';
 import type { AuthMode } from '../src/lib/auth-validation';
 import { useAuth } from '../src/state/auth-context';
-import { palette, typography } from '../src/theme';
+import { palette, radii, typography } from '../src/theme';
 
 export default function AuthScreen() {
   const router = useRouter();
@@ -56,6 +56,7 @@ export default function AuthScreen() {
     <ScreenShell style={styles.screen}>
       <View style={styles.brandBlock}>
         <BrandLogo />
+        <Text style={styles.eyebrow}>Attendee wallet</Text>
         <Text style={styles.title}>{mode === 'sign-in' ? 'Sign in' : 'Create account'}</Text>
         <Text style={styles.subtitle}>
           {mode === 'sign-in'
@@ -118,7 +119,7 @@ export default function AuthScreen() {
           />
         </View>
 
-        {error ? <StatusBanner message={error} tone="warning" /> : null}
+        {error ? <StatusBanner message={error} title="Sign-in problem" tone="warning" /> : null}
 
         <PrimaryButton
           disabled={isLoading}
@@ -152,14 +153,22 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  brandBlock: { gap: 10, paddingTop: 20 },
+  brandBlock: { gap: 8, paddingTop: 12 },
+  eyebrow: { ...typography.bodyStrong, color: palette.clay, fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase' },
   field: { gap: 8 },
-  form: { gap: 18 },
+  form: {
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: radii.panel,
+    borderWidth: 1,
+    gap: 18,
+    padding: 20,
+  },
   input: {
     ...typography.body,
-    backgroundColor: palette.canvas,
-    borderColor: palette.hintOfGrey,
-    borderRadius: 16,
+    backgroundColor: palette.surface,
+    borderColor: palette.borderStrong,
+    borderRadius: radii.field,
     borderWidth: 1,
     color: palette.ink,
     fontSize: 17,
@@ -185,11 +194,12 @@ const styles = StyleSheet.create({
   },
   screen: { gap: 28, justifyContent: 'center' },
   subtitle: { ...typography.body, color: palette.mutedStone, fontSize: 16, lineHeight: 23 },
-  switchBlock: { alignItems: 'center', gap: 10 },
+  switchBlock: { alignItems: 'center', gap: 8 },
   switchButton: {
     alignItems: 'center',
-    borderColor: palette.ink,
-    borderRadius: 9999,
+    backgroundColor: palette.surface,
+    borderColor: palette.borderStrong,
+    borderRadius: radii.control,
     borderWidth: 1,
     justifyContent: 'center',
     minHeight: 48,
@@ -197,5 +207,5 @@ const styles = StyleSheet.create({
   },
   switchLabel: { ...typography.bodyStrong, color: palette.ink, fontSize: 15 },
   switchPrompt: { ...typography.body, color: palette.mutedStone, fontSize: 14 },
-  title: { ...typography.display, color: palette.ink, fontSize: 34, lineHeight: 40 },
+  title: { ...typography.display, color: palette.ink, fontSize: 36, letterSpacing: -0.6, lineHeight: 41 },
 });

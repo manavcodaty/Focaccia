@@ -3,6 +3,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   View,
   type ViewStyle,
@@ -19,30 +20,41 @@ export function ScreenShell({
   style,
 }: {
   children: ReactNode;
-  variant?: 'default' | 'wide';
+  variant?: 'accepted' | 'default' | 'rejected' | 'scanner' | 'wide';
   scroll?: boolean;
   style?: ViewStyle;
 }) {
   const layout = useResponsiveLayout();
+  const backgroundColor = variant === 'scanner'
+    ? palette.surfaceInverse
+    : variant === 'accepted'
+      ? palette.acceptSoft
+      : variant === 'rejected'
+        ? palette.alertSoft
+        : palette.background;
   const content = (
     <View
       style={[
         styles.content,
         {
           gap: layout.sectionGap,
-          maxWidth: variant === 'wide' ? layout.wideContentMaxWidth : layout.contentMaxWidth,
+          maxWidth: variant === 'wide' || variant === 'scanner' ? layout.wideContentMaxWidth : layout.contentMaxWidth,
           paddingHorizontal: layout.horizontalPadding,
           paddingVertical: layout.verticalPadding,
         },
         style,
       ]}
     >
+      <StatusBar barStyle={variant === 'scanner' ? 'light-content' : 'dark-content'} />
       {children}
     </View>
   );
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+    <SafeAreaView
+      edges={['top', 'bottom', 'left', 'right']}
+      style={[styles.safeArea, { backgroundColor }]}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboard}
@@ -74,7 +86,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   safeArea: {
-    backgroundColor: palette.background,
     flex: 1,
   },
   scrollContent: {

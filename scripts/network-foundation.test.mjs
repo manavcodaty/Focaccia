@@ -50,6 +50,20 @@ test('LAN proxy allows only required Supabase HTTP and WebSocket paths', () => {
   }
 });
 
+test('LAN proxy exposes a proxy-owned health marker', async () => {
+  const proxy = createLanSupabaseProxy({ bindHost: '127.0.0.1', bindPort: 0 });
+  const address = await proxy.listen();
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${address.port}/.focaccia/health`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-focaccia-proxy'), '1');
+    assert.deepEqual(await response.json(), { service: 'focaccia-lan-supabase-proxy' });
+  } finally {
+    await proxy.close();
+  }
+});
+
 test('LAN proxy applies the same origin policy to HTTP and WebSocket requests', () => {
   const allowedOrigins = ['http://192.168.1.50:3000'];
   assert.equal(isAllowedBrowserOrigin(null, allowedOrigins), true);

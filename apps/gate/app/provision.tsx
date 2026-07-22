@@ -27,7 +27,7 @@ import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import type { ProvisioningQrPayload } from '../src/lib/types';
 import { useGate } from '../src/state/gate-context';
-import { palette, typography } from '../src/theme';
+import { palette, radii, typography } from '../src/theme';
 
 function PermissionFallback({
   body,
@@ -191,23 +191,24 @@ export default function ProvisionScreen() {
 
   return (
     <ScreenShell variant="wide">
-      <SectionCard eyebrow="Provision" title="Pair this device to one event">
+      <SectionCard eyebrow="Gate setup" title="Pair this device to one event" tone="subtle">
         <StatusChip
-          label={gate ? 'Local bundle already exists' : 'Scan dashboard QR'}
+          label={gate ? 'Action required' : 'Needs setup'}
           tone={gate ? 'warning' : 'success'}
         />
         <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
           The gate phone generates its own X25519 keypair locally. Only the public key leaves the
           device during provisioning.
         </Text>
-        {feedback ? <StatusBanner message={feedback} tone="success" /> : null}
-        {error ? <StatusBanner message={error} tone="danger" /> : null}
+        {feedback ? <StatusBanner message={feedback} title="Setup update" tone="success" /> : null}
+        {error ? <StatusBanner message={error} title="Setup failed" tone="danger" /> : null}
       </SectionCard>
 
       <SectionCard eyebrow="Organizer auth" title={auth ? auth.email : 'Sign in before sync'}>
         {auth ? (
           <StatusBanner
             message="Organizer sign-in is active. You can scan the provisioning QR and complete the one-gate sync."
+            title="Organizer authenticated"
             tone="success"
           />
         ) : (
@@ -222,7 +223,7 @@ export default function ProvisionScreen() {
               style={[
                 styles.input,
                 {
-                  borderRadius: scaleSpacing(layout, 16, 1.06),
+                  borderRadius: radii.field,
                   fontSize: scaleFont(layout, 16),
                   minHeight: layout.isTablet ? 60 : 56,
                 },
@@ -240,7 +241,7 @@ export default function ProvisionScreen() {
               style={[
                 styles.input,
                 {
-                  borderRadius: scaleSpacing(layout, 16, 1.06),
+                  borderRadius: radii.field,
                   fontSize: scaleFont(layout, 16),
                   minHeight: layout.isTablet ? 60 : 56,
                 },
@@ -296,7 +297,7 @@ export default function ProvisionScreen() {
               style={[
                 styles.input,
                 {
-                  borderRadius: scaleSpacing(layout, 16, 1.06),
+                  borderRadius: radii.field,
                   fontSize: scaleFont(layout, 16),
                   minHeight: layout.isTablet ? 60 : 56,
                 },
@@ -314,6 +315,7 @@ export default function ProvisionScreen() {
           </>
         ) : null}
       </SectionCard>
+      <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
     </ScreenShell>
   );
 }
@@ -333,7 +335,7 @@ const styles = StyleSheet.create({
   input: {
     ...typography.body,
     backgroundColor: palette.card,
-    borderColor: palette.hintOfGrey,
+    borderColor: palette.borderStrong,
     borderWidth: 1,
     color: palette.ink,
     paddingHorizontal: 16,

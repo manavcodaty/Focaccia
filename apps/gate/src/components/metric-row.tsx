@@ -14,7 +14,7 @@ export function MetricRow({
   const layout = useResponsiveLayout();
 
   return (
-    <View style={[styles.row, { gap: scaleSpacing(layout, 12, 1.06) }]}>
+    <View style={[styles.row, { gap: scaleSpacing(layout, 12, 1.06), paddingVertical: scaleSpacing(layout, 12, 1.06) }]}>
       <Text style={[styles.label, { fontSize: scaleFont(layout, 13) }]}>{label}</Text>
       <Text style={[styles.value, { fontSize: scaleFont(layout, 15) }]}>{value}</Text>
     </View>
@@ -30,7 +30,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   row: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    borderBottomColor: palette.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },

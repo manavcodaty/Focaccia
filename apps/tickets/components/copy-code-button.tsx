@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 
-import { CheckIcon, CopyIcon } from './icons';
+import { Check, Copy } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function CopyCodeButton({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
@@ -14,9 +17,14 @@ export function CopyCodeButton({ code }: { code: string }) {
   }
 
   return (
-    <button aria-live="polite" className="copy-button" onClick={copy} type="button">
-      {copied ? <CheckIcon /> : <CopyIcon />}
-      {copied ? 'Copied' : 'Copy code'}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button aria-live="polite" onClick={copy} size="sm" type="button" variant="outline">
+          {copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
+          {copied ? 'Copied' : 'Copy code'}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{copied ? 'Claim code copied' : 'Copy the claim code'}</TooltipContent>
+    </Tooltip>
   );
 }

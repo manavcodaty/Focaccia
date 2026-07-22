@@ -32,7 +32,7 @@ import {
 import type { PendingPassIssuance } from '../src/lib/ticket-state';
 import { useAuth } from '../src/state/auth-context';
 import { useEnrollment } from '../src/state/enrollment-context';
-import { palette, typography } from '../src/theme';
+import { palette, radii, typography } from '../src/theme';
 
 function phaseLabel(phase: PassProcessingPhase | null, hasPending: boolean): string {
   if (hasPending && phase === null) return 'A previous signing request is ready to resume.';
@@ -226,9 +226,9 @@ export default function CaptureScreen() {
           )}
 
           <View style={styles.controls}>
-            {modelError ? <StatusBanner message={modelError} tone="warning" /> : null}
-            {!modelReady && !hasPending ? <StatusBanner message="Loading the face model and cryptographic runtime..." tone="neutral" /> : null}
-            {captureError ? <StatusBanner message={captureError} tone="warning" /> : null}
+            {modelError ? <StatusBanner message={modelError} title="Model unavailable" tone="warning" /> : null}
+            {!modelReady && !hasPending ? <StatusBanner message="Loading the face model and cryptographic runtime…" title="Preparing on-device processing" tone="neutral" /> : null}
+            {captureError ? <StatusBanner message={captureError} title="Pass not issued" tone="warning" /> : null}
             <View style={styles.progressCard}>
               {isProcessing ? <ActivityIndicator color={palette.ink} /> : null}
               <Text style={styles.progressTitle}>{phaseLabel(processingPhase, hasPending)}</Text>
@@ -268,21 +268,21 @@ function Fallback({ body, label, onPress, secondaryLabel, secondaryPress, title 
 }
 
 const styles = StyleSheet.create({
-  cameraStage: { alignSelf: 'center', aspectRatio: 0.82, backgroundColor: palette.surfaceInverse, borderRadius: 28, maxHeight: 500, overflow: 'hidden', width: '100%' },
+  cameraStage: { alignSelf: 'center', aspectRatio: 0.82, backgroundColor: palette.surfaceInverse, borderRadius: radii.credential, maxHeight: 500, overflow: 'hidden', width: '100%' },
   cameraTint: { ...StyleSheet.absoluteFillObject, backgroundColor: palette.overlay },
   content: { alignSelf: 'center', flexGrow: 1, gap: 18, maxWidth: 520, padding: 16, width: '100%' },
-  controls: { backgroundColor: palette.canvas, borderRadius: 24, gap: 12, padding: 18 },
+  controls: { backgroundColor: palette.canvas, borderRadius: radii.panel, gap: 12, padding: 18 },
   eyebrow: { ...typography.bodyStrong, color: palette.warmMist, fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase' },
   fallback: { alignItems: 'center', backgroundColor: palette.canvas, flex: 1, justifyContent: 'center', padding: 20 },
   fallbackBody: { ...typography.body, color: palette.mutedStone, fontSize: 15, lineHeight: 22 },
-  fallbackCard: { backgroundColor: palette.fog, borderRadius: 24, gap: 14, maxWidth: 480, padding: 22, width: '100%' },
+  fallbackCard: { backgroundColor: palette.fog, borderRadius: radii.panel, gap: 14, maxWidth: 480, padding: 22, width: '100%' },
   fallbackTitle: { ...typography.title, color: palette.ink, fontSize: 24 },
-  header: { backgroundColor: palette.surfaceInverseSoft, borderRadius: 24, gap: 8, padding: 20 },
+  header: { backgroundColor: palette.surfaceInverseSoft, borderRadius: radii.panel, gap: 8, padding: 20 },
   progressBody: { ...typography.body, color: palette.mutedStone, fontSize: 13, lineHeight: 19 },
-  progressCard: { backgroundColor: palette.fog, borderRadius: 16, gap: 8, padding: 14 },
+  progressCard: { backgroundColor: palette.fog, borderRadius: radii.field, gap: 8, padding: 14 },
   progressTitle: { ...typography.bodyStrong, color: palette.ink, fontSize: 15 },
   resumeBody: { ...typography.body, color: palette.ink, fontSize: 15, lineHeight: 23 },
-  resumeCard: { backgroundColor: palette.warmMist, borderRadius: 28, gap: 10, padding: 24 },
+  resumeCard: { backgroundColor: palette.warmMist, borderRadius: radii.credential, gap: 10, padding: 24 },
   resumeTitle: { ...typography.title, color: palette.ink, fontSize: 24 },
   safeArea: { flex: 1 },
   screen: { backgroundColor: palette.surfaceInverse, flex: 1 },

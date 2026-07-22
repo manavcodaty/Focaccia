@@ -20,30 +20,40 @@ test("creates a stable event id from the new dashboard form draft", () => {
 test("derives the provisioning gate list from the event record", () => {
   assert.deepEqual(
     getProvisionedGates({
+      capacity: 120,
       created_at: "2026-04-02T08:00:00.000Z",
+      description: "An evening event.",
       ends_at: "2026-04-02T12:00:00.000Z",
       event_id: "dubai_summit_evening_entry",
       event_salt: "salt",
+      is_listed: true,
       join_code: "AB12CD34",
+      location: "Dubai",
       name: "Dubai Summit Evening Entry",
       pk_gate_event: null,
       pk_sign_event: "sign",
       starts_at: "2026-04-02T09:00:00.000Z",
+      updated_at: "2026-04-02T08:00:00.000Z",
     }),
     [],
   );
 
   assert.deepEqual(
     getProvisionedGates({
+      capacity: 120,
       created_at: "2026-04-02T08:00:00.000Z",
+      description: "An evening event.",
       ends_at: "2026-04-02T12:00:00.000Z",
       event_id: "dubai_summit_evening_entry",
       event_salt: "salt",
+      is_listed: true,
       join_code: "AB12CD34",
+      location: "Dubai",
       name: "Dubai Summit Evening Entry",
       pk_gate_event: "pk_gate_123",
       pk_sign_event: "sign",
       starts_at: "2026-04-02T09:00:00.000Z",
+      updated_at: "2026-04-02T08:00:00.000Z",
     }),
     [
       {

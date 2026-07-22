@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -183,8 +184,12 @@ export function EventForm({ initialEvent, mode }: { initialEvent?: EventRecord; 
                 </Field>
               </FieldGroup>
 
-              <label className="flex items-start gap-3 rounded-[16px] border border-[var(--color-hint-of-grey)]/30 bg-[var(--color-fog)] p-4">
-                <input className="mt-1 size-4 accent-[var(--color-terracotta)]" type="checkbox" {...form.register("is_listed")} />
+              <label className="flex items-start gap-3 rounded-[var(--radius-panel)] border border-border bg-secondary p-4">
+                <Checkbox
+                  checked={form.watch("is_listed")}
+                  className="mt-0.5"
+                  onCheckedChange={(checked) => form.setValue("is_listed", checked === true, { shouldDirty: true, shouldValidate: true })}
+                />
                 <span><span className="block text-sm font-medium text-[var(--color-ink)]">Listed publicly</span><span className="mt-1 block text-[13px] leading-5 text-[var(--color-muted-stone)]">Show this event in the public ticket app. Unlisted events remain organizer-only.</span></span>
               </label>
 

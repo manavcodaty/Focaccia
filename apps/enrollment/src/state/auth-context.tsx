@@ -18,8 +18,9 @@ import {
   validateAuthCredentials,
   type AuthMode,
 } from '../lib/auth-validation';
+import { restoreEnrollmentSession } from '../lib/auth-session';
 import { passVault } from '../lib/enrollment-storage';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAuthStorage } from '../lib/supabase';
 
 interface AuthInput {
   email: string;
@@ -60,12 +61,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let mounted = true;
-    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      setError(sessionError ? authMessage(sessionError) : null);
-      setIsLoading(false);
-    });
+    void restoreEnrollmentSession(supabase.auth, supabaseAuthStorage)
+      .then(({ error: sessionError, session: restoredSession }) => {
+        if (!mounted) return;
+        setSession(restoredSession);
+        setError(sessionError ? authMessage(sessionError) : null);
+        setIsLoading(false);
+      })
+      .catch((sessionError: unknown) => {
+        if (!mounted) return;
+        setSession(null);
+        setError(authMessage(sessionError));
+        setIsLoading(false);
+      });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (mounted) setSession(nextSession);

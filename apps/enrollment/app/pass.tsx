@@ -10,7 +10,7 @@ import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { enrollmentApi } from '../src/lib/api';
 import { useEnrollment } from '../src/state/enrollment-context';
-import { palette, typography } from '../src/theme';
+import { palette, radii, typography } from '../src/theme';
 
 const PASS_TOKEN_CLIPBOARD_TTL_MS = 60_000;
 
@@ -78,7 +78,7 @@ export default function PassScreen() {
         <Text style={styles.eventMeta}>{new Date(pass.event.starts_at).toLocaleString()}</Text>
       </View>
 
-      <SectionCard title={pass.ticketTypeName}>
+      <SectionCard eyebrow="Event pass" title={pass.ticketTypeName} tone="credential">
         <Text style={styles.generation}>Generation {pass.generation} of 3</Text>
         <View style={styles.qrWrap}>
           <QRCode backgroundColor={palette.canvas} color={palette.ink} quietZone={16} size={260} value={pass.token} />
@@ -87,9 +87,9 @@ export default function PassScreen() {
         <Text style={styles.validUntil}>Valid until {new Date(pass.event.ends_at).toLocaleString()}</Text>
       </SectionCard>
 
-      <StatusBanner message="Available offline. This signed pass is stored in iOS protected storage on this device." tone="success" />
+      <StatusBanner message="This signed pass is stored in iOS protected storage on this device." title="Offline ready" tone="success" />
 
-      <SectionCard title="Manual fallback">
+      <SectionCard eyebrow="Scanner recovery" title="Manual fallback" tone="subtle">
         <Text style={styles.body}>If QR scanning fails, gate staff can paste the full signed token into the same offline verification pipeline.</Text>
         <Text style={styles.snippet}>{pass.tokenSnippet}</Text>
         <PrimaryButton
@@ -132,9 +132,9 @@ const styles = StyleSheet.create({
   eventMeta: { ...typography.body, color: palette.mutedStone, fontSize: 14 },
   eventName: { ...typography.display, color: palette.ink, fontSize: 30, lineHeight: 35, textAlign: 'center' },
   generation: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 15, textAlign: 'center' },
-  qrWrap: { alignItems: 'center', backgroundColor: palette.canvas, borderRadius: 20, padding: 10 },
+  qrWrap: { alignItems: 'center', backgroundColor: palette.surface, borderColor: palette.border, borderRadius: radii.panel, borderWidth: 1, padding: 10 },
   queueCode: { ...typography.title, color: palette.ink, fontSize: 20, letterSpacing: 2, textAlign: 'center' },
-  readyHeader: { alignItems: 'center', backgroundColor: palette.warmMist, borderRadius: 24, gap: 6, padding: 22 },
+  readyHeader: { alignItems: 'center', backgroundColor: palette.surfaceClay, borderRadius: radii.credential, gap: 6, padding: 24 },
   readyLabel: { ...typography.bodyStrong, color: palette.success, fontSize: 14 },
   screen: { gap: 18 },
   snippet: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 14, lineHeight: 20, textAlign: 'center' },

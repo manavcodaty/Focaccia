@@ -98,6 +98,18 @@ export function createLanSupabaseProxy({
   const server = http.createServer((request, response) => {
     const requestPath = request.url ?? '/';
 
+    if (requestPath === '/.focaccia/health' && (request.method === 'GET' || request.method === 'HEAD')) {
+      response.writeHead(200, {
+        'Cache-Control': 'no-store',
+        'Content-Type': 'application/json',
+        'X-Focaccia-Proxy': '1',
+      });
+      response.end(request.method === 'HEAD'
+        ? undefined
+        : JSON.stringify({ service: 'focaccia-lan-supabase-proxy' }));
+      return;
+    }
+
     if (!isAllowedProxyPath(requestPath)) {
       rejectHttp(response, 404, 'Path is not available through the Focaccia LAN proxy.');
       return;
@@ -219,7 +231,21 @@ async function main() {
     .filter(Boolean);
   const bindHost = process.env.FOCACCIA_LOCAL_HOST ?? DEFAULT_BIND_HOST;
   const bindPort = Number(process.env.FOCACCIA_LAN_PROXY_PORT ?? DEFAULT_BIND_PORT);
-  const proxy = createLanSupabaseProxy({ allowedOrigins, bindHost, bindPort });
+  const upstreamHost = process.env.FOCACCIA_SUPABASE_UPSTREAM_HOST ?? UPSTREAM_HOST;
+  const upstreamPort = Number(process.env.FOCACCIA_SUPABASE_UPSTREAM_PORT ?? UPSTREAM_PORT);
+  if (!['127.0.0.1', '::1', 'localhost'].includes(upstreamHost)) {
+    throw new Error('Supabase proxy upstream must use a loopback host.');
+  }
+  if (!Number.isInteger(upstreamPort) || upstreamPort < 1 || upstreamPort > 65_535) {
+    throw new Error('Supabase proxy upstream port is invalid.');
+  }
+  const proxy = createLanSupabaseProxy({
+    allowedOrigins,
+    bindHost,
+    bindPort,
+    upstreamHost,
+    upstreamPort,
+  });
 
   await proxy.listen();
   process.stdout.write(`Focaccia LAN proxy listening on http://${bindHost}:${bindPort}\n`);

@@ -138,6 +138,12 @@ export function syncTicketDevEnv({
       },
     },
     {
+      envPath: path.join(repoRoot, 'apps/gate/.env.local'),
+      updates(currentEnv) {
+        return publicEnvUpdates('EXPO_PUBLIC_', host, currentEnv);
+      },
+    },
+    {
       envPath: path.join(repoRoot, 'apps/tickets/.env.local'),
       updates(currentEnv) {
         return publicEnvUpdates('NEXT_PUBLIC_', host, currentEnv);
@@ -179,7 +185,7 @@ export function syncTicketDevEnv({
     writeEnvFile(target.envPath, updatedText);
   }
 
-  logger.log(`[Ticket Dev Env] Synced enrollment, tickets, organizer, and function local URLs to ${host}.`);
+  logger.log(`[Ticket Dev Env] Synced enrollment, gate, tickets, organizer, and function local URLs to ${host}.`);
   return { host };
 }
 

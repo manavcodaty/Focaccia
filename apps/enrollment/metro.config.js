@@ -7,18 +7,30 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(projectRoot, '../..');
-const config = getDefaultConfig(projectRoot);
 
-config.resolver.assetExts.push('tflite');
-config.watchFolders = config.watchFolders ?? [];
+const config = (async () => {
+  const {
+    prepareNativeNetwork,
+    shouldPrepareNativeNetwork,
+  } = await import('../../scripts/gate-network-bootstrap.mjs');
+  if (shouldPrepareNativeNetwork()) {
+    await prepareNativeNetwork({ appName: 'enrollment' });
+  }
 
-if (!config.watchFolders.includes(workspaceRoot)) {
-  config.watchFolders.push(workspaceRoot);
-}
+  const resolvedConfig = getDefaultConfig(projectRoot);
+  resolvedConfig.resolver.assetExts.push('tflite');
+  resolvedConfig.watchFolders = resolvedConfig.watchFolders ?? [];
 
-config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, 'node_modules'),
-  path.resolve(workspaceRoot, 'node_modules'),
-];
+  if (!resolvedConfig.watchFolders.includes(workspaceRoot)) {
+    resolvedConfig.watchFolders.push(workspaceRoot);
+  }
+
+  resolvedConfig.resolver.nodeModulesPaths = [
+    path.resolve(projectRoot, 'node_modules'),
+    path.resolve(workspaceRoot, 'node_modules'),
+  ];
+
+  return resolvedConfig;
+})();
 
 export default config;

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 230 755 L 1435 755" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1413.6 769.0 L 1435 755 L 1413.6 741.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 230 755 L 230 115" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 244.0 136.4 L 230 115 L 216.0 136.4" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 820 140 L 820 300" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 820 390 L 820 755" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 230 440 L 1435 440" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <ellipse cx="440" cy="620" rx="140" ry="82" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4"/>
+  <ellipse cx="1190" cy="245" rx="160" ry="94" fill="#dcefe4" stroke="#267255" stroke-width="5"/>
+  <path d="M 555 560 L 1070 320" fill="none" stroke="#267255" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 1055.8 343.0 L 1070 320 L 1043.3 316.1" fill="none" stroke="#267255" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="440" y="600.5">reusable face</tspan><tspan x="440" y="642.6">record</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="36" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1190" y="224.9">local +</tspan><tspan x="1190" y="269.6">event-specific</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="start" font-weight="400"><tspan x="300" y="809.2">reusable across events</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="1435" y="809.2">event-specific</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="190" y="167.2">processed</tspan><tspan x="190" y="201.9">locally</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="190" y="696.2">stored</tspan><tspan x="190" y="730.9">centrally</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="35" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="700" y="356.9">research moved the design</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="650" y="720.2">before</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1270" y="400.2">after research</tspan></text>
+</svg>

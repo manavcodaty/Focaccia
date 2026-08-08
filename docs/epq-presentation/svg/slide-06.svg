@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 300 285 L 1460 285" fill="none" stroke="#655e58" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 300 565 L 1460 565" fill="none" stroke="#655e58" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#17191c" text-anchor="start" font-weight="400"><tspan x="120" y="171.6">too big</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="start" font-weight="400"><tspan x="120" y="431.6">Focaccia</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#17191c" text-anchor="start" font-weight="400"><tspan x="120" y="716.6">too small</tspan></text>
+  <rect x="550" y="100" width="600" height="120" rx="24" fill="none" stroke="#655e58" stroke-width="3" stroke-dasharray="14 12"/>
+  <rect x="520" y="340" width="660" height="145" rx="24" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <rect x="650" y="650" width="400" height="120" rx="24" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="38" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="850" y="162.9">commercial event platform</tspan></text>
+  <path d="M 680 415 L 725 415" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 704.8 428.3 L 725 415 L 704.8 401.7" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 850 415 L 900 415" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 879.8 428.3 L 900 415 L 879.8 401.7" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 1030 415 L 1065 415" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 1044.8 428.3 L 1065 415 L 1044.8 401.7" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="610" y="416.6">create</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="790" y="416.6">claim</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="965" y="416.6">enrol</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1130" y="416.6">enter</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="38" fill="#3e7897" text-anchor="middle" font-weight="400"><tspan x="850" y="712.9">face demo only</tspan></text>
+  <path d="M 1040 650 L 1040 500" fill="none" stroke="#b84a3a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1054.0 521.4 L 1040 500 L 1026.0 521.4" fill="none" stroke="#b84a3a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1375" y="455.5">supervisor feedback</tspan></text>
+  <path d="M 1265 470 L 1190 485" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 1207.2 468.0 L 1190 485 L 1212.5 494.0" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1335" y="130.5">outside EPQ scope</tspan></text>
+  <path d="M 1165 150 L 1135 190" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 1136.5 165.8 L 1135 190 L 1157.8 181.8" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

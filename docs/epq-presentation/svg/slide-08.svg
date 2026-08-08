@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <rect x="150" y="115" width="390" height="685" rx="26" fill="#dcecf3" stroke="#3e7897" stroke-width="3" stroke-dasharray="14 12"/>
+  <rect x="605" y="115" width="390" height="685" rx="26" fill="#fffdf8" stroke="#655e58" stroke-width="3" stroke-dasharray="14 12"/>
+  <rect x="1060" y="115" width="390" height="685" rx="26" fill="#dcefe4" stroke="#267255" stroke-width="3" stroke-dasharray="14 12"/>
+  <path d="M 150 450 L 1450 450" fill="none" stroke="#655e58" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 430 280 L 680 280" fill="none" stroke="#3e7897" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 658.6 294.0 L 680 280 L 658.6 266.0" fill="none" stroke="#3e7897" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 920 280 L 1170 280" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1148.6 294.0 L 1170 280 L 1148.6 266.0" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 470 650 L 560 750" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round" opacity="1"/>
+  <path d="M 471.3 649.2 L 559.2 751.1" fill="none" stroke="#aa6d2c" stroke-width="1.4" stroke-linecap="round" opacity="0.35"/>
+  <path d="M 560 750 L 1040 750" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round" opacity="1"/>
+  <path d="M 561.3 749.2 L 1039.2 751.1" fill="none" stroke="#aa6d2c" stroke-width="1.4" stroke-linecap="round" opacity="0.35"/>
+  <path d="M 1040 750 L 1130 650" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1126.1 675.3 L 1130 650 L 1105.2 656.5" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#3e7897" text-anchor="middle" font-weight="400"><tspan x="345" y="169.9">attendee-controlled</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="800" y="169.9">central server</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1255" y="169.9">gate-controlled</tspan></text>
+  <ellipse cx="345" cy="280" rx="105" ry="65" fill="#fffdf8" stroke="#3e7897" stroke-width="4"/>
+  <ellipse cx="800" cy="280" rx="120" ry="70" fill="#fffdf8" stroke="#17191c" stroke-width="4"/>
+  <ellipse cx="1255" cy="280" rx="105" ry="65" fill="#fffdf8" stroke="#267255" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="345" y="261.6">owned</tspan><tspan x="345" y="298.8">ticket</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="800" y="261.6">event</tspan><tspan x="800" y="298.8">authority</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1255" y="261.6">signed</tspan><tspan x="1255" y="298.8">pass</tspan></text>
+  <ellipse cx="345" cy="650" rx="125" ry="75" fill="#fffdf8" stroke="#3e7897" stroke-width="4"/>
+  <ellipse cx="800" cy="625" rx="130" ry="70" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4" stroke-dasharray="14 12"/>
+  <ellipse cx="1255" cy="650" rx="130" ry="80" fill="#fffdf8" stroke="#267255" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="345" y="631.6">local face</tspan><tspan x="345" y="668.8">pattern</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="800" y="606.6">no reusable</tspan><tspan x="800" y="643.8">face data</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1255" y="631.6">live local</tspan><tspan x="1255" y="668.8">match</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="800" y="409.2">ordinary event records</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="26" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="800" y="508.8">sensitive face processing</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#aa6d2c" text-anchor="middle" font-weight="400"><tspan x="800" y="534.5">sealed from the server</tspan></text>
+</svg>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 235 760 L 1435 760" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1413.6 774.0 L 1435 760 L 1413.6 746.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 235 760 L 235 115" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 249.0 136.4 L 235 115 L 221.0 136.4" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 835 140 L 835 250" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 835 350 L 835 760" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 235 440 L 1435 440" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <ellipse cx="455" cy="250" rx="165" ry="90" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4"/>
+  <ellipse cx="1010" cy="565" rx="120" ry="72" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <ellipse cx="1350" cy="665" rx="120" ry="72" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <path d="M 590 300 L 900 455" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 874.6 458.0 L 900 455 L 887.1 432.9" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 900 455 L 900 690" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" opacity="1"/>
+  <path d="M 901.3 454.2 L 899.2 691.1" fill="none" stroke="#267255" stroke-width="1.4" stroke-linecap="round" opacity="0.35"/>
+  <path d="M 900 520 L 900 545" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 886.0 523.6 L 900 545 L 914.0 523.6" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 900 690 L 1230 665" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1209.7 680.6 L 1230 665 L 1207.6 652.6" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 1180 470 L 1180 730" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="455" y="230.5">reusable central</tspan><tspan x="455" y="272.6">embedding</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1010" y="546.0">Event A</tspan><tspan x="1010" y="585.7">key</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1350" y="646.0">Event B</tspan><tspan x="1350" y="685.7">key</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="start" font-weight="400"><tspan x="305" y="809.2">reusable across events</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="1435" y="809.2">event-scoped</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="190" y="137.2">hard to</tspan><tspan x="190" y="171.9">replace</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="190" y="714.5">replaceable</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="830" y="311.6">cancellable design</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="35" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1140" y="396.9">same face ≠ same event key</tspan></text>
+</svg>

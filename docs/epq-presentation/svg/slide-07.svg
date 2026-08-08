@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 250 760 L 1430 760" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1408.6 774.0 L 1430 760 L 1408.6 746.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 250 760 L 250 120" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 264.0 141.4 L 250 120 L 236.0 141.4" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 250 310 L 1430 310" fill="none" stroke="#655e58" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <rect x="540" y="125" width="550" height="135" rx="24" fill="#fbe1d9" stroke="#b84a3a" stroke-width="3" stroke-dasharray="14 12"/>
+  <path d="M 445 575 L 615 575" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 593.6 589.0 L 615 575 L 593.6 561.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 785 575 L 955 575" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 933.6 589.0 L 955 575 L 933.6 561.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 1125 575 L 1275 575" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1253.6 589.0 L 1275 575 L 1253.6 561.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="360" cy="575" rx="82" ry="62" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="360" y="575.2">Tickets</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="25" fill="#3e7897" text-anchor="middle" font-weight="400"><tspan x="360" y="673.5">find + claim</tspan></text>
+  <ellipse cx="700" cy="575" rx="82" ry="62" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="700" y="575.2">Enrolment</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="25" fill="#aa6d2c" text-anchor="middle" font-weight="400"><tspan x="700" y="673.5">make pass</tspan></text>
+  <ellipse cx="1040" cy="575" rx="82" ry="62" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1040" y="575.2">Gate</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="25" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1040" y="673.5">check locally</tspan></text>
+  <ellipse cx="1370" cy="575" rx="82" ry="62" fill="#fffdf8" stroke="#17191c" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1370" y="575.2">Organiser</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="25" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1370" y="673.5">run event</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="815" y="196.2">one system knows everything</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1300" y="285.5">too much knowledge</tspan></text>
+  <path d="M 1110 265 L 1030 220" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 1054.1 218.4 L 1030 220 L 1041.1 241.5" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="205" y="137.4">knows</tspan><tspan x="205" y="170.9">everything</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="205" y="692.4">one clear</tspan><tspan x="205" y="725.9">job</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="820" y="809.9">attendee journey</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="815" y="401.6">separation keeps any one part from knowing too much</tspan></text>
+</svg>

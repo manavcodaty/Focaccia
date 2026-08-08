@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <rect x="430" y="100" width="650" height="650" rx="20" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="2" stroke-dasharray="14 12"/>
+  <path d="M 240 315 L 1450 315" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 240 525 L 1450 525" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 245 815 L 1450 815" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1428.6 829.0 L 1450 815 L 1428.6 801.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 520 650 L 520 455" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 534.0 476.4 L 520 455 L 506.0 476.4" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 610 420 L 1090 420" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round" stroke-dasharray="14 12"/>
+  <path d="M 1068.6 434.0 L 1090 420 L 1068.6 406.0" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 1150 385 L 1150 250" fill="none" stroke="#3e7897" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1164.0 271.4 L 1150 250 L 1136.0 271.4" fill="none" stroke="#3e7897" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#3e7897" text-anchor="start" font-weight="400"><tspan x="110" y="220.9">organiser</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#aa6d2c" text-anchor="start" font-weight="400"><tspan x="110" y="430.9">local outbox</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#267255" text-anchor="start" font-weight="400"><tspan x="110" y="660.9">gate</tspan></text>
+  <ellipse cx="520" cy="650" rx="28" ry="28" fill="#dcefe4" stroke="#267255" stroke-width="3"/>
+  <ellipse cx="520" cy="420" rx="28" ry="28" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="3"/>
+  <ellipse cx="1150" cy="210" rx="28" ry="28" fill="#dcecf3" stroke="#3e7897" stroke-width="3"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="560" y="730.5">accept offline</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#aa6d2c" text-anchor="middle" font-weight="400"><tspan x="800" y="395.5">signed result waits</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#3e7897" text-anchor="middle" font-weight="400"><tspan x="1260" y="165.5">dashboard updates</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="720" y="151.2">network unavailable</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="700" y="601.2">new revocations wait</tspan></text>
+  <path d="M 920 560 L 950 500" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 952.8 524.0 L 950 500 L 929.1 512.2" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 1080 100 L 1080 750" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1110" y="794.5">reconnect</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="start" font-weight="400"><tspan x="255" y="804.2">time</tspan></text>
+</svg>

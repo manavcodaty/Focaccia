@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 210 470 L 1410 470" fill="none" stroke="#17191c" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 1387.4 484.8 L 1410 470 L 1387.4 455.2" fill="none" stroke="#17191c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="240" y="330" width="270" height="220" rx="28" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <rect x="660" y="330" width="280" height="220" rx="28" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <rect x="1090" y="330" width="280" height="220" rx="28" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="44" fill="#aa6d2c" text-anchor="middle" font-weight="400"><tspan x="375" y="397.7">network</tspan><tspan x="375" y="452.2">off</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="42" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="800" y="398.2">first scan</tspan><tspan x="800" y="450.3">accepted</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="42" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1230" y="398.2">same pass</tspan><tspan x="1230" y="450.3">rejected</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="36" fill="#aa6d2c" text-anchor="middle" font-weight="400"><tspan x="375" y="622.2">1</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="36" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="800" y="622.2">2</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="36" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1230" y="622.2">3</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="800" y="745.5">demo order</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="800" y="800.5">planned demonstration — not verified here</tspan></text>
+</svg>

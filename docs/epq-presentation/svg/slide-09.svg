@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 235 430 L 1450 430" fill="none" stroke="#655e58" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 350 160 L 350 340" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 350 450 L 350 700" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 800 160 L 800 340" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 800 450 L 800 700" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 1250 160 L 1250 340" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 1250 450 L 1250 700" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 475 260 L 675 260" fill="none" stroke="#3e7897" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 653.6 274.0 L 675 260 L 653.6 246.0" fill="none" stroke="#3e7897" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 925 260 L 1125 260" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1103.6 274.0 L 1125 260 L 1103.6 246.0" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 475 610 L 1125 610" fill="none" stroke="#aa6d2c" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 1102.4 624.8 L 1125 610 L 1102.4 595.2" fill="none" stroke="#aa6d2c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="110" y="250.8">visible</tspan><tspan x="110" y="291.7">outside</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="110" y="600.8">sealed</tspan><tspan x="110" y="641.7">inside</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#3e7897" text-anchor="middle" font-weight="400"><tspan x="350" y="130.5">attendee</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="800" y="130.5">server</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1250" y="130.5">gate</tspan></text>
+  <rect x="260" y="205" width="180" height="110" rx="20" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <rect x="710" y="205" width="180" height="110" rx="20" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <rect x="1160" y="205" width="180" height="110" rx="20" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="350" y="241.6">ticket +</tspan><tspan x="350" y="278.8">event</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="800" y="241.6">authority</tspan><tspan x="800" y="278.8">stamp</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1250" y="241.6">signed</tspan><tspan x="1250" y="278.8">pass</tspan></text>
+  <rect x="270" y="545" width="160" height="130" rx="18" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <rect x="1170" y="545" width="160" height="130" rx="18" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="350" y="591.6">event</tspan><tspan x="350" y="628.8">template</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1250" y="591.6">opened</tspan><tspan x="1250" y="628.8">locally</tspan></text>
+  <rect x="715" y="535" width="170" height="150" rx="18" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <path d="M 725 548 L 800 610" fill="none" stroke="#aa6d2c" stroke-width="3" stroke-linecap="round" opacity="1"/>
+  <path d="M 726.3 547.2 L 799.2 611.1" fill="none" stroke="#aa6d2c" stroke-width="1.0499999999999998" stroke-linecap="round" opacity="0.35"/>
+  <path d="M 875 548 L 800 610" fill="none" stroke="#aa6d2c" stroke-width="3" stroke-linecap="round" opacity="1"/>
+  <path d="M 876.3 547.2 L 799.2 611.1" fill="none" stroke="#aa6d2c" stroke-width="1.0499999999999998" stroke-linecap="round" opacity="0.35"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#aa6d2c" text-anchor="middle" font-weight="400"><tspan x="800" y="664.5">sealed</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="800" y="395.9">server can stamp the outside</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="800" y="760.9">server cannot open the inside</tspan></text>
+</svg>

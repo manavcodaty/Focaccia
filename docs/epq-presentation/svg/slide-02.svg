@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 250 760 L 1430 760" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1408.6 774.0 L 1430 760 L 1408.6 746.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 250 760 L 250 120" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 264.0 141.4 L 250 120 L 236.0 141.4" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 820 140 L 820 450" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 820 550 L 820 760" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 250 440 L 1430 440" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <ellipse cx="430" cy="620" rx="100" ry="70" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <ellipse cx="1160" cy="245" rx="120" ry="78" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4"/>
+  <ellipse cx="1180" cy="620" rx="150" ry="92" fill="#dcefe4" stroke="#267255" stroke-width="5" stroke-dasharray="14 12"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="430" y="601.3">ordinary</tspan><tspan x="430" y="639.8">QR ticket</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1160" y="226.3">central face</tspan><tspan x="1160" y="264.8">system</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="36" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1180" y="594.9">Focaccia</tspan><tspan x="1180" y="639.6">question</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="start" font-weight="400"><tspan x="300" y="809.2">ticket can be shared</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="1430" y="809.2">ticket tied to a person</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="205" y="137.2">face stored</tspan><tspan x="205" y="171.9">centrally</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="205" y="698.2">face stays</tspan><tspan x="205" y="732.9">on devices</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="750" y="511.6">Can entry happen here?</tspan></text>
+  <path d="M 1000 535 L 1095 575" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 1071.2 579.4 L 1095 575 L 1081.5 554.9" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

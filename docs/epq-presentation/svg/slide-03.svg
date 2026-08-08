@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 230 745 L 1435 745" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1413.6 759.0 L 1435 745 L 1413.6 731.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 230 745 L 230 115" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 244.0 136.4 L 230 115 L 216.0 136.4" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 900 140 L 900 640" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 230 435 L 1435 435" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <rect x="330" y="500" width="460" height="165" rx="26" fill="#dcefe4" stroke="#267255" stroke-width="3" stroke-dasharray="14 12"/>
+  <rect x="1045" y="170" width="320" height="185" rx="26" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4" stroke-dasharray="14 12"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="38" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="560" y="564.4">viable EPQ</tspan><tspan x="560" y="611.5">scope</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="42" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1205" y="238.2">original</tspan><tspan x="1205" y="290.3">plan</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="start" font-weight="400"><tspan x="330" y="809.2">fewer features</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="1435" y="809.2">more features</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="190" y="137.2">deeper</tspan><tspan x="190" y="171.9">testing</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="190" y="688.2">lighter</tspan><tspan x="190" y="722.9">testing</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="middle" font-weight="400"><tspan x="815" y="709.2">local | offline | liveness | timing | accuracy | users</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="35" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1120" y="511.9">too much at once</tspan></text>
+  <path d="M 1160 470 L 1190 360" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 1197.5 383.0 L 1190 360 L 1171.9 376.0" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="465" y="401.2">build less, prove more</tspan></text>
+  <path d="M 555 420 L 580 500" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 561.3 484.6 L 580 500 L 586.6 476.7" fill="none" stroke="#267255" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

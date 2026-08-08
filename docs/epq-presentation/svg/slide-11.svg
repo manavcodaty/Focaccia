@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <rect x="250" y="80" width="1120" height="740" rx="32" fill="none" stroke="#267255" stroke-width="3" stroke-dasharray="14 12"/>
+  <path d="M 690 280 L 690 355" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 676.0 333.6 L 690 355 L 704.0 333.6" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 690 500 L 690 575" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 676.0 553.6 L 690 575 L 704.0 553.6" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 690 710 L 690 745" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 676.0 723.6 L 690 745 L 704.0 723.6" fill="none" stroke="#267255" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 865 210 L 1140 210" fill="none" stroke="#b84a3a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1118.6 224.0 L 1140 210 L 1118.6 196.0" fill="none" stroke="#b84a3a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 865 430 L 1140 430" fill="none" stroke="#b84a3a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1118.6 444.0 L 1140 430 L 1118.6 416.0" fill="none" stroke="#b84a3a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 865 650 L 1140 650" fill="none" stroke="#b84a3a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1118.6 664.0 L 1140 650 L 1118.6 636.0" fill="none" stroke="#b84a3a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="690,140 885,210 690,280 495,210" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <polygon points="690,360 885,430 690,500 495,430" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <polygon points="690,590 885,650 690,710 495,650" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="690" y="191.0">right event, time</tspan><tspan x="690" y="230.7">and server stamp?</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="690" y="411.0">prepared revocations</tspan><tspan x="690" y="450.7">and unused pass?</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="690" y="631.0">live person and</tspan><tspan x="690" y="670.7">local match?</tspan></text>
+  <rect x="1140" y="162" width="180" height="96" rx="20" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1230" y="216.2">reject</tspan></text>
+  <rect x="1140" y="382" width="180" height="96" rx="20" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1230" y="436.2">reject</tspan></text>
+  <rect x="1140" y="602" width="180" height="96" rx="20" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1230" y="656.2">reject</tspan></text>
+  <rect x="590" y="745" width="200" height="55" rx="18" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="32" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="690" y="780.9">enter</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#267255" text-anchor="start" font-weight="400"><tspan x="350" y="120.5">gate phone — offline</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="25" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="920" y="338.5">pass</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="25" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="920" y="558.5">pass</tspan></text>
+</svg>

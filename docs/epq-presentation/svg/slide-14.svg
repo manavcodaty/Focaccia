@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <rect x="300" y="90" width="1050" height="720" rx="34" fill="#dcefe4" stroke="#267255" stroke-width="3" stroke-dasharray="14 12"/>
+  <path d="M 594.1282979562134 281.86161264489294 L 705.5710755149896 392.6188093701811" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 681.9 387.8 L 705.5710755149896 392.6188093701811 L 700.6 368.9" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 825 265 L 825 345" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 811.7 324.8 L 825 345 L 838.3 324.8" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 1055.8717020437866 281.86161264489294 L 944.4289244850104 392.6188093701811" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 949.4 368.9 L 944.4289244850104 392.6188093701811 L 968.1 387.8" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 595.8269933886606 614.9869893915748 L 702.8342884293801 514.2527871834889" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 697.2 537.8 L 702.8342884293801 514.2527871834889 L 679.0 518.5" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 825 635 L 825 565" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 838.3 585.2 L 825 565 L 811.7 585.2" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 1054.1730066113394 614.9869893915748 L 947.1657115706199 514.2527871834889" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 971.0 518.5 L 947.1657115706199 514.2527871834889 L 952.8 537.8" fill="none" stroke="#17191c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="70" y="350" width="180" height="190" rx="24" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4" stroke-dasharray="14 12"/>
+  <ellipse cx="825" cy="455" rx="155" ry="115" fill="#fffdf8" stroke="#267255" stroke-width="5"/>
+  <ellipse cx="520" cy="245" rx="105" ry="68" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="520" y="229.9">server</tspan><tspan x="520" y="265.8">stamp</tspan></text>
+  <ellipse cx="825" cy="200" rx="105" ry="68" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="825" y="184.9">event +</tspan><tspan x="825" y="220.8">time</tspan></text>
+  <ellipse cx="1130" cy="245" rx="105" ry="68" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1130" y="229.9">revocation</tspan><tspan x="1130" y="265.8">snapshot</tspan></text>
+  <ellipse cx="520" cy="650" rx="105" ry="68" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="520" y="634.9">unused</tspan><tspan x="520" y="670.8">pass</tspan></text>
+  <ellipse cx="825" cy="700" rx="105" ry="68" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="825" y="684.9">live</tspan><tspan x="825" y="720.8">person</tspan></text>
+  <ellipse cx="1130" cy="650" rx="105" ry="68" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1130" y="634.9">local</tspan><tspan x="1130" y="670.8">face match</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="42" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="825" y="431.2">local</tspan><tspan x="825" y="483.3">decision</tspan></text>
+  <path d="M 118 348 L 202 432" fill="none" stroke="#b84a3a" stroke-width="5" stroke-linecap="round" opacity="1"/>
+  <path d="M 119.3 347.2 L 201.2 433.1" fill="none" stroke="#b84a3a" stroke-width="1.75" stroke-linecap="round" opacity="0.35"/>
+  <path d="M 202 348 L 118 432" fill="none" stroke="#b84a3a" stroke-width="5" stroke-linecap="round" opacity="1"/>
+  <path d="M 203.3 347.2 L 117.2 433.1" fill="none" stroke="#b84a3a" stroke-width="1.75" stroke-linecap="round" opacity="0.35"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="160" y="472.2">live</tspan><tspan x="160" y="506.9">server call</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#267255" text-anchor="start" font-weight="400"><tspan x="350" y="122.2">gate phone</tspan><tspan x="350" y="156.9">prepared + offline</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="160" y="620.5">not needed</tspan></text>
+</svg>

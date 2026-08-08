@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 260 760 L 1435 760" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1413.6 774.0 L 1435 760 L 1413.6 746.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 260 760 L 260 105" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 274.0 126.4 L 260 105 L 246.0 126.4" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 540 130 L 700 290" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 950 550 L 1110 700" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <rect x="290" y="520" width="470" height="200" rx="28" fill="#dcefe4" stroke="#267255" stroke-width="3" stroke-dasharray="14 12"/>
+  <rect x="1060" y="135" width="360" height="260" rx="28" fill="#fbe1d9" stroke="#b84a3a" stroke-width="3" stroke-dasharray="14 12"/>
+  <ellipse cx="370" cy="570" rx="15" ry="15" fill="#dcefe4" stroke="#267255" stroke-width="3"/>
+  <ellipse cx="370" cy="625" rx="15" ry="15" fill="#dcefe4" stroke="#267255" stroke-width="3"/>
+  <ellipse cx="370" cy="680" rx="15" ry="15" fill="#dcefe4" stroke="#267255" stroke-width="3"/>
+  <ellipse cx="1110" cy="200" rx="15" ry="15" fill="#fbe1d9" stroke="#b84a3a" stroke-width="3"/>
+  <ellipse cx="1110" cy="270" rx="15" ry="15" fill="#fbe1d9" stroke="#b84a3a" stroke-width="3"/>
+  <ellipse cx="1110" cy="340" rx="15" ry="15" fill="#fbe1d9" stroke="#b84a3a" stroke-width="3"/>
+  <polygon points="820,305 1020,390 820,475 620,390" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#267255" text-anchor="start" font-weight="400"><tspan x="410" y="579.2">privacy architecture</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#267255" text-anchor="start" font-weight="400"><tspan x="410" y="634.2">offline software</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="26" fill="#267255" text-anchor="start" font-weight="400"><tspan x="410" y="688.8">signed replay handling</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#b84a3a" text-anchor="start" font-weight="400"><tspan x="1150" y="209.2">speed + accuracy</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#b84a3a" text-anchor="start" font-weight="400"><tspan x="1150" y="279.2">spoof resistance</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#b84a3a" text-anchor="start" font-weight="400"><tspan x="1150" y="349.2">usability</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#aa6d2c" text-anchor="middle" font-weight="400"><tspan x="820" y="371.3">credible prototype</tspan><tspan x="820" y="409.8">conditional conclusion</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#267255" text-anchor="start" font-weight="400"><tspan x="315" y="809.5">demonstrated</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="28" fill="#b84a3a" text-anchor="end" font-weight="400"><tspan x="1435" y="809.5">not yet demonstrated</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="26" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="210" y="127.7">production</tspan><tspan x="210" y="160.0">claim</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="24" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="210" y="698.3">prototype</tspan><tspan x="210" y="728.0">architecture</tspan></text>
+</svg>

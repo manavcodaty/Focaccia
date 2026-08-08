@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 560 150 L 1460 150" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1438.6 164.0 L 1460 150 L 1438.6 136.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 650 180 L 650 760" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 900 180 L 900 760" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 1150 180 L 1150 760" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 1400 180 L 1400 760" fill="none" stroke="#d8d0c8" stroke-width="2" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 1275 85 L 1275 790" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#aa6d2c" text-anchor="middle" font-weight="400"><tspan x="650" y="114.9">planned</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#3e7897" text-anchor="middle" font-weight="400"><tspan x="900" y="114.9">implemented</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1150" y="114.9">tested</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1400" y="114.9">observed</tspan></text>
+  <path d="M 570 267 L 1460 267" fill="none" stroke="#d8d0c8" stroke-width="1" stroke-linecap="round" stroke-dasharray="14 12" opacity="0.75"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="start" font-weight="400"><tspan x="100" y="244.9">Replay handling</tspan></text>
+  <ellipse cx="1150" cy="235" rx="15" ry="15" fill="#dcefe4" stroke="#267255" stroke-width="3"/>
+  <path d="M 570 345 L 1460 345" fill="none" stroke="#d8d0c8" stroke-width="1" stroke-linecap="round" stroke-dasharray="14 12" opacity="0.75"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="start" font-weight="400"><tspan x="100" y="322.9">Sensitive cleanup</tspan></text>
+  <ellipse cx="900" cy="313" rx="15" ry="15" fill="#dcecf3" stroke="#3e7897" stroke-width="3"/>
+  <path d="M 570 423 L 1460 423" fill="none" stroke="#d8d0c8" stroke-width="1" stroke-linecap="round" stroke-dasharray="14 12" opacity="0.75"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="start" font-weight="400"><tspan x="100" y="400.9">Clock tolerance</tspan></text>
+  <ellipse cx="1150" cy="391" rx="15" ry="15" fill="#dcefe4" stroke="#267255" stroke-width="3"/>
+  <path d="M 570 501 L 1460 501" fill="none" stroke="#d8d0c8" stroke-width="1" stroke-linecap="round" stroke-dasharray="14 12" opacity="0.75"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="start" font-weight="400"><tspan x="100" y="478.9">Performance timing</tspan></text>
+  <ellipse cx="650" cy="469" rx="15" ry="15" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="3"/>
+  <path d="M 570 579 L 1460 579" fill="none" stroke="#d8d0c8" stroke-width="1" stroke-linecap="round" stroke-dasharray="14 12" opacity="0.75"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="start" font-weight="400"><tspan x="100" y="556.9">Biometric accuracy</tspan></text>
+  <ellipse cx="650" cy="547" rx="15" ry="15" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="3"/>
+  <path d="M 570 657 L 1460 657" fill="none" stroke="#d8d0c8" stroke-width="1" stroke-linecap="round" stroke-dasharray="14 12" opacity="0.75"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="start" font-weight="400"><tspan x="100" y="634.9">Spoof resistance</tspan></text>
+  <ellipse cx="650" cy="625" rx="15" ry="15" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="3"/>
+  <path d="M 570 735 L 1460 735" fill="none" stroke="#d8d0c8" stroke-width="1" stroke-linecap="round" stroke-dasharray="14 12" opacity="0.75"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="29" fill="#17191c" text-anchor="start" font-weight="400"><tspan x="100" y="712.9">User feedback</tspan></text>
+  <ellipse cx="650" cy="703" rx="15" ry="15" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="3"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="24" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1440" y="798.3">full physical demo</tspan><tspan x="1440" y="828.0">not observed</tspan></text>
+  <path d="M 1305 740 L 1290 700" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 1309.5 714.3 L 1290 700 L 1284.7 723.6" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="590" y="801.6">Evidence stops where the proof stops.</tspan></text>
+</svg>

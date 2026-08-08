@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 210 350 L 1390 350" fill="none" stroke="#17191c" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 1367.4 364.8 L 1390 350 L 1367.4 335.2" fill="none" stroke="#17191c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="180" y="275" width="250" height="150" rx="24" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <rect x="600" y="250" width="330" height="200" rx="24" fill="#dcefe4" stroke="#267255" stroke-width="4"/>
+  <rect x="1110" y="275" width="280" height="150" rx="24" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="38" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="305" y="329.4">unused</tspan><tspan x="305" y="376.5">pass</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="38" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="765" y="324.4">accepted +</tspan><tspan x="765" y="371.5">marked used</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="38" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1250" y="329.4">replay</tspan><tspan x="1250" y="376.5">rejected</tspan></text>
+  <path d="M 765 450 L 765 600" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 751.0 578.6 L 765 600 L 779.0 578.6" fill="none" stroke="#aa6d2c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 880 675 L 1180 675" fill="none" stroke="#3e7897" stroke-width="4" stroke-linecap="round" stroke-dasharray="14 12"/>
+  <path d="M 1158.6 689.0 L 1180 675 L 1158.6 661.0" fill="none" stroke="#3e7897" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="610" y="600" width="310" height="150" rx="24" fill="#f7e8c8" stroke="#aa6d2c" stroke-width="4"/>
+  <rect x="1180" y="600" width="260" height="150" rx="24" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#aa6d2c" text-anchor="middle" font-weight="400"><tspan x="765" y="655.8">signed result</tspan><tspan x="765" y="696.7">in local outbox</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="33" fill="#3e7897" text-anchor="middle" font-weight="400"><tspan x="1310" y="655.8">organiser</tspan><tspan x="1310" y="696.7">dashboard</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="24" fill="#3e7897" text-anchor="middle" font-weight="400"><tspan x="1050" y="638.2">reconnect later</tspan></text>
+</svg>

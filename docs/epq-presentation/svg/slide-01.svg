@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect x="0" y="0" width="1600" height="900" rx="0" fill="#fffdf8" stroke="#fffdf8" stroke-width="0"/>
+  <path d="M 240 760 L 1440 760" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 1418.6 774.0 L 1440 760 L 1418.6 746.0" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 240 760 L 240 110" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 254.0 131.4 L 240 110 L 226.0 131.4" fill="none" stroke="#17191c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 830 150 L 830 760" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <path d="M 240 435 L 1440 435" fill="none" stroke="#d8d0c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="14 12" opacity="1"/>
+  <rect x="920" y="520" width="430" height="170" rx="24" fill="#dcefe4" stroke="#267255" stroke-width="3" stroke-dasharray="14 12"/>
+  <ellipse cx="440" cy="565" rx="92" ry="66" fill="#dcecf3" stroke="#3e7897" stroke-width="4"/>
+  <ellipse cx="1160" cy="245" rx="112" ry="74" fill="#fbe1d9" stroke="#b84a3a" stroke-width="4"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="440" y="546.3">Shareable</tspan><tspan x="440" y="584.8">QR ticket</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#17191c" text-anchor="middle" font-weight="400"><tspan x="1160" y="226.3">Central face</tspan><tspan x="1160" y="264.8">database</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="34" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1135" y="584.5">Person-bound</tspan><tspan x="1135" y="626.6">and replaceable</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="start" font-weight="400"><tspan x="310" y="809.2">weak identity check</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="1440" y="809.2">person-bound entry</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="195" y="150.7">hard to</tspan><tspan x="195" y="184.2">replace if</tspan><tspan x="195" y="217.7">exposed</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="27" fill="#655e58" text-anchor="end" font-weight="400"><tspan x="195" y="698.4">easy to</tspan><tspan x="195" y="731.9">replace</tspan></text>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="520" y="400.5">easy to share</tspan></text>
+  <path d="M 545 430 L 500 500" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 499.8 475.8 L 500 500 L 522.1 490.1" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="31" fill="#b84a3a" text-anchor="middle" font-weight="400"><tspan x="1280" y="395.5">hard to take back</tspan></text>
+  <path d="M 1240 350 L 1195 330" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 1218.9 326.1 L 1195 330 L 1208.1 350.3" fill="none" stroke="#b84a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text font-family="Comic Sans MS, Chalkboard SE, Comic Neue, cursive" font-size="30" fill="#267255" text-anchor="middle" font-weight="400"><tspan x="1285" y="500.2">wanted</tspan></text>
+</svg>

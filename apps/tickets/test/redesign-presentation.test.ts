@@ -10,10 +10,14 @@ async function source(path: string) {
 
 test('catalogue leads with real events and never fabricates a claim code', async () => {
   const catalogue = await source('components/event-list-page.tsx');
+  const ticket = await source('components/inspection-ticket.tsx');
 
   assert.doesNotMatch(catalogue, /7K4-29Q|programme-visual|programme-card-soft/);
   assert.match(catalogue, /events-heading/);
   assert.match(catalogue, /EventCard/);
+    assert.match(catalogue, /InspectionTicket[\s\S]*?events\[0\]/);
+  assert.match(ticket, /event: TicketEvent/);
+  assert.doesNotMatch(ticket, /Future Systems Forum|F0C4-7X9Q/);
 });
 
 test('event artwork is deterministic and derived from event identity', async () => {
@@ -50,6 +54,19 @@ test('catalogue motion is brief and respects reduced-motion preferences', async 
   assert.match(reveal, /useReducedMotion/);
   assert.match(reveal, /duration:\s*0\.2/);
   assert.doesNotMatch(reveal, /duration:\s*0\.4[2-9]/);
+  assert.doesNotMatch(reveal, /opacity:\s*0/);
+});
+
+test('ticket shell follows the inspection atelier reference without a visible footer', async () => {
+  const layout = await source('app/layout.tsx');
+  const styles = await source('app/globals.css');
+
+  assert.doesNotMatch(layout, /SiteFooter/);
+  assert.match(layout, /Funnel_Sans/);
+  assert.match(styles, /--ink:\s*#17191c/);
+  assert.match(styles, /--terracotta:\s*#5d2a1a/);
+  assert.match(styles, /\.inspection-ticket-card/);
+  assert.match(styles, /@media \(max-width: 380px\)/);
 });
 
 test('ticket overlays stay opaque instead of reintroducing glass effects', async () => {

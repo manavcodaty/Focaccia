@@ -6,14 +6,23 @@ import { Button } from '@/components/ui/button';
 
 export default function PrivacyPage() {
   return (
-    <main className="page-shell prose-page" id="main-content">
-      <div className="prose-heading fade-section"><p className="overline">Privacy information</p><h1 className="display-heading">A ticket system without a central face database</h1><p>Focaccia stores the personal and operational records needed to issue and audit tickets. It separates those records from local biometric enrollment.</p></div>
-      <div className="privacy-grid fade-section fade-delay-1">
-        <section><h2>Stored for your ticket</h2><ul><li>Your Supabase account email.</li><li>Your attendee profile name.</li><li>The event, ticket type, status, and audit timestamps.</li><li>A protected claim-code representation and the recoverable code shown only to its authenticated owner.</li></ul></section>
-        <section><h2>Never stored centrally</h2><ul><li>Raw face images or video.</li><li>Reusable face embeddings.</li><li>Cancelable biometric templates in decrypted form.</li><li>Full signed pass tokens or gate private keys.</li></ul></section>
-        <section><h2>What happens during enrollment</h2><p>After checkout, the separate iOS enrollment app asks for consent before camera capture. Face processing stays on the attendee device. Native camera capture may create a temporary file, which the app deletes best-effort after local inference. The resulting event-scoped template is encrypted for the gate device before pass issuance.</p></section>
-        <section><h2>Cancellation and retention</h2><p>Claimed or enrolled tickets can be cancelled. Cancelling an enrolled ticket revokes its pass. Ticket and non-biometric audit records are retained for EPQ evidence, including terminal cancelled, revoked, and checked-in states.</p></section>
+    <main className="page-shell prose-page inspection-page" id="main-content">
+      <div className="prose-heading fade-section"><p className="ledger-caption">DATA BOUNDARY ATELIER</p><h1>What Focaccia knows,<br />and what it never receives.</h1><p>A signed pass proves one entry. It does not turn your face into a reusable identity held by a server.</p></div>
+      <div className="privacy-boundary fade-section fade-delay-1">
+        <section className="privacy-issued"><span>FOCACCIA ISSUES</span><h2>Ticket and revocation records</h2><p>Account ownership, event admission, lifecycle state, and audit timestamps.</p></section>
+        <section className="privacy-never"><span>NEVER RECEIVED</span><strong>FACE DATA</strong><p>Raw images, video, and reusable embeddings remain outside Supabase.</p></section>
       </div>
+      <div className="privacy-grid fade-section fade-delay-1">
+        <section><span>Recorded by this app</span><ul><li>Your Supabase account email and attendee name.</li><li>The event, ticket type, status, and audit timestamps.</li><li>A protected claim-code representation and owner-only recovery.</li></ul></section>
+        <section><span>Never put in Supabase</span><ul><li>Raw face images or video.</li><li>Reusable face embeddings.</li><li>Decrypted cancelable biometric templates.</li><li>Full signed pass tokens or gate private keys.</li></ul></section>
+      </div>
+      <section className="privacy-process" aria-labelledby="privacy-process-title">
+        <h2 id="privacy-process-title">How the proof crosses the boundary</h2>
+        <div><span>01</span><strong>Buy or claim</strong><p>The ticket is created for the authenticated attendee account.</p></div>
+        <div><span>02</span><strong>Process locally</strong><p>The iPhone asks for consent and processes capture on the device.</p></div>
+        <div><span>03</span><strong>Issue one pass</strong><p>The event-scoped template is encrypted for the gate before issuance.</p></div>
+        <div><span>04</span><strong>Retain the record</strong><p>Terminal ticket and non-biometric audit records remain for EPQ evidence.</p></div>
+      </section>
       <Alert className="privacy-callout fade-section fade-delay-2"><ShieldAlert /><AlertTitle>Offline revocation limitation</AlertTitle><AlertDescription>A disconnected gate can only enforce the latest revocation list it successfully refreshed. Focaccia does not claim instant revocation while a gate is offline.</AlertDescription></Alert>
       <Button asChild><Link href="/">Return to events</Link></Button>
     </main>

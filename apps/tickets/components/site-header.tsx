@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { LogOut, Menu, TicketCheck } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -20,7 +20,7 @@ import { useAuth } from './auth-provider';
 import { Logo } from './logo';
 
 const routes = [
-  { href: '/', label: 'Discover' },
+  { href: '/', label: 'Events' },
   { href: '/tickets', label: 'My tickets', protected: true },
   { href: '/privacy', label: 'Privacy' },
 ] as const;
@@ -74,8 +74,8 @@ export function SiteHeader() {
             </SheetTrigger>
             <SheetContent className="ticket-navigation-sheet" side="right">
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-2"><TicketCheck className="size-5 text-primary" />Focaccia tickets</SheetTitle>
-                <SheetDescription>Find an event, recover a ticket, or review the privacy boundary.</SheetDescription>
+                <SheetTitle>focaccia / tickets</SheetTitle>
+                <SheetDescription>Events, private enrollment, and recoverable admission records.</SheetDescription>
               </SheetHeader>
               <nav aria-label="Mobile navigation" className="mobile-navigation">
                 {visibleRoutes.map((route) => (

@@ -1,12 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, CalendarDays, CheckCircle2, MapPin, ShieldCheck, Ticket } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -100,25 +99,29 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
   }
 
   return (
-    <main className="event-detail-page page-shell" id="main-content">
+    <main className="event-detail-page page-shell inspection-page" id="main-content">
       <div className="event-detail-back"><Button asChild size="sm" variant="ghost"><Link href="/"><ArrowLeft data-icon="inline-start" />All events</Link></Button></div>
-      <section className="event-hero-grid">
-        <div className="event-detail-copy fade-section">
-          <div className="event-detail-labels"><Badge variant="outline">Listed event</Badge><span>Hosted by {event.organizer}</span></div>
-          <h1 className="display-heading">{event.name}</h1>
-          <p className="event-lede">{event.description || 'The organizer has not added a longer description for this event.'}</p>
-          <dl className="event-facts">
-            <div><dt><CalendarDays />Date and time</dt><dd>{formatEventDate(event.starts_at, event.ends_at)}</dd></div>
-            <div><dt><MapPin />Location</dt><dd>{event.location || 'Provided by organizer'}</dd></div>
-            <div><dt><Ticket />Availability</dt><dd>{event.sold_out ? 'Sold out' : `${event.remaining_capacity} of ${event.capacity} places remaining`}</dd></div>
+      <section className="event-docket-grid">
+        <div className="event-docket fade-section">
+          <div className="event-docket-register"><span>EVENT INSPECTION</span><span>Hosted by {event.organizer}</span></div>
+          <h1>{event.name}</h1>
+          <dl className="event-docket-facts">
+            <div><dt>Date and time</dt><dd>{formatEventDate(event.starts_at, event.ends_at)}</dd></div>
+            <div><dt>Location</dt><dd>{event.location || 'Provided by organizer'}</dd></div>
+            <div><dt>Availability</dt><dd>{event.sold_out ? 'Sold out' : `${event.remaining_capacity} of ${event.capacity} places remaining`}</dd></div>
           </dl>
         </div>
-        <div className="fade-section fade-delay-1"><EventPoster event={event} size="hero" /></div>
+        <div className="event-index-wrap fade-section fade-delay-1"><EventPoster event={event} size="hero" /></div>
+      </section>
+
+      <section className="event-inspection-copy">
+        <div><p className="ledger-caption">INSPECTION NOTES</p><h2>About this event</h2></div>
+        <p>{event.description || 'The organizer has not added a longer description for this event.'}</p>
       </section>
 
       <section className="checkout-layout">
         <div className="ticket-types fade-section">
-          <div className="section-heading compact-heading"><div><p className="overline">Choose a ticket</p><h2>Admission</h2></div><p>Prices are shown in GBP. Paid checkout is not available in this deployment.</p></div>
+          <div className="ledger-heading compact-heading"><div><h2>Checkout inspection</h2><p>Prices are shown in GBP. Paid checkout is not available in this deployment.</p></div></div>
           <ToggleGroup aria-label="Ticket type" className="ticket-type-list" onValueChange={(value) => value && setSelectedTypeId(value)} orientation="vertical" type="single" value={selectedTypeId ?? undefined} variant="outline">
             {event.ticket_types.map((type) => <TicketTypeOption key={type.id} selected={selectedTypeId === type.id} type={type} />)}
           </ToggleGroup>
@@ -126,8 +129,8 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
         </div>
 
         <aside className="checkout-panel fade-section fade-delay-1" aria-labelledby="checkout-heading">
-          <p className="overline">Order summary</p>
-          <h2 id="checkout-heading">Confirm your place</h2>
+          <p className="ledger-caption">CLAIM THE PLACE</p>
+          <h2 id="checkout-heading">Ticket ownership</h2>
           <div className="summary-line"><span>{selectedType?.name ?? 'Select a ticket'}</span><strong>{selectedType ? formatPrice(selectedType.price_pence) : '—'}</strong></div>
           <div className="summary-total"><span>Total</span><strong>{selectedType ? formatPrice(selectedType.price_pence) : '—'}</strong></div>
           {authLoading ? <Skeleton className="h-32 w-full" aria-label="Loading account" /> : user && profile ? (

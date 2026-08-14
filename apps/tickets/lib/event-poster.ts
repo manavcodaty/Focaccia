@@ -1,9 +1,7 @@
 const POSTER_PALETTES = [
-  { accent: '#B86143', background: '#F1D8C9', foreground: '#3E2017' },
-  { accent: '#2F6955', background: '#DCE9DF', foreground: '#183A30' },
-  { accent: '#A46A18', background: '#F1E4C8', foreground: '#4A3210' },
-  { accent: '#675167', background: '#E8DEE6', foreground: '#332733' },
-  { accent: '#445F79', background: '#DCE5EC', foreground: '#223443' },
+  { accent: '#5D2A1A', background: '#17191C', foreground: '#FFFFFF' },
+  { accent: '#17191C', background: '#5D2A1A', foreground: '#FFFFFF' },
+  { accent: '#D8CEC7', background: '#17191C', foreground: '#FFFFFF' },
 ] as const;
 
 export interface EventPosterModel {

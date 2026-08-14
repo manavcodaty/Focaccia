@@ -40,13 +40,16 @@ export function ProfileForm() {
   }
 
   return (
-    <div className="auth-card fade-section">
-      <div className="auth-heading"><p className="overline">Profile required</p><h1 className="display-heading">Confirm your name</h1><p>Your ticket email is fixed to <strong>{user.email}</strong>. Add the full name that should own the ticket.</p></div>
-      <form action={submit} className="auth-form">
-        <Field><FieldLabel htmlFor="full-name"><UserRound />Full name</FieldLabel><Input autoComplete="name" id="full-name" maxLength={120} name="full_name" required type="text" /><FieldDescription>This trusted name will own every ticket you claim.</FieldDescription></Field>
-        {error ? <Alert variant="destructive"><AlertCircle /><AlertTitle>Profile could not be saved</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
-        <Button className="w-full" disabled={pending} size="lg" type="submit">{pending ? 'Saving…' : 'Save profile'}</Button>
-      </form>
+    <div className="auth-composition profile-composition fade-section">
+      <div className="auth-page-heading"><p className="ledger-caption">PROFILE REQUIRED</p><h1>Confirm the ticket owner.</h1><p>Your email is fixed to <strong>{user.email}</strong>. Add the trusted full name that should own this ticket.</p></div>
+      <div className="auth-card">
+        <div className="auth-heading"><h2>Attendee folio</h2><p>The name below is used for ticket ownership, not biometric identity.</p></div>
+        <form action={submit} className="auth-form">
+          <Field><FieldLabel htmlFor="full-name"><UserRound />Full name</FieldLabel><Input autoComplete="name" id="full-name" maxLength={120} name="full_name" required type="text" /><FieldDescription>This trusted name will own every ticket you claim.</FieldDescription></Field>
+          {error ? <Alert variant="destructive"><AlertCircle /><AlertTitle>Profile could not be saved</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
+          <Button className="w-full" disabled={pending} size="lg" type="submit">{pending ? 'Saving…' : 'Save profile'}</Button>
+        </form>
+      </div>
     </div>
   );
 }

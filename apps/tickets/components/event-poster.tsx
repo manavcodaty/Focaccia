@@ -18,9 +18,10 @@ export function EventPoster({ event, size = 'card' }: { event: PublicEvent; size
       data-event-id={event.event_id}
       style={style}
     >
-      <span className="event-poster-kicker">Focaccia · {poster.serial}</span>
-      <strong>{poster.initials}</strong>
-      <span className="event-poster-line" />
+      <span className="event-poster-kicker">event inspection</span>
+      <strong>{poster.serial.slice(-2)}</strong>
+      <span className="event-poster-name">{event.name}</span>
+      <span className="event-poster-line">folio {poster.serial}</span>
     </div>
   );
 }

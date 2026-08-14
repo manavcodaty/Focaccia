@@ -12,10 +12,10 @@ export function RevealList({ children, className }: { children: React.ReactNode;
       <m.div
         animate="visible"
         className={className}
-        initial="hidden"
+        initial="rest"
         variants={{
-          hidden: { opacity: 1 },
-          visible: { opacity: 1, transition: { staggerChildren: 0.055 } },
+          rest: { opacity: 1 },
+          visible: { opacity: 1, transition: { staggerChildren: 0.045 } },
         }}
       >
         {children}
@@ -32,7 +32,7 @@ export function RevealItem({ children }: { children: React.ReactNode }) {
   return (
     <m.div
       variants={{
-        hidden: { opacity: 0, transform: 'translateY(8px)' },
+        rest: { opacity: 1, transform: 'translateY(5px)' },
         visible: { opacity: 1, transform: 'translateY(0px)', transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] } },
       }}
     >

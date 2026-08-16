@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  COCOAPODS_DISABLE_STATS: 'true'
+
 jobs:
   ios-simulator:
     name: Build and launch both iOS apps
@@ -75,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           for app in enrollment gate; do
-            (cd "apps/$app/ios" && pod install)
+            (cd "apps/$app/ios" && pod install --deployment --no-repo-update --verbose)
           done
 
       - name: Build enrollment for iOS Simulator

@@ -15,7 +15,7 @@ env:
 jobs:
   ios-simulator:
     name: Build and launch both iOS apps
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
 
     steps:
@@ -39,9 +39,13 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          XCODE_APPS=(/Applications/Xcode_16*.app)
+          XCODE_APPS=(/Applications/Xcode_26*.app)
+          if (( ${#XCODE_APPS[@]} == 0 )); then
+            XCODE_APPS=(/Applications/Xcode_16*.app)
+          fi
           test "${#XCODE_APPS[@]}" -gt 0
           XCODE_APP="${XCODE_APPS[${#XCODE_APPS[@]} - 1]}"
+          echo "Selecting $XCODE_APP"
           sudo xcode-select --switch "$XCODE_APP/Contents/Developer"
 
       - name: Verify repository and native prerequisites
@@ -87,7 +91,7 @@ jobs:
             ~/Library/Caches/CocoaPods
             apps/enrollment/ios/Pods
             apps/gate/ios/Pods
-          key: ${{ runner.os }}-xcode16-cocoapods-${{ hashFiles('apps/enrollment/ios/Podfile.lock', 'apps/gate/ios/Podfile.lock', 'pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-xcode26-cocoapods-${{ hashFiles('apps/enrollment/ios/Podfile.lock', 'apps/gate/ios/Podfile.lock', 'pnpm-lock.yaml') }}
 
       - name: Install CocoaPods dependencies
         run: |

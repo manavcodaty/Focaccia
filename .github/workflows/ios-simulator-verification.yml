@@ -49,7 +49,9 @@ jobs:
           pnpm --dir apps/gate typecheck
           pnpm --dir apps/gate test
           pnpm --dir apps/gate test:offline
-          pnpm --dir apps/gate test:provisioning
+          # test:provisioning needs a running local Supabase/Colima stack and
+          # server-only test configuration; it is intentionally verified in
+          # the repository's local phase-6 gate, not on this hosted runner.
 
       - name: Boot an available iPhone simulator
         run: |

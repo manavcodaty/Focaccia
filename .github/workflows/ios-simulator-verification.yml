@@ -16,7 +16,7 @@ jobs:
   ios-simulator:
     name: Build and launch both iOS apps
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 90
 
     steps:
       - name: Check out Focaccia
@@ -107,9 +107,12 @@ jobs:
             -workspace apps/enrollment/ios/FacePassEnrollment.xcworkspace \
             -scheme FacePassEnrollment \
             -configuration Debug \
+            -sdk iphonesimulator \
             -destination "generic/platform=iOS Simulator" \
             -derivedDataPath "$RUNNER_TEMP/enrollment-derived" \
             CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=YES \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             build | xcbeautify
 
       - name: Install and launch enrollment
@@ -130,9 +133,12 @@ jobs:
             -workspace apps/gate/ios/FacePassGate.xcworkspace \
             -scheme FacePassGate \
             -configuration Debug \
+            -sdk iphonesimulator \
             -destination "generic/platform=iOS Simulator" \
             -derivedDataPath "$RUNNER_TEMP/gate-derived" \
             CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=YES \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             build | xcbeautify
 
       - name: Install and launch gate

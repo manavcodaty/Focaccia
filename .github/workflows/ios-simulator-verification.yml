@@ -75,7 +75,7 @@ jobs:
         run: |
           set -euo pipefail
           for app in enrollment gate; do
-            (cd "apps/$app/ios" && pod install --repo-update)
+            (cd "apps/$app/ios" && pod install)
           done
 
       - name: Build enrollment for iOS Simulator

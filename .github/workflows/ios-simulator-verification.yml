@@ -11,6 +11,11 @@ permissions:
 
 env:
   COCOAPODS_DISABLE_STATS: 'true'
+  EXPO_PUBLIC_FOCACCIA_NETWORK_MODE: tunnel
+  EXPO_PUBLIC_FOCACCIA_SUPABASE_URL: https://focaccia-ci.test
+  EXPO_PUBLIC_FOCACCIA_WEB_URL: https://focaccia-ci.test
+  EXPO_PUBLIC_FOCACCIA_TICKETS_URL: https://focaccia-ci.test
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: focaccia-ci-public-fixture
 
 jobs:
   ios-simulator:

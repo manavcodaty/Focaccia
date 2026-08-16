@@ -32,6 +32,15 @@ jobs:
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Select Xcode supported by React Native
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          XCODE_APPS=(/Applications/Xcode_16*.app)
+          test "${#XCODE_APPS[@]}" -gt 0
+          XCODE_APP="${XCODE_APPS[${#XCODE_APPS[@]} - 1]}"
+          sudo xcode-select --switch "$XCODE_APP/Contents/Developer"
+
       - name: Verify repository and native prerequisites
         run: |
           node --version

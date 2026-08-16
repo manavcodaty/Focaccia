@@ -101,7 +101,7 @@ jobs:
             -workspace apps/enrollment/ios/FacePassEnrollment.xcworkspace \
             -scheme FacePassEnrollment \
             -configuration Debug \
-            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -destination "generic/platform=iOS Simulator" \
             -derivedDataPath "$RUNNER_TEMP/enrollment-derived" \
             CODE_SIGNING_ALLOWED=NO \
             build | xcbeautify
@@ -124,7 +124,7 @@ jobs:
             -workspace apps/gate/ios/FacePassGate.xcworkspace \
             -scheme FacePassGate \
             -configuration Debug \
-            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -destination "generic/platform=iOS Simulator" \
             -derivedDataPath "$RUNNER_TEMP/gate-derived" \
             CODE_SIGNING_ALLOWED=NO \
             build | xcbeautify

@@ -74,11 +74,20 @@ jobs:
           xcrun simctl boot "$SIMULATOR_UDID" 2>/dev/null || true
           xcrun simctl bootstatus "$SIMULATOR_UDID" -b
 
+      - name: Cache CocoaPods installations
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            apps/enrollment/ios/Pods
+            apps/gate/ios/Pods
+          key: ${{ runner.os }}-xcode16-cocoapods-${{ hashFiles('apps/enrollment/ios/Podfile.lock', 'apps/gate/ios/Podfile.lock', 'pnpm-lock.yaml') }}
+
       - name: Install CocoaPods dependencies
         run: |
           set -euo pipefail
           for app in enrollment gate; do
-            (cd "apps/$app/ios" && pod install --deployment --no-repo-update --verbose)
+            (cd "apps/$app/ios" && pod install --no-repo-update --verbose)
           done
 
       - name: Build enrollment for iOS Simulator

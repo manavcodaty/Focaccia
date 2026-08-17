@@ -223,9 +223,9 @@ const eventOverviewResponse = await fetchWithCookies(
 );
 const eventOverviewHtml = await eventOverviewResponse.text();
 assert.equal(eventOverviewResponse.status, 200);
-assert.match(eventOverviewHtml, /Event overview/i);
-assert.match(eventOverviewHtml, /Public cryptographic values/i);
-assert.match(eventOverviewHtml, /Gate logs/i);
+assert.match(eventOverviewHtml, /Event operations/i);
+assert.match(eventOverviewHtml, /Public ticket URL/i);
+assert.match(eventOverviewHtml, /Gate state/i);
 
 const eventCreatePage = await fetchWithCookies(`${webBaseUrl}/events/new`, cookieJar);
 const eventCreateHtml = await eventCreatePage.text();

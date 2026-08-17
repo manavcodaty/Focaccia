@@ -74,19 +74,21 @@ jobs:
         run: |
           set -euo pipefail
           pnpm --filter @face-pass/shared build
-          cat > .env.local <<'EOF'
-          FOCACCIA_NETWORK_MODE=local
-          FOCACCIA_LOCAL_HOST=127.0.0.1
-          FOCACCIA_LOCAL_SUPABASE_URL=http://127.0.0.1:54321
-          FOCACCIA_LOCAL_WEB_URL=http://127.0.0.1:3000
-          FOCACCIA_LOCAL_TICKETS_URL=http://127.0.0.1:3001
-          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com
-          EOF
           node --input-type=module <<'NODE'
-          import { loadNetworkEnvironment } from './scripts/lib/network-environment.mjs';
           import { prepareRuntimeProject } from './scripts/lib/network-runtime.mjs';
-          const { config } = loadNetworkEnvironment('local');
-          prepareRuntimeProject(config);
+          // The Ubuntu job talks to loopback-only services. The normal
+          // network-config parser correctly rejects loopback in physical
+          // device local mode, so construct only the internal runtime config
+          // needed to generate Supabase Auth redirect settings here.
+          prepareRuntimeProject({
+            browserOrigins: ['http://127.0.0.1:3000', 'http://127.0.0.1:3001'],
+            diagnosticLabel: 'Local network',
+            localHost: '127.0.0.1',
+            mode: 'local',
+            supabaseUrl: 'http://127.0.0.1:54321',
+            ticketsUrl: 'http://127.0.0.1:3001',
+            webUrl: 'http://127.0.0.1:3000',
+          });
           NODE
 
       - name: Start isolated Supabase and Edge Functions

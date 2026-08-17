@@ -245,7 +245,7 @@ async function main() {
       await page.goto(`${webUrl}/login`, { waitUntil: 'domcontentloaded' });
       await page.getByLabel('Email', { exact: true }).fill(context.organizerEmail);
       await page.getByLabel('Password', { exact: true }).fill(context.organizerPassword);
-      await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+      await page.locator('form button[type="submit"]').click();
       await page.waitForURL(/\/dashboard(?:\?.*)?$/, { timeout: 45_000 });
       await page.goto(`${webUrl}/events/${context.eventId}`, { waitUntil: 'domcontentloaded' });
       const summary = page.locator('section[aria-label="Ticket state summary"]');

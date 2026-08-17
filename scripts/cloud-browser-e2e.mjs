@@ -49,10 +49,9 @@ let attendeePage;
 try {
   organizerPage = await context.newPage();
   await organizerPage.goto(`${webUrl}/login`, { waitUntil: 'domcontentloaded' });
-  await organizerPage.getByText('Sign up', { exact: true }).click();
   await organizerPage.getByLabel('Email', { exact: true }).fill(organizerEmail);
   await organizerPage.getByLabel('Password', { exact: true }).fill(organizerPassword);
-  await organizerPage.getByRole('button', { name: 'Create account', exact: true }).click();
+  await organizerPage.locator('form button[type="submit"]').click();
   await organizerPage.waitForURL(/\/dashboard(?:\?.*)?$/, { timeout: 45_000 });
   await waitForVisible(organizerPage.getByRole('heading', { name: 'Events', exact: true }), 'organizer dashboard');
 
@@ -61,8 +60,8 @@ try {
   await organizerPage.getByLabel('Description', { exact: true }).fill('Cloud end-to-end verification event.');
   await organizerPage.getByLabel('Location', { exact: true }).fill('Cloud verification hall');
   await organizerPage.getByRole('checkbox', { name: /Listed publicly/ }).check();
-  await organizerPage.getByRole('button', { name: 'Create event', exact: true }).click();
-  await waitForVisible(organizerPage.getByRole('button', { name: 'Event created', exact: true }), 'event creation confirmation');
+  await organizerPage.locator('form button[type="submit"]').click();
+  await waitForVisible(organizerPage.getByText('Event created', { exact: true }), 'event creation confirmation');
   const eventWorkspaceHref = await organizerPage
     .getByRole('link', { name: 'Open event workspace', exact: true })
     .getAttribute('href');
@@ -74,7 +73,7 @@ try {
   await attendeePage.getByLabel('Full name', { exact: true }).fill('Cloud Test Attendee');
   await attendeePage.getByLabel('Email address', { exact: true }).fill(attendeeEmail);
   await attendeePage.getByLabel('Password', { exact: true }).fill(attendeePassword);
-  await attendeePage.getByRole('button', { name: 'Create account', exact: true }).click();
+  await attendeePage.locator('form button[type="submit"]').click();
   await attendeePage.waitForURL(/\/tickets(?:\?.*)?$/, { timeout: 45_000 });
 
   await attendeePage.goto(`${ticketsUrl}/`, { waitUntil: 'domcontentloaded' });
@@ -83,7 +82,7 @@ try {
   await eventLink.click();
   await attendeePage.waitForURL(new RegExp(`/events/${eventId}$`));
   await waitForVisible(attendeePage.getByRole('heading', { name: eventName, exact: true }), 'event detail');
-  await attendeePage.getByRole('button', { name: 'Claim free ticket', exact: true }).click();
+  await attendeePage.getByText('Claim free ticket', { exact: true }).click();
   await attendeePage.waitForURL(/\/confirmation\/[^/]+$/);
   await waitForVisible(attendeePage.getByText('Your place is saved', { exact: true }), 'ticket confirmation');
   const claimCode = (await attendeePage.locator('.claim-code-panel strong').textContent())?.trim() ?? '';
@@ -99,7 +98,7 @@ try {
     organizerPage.getByText('Gate transfer payload', { exact: true }),
     'gate provisioning payload',
   );
-  await organizerPage.getByRole('button', { name: /Advanced cryptographic details/i }).click();
+  await organizerPage.getByText('Advanced cryptographic details', { exact: true }).click();
   const provisioningPayloadText = await organizerPage.locator('#qr-payload pre').textContent();
   assert.ok(provisioningPayloadText, 'The provisioning payload preview should be present.');
   const provisioningPayload = JSON.parse(provisioningPayloadText);

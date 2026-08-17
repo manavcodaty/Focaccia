@@ -59,7 +59,7 @@ try {
   await organizerPage.getByLabel('Location', { exact: true }).fill('Cloud verification hall');
   await organizerPage.getByRole('checkbox', { name: /Listed publicly/ }).check();
   await organizerPage.getByRole('button', { name: 'Create event', exact: true }).click();
-  await waitForVisible(organizerPage.getByText('Event created', { exact: true }), 'event creation confirmation');
+  await waitForVisible(organizerPage.getByRole('button', { name: 'Event created', exact: true }), 'event creation confirmation');
   const eventWorkspaceHref = await organizerPage
     .getByRole('link', { name: 'Open event workspace', exact: true })
     .getAttribute('href');

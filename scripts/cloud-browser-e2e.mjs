@@ -104,7 +104,10 @@ try {
   );
   await organizerPage.getByRole('checkbox', { name: /Listed publicly/ }).check();
   await organizerPage.locator('form button[type="submit"]').click();
-  await waitForVisible(organizerPage.getByText('Event created', { exact: true }), 'event creation confirmation');
+  await waitForVisible(
+    organizerPage.locator('[data-slot="card-title"]').filter({ hasText: 'Event created' }),
+    'event creation confirmation',
+  );
   const eventWorkspaceHref = await organizerPage
     .getByRole('link', { name: 'Open event workspace', exact: true })
     .getAttribute('href');

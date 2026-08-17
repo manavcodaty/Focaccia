@@ -111,6 +111,8 @@ const webBaseUrl = new URL(env.NEXT_PUBLIC_FOCACCIA_WEB_URL).origin;
 const supabaseUrl = resolveServerSupabaseUrl({
   configuredUrl: env.NEXT_PUBLIC_FOCACCIA_SUPABASE_URL,
 });
+const testOrganizerEmail = process.env.FOCACCIA_TEST_ORGANIZER_EMAIL;
+const testOrganizerPassword = process.env.FOCACCIA_TEST_ORGANIZER_PASSWORD;
 
 const supabase = createServerClient(
   supabaseUrl,
@@ -135,10 +137,14 @@ const unauthenticatedDashboard = await fetch(`${webBaseUrl}/dashboard`, {
 assert.equal(unauthenticatedDashboard.status, 307);
 assert.equal(unauthenticatedDashboard.headers.get("location"), "/login");
 
-const email = `organizer-${randomUUID()}@example.com`;
-const password = `P@ssword-${randomUUID()}`;
+const email = testOrganizerEmail ?? `organizer-${randomUUID()}@example.com`;
+const password = testOrganizerPassword ?? `P@ssword-${randomUUID()}`;
 
 let authResult = await supabase.auth.signUp({ email, password });
+
+if (authResult.error && testOrganizerEmail) {
+  authResult = await supabase.auth.signInWithPassword({ email, password });
+}
 
 if (authResult.error) {
   throw authResult.error;
@@ -157,6 +163,20 @@ if (!session) {
 }
 
 assert.ok(session?.access_token, "missing access token after auth");
+
+if (testOrganizerEmail) {
+  const ensureOrganizerResponse = await fetch(`${supabaseUrl}/functions/v1/ensure-organizer`, {
+    method: "POST",
+    headers: {
+      apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: "{}",
+  });
+  const ensureOrganizerJson = await ensureOrganizerResponse.json();
+  assert.equal(ensureOrganizerResponse.status, 200, JSON.stringify(ensureOrganizerJson));
+}
 
 const cookieHeader = buildCookieHeader(cookieJar);
 assert.ok(cookieHeader.length > 0, "missing session cookies");

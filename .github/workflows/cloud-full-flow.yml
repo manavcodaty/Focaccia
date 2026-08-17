@@ -65,7 +65,7 @@ jobs:
           FOCACCIA_LOCAL_SUPABASE_URL=http://$LOCAL_HOST:54331
           FOCACCIA_LOCAL_WEB_URL=http://$LOCAL_HOST:3000
           FOCACCIA_LOCAL_TICKETS_URL=http://$LOCAL_HOST:3001
-          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,browser-organizer@example.com
+          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com
           EOF
           node --input-type=module <<'NODE'
           import { loadNetworkEnvironment } from './scripts/lib/network-environment.mjs';
@@ -99,7 +99,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
           FACE_PASS_SECRET_WRAPPING_KEY_B64URL=$SECRET_WRAPPING_KEY
           FOCACCIA_CLAIM_CODE_PEPPER=$CLAIM_CODE_PEPPER
-          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,browser-organizer@example.com
+          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com
           FOCACCIA_NETWORK_MODE=local
           FOCACCIA_LOCAL_HOST=$FOCACCIA_CLOUD_LOCAL_HOST
           FOCACCIA_LOCAL_SUPABASE_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:54331
@@ -107,6 +107,7 @@ jobs:
           FOCACCIA_LOCAL_TICKETS_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3001
           EOF
           pnpm run db:functions:env
+          test "$(sed -n 's/^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=//p' supabase/functions/.env)" = 'organizer@example.com,organizer2@example.com,browser-organizer@example.com'
           for app in web tickets; do
             cat > "apps/$app/.env.local" <<EOF
           NEXT_PUBLIC_FOCACCIA_NETWORK_MODE=local

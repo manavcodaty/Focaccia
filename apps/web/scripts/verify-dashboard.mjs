@@ -231,7 +231,7 @@ const eventCreatePage = await fetchWithCookies(`${webBaseUrl}/events/new`, cooki
 const eventCreateHtml = await eventCreatePage.text();
 assert.equal(eventCreatePage.status, 200);
 assert.match(eventCreateHtml, /Create Event/i);
-assert.match(eventCreateHtml, /join code, event salt, and signing key/i);
+assert.match(eventCreateHtml, /default free ticket/i);
 
 const provisioningResponse = await fetchWithCookies(
   `${webBaseUrl}/events/${eventId}/provisioning`,
@@ -239,7 +239,7 @@ const provisioningResponse = await fetchWithCookies(
 );
 const provisioningHtml = await provisioningResponse.text();
 assert.equal(provisioningResponse.status, 200);
-assert.match(provisioningHtml, /Gate Provisioning/i);
+assert.match(provisioningHtml, /Provisioning control panel/i);
 assert.match(provisioningHtml, /Public values/i);
 assert.match(provisioningHtml, /PK_SIGN_EVENT/i);
 assert.match(provisioningHtml, /EVENT_SALT/i);

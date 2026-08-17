@@ -20,14 +20,14 @@ async function waitForVisible(locator, label) {
 async function waitForHydration(page, locator, label) {
   await locator.waitFor({ state: 'visible' });
   for (let attempt = 0; attempt < 120; attempt += 1) {
-    const hydrated = await locator.evaluate((element) =>
-      Object.getOwnPropertyNames(element).some((name) => name.startsWith('__reactProps$')) ||
-      '_valueTracker' in element,
-    );
-    if (hydrated) return;
+    const ready = await locator.evaluate((element) => {
+      const input = element;
+      return document.readyState === 'complete' && !input.disabled && !input.readOnly;
+    });
+    if (ready) return;
     await page.waitForTimeout(100);
   }
-  throw new Error(`${label} did not hydrate within 12 seconds.`);
+  throw new Error(`${label} was not interactable within 12 seconds.`);
 }
 
 async function fillStable(page, locator, value, label) {

@@ -17,8 +17,21 @@ async function waitForVisible(locator, label) {
   assert.equal(await locator.isVisible(), true, `${label} should be visible`);
 }
 
-async function fillStable(page, locator, value, label) {
+async function waitForHydration(page, locator, label) {
   await locator.waitFor({ state: 'visible' });
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const hydrated = await locator.evaluate((element) =>
+      Object.getOwnPropertyNames(element).some((name) => name.startsWith('__reactProps$')) ||
+      '_valueTracker' in element,
+    );
+    if (hydrated) return;
+    await page.waitForTimeout(100);
+  }
+  throw new Error(`${label} did not hydrate within 12 seconds.`);
+}
+
+async function fillStable(page, locator, value, label) {
+  await waitForHydration(page, locator, label);
   let stableChecks = 0;
   for (let attempt = 0; attempt < 12; attempt += 1) {
     await locator.fill(value);

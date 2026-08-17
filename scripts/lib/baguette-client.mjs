@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import net from 'node:net';
+import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -21,6 +22,122 @@ export async function runCommand(command, args, options = {}) {
   } catch (error) {
     throw commandError(error, `${command} ${args.join(' ')}`);
   }
+}
+
+class BaguetteInputSession {
+  constructor(udid) {
+    this.udid = udid;
+    this.child = null;
+    this.stdoutBuffer = '';
+    this.pending = [];
+    this.startError = null;
+  }
+
+  async start() {
+    this.child = spawn('baguette', ['input', '--udid', this.udid], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    this.child.stdout.setEncoding('utf8');
+    this.child.stdout.on('data', (chunk) => this.#handleStdout(chunk));
+    this.child.stderr.resume();
+    this.child.on('error', (error) => this.#failPending(error));
+    this.child.on('exit', (code, signal) => {
+      if (code !== 0 || signal) {
+        this.#failPending(new Error(`Baguette input session exited with ${code ?? signal ?? 'unknown status'}.`));
+      } else {
+        this.#failPending(new Error('Baguette input session exited before acknowledging the gesture.'));
+      }
+    });
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(resolve, 250);
+      this.child.once('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+    });
+  }
+
+  async dispatch(gesture, timeoutMs = 15_000) {
+    if (!this.child || this.child.stdin.destroyed) {
+      throw new Error('Baguette input session is not available.');
+    }
+
+    const ack = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pending = this.pending.filter((entry) => entry.resolve !== resolve);
+        reject(new Error(`Timed out waiting for Baguette to acknowledge ${gesture.type}.`));
+      }, timeoutMs);
+      this.pending.push({ resolve, reject, timer });
+      this.child.stdin.write(`${JSON.stringify(gesture)}\n`, (error) => {
+        if (!error) return;
+        clearTimeout(timer);
+        this.pending = this.pending.filter((entry) => entry.resolve !== resolve);
+        reject(error);
+      });
+    });
+
+    if (!ack.ok) {
+      throw new Error(`Baguette rejected ${gesture.type}: ${ack.error ?? 'unknown error'}`);
+    }
+    return ack;
+  }
+
+  async close() {
+    const child = this.child;
+    this.child = null;
+    if (!child) return;
+    child.stdin.end();
+    await Promise.race([
+      new Promise((resolve) => child.once('exit', resolve)),
+      new Promise((resolve) => setTimeout(resolve, 2_000)),
+    ]);
+    if (!child.killed) child.kill('SIGTERM');
+  }
+
+  #handleStdout(chunk) {
+    this.stdoutBuffer += chunk;
+    const lines = this.stdoutBuffer.split('\n');
+    this.stdoutBuffer = lines.pop() ?? '';
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      let ack;
+      try {
+        ack = JSON.parse(line);
+      } catch {
+        this.#failPending(new Error(`Baguette input returned invalid JSON: ${line}`));
+        return;
+      }
+      const entry = this.pending.shift();
+      if (!entry) continue;
+      clearTimeout(entry.timer);
+      entry.resolve(ack);
+    }
+  }
+
+  #failPending(error) {
+    for (const entry of this.pending.splice(0)) {
+      clearTimeout(entry.timer);
+      entry.reject(error);
+    }
+  }
+}
+
+let activeInputSession = null;
+
+export async function startBaguetteInput(udid) {
+  activeInputSession = new BaguetteInputSession(udid);
+  try {
+    await activeInputSession.start();
+  } catch (error) {
+    activeInputSession = null;
+    throw error;
+  }
+}
+
+export async function stopBaguetteInput() {
+  const session = activeInputSession;
+  activeInputSession = null;
+  await session?.close();
 }
 
 export async function describeUi(udid) {
@@ -126,14 +243,27 @@ export async function tapNode(udid, matcher, options = {}) {
       throw new Error(`Accessibility node ${String(matcher)} has no tappable frame.`);
     }
 
-    await runCommand('baguette', [
-      'tap',
-      '--udid', udid,
-      '--x', String(frame.x + frame.width / 2),
-      '--y', String(frame.y + frame.height / 2),
-      '--width', String(root.width),
-      '--height', String(root.height),
-    ]);
+    const tap = {
+      type: 'tap',
+      x: frame.x + frame.width / 2,
+      y: frame.y + frame.height / 2,
+      width: root.width,
+      height: root.height,
+      duration: 0.1,
+    };
+    if (activeInputSession) {
+      await activeInputSession.dispatch(tap);
+    } else {
+      await runCommand('baguette', [
+        'tap',
+        '--udid', udid,
+        '--x', String(tap.x),
+        '--y', String(tap.y),
+        '--width', String(tap.width),
+        '--height', String(tap.height),
+        '--duration', String(tap.duration),
+      ]);
+    }
 
     if (!retryIfStillVisible) {
       return node;

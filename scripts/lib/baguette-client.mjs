@@ -61,12 +61,26 @@ export function findNode(tree, matcher) {
   return null;
 }
 
+function isTransientAccessibilityError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /no frontmost application|no accessibility data|sim not booted/i.test(message);
+}
+
 export async function waitForNode(udid, matcher, { timeoutMs = 60_000, label = String(matcher) } = {}) {
   const deadline = Date.now() + timeoutMs;
   let lastTree = null;
 
   while (Date.now() < deadline) {
-    lastTree = await describeUi(udid);
+    try {
+      lastTree = await describeUi(udid);
+    } catch (error) {
+      // simctl launch can return before the Accessibility bridge has a
+      // frontmost application. Treat that short startup window as retryable;
+      // preserve all other baguette failures as hard errors.
+      if (!isTransientAccessibilityError(error)) throw error;
+      await sleep(500);
+      continue;
+    }
     const node = findNode(lastTree, matcher);
     if (node) {
       return node;

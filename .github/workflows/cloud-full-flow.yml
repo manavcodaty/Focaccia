@@ -39,6 +39,15 @@ jobs:
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Increase Docker shared memory for Edge Runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo install -d -m 0755 /etc/docker
+          printf '%s\n' '{"default-shm-size":"1g"}' | sudo tee /etc/docker/daemon.json >/dev/null
+          sudo systemctl restart docker
+          docker info --format '{{.ServerVersion}}'
+
       - name: Build shared package and prepare isolated runtime
         shell: bash
         run: |
@@ -119,6 +128,17 @@ jobs:
             --no-verify-jwt \
             --env-file "$GITHUB_WORKSPACE/supabase/functions/.env" \
             > "$RUNNER_TEMP/focaccia-functions.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            if docker inspect supabase_edge_runtime_Focaccia --format '{{.HostConfig.ShmSize}}' 2>/dev/null | grep -qx '1073741824'; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo 'Edge Runtime did not receive the expected 1 GiB shared-memory mount.' >&2
+              docker inspect supabase_edge_runtime_Focaccia --format '{{.HostConfig.ShmSize}}' >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
           for attempt in $(seq 1 60); do
             if curl --silent --fail --output /dev/null "http://$FOCACCIA_CLOUD_LOCAL_HOST:54331/.focaccia/health" \
               && curl --silent --fail --output /dev/null "http://127.0.0.1:54321/auth/v1/health"; then

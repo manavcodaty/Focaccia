@@ -31,7 +31,11 @@ const attendeePassword = `Attendee-${randomUUID()}!`;
 
 await mkdir(artifactDir, { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
+const executablePath = process.env.FOCACCIA_BROWSER_EXECUTABLE_PATH?.trim();
+const browser = await chromium.launch({
+  ...(executablePath ? { executablePath } : { channel: 'chrome' }),
+  headless: true,
+});
 const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 },
 });

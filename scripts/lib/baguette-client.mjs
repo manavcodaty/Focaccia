@@ -30,7 +30,6 @@ class BaguetteInputSession {
     this.child = null;
     this.stdoutBuffer = '';
     this.pending = [];
-    this.startError = null;
   }
 
   async start() {
@@ -282,7 +281,11 @@ export async function tapNode(udid, matcher, options = {}) {
 
 export async function pasteIntoNode(udid, matcher, value, options = {}) {
   await tapNode(udid, matcher, options);
-  await runCommand('baguette', ['paste', '--udid', udid, '--text', value]);
+  if (activeInputSession) {
+    await activeInputSession.dispatch({ type: 'paste', text: value, press: true });
+  } else {
+    await runCommand('baguette', ['paste', '--udid', udid, '--text', value]);
+  }
 }
 
 export async function readSimulatorClipboard(udid) {

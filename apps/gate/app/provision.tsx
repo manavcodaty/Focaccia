@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Linking,
   StyleSheet,
@@ -57,18 +57,15 @@ function PermissionFallback({
   );
 }
 
-export default function ProvisionScreen() {
+function useProvisionController(isCloudE2E: boolean) {
   const router = useRouter();
   const layout = useResponsiveLayout();
-  const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
   const {
     auth,
     completeProvisioning,
     gate,
     signIn,
   } = useGate();
-  const device = useCameraDevice('back');
-  const { hasPermission, requestPermission } = useCameraPermission();
   const [deviceName, setDeviceName] = useState('Gate iPhone');
   const [draft, setDraft] = useState<ProvisioningQrPayload | null>(null);
   const [email, setEmail] = useState('');
@@ -96,37 +93,6 @@ export default function ProvisionScreen() {
       setError(payloadError instanceof Error ? payloadError.message : 'Cloud E2E provisioning payload is invalid.');
     }
   }, []);
-  const codeScanner = useCodeScanner(
-    useMemo(
-      () => ({
-        codeTypes: ['qr'],
-        onCodeScanned: (codes: Array<{ value?: string }>) => {
-          if (scanLockRef.current || isBusy) {
-            return;
-          }
-
-          const value = codes.find((code) => code.value)?.value;
-
-          if (!value) {
-            return;
-          }
-
-          try {
-            const payload = parseProvisioningQrPayload(value);
-
-            scanLockRef.current = true;
-            setError(null);
-            setFeedback('Provisioning QR decoded. Confirm the event and sync this device.');
-            setDraft(payload);
-          } catch (scanError) {
-            setError(scanError instanceof Error ? scanError.message : 'Failed to parse provisioning QR.');
-          }
-        },
-      }),
-      [isBusy],
-    ),
-  );
-
   async function handleSignIn() {
     setError(null);
     setFeedback(null);
@@ -167,34 +133,55 @@ export default function ProvisionScreen() {
     setFeedback(null);
   }
 
-  if (!isCloudE2E && !device) {
-    return (
-      <PermissionFallback
-        body="A rear camera is required to read the web dashboard provisioning QR."
-        onPrimaryPress={() => router.replace('/')}
-        primaryLabel="Back to home"
-        title="Rear camera unavailable"
-      />
-    );
-  }
+  return {
+    auth,
+    deviceName,
+    draft,
+    email,
+    error,
+    feedback,
+    gate,
+    handleProvision,
+    handleSignIn,
+    isBusy,
+    layout,
+    password,
+    resetDraft,
+    router,
+    scanLockRef,
+    setDraft,
+    setDeviceName,
+    setEmail,
+    setError,
+    setFeedback,
+    setPassword,
+  };
+}
 
-  if (!isCloudE2E && !hasPermission) {
-    return (
-      <PermissionFallback
-        body="Camera access is required to provision the gate from the dashboard QR."
-        onPrimaryPress={() => {
-          void requestPermission();
-        }}
-        primaryLabel="Allow camera"
-        secondaryLabel="Open settings"
-        secondaryPress={() => {
-          void Linking.openSettings();
-        }}
-        title="Camera permission required"
-      />
-    );
-  }
+type ProvisionScreenBodyProps = ReturnType<typeof useProvisionController> & {
+  cameraContent: ReactNode;
+};
 
+function ProvisionScreenBody({
+  auth,
+  cameraContent,
+  deviceName,
+  draft,
+  email,
+  error,
+  feedback,
+  gate,
+  handleProvision,
+  handleSignIn,
+  isBusy,
+  layout,
+  password,
+  resetDraft,
+  router,
+  setDeviceName,
+  setEmail,
+  setPassword,
+}: ProvisionScreenBodyProps) {
   const previewStyle = {
     aspectRatio: layout.previewAspectRatio,
     borderRadius: scaleSpacing(layout, 24, 1.08),
@@ -281,18 +268,7 @@ export default function ProvisionScreen() {
 
       <SectionCard eyebrow="QR" title={draft ? draft.name : 'Scan the provisioning QR'}>
         <View style={[styles.preview, previewStyle]}>
-          {isCloudE2E ? (
-            <View style={[styles.camera, styles.e2ePreview]}>
-              <Text style={styles.e2ePreviewLabel}>Cloud E2E payload injection</Text>
-            </View>
-          ) : (
-            <Camera
-              codeScanner={codeScanner}
-              device={device!}
-              isActive={!draft && !isBusy}
-              style={styles.camera}
-            />
-          )}
+          {cameraContent}
           <View style={[styles.scanFrame, scanFrameStyle]} />
         </View>
         <Text style={[styles.caption, { fontSize: scaleFont(layout, 14), lineHeight: scaleFont(layout, 20) }]}>
@@ -343,6 +319,107 @@ export default function ProvisionScreen() {
       </SectionCard>
       <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
     </ScreenShell>
+  );
+}
+
+function CloudE2EProvisionScreen() {
+  const controller = useProvisionController(true);
+
+  return (
+    <ProvisionScreenBody
+      {...controller}
+      cameraContent={
+        <View style={[styles.camera, styles.e2ePreview]}>
+          <Text style={styles.e2ePreviewLabel}>Cloud E2E payload injection</Text>
+        </View>
+      }
+    />
+  );
+}
+
+function NativeProvisionScreen() {
+  const controller = useProvisionController(false);
+  const device = useCameraDevice('back');
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const codeScanner = useCodeScanner(
+    useMemo(
+      () => ({
+        codeTypes: ['qr'],
+        onCodeScanned: (codes: Array<{ value?: string }>) => {
+          if (controller.scanLockRef.current || controller.isBusy) {
+            return;
+          }
+
+          const value = codes.find((code) => code.value)?.value;
+
+          if (!value) {
+            return;
+          }
+
+          try {
+            const payload = parseProvisioningQrPayload(value);
+
+            controller.scanLockRef.current = true;
+            controller.setError(null);
+            controller.setFeedback('Provisioning QR decoded. Confirm the event and sync this device.');
+            controller.setDraft(payload);
+          } catch (scanError) {
+            controller.setError(scanError instanceof Error ? scanError.message : 'Failed to parse provisioning QR.');
+          }
+        },
+      }),
+      [controller.isBusy],
+    ),
+  );
+
+  if (!device) {
+    return (
+      <PermissionFallback
+        body="A rear camera is required to read the web dashboard provisioning QR."
+        onPrimaryPress={() => controller.router.replace('/')}
+        primaryLabel="Back to home"
+        title="Rear camera unavailable"
+      />
+    );
+  }
+
+  if (!hasPermission) {
+    return (
+      <PermissionFallback
+        body="Camera access is required to provision the gate from the dashboard QR."
+        onPrimaryPress={() => {
+          void requestPermission();
+        }}
+        primaryLabel="Allow camera"
+        secondaryLabel="Open settings"
+        secondaryPress={() => {
+          void Linking.openSettings();
+        }}
+        title="Camera permission required"
+      />
+    );
+  }
+
+  return (
+    <ProvisionScreenBody
+      {...controller}
+      cameraContent={
+        <Camera
+          codeScanner={codeScanner}
+          device={device}
+          isActive={!controller.draft && !controller.isBusy}
+          style={styles.camera}
+        />
+      }
+    />
+  );
+}
+
+export default function ProvisionScreen() {
+  return process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1' ? (
+    <CloudE2EProvisionScreen />
+  ) : (
+    <NativeProvisionScreen />
   );
 }
 

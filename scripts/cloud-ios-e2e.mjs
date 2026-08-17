@@ -8,6 +8,7 @@ import { chromium } from '@playwright/test';
 
 import {
   BaguetteCamera,
+  describeUi,
   grantCameraAccess,
   installSimulatorApp,
   launchSimulatorApp,
@@ -265,6 +266,26 @@ async function main() {
     try {
       await camera.stop();
     } finally {
+      const artifacts = [
+        'gate-provisioned.png',
+        'enrollment-pass.png',
+        'gate-entry-accepted-offline.png',
+        'gate-sync-pending.png',
+        'gate-sync-persisted-after-restart.png',
+        'gate-replay-rejected-offline.png',
+        'gate-sync-complete.png',
+        'organizer-dashboard-checked-in.png',
+      ];
+      if (failure) {
+        await Promise.allSettled([
+          takeSimulatorScreenshot(simulatorUdid, artifact('native-failure.png')),
+          describeUi(simulatorUdid).then((tree) => writeFile(
+            artifact('native-failure-ui.json'),
+            `${JSON.stringify(tree, null, 2)}\n`,
+          )),
+        ]);
+        artifacts.push('native-failure.png', 'native-failure-ui.json');
+      }
       const evidence = {
         checks,
         commit_sha: process.env.GITHUB_SHA ?? null,
@@ -281,16 +302,7 @@ async function main() {
         writeFile(artifact('native-report.json'), `${JSON.stringify(evidence, null, 2)}\n`),
         writeFile(artifact('evidence-manifest.json'), `${JSON.stringify({
           ...evidence,
-          artifacts: [
-            'gate-provisioned.png',
-            'enrollment-pass.png',
-            'gate-entry-accepted-offline.png',
-            'gate-sync-pending.png',
-            'gate-sync-persisted-after-restart.png',
-            'gate-replay-rejected-offline.png',
-            'gate-sync-complete.png',
-            'organizer-dashboard-checked-in.png',
-          ],
+          artifacts,
         }, null, 2)}\n`),
       ]);
     }

@@ -552,7 +552,17 @@ jobs:
           xcrun simctl boot "$SIMULATOR_UDID" 2>/dev/null || true
           xcrun simctl bootstatus "$SIMULATOR_UDID" -b
           for app in enrollment gate; do
-            (cd "apps/$app/ios" && pod install --no-repo-update)
+            pod_succeeded=0
+            for attempt in 1 2 3 4 5; do
+              if (cd "apps/$app/ios" && pod install --no-repo-update); then
+                pod_succeeded=1
+                break
+              fi
+              if [ "$attempt" -lt 5 ]; then
+                sleep "$((attempt * 20))"
+              fi
+            done
+            test "$pod_succeeded" -eq 1
           done
 
       - name: Build Enrollment for the injected-camera simulator

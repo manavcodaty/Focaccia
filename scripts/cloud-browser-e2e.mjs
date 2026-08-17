@@ -49,7 +49,7 @@ let attendeePage;
 try {
   organizerPage = await context.newPage();
   await organizerPage.goto(`${webUrl}/login`, { waitUntil: 'domcontentloaded' });
-  await organizerPage.getByRole('button', { name: 'Sign up', exact: true }).click();
+  await organizerPage.getByText('Sign up', { exact: true }).click();
   await organizerPage.getByLabel('Email', { exact: true }).fill(organizerEmail);
   await organizerPage.getByLabel('Password', { exact: true }).fill(organizerPassword);
   await organizerPage.getByRole('button', { name: 'Create account', exact: true }).click();

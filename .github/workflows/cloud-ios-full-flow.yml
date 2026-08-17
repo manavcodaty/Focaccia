@@ -20,6 +20,8 @@ jobs:
     name: Ubuntu Supabase backend and public test tunnels
     runs-on: ubuntu-latest
     timeout-minutes: 165
+    env:
+      FOCACCIA_DOCKER_HOST: unix:///var/run/docker.sock
 
     steps:
       - name: Check out Focaccia

@@ -89,7 +89,15 @@ export async function tapNode(udid, matcher, options = {}) {
   const node = await waitForNode(udid, matcher, options);
   const frame = node.frame;
   const root = (await describeUi(udid))?.tree?.frame ?? { width: 402, height: 874 };
-  if (!frame || !Number.isFinite(frame.x) || !Number.isFinite(frame.y)) {
+  if (
+    !frame
+    || !Number.isFinite(frame.x)
+    || !Number.isFinite(frame.y)
+    || !Number.isFinite(frame.width)
+    || !Number.isFinite(frame.height)
+    || frame.width <= 0
+    || frame.height <= 0
+  ) {
     throw new Error(`Accessibility node ${String(matcher)} has no tappable frame.`);
   }
 
@@ -164,6 +172,7 @@ class CameraWebSocket {
     await new Promise((resolve, reject) => {
       const socket = net.connect(this.port, this.host);
       this.socket = socket;
+      socket.setTimeout(15_000, () => socket.destroy(new Error('Baguette camera WebSocket connection timed out.')));
       const key = crypto.randomBytes(16).toString('base64');
       socket.on('connect', () => {
         socket.write([
@@ -300,6 +309,7 @@ export class BaguetteCamera {
         body: bytes,
         headers: { 'Content-Type': 'application/octet-stream' },
         method: 'POST',
+        signal: AbortSignal.timeout(15_000),
       },
     );
     if (!response.ok) {

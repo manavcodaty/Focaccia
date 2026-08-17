@@ -214,9 +214,14 @@ async function main() {
     // pass until the event has a bound gate public key.
     await launchGate();
     await tapNode(simulatorUdid, 'Set up gate');
-    await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 90_000 });
+    // The submit button is intentionally disabled until both fields contain
+    // credentials, and waitForNode ignores disabled controls. Wait for the
+    // enabled first field before injecting the credentials, then wait for the
+    // button to become enabled as a postcondition of the two pastes.
+    await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
     await pasteIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
     await pasteIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);
+    await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     await tapNode(simulatorUdid, 'Sign in organizer');
     await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, 'Provision this gate', { timeoutMs: 120_000 });

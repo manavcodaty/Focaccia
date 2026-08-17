@@ -49,8 +49,14 @@ let attendeePage;
 try {
   organizerPage = await context.newPage();
   await organizerPage.goto(`${webUrl}/login`, { waitUntil: 'domcontentloaded' });
-  await organizerPage.getByLabel('Email', { exact: true }).fill(organizerEmail);
-  await organizerPage.getByLabel('Password', { exact: true }).fill(organizerPassword);
+  await organizerPage.locator('form button[type="submit"]').waitFor({ state: 'visible' });
+  await organizerPage.waitForTimeout(500);
+  const organizerEmailInput = organizerPage.locator('input[type="email"]');
+  const organizerPasswordInput = organizerPage.locator('input[type="password"]');
+  await organizerEmailInput.fill(organizerEmail);
+  await organizerPasswordInput.fill(organizerPassword);
+  assert.equal(await organizerEmailInput.inputValue(), organizerEmail);
+  assert.equal(await organizerPasswordInput.inputValue(), organizerPassword);
   await organizerPage.locator('form button[type="submit"]').click();
   await organizerPage.waitForURL(/\/dashboard(?:\?.*)?$/, { timeout: 45_000 });
   await waitForVisible(organizerPage.getByRole('heading', { name: 'Events', exact: true }), 'organizer dashboard');
@@ -70,9 +76,11 @@ try {
 
   attendeePage = await context.newPage();
   await attendeePage.goto(`${ticketsUrl}/signup`, { waitUntil: 'domcontentloaded' });
-  await attendeePage.getByLabel('Full name', { exact: true }).fill('Cloud Test Attendee');
-  await attendeePage.getByLabel('Email address', { exact: true }).fill(attendeeEmail);
-  await attendeePage.getByLabel('Password', { exact: true }).fill(attendeePassword);
+  await attendeePage.locator('form button[type="submit"]').waitFor({ state: 'visible' });
+  await attendeePage.waitForTimeout(500);
+  await attendeePage.locator('#full-name').fill('Cloud Test Attendee');
+  await attendeePage.locator('input[type="email"]').fill(attendeeEmail);
+  await attendeePage.locator('input[type="password"]').fill(attendeePassword);
   await attendeePage.locator('form button[type="submit"]').click();
   await attendeePage.waitForURL(/\/tickets(?:\?.*)?$/, { timeout: 45_000 });
 

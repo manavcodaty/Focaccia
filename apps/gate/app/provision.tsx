@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Linking,
   StyleSheet,
@@ -76,6 +76,25 @@ export default function ProvisionScreen() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const scanLockRef = useRef(false);
+  useEffect(() => {
+    if (process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E !== '1') {
+      return;
+    }
+
+    const encodedPayload = process.env.EXPO_PUBLIC_FOCACCIA_E2E_PROVISIONING_PAYLOAD;
+    if (!encodedPayload) {
+      return;
+    }
+
+    try {
+      const payload = parseProvisioningQrPayload(decodeURIComponent(encodedPayload));
+      scanLockRef.current = true;
+      setDraft(payload);
+      setFeedback('Cloud E2E provisioning payload loaded. Confirm the event and sync this device.');
+    } catch (payloadError) {
+      setError(payloadError instanceof Error ? payloadError.message : 'Cloud E2E provisioning payload is invalid.');
+    }
+  }, []);
   const codeScanner = useCodeScanner(
     useMemo(
       () => ({

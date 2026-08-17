@@ -1,0 +1,353 @@
+name: cloud iOS full flow
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/ios-simulator-verification
+
+permissions:
+  contents: read
+
+env:
+  COCOAPODS_DISABLE_STATS: 'true'
+
+jobs:
+  cloud-ios-full-flow:
+    name: Supabase, four apps, Baguette camera, and native agent
+    runs-on: macos-26
+    timeout-minutes: 150
+
+    steps:
+      - name: Check out Focaccia
+        uses: actions/checkout@v4
+
+      - name: Select Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.105.0
+
+      - name: Install macOS simulator and container dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v docker >/dev/null || brew install docker
+          command -v colima >/dev/null || brew install colima
+          command -v baguette >/dev/null || brew install baguette
+          docker --version
+          colima --version
+          baguette --version
+
+      - name: Start Colima Docker runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          colima start --cpu 4 --memory 8 --disk 40 --vm-type=vz --mount-type=virtiofs
+          COLIMA_SOCKET="${HOME}/.colima/default/docker.sock"
+          test -S "$COLIMA_SOCKET"
+          echo "DOCKER_HOST=unix://$COLIMA_SOCKET" >> "$GITHUB_ENV"
+          echo "FOCACCIA_DOCKER_HOST=unix://$COLIMA_SOCKET" >> "$GITHUB_ENV"
+          DOCKER_HOST="unix://$COLIMA_SOCKET" docker info --format '{{.ServerVersion}}'
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Select Xcode supported by React Native
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          XCODE_APPS=(/Applications/Xcode_26*.app)
+          if (( ${#XCODE_APPS[@]} == 0 )); then
+            XCODE_APPS=(/Applications/Xcode.app)
+          fi
+          test "${#XCODE_APPS[@]}" -gt 0
+          XCODE_APP="${XCODE_APPS[${#XCODE_APPS[@]} - 1]}"
+          sudo xcode-select --switch "$XCODE_APP/Contents/Developer"
+          xcodebuild -version
+
+      - name: Build shared package and prepare isolated runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOCAL_HOST="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
+          test -n "$LOCAL_HOST"
+          case "$LOCAL_HOST" in
+            10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) ;;
+            *) echo "Unexpected runner address: $LOCAL_HOST" >&2; exit 1 ;;
+          esac
+          pnpm --filter @face-pass/shared build
+          cat > .env.local <<EOF
+          FOCACCIA_NETWORK_MODE=local
+          FOCACCIA_LOCAL_HOST=$LOCAL_HOST
+          FOCACCIA_LOCAL_SUPABASE_URL=http://$LOCAL_HOST:54331
+          FOCACCIA_LOCAL_WEB_URL=http://$LOCAL_HOST:3000
+          FOCACCIA_LOCAL_TICKETS_URL=http://$LOCAL_HOST:3001
+          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com
+          EOF
+          node --input-type=module <<'NODE'
+          import { loadNetworkEnvironment } from './scripts/lib/network-environment.mjs';
+          import { prepareRuntimeProject } from './scripts/lib/network-runtime.mjs';
+          const { config } = loadNetworkEnvironment('local');
+          prepareRuntimeProject(config);
+          NODE
+          echo "FOCACCIA_CLOUD_LOCAL_HOST=$LOCAL_HOST" >> "$GITHUB_ENV"
+
+      - name: Start isolated Supabase, proxy, and Edge Functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase start --workdir .focaccia/runtime -x studio,logflare,vector
+          STATUS_FILE="$RUNNER_TEMP/focaccia-supabase.env"
+          supabase status --workdir .focaccia/runtime -o env > "$STATUS_FILE"
+          read_status() {
+            sed -n "s/^export //; s/^$1=//p" "$STATUS_FILE" | head -n 1
+          }
+          API_URL="$(read_status API_URL)"
+          ANON_KEY="$(read_status ANON_KEY)"
+          SERVICE_ROLE_KEY="$(read_status SERVICE_ROLE_KEY)"
+          test -n "$API_URL"
+          test -n "$ANON_KEY"
+          test -n "$SERVICE_ROLE_KEY"
+          SECRET_WRAPPING_KEY="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
+          CLAIM_CODE_PEPPER="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
+          cat > supabase/functions/.env.local <<EOF
+          SUPABASE_URL=$API_URL
+          SUPABASE_ANON_KEY=$ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+          FACE_PASS_SECRET_WRAPPING_KEY_B64URL=$SECRET_WRAPPING_KEY
+          FOCACCIA_CLAIM_CODE_PEPPER=$CLAIM_CODE_PEPPER
+          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com
+          FOCACCIA_NETWORK_MODE=local
+          FOCACCIA_LOCAL_HOST=$FOCACCIA_CLOUD_LOCAL_HOST
+          FOCACCIA_LOCAL_SUPABASE_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:54331
+          FOCACCIA_LOCAL_WEB_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3000
+          FOCACCIA_LOCAL_TICKETS_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3001
+          EOF
+          pnpm run db:functions:env
+          test "$(sed -n 's/^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=//p' supabase/functions/.env)" = 'organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com'
+          nohup env \
+            FOCACCIA_LOCAL_HOST="$FOCACCIA_CLOUD_LOCAL_HOST" \
+            FOCACCIA_LAN_PROXY_PORT=54331 \
+            FOCACCIA_ALLOWED_BROWSER_ORIGINS="http://$FOCACCIA_CLOUD_LOCAL_HOST:3000,http://$FOCACCIA_CLOUD_LOCAL_HOST:3001,http://127.0.0.1:3000,http://127.0.0.1:3001" \
+            node scripts/lan-supabase-proxy.mjs \
+            > "$RUNNER_TEMP/focaccia-proxy.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/focaccia-proxy.pid"
+          nohup supabase functions serve \
+            --workdir .focaccia/runtime \
+            --no-verify-jwt \
+            --env-file "$GITHUB_WORKSPACE/supabase/functions/.env" \
+            > "$RUNNER_TEMP/focaccia-functions.log" 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl --silent --fail --output /dev/null "http://$FOCACCIA_CLOUD_LOCAL_HOST:54331/.focaccia/health" \
+              && curl --silent --fail --output /dev/null "http://127.0.0.1:54321/auth/v1/health"; then
+              break
+            fi
+            if [ "$attempt" -eq 90 ]; then
+              sed -n '1,200p' "$RUNNER_TEMP/focaccia-proxy.log" >&2 || true
+              sed -n '1,200p' "$RUNNER_TEMP/focaccia-functions.log" >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "FOCACCIA_PROXY_PID_FILE=$RUNNER_TEMP/focaccia-proxy.pid" >> "$GITHUB_ENV"
+          echo "FOCACCIA_PROXY_HEALTH_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:54331/.focaccia/health" >> "$GITHUB_ENV"
+          echo "FOCACCIA_CLOUD_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+
+      - name: Start web and tickets apps
+        shell: bash
+        run: |
+          set -euo pipefail
+          for app in web tickets; do
+            cat > "apps/$app/.env.local" <<EOF
+          NEXT_PUBLIC_FOCACCIA_NETWORK_MODE=local
+          NEXT_PUBLIC_FOCACCIA_LOCAL_HOST=$FOCACCIA_CLOUD_LOCAL_HOST
+          NEXT_PUBLIC_FOCACCIA_SUPABASE_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:54331
+          NEXT_PUBLIC_FOCACCIA_WEB_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3000
+          NEXT_PUBLIC_FOCACCIA_TICKETS_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3001
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=$(sed -n 's/^export ANON_KEY=//p' "$RUNNER_TEMP/focaccia-supabase.env" | head -n 1)
+          EOF
+          done
+          nohup pnpm --dir apps/web exec next dev --hostname 0.0.0.0 --port 3000 \
+            > "$RUNNER_TEMP/focaccia-web.log" 2>&1 &
+          nohup pnpm --dir apps/tickets exec next dev --hostname 0.0.0.0 --port 3001 \
+            > "$RUNNER_TEMP/focaccia-tickets.log" 2>&1 &
+          for attempt in $(seq 1 120); do
+            if curl --silent --fail --output /dev/null "http://$FOCACCIA_CLOUD_LOCAL_HOST:3000/login" \
+              && curl --silent --fail --output /dev/null "http://$FOCACCIA_CLOUD_LOCAL_HOST:3001/api/health"; then
+              break
+            fi
+            if [ "$attempt" -eq 120 ]; then
+              sed -n '1,240p' "$RUNNER_TEMP/focaccia-web.log" >&2 || true
+              sed -n '1,240p' "$RUNNER_TEMP/focaccia-tickets.log" >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "FOCACCIA_CLOUD_WEB_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3000" >> "$GITHUB_ENV"
+          echo "FOCACCIA_CLOUD_TICKETS_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3001" >> "$GITHUB_ENV"
+          echo 'FOCACCIA_CLOUD_ORGANIZER_EMAIL=browser-organizer@example.com' >> "$GITHUB_ENV"
+          BROWSER_PASSWORD="$(node -e "console.log('Org-' + require('crypto').randomBytes(18).toString('base64url') + '!')")"
+          echo "::add-mask::$BROWSER_PASSWORD"
+          echo "FOCACCIA_CLOUD_ORGANIZER_PASSWORD=$BROWSER_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Select system Chrome for Playwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER_BIN="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+          if [ ! -x "$BROWSER_BIN" ]; then
+            BROWSER_BIN="$(command -v chromium || command -v google-chrome || true)"
+          fi
+          test -x "$BROWSER_BIN"
+          echo "FOCACCIA_BROWSER_EXECUTABLE_PATH=$BROWSER_BIN" >> "$GITHUB_ENV"
+          "$BROWSER_BIN" --version
+
+      - name: Verify cloud backend and browser-facing apps
+        run: |
+          set -euo pipefail
+          pnpm verify:phase2
+          node scripts/test-phase4.mjs
+          node apps/web/scripts/verify-auth.mjs
+          node apps/web/scripts/verify-dashboard.mjs
+
+      - name: Create organizer, attendee, ticket, and provisioning fixture
+        env:
+          FOCACCIA_CLOUD_ARTIFACT_DIR: ${{ runner.temp }}/focaccia-cloud-ios
+          FOCACCIA_CLOUD_CONTEXT_PATH: ${{ runner.temp }}/focaccia-cloud-context.json
+        run: node scripts/cloud-browser-e2e.mjs
+
+      - name: Prepare mobile local-network and E2E environment
+        shell: bash
+        env:
+          FOCACCIA_CLOUD_CONTEXT_PATH: ${{ runner.temp }}/focaccia-cloud-context.json
+        run: |
+          set -euo pipefail
+          ANON_KEY="$(sed -n 's/^export ANON_KEY=//p' "$RUNNER_TEMP/focaccia-supabase.env" | head -n 1)"
+          test -n "$ANON_KEY"
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const context = JSON.parse(readFileSync(process.env.FOCACCIA_CLOUD_CONTEXT_PATH, 'utf8'));
+          const host = process.env.FOCACCIA_CLOUD_LOCAL_HOST;
+          const anonKey = process.env.FOCACCIA_CLOUD_ANON_KEY;
+          const common = [
+            'EXPO_PUBLIC_FOCACCIA_NETWORK_MODE=local',
+            `EXPO_PUBLIC_FOCACCIA_LOCAL_HOST=${host}`,
+            `EXPO_PUBLIC_FOCACCIA_SUPABASE_URL=http://${host}:54331`,
+            `EXPO_PUBLIC_FOCACCIA_WEB_URL=http://${host}:3000`,
+            `EXPO_PUBLIC_FOCACCIA_TICKETS_URL=http://${host}:3001`,
+            `EXPO_PUBLIC_SUPABASE_ANON_KEY=${anonKey}`,
+          ];
+          writeFileSync('apps/enrollment/.env.local', `${common.join('\n')}\n`, { mode: 0o600 });
+          writeFileSync('apps/gate/.env.local', `${[
+            ...common,
+            'EXPO_PUBLIC_FOCACCIA_CLOUD_E2E=1',
+            `EXPO_PUBLIC_FOCACCIA_E2E_PROVISIONING_PAYLOAD=${encodeURIComponent(JSON.stringify(context.provisioningPayload))}`,
+          ].join('\n')}\n`, { mode: 0o600 });
+          NODE
+
+      - name: Boot one iPhone simulator and install native dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          SIMULATOR_LINE="$(xcrun simctl list devices available | awk '
+            /^-- iOS / { in_runtime=1; next }
+            /^-- / { in_runtime=0 }
+            in_runtime && /iPhone/ { simulator=$0 }
+            END { print simulator }
+          ')"
+          SIMULATOR_UDID="$(printf '%s\n' "$SIMULATOR_LINE" | grep -Eo '[A-F0-9]{8}(-[A-F0-9]{4}){3}-[A-F0-9]{12}')"
+          test -n "$SIMULATOR_UDID"
+          echo "FOCACCIA_IOS_SIMULATOR_UDID=$SIMULATOR_UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$SIMULATOR_UDID" 2>/dev/null || true
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+          for app in enrollment gate; do
+            (cd "apps/$app/ios" && pod install --no-repo-update)
+          done
+
+      - name: Build Enrollment for the injected-camera simulator
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace apps/enrollment/ios/FacePassEnrollment.xcworkspace \
+            -scheme FacePassEnrollment \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/enrollment-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=YES \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build | tee "$RUNNER_TEMP/focaccia-enrollment-build.log"
+          APP_PATH="$(find "$RUNNER_TEMP/enrollment-derived/Build/Products" -type d -name 'FacePassEnrollment.app' -print -quit)"
+          test -n "$APP_PATH"
+          echo "FOCACCIA_ENROLLMENT_APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
+
+      - name: Build Gate for the injected-camera simulator
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace apps/gate/ios/FacePassGate.xcworkspace \
+            -scheme FacePassGate \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/gate-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=YES \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build | tee "$RUNNER_TEMP/focaccia-gate-build.log"
+          APP_PATH="$(find "$RUNNER_TEMP/gate-derived/Build/Products" -type d -name 'FacePassGate.app' -print -quit)"
+          test -n "$APP_PATH"
+          echo "FOCACCIA_GATE_APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
+
+      - name: Start Baguette headless simulator server
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup baguette serve --host 127.0.0.1 --port 8421 \
+            > "$RUNNER_TEMP/focaccia-baguette.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/focaccia-baguette.pid"
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:8421/simulators.json; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              sed -n '1,200p' "$RUNNER_TEMP/focaccia-baguette.log" >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Run the native cloud agent through Enrollment, Gate, offline sync, and dashboard
+        env:
+          FOCACCIA_CLOUD_ARTIFACT_DIR: ${{ runner.temp }}/focaccia-cloud-ios
+          FOCACCIA_CLOUD_CONTEXT_PATH: ${{ runner.temp }}/focaccia-cloud-context.json
+          FOCACCIA_ENROLLMENT_APP_PATH: ${{ env.FOCACCIA_ENROLLMENT_APP_PATH }}
+          FOCACCIA_GATE_APP_PATH: ${{ env.FOCACCIA_GATE_APP_PATH }}
+          FOCACCIA_FACE_FIXTURE_PATH: ${{ github.workspace }}/apps/landing/public/images/peeps/all-peeps.png
+          FOCACCIA_PROVISIONING_QR_PATH: ${{ runner.temp }}/focaccia-cloud-ios/gate-provisioning-qr.png
+          FOCACCIA_BAGUETTE_URL: http://127.0.0.1:8421
+        run: node scripts/cloud-ios-e2e.mjs
+
+      - name: Upload cloud native full-flow proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: focaccia-cloud-ios-full-flow-proof
+          path: |
+            ${{ runner.temp }}/focaccia-cloud-ios
+            ${{ runner.temp }}/focaccia-*.log
+          if-no-files-found: warn

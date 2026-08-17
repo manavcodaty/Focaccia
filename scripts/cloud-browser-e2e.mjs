@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
@@ -22,6 +23,9 @@ const organizerEmail = requiredEnv('FOCACCIA_CLOUD_ORGANIZER_EMAIL');
 const organizerPassword = requiredEnv('FOCACCIA_CLOUD_ORGANIZER_PASSWORD');
 const artifactDir = path.resolve(
   process.env.FOCACCIA_CLOUD_ARTIFACT_DIR ?? path.join(process.cwd(), 'artifacts/cloud-browser'),
+);
+const contextPath = path.resolve(
+  process.env.FOCACCIA_CLOUD_CONTEXT_PATH ?? path.join(os.tmpdir(), 'focaccia-cloud-context.json'),
 );
 const runId = randomUUID().replaceAll('-', '').slice(0, 12);
 const eventName = `Cloud E2E ${runId}`;
@@ -90,12 +94,44 @@ try {
   await waitForVisible(attendeePage.getByRole('heading', { name: 'My tickets', exact: true }), 'attendee wallet');
   await waitForVisible(attendeePage.getByText(eventName, { exact: true }), 'claimed ticket in attendee wallet');
 
+  await organizerPage.goto(`${webUrl}/events/${eventId}/provisioning`, { waitUntil: 'domcontentloaded' });
+  await waitForVisible(
+    organizerPage.getByText('Gate transfer payload', { exact: true }),
+    'gate provisioning payload',
+  );
+  await organizerPage.getByRole('button', { name: /Advanced cryptographic details/i }).click();
+  const provisioningPayloadText = await organizerPage.locator('#qr-payload pre').textContent();
+  assert.ok(provisioningPayloadText, 'The provisioning payload preview should be present.');
+  const provisioningPayload = JSON.parse(provisioningPayloadText);
+  await organizerPage.locator('#qr-payload svg').screenshot({
+    path: path.join(artifactDir, 'gate-provisioning-qr.png'),
+  });
+  await organizerPage.screenshot({ path: path.join(artifactDir, 'organizer-provisioning.png'), fullPage: true });
+
+  await writeFile(
+    contextPath,
+    `${JSON.stringify({
+      attendeeEmail,
+      attendeePassword,
+      eventId,
+      eventName,
+      organizerEmail,
+      organizerPassword,
+      provisioningPayload,
+      runId,
+    }, null, 2)}\n`,
+    { mode: 0o600 },
+  );
+  await chmod(contextPath, 0o600);
+
   const report = {
     attendee_account_created: true,
     attendee_wallet_checked: true,
     claim_code_format_valid: true,
     event_id: eventId,
     event_listed: true,
+    gate_provisioning_payload_captured: true,
+    gate_provisioning_qr_screenshot_captured: true,
     organizer_event_created: true,
     run_id: runId,
   };

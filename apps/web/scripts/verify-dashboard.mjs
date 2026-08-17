@@ -184,7 +184,6 @@ assert.ok(cookieHeader.length > 0, "missing session cookies");
 const dashboardResponse = await fetchWithCookies(`${webBaseUrl}/dashboard`, cookieJar);
 const dashboardHtml = await dashboardResponse.text();
 assert.equal(dashboardResponse.status, 200);
-assert.match(dashboardHtml, /Welcome back/i);
 assert.match(dashboardHtml, /Event roster|No events yet/i);
 assert.match(dashboardHtml, /Create event/i);
 

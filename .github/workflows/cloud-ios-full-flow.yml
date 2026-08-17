@@ -6,6 +6,8 @@ on:
     branches:
       - codex/ios-simulator-verification
 
+run-name: Focaccia cloud iOS full flow (${{ github.ref_name }})
+
 permissions:
   contents: read
 

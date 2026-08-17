@@ -149,7 +149,7 @@ try {
   const provisioningPayloadText = await organizerPage.locator('#qr-payload pre').textContent();
   assert.ok(provisioningPayloadText, 'The provisioning payload preview should be present.');
   const provisioningPayload = JSON.parse(provisioningPayloadText);
-  await organizerPage.locator('#qr-payload svg').screenshot({
+  await organizerPage.locator('#qr-payload').getByRole('img').screenshot({
     path: path.join(artifactDir, 'gate-provisioning-qr.png'),
   });
   await organizerPage.screenshot({ path: path.join(artifactDir, 'organizer-provisioning.png'), fullPage: true });

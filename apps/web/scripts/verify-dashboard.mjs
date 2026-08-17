@@ -201,8 +201,12 @@ const createEventResponse = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      capacity: 100,
+      description: "Web dashboard verification event.",
       ends_at: endsAt,
       event_id: eventId,
+      is_listed: false,
+      location: "Cloud verification hall",
       name: "Web Dashboard Verification Event",
       starts_at: startsAt,
     }),

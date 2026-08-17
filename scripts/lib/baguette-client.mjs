@@ -270,7 +270,7 @@ class CameraWebSocket {
       }
       const opcode = first & 0x0F;
       if (opcode === 0x09) {
-        this.socket.write(Buffer.concat([Buffer.from([0x8A, payload.length]), payload]));
+        this.socket?.write(Buffer.concat([Buffer.from([0x8A, payload.length]), payload]));
       } else if (opcode === 0x01) {
         const message = JSON.parse(payload.toString());
         this.messages.push(message);
@@ -281,7 +281,7 @@ class CameraWebSocket {
           }
         }
       } else if (opcode === 0x08) {
-        this.socket.end();
+        this.socket?.end();
         return;
       }
     }

@@ -107,65 +107,6 @@ jobs:
           test -n "$API_URL"
           test -n "$ANON_KEY"
           test -n "$SERVICE_ROLE_KEY"
-          SECRET_WRAPPING_KEY="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
-          CLAIM_CODE_PEPPER="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
-          cat > supabase/functions/.env.local <<EOF
-          SUPABASE_URL=$API_URL
-          SUPABASE_ANON_KEY=$ANON_KEY
-          SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
-          FACE_PASS_SECRET_WRAPPING_KEY_B64URL=$SECRET_WRAPPING_KEY
-          FOCACCIA_CLAIM_CODE_PEPPER=$CLAIM_CODE_PEPPER
-          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com
-          FOCACCIA_NETWORK_MODE=local
-          FOCACCIA_LOCAL_HOST=127.0.0.1
-          FOCACCIA_LOCAL_SUPABASE_URL=$API_URL
-          FOCACCIA_LOCAL_WEB_URL=http://127.0.0.1:3000
-          FOCACCIA_LOCAL_TICKETS_URL=http://127.0.0.1:3001
-          EOF
-          pnpm run db:functions:env
-          test "$(sed -n 's/^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=//p' supabase/functions/.env)" = 'organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com'
-          nohup supabase functions serve \
-            --workdir .focaccia/runtime \
-            --no-verify-jwt \
-            --env-file "$GITHUB_WORKSPACE/supabase/functions/.env" \
-            > "$RUNNER_TEMP/focaccia-functions.log" 2>&1 &
-          for attempt in $(seq 1 90); do
-            if curl --silent --fail --output /dev/null "http://127.0.0.1:54321/auth/v1/health"; then
-              break
-            fi
-            if [ "$attempt" -eq 90 ]; then
-              sed -n '1,220p' "$RUNNER_TEMP/focaccia-functions.log" >&2 || true
-              exit 1
-            fi
-            sleep 2
-          done
-          for attempt in $(seq 1 60); do
-            FUNCTION_STATUS="$(curl --silent --show-error --output "$RUNNER_TEMP/focaccia-function-response.json" --write-out '%{http_code}' \
-              -X POST \
-              -H "apikey: $ANON_KEY" \
-              -H 'Content-Type: application/json' \
-              --data '{}' \
-              "http://127.0.0.1:54321/functions/v1/get-public-events" || true)"
-            if [ "$FUNCTION_STATUS" = '200' ]; then
-              break
-            fi
-            if [ "$attempt" -eq 60 ]; then
-              echo 'Edge Functions did not become ready.' >&2
-              sed -n '1,220p' "$RUNNER_TEMP/focaccia-functions.log" >&2 || true
-              exit 1
-            fi
-            sleep 2
-          done
-          printf '%s' "$SERVICE_ROLE_KEY" > "$RUNNER_TEMP/focaccia-service-role-key"
-          chmod 0600 "$RUNNER_TEMP/focaccia-service-role-key"
-          echo "::add-mask::$SERVICE_ROLE_KEY"
-          echo "FOCACCIA_CLOUD_API_URL=$API_URL" >> "$GITHUB_ENV"
-          echo "FOCACCIA_CLOUD_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
-
-      - name: Start free public tunnels for Supabase, web, and tickets
-        shell: bash
-        run: |
-          set -euo pipefail
           start_tunnel() {
             local name="$1"
             local port="$2"
@@ -206,7 +147,61 @@ jobs:
             fi
             sleep 2
           done
+          SECRET_WRAPPING_KEY="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
+          CLAIM_CODE_PEPPER="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
+          cat > supabase/functions/.env.local <<EOF
+          SUPABASE_URL=$API_URL
+          SUPABASE_ANON_KEY=$ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+          FACE_PASS_SECRET_WRAPPING_KEY_B64URL=$SECRET_WRAPPING_KEY
+          FOCACCIA_CLAIM_CODE_PEPPER=$CLAIM_CODE_PEPPER
+          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com
+          FOCACCIA_NETWORK_MODE=tunnel
+          FOCACCIA_TUNNEL_SUPABASE_URL=$SUPABASE_PUBLIC_URL
+          FOCACCIA_TUNNEL_WEB_URL=$WEB_PUBLIC_URL
+          FOCACCIA_TUNNEL_TICKETS_URL=$TICKETS_PUBLIC_URL
+          EOF
+          pnpm run db:functions:env
+          test "$(sed -n 's/^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=//p' supabase/functions/.env)" = 'organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com'
+          nohup supabase functions serve \
+            --workdir .focaccia/runtime \
+            --no-verify-jwt \
+            --env-file "$GITHUB_WORKSPACE/supabase/functions/.env" \
+            > "$RUNNER_TEMP/focaccia-functions.log" 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl --silent --fail --output /dev/null "http://127.0.0.1:54321/auth/v1/health"; then
+              break
+            fi
+            if [ "$attempt" -eq 90 ]; then
+              sed -n '1,220p' "$RUNNER_TEMP/focaccia-functions.log" >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          for attempt in $(seq 1 60); do
+            FUNCTION_STATUS="$(curl --silent --show-error --output "$RUNNER_TEMP/focaccia-function-response.json" --write-out '%{http_code}' \
+              -X POST \
+              -H "apikey: $ANON_KEY" \
+              -H 'Content-Type: application/json' \
+              --data '{}' \
+              "http://127.0.0.1:54321/functions/v1/get-public-events" || true)"
+            if [ "$FUNCTION_STATUS" = '200' ]; then
+              break
+            fi
+            if [ "$attempt" -eq 60 ]; then
+              echo 'Edge Functions did not become ready.' >&2
+              sed -n '1,220p' "$RUNNER_TEMP/focaccia-functions.log" >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          printf '%s' "$SERVICE_ROLE_KEY" > "$RUNNER_TEMP/focaccia-service-role-key"
+          chmod 0600 "$RUNNER_TEMP/focaccia-service-role-key"
+          echo "::add-mask::$SERVICE_ROLE_KEY"
+          echo "FOCACCIA_CLOUD_API_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "FOCACCIA_CLOUD_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
           export SUPABASE_PUBLIC_URL WEB_PUBLIC_URL TICKETS_PUBLIC_URL
+          export FOCACCIA_CLOUD_ANON_KEY="$ANON_KEY"
           node --input-type=module <<'NODE'
           import { writeFile } from 'node:fs/promises';
           const network = {

@@ -252,6 +252,8 @@ jobs:
           BROWSER_PASSWORD="$(node -e "console.log('Org-' + require('crypto').randomBytes(18).toString('base64url') + '!')")"
           echo "::add-mask::$BROWSER_PASSWORD"
           echo "FOCACCIA_CLOUD_ORGANIZER_PASSWORD=$BROWSER_PASSWORD" >> "$GITHUB_ENV"
+          echo 'FOCACCIA_TEST_ORGANIZER_EMAIL=browser-organizer@example.com' >> "$GITHUB_ENV"
+          echo "FOCACCIA_TEST_ORGANIZER_PASSWORD=$BROWSER_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Select system Chrome for Playwright
         shell: bash

@@ -17,6 +17,22 @@ async function waitForVisible(locator, label) {
   assert.equal(await locator.isVisible(), true, `${label} should be visible`);
 }
 
+async function fillStable(page, locator, value, label) {
+  await locator.waitFor({ state: 'visible' });
+  let stableChecks = 0;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    await locator.fill(value);
+    await page.waitForTimeout(250);
+    if ((await locator.inputValue()) === value) {
+      stableChecks += 1;
+      if (stableChecks >= 3) return;
+    } else {
+      stableChecks = 0;
+    }
+  }
+  assert.equal(await locator.inputValue(), value, `${label} should retain its value after hydration`);
+}
+
 const webUrl = requiredEnv('FOCACCIA_CLOUD_WEB_URL');
 const ticketsUrl = requiredEnv('FOCACCIA_CLOUD_TICKETS_URL');
 const organizerEmail = requiredEnv('FOCACCIA_CLOUD_ORGANIZER_EMAIL');
@@ -50,21 +66,29 @@ try {
   organizerPage = await context.newPage();
   await organizerPage.goto(`${webUrl}/login`, { waitUntil: 'domcontentloaded' });
   await organizerPage.locator('form button[type="submit"]').waitFor({ state: 'visible' });
-  await organizerPage.waitForTimeout(500);
   const organizerEmailInput = organizerPage.locator('input[type="email"]');
   const organizerPasswordInput = organizerPage.locator('input[type="password"]');
-  await organizerEmailInput.fill(organizerEmail);
-  await organizerPasswordInput.fill(organizerPassword);
-  assert.equal(await organizerEmailInput.inputValue(), organizerEmail);
-  assert.equal(await organizerPasswordInput.inputValue(), organizerPassword);
+  await fillStable(organizerPage, organizerEmailInput, organizerEmail, 'organizer email');
+  await fillStable(organizerPage, organizerPasswordInput, organizerPassword, 'organizer password');
   await organizerPage.locator('form button[type="submit"]').click();
   await organizerPage.waitForURL(/\/dashboard(?:\?.*)?$/, { timeout: 45_000 });
   await waitForVisible(organizerPage.getByRole('heading', { name: 'Events', exact: true }), 'organizer dashboard');
 
   await organizerPage.goto(`${webUrl}/events/new`, { waitUntil: 'domcontentloaded' });
-  await organizerPage.getByLabel('Event name', { exact: true }).fill(eventName);
-  await organizerPage.getByLabel('Description', { exact: true }).fill('Cloud end-to-end verification event.');
-  await organizerPage.getByLabel('Location', { exact: true }).fill('Cloud verification hall');
+  await fillStable(organizerPage, organizerPage.getByLabel('Event name', { exact: true }), eventName, 'event name');
+  await fillStable(organizerPage, organizerPage.getByLabel('Event ID', { exact: true }), eventId, 'event ID');
+  await fillStable(
+    organizerPage,
+    organizerPage.getByLabel('Description', { exact: true }),
+    'Cloud end-to-end verification event.',
+    'event description',
+  );
+  await fillStable(
+    organizerPage,
+    organizerPage.getByLabel('Location', { exact: true }),
+    'Cloud verification hall',
+    'event location',
+  );
   await organizerPage.getByRole('checkbox', { name: /Listed publicly/ }).check();
   await organizerPage.locator('form button[type="submit"]').click();
   await waitForVisible(organizerPage.getByText('Event created', { exact: true }), 'event creation confirmation');
@@ -77,10 +101,9 @@ try {
   attendeePage = await context.newPage();
   await attendeePage.goto(`${ticketsUrl}/signup`, { waitUntil: 'domcontentloaded' });
   await attendeePage.locator('form button[type="submit"]').waitFor({ state: 'visible' });
-  await attendeePage.waitForTimeout(500);
-  await attendeePage.locator('#full-name').fill('Cloud Test Attendee');
-  await attendeePage.locator('input[type="email"]').fill(attendeeEmail);
-  await attendeePage.locator('input[type="password"]').fill(attendeePassword);
+  await fillStable(attendeePage, attendeePage.locator('#full-name'), 'Cloud Test Attendee', 'attendee name');
+  await fillStable(attendeePage, attendeePage.locator('input[type="email"]'), attendeeEmail, 'attendee email');
+  await fillStable(attendeePage, attendeePage.locator('input[type="password"]'), attendeePassword, 'attendee password');
   await attendeePage.locator('form button[type="submit"]').click();
   await attendeePage.waitForURL(/\/tickets(?:\?.*)?$/, { timeout: 45_000 });
 

@@ -60,6 +60,7 @@ function PermissionFallback({
 export default function ProvisionScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
   const {
     auth,
     completeProvisioning,
@@ -166,7 +167,7 @@ export default function ProvisionScreen() {
     setFeedback(null);
   }
 
-  if (!device) {
+  if (!isCloudE2E && !device) {
     return (
       <PermissionFallback
         body="A rear camera is required to read the web dashboard provisioning QR."
@@ -177,7 +178,7 @@ export default function ProvisionScreen() {
     );
   }
 
-  if (!hasPermission) {
+  if (!isCloudE2E && !hasPermission) {
     return (
       <PermissionFallback
         body="Camera access is required to provision the gate from the dashboard QR."
@@ -280,12 +281,18 @@ export default function ProvisionScreen() {
 
       <SectionCard eyebrow="QR" title={draft ? draft.name : 'Scan the provisioning QR'}>
         <View style={[styles.preview, previewStyle]}>
-          <Camera
-            codeScanner={codeScanner}
-            device={device}
-            isActive={!draft && !isBusy}
-            style={styles.camera}
-          />
+          {isCloudE2E ? (
+            <View style={[styles.camera, styles.e2ePreview]}>
+              <Text style={styles.e2ePreviewLabel}>Cloud E2E payload injection</Text>
+            </View>
+          ) : (
+            <Camera
+              codeScanner={codeScanner}
+              device={device!}
+              isActive={!draft && !isBusy}
+              style={styles.camera}
+            />
+          )}
           <View style={[styles.scanFrame, scanFrameStyle]} />
         </View>
         <Text style={[styles.caption, { fontSize: scaleFont(layout, 14), lineHeight: scaleFont(layout, 20) }]}>
@@ -358,6 +365,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: palette.ink,
     paddingHorizontal: 16,
+  },
+  e2ePreview: {
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  e2ePreviewLabel: {
+    ...typography.bodyStrong,
+    color: palette.mutedStone,
+    textAlign: 'center',
   },
   preview: {
     alignSelf: 'center',

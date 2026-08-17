@@ -38,7 +38,15 @@ jobs:
           version: 10.33.0
 
       - name: Install Supabase CLI from npm
-        run: npx --yes supabase@2.105.0 --version
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUPABASE_SHIM="$RUNNER_TEMP/supabase"
+          printf '%s\n' '#!/usr/bin/env bash' 'exec npx --yes supabase@2.105.0 "$@"' > "$SUPABASE_SHIM"
+          chmod 0755 "$SUPABASE_SHIM"
+          export PATH="$RUNNER_TEMP:$PATH"
+          "$SUPABASE_SHIM" --version
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
       - name: Install Cloudflare Quick Tunnel client
         shell: bash

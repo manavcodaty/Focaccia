@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          LOCAL_HOST="$(ip -4 route get 1.1.1.1 | awk '{for (index = 1; index <= NF; index += 1) if ($index == "src") {print $(index + 1); exit}}')"
+          LOCAL_HOST="$(ip -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i += 1) if ($i == "src") {print $(i + 1); exit}}')"
           test -n "$LOCAL_HOST"
           case "$LOCAL_HOST" in
             10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) ;;

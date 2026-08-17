@@ -9,6 +9,7 @@ import { chromium } from '@playwright/test';
 import {
   BaguetteCamera,
   describeUi,
+  findNode,
   grantCameraAccess,
   installSimulatorApp,
   launchSimulatorApp,
@@ -99,14 +100,78 @@ async function restartLocalProxy() {
   await waitForProxyState(true);
 }
 
+async function launchApp({ appLabel, bundleId, matcher, timeoutMs }) {
+  await launchSimulatorApp(simulatorUdid, bundleId);
+
+  // Hosted simulator SpringBoard can win the foreground race even after
+  // simctl reports a successful launch. Give the app a short first window,
+  // then activate its installed icon once before treating the launch as a
+  // runtime failure.
+  try {
+    return await waitForNode(simulatorUdid, matcher, { timeoutMs: 8_000 });
+  } catch (firstLaunchError) {
+    try {
+      const tree = await describeUi(simulatorUdid);
+      if (findNode(tree, appLabel)) {
+        await tapNode(simulatorUdid, appLabel, { timeoutMs: 5_000 });
+      }
+    } catch {
+      // Preserve the original wait failure if the app is not visible on
+      // SpringBoard or the accessibility bridge is transiently unavailable.
+    }
+
+    try {
+      return await waitForNode(simulatorUdid, matcher, { timeoutMs: timeoutMs - 8_000 });
+    } catch {
+      throw firstLaunchError;
+    }
+  }
+}
+
 async function launchEnrollment() {
-  await launchSimulatorApp(simulatorUdid, enrollmentBundleId);
-  await waitForNode(simulatorUdid, 'Sign in', { timeoutMs: 60_000 });
+  await launchApp({
+    appLabel: 'Face Pass Enrollment',
+    bundleId: enrollmentBundleId,
+    matcher: 'Sign in',
+    timeoutMs: 60_000,
+  });
 }
 
 async function launchGate() {
-  await launchSimulatorApp(simulatorUdid, gateBundleId);
-  await waitForNode(simulatorUdid, /Prepare this gate|Open scanner|Set up gate/, { timeoutMs: 90_000 });
+  await launchApp({
+    appLabel: 'Face Pass Gate',
+    bundleId: gateBundleId,
+    matcher: /Prepare this gate|Open scanner|Set up gate/,
+    timeoutMs: 90_000,
+  });
+}
+
+async function captureCommandArtifact(name, command, args) {
+  try {
+    const result = await runCommand(command, args);
+    await writeFile(artifact(name), `${result.stdout ?? ''}${result.stderr ?? ''}`);
+  } catch (error) {
+    await writeFile(artifact(name), `${error instanceof Error ? error.message : String(error)}\n`);
+  }
+}
+
+async function captureSimulatorDiagnostics() {
+  await Promise.all([
+    captureCommandArtifact('native-simulator-apps.txt', 'xcrun', ['simctl', 'listapps', simulatorUdid]),
+    captureCommandArtifact('native-simulator-log.txt', 'xcrun', [
+      'simctl',
+      'spawn',
+      simulatorUdid,
+      'log',
+      'show',
+      '--last',
+      '5m',
+      '--style',
+      'compact',
+      '--predicate',
+      'process == "FacePassGate" OR process == "FacePassEnrollment" OR eventMessage CONTAINS[c] "FacePass" OR eventMessage CONTAINS[c] "React Native"',
+    ]),
+  ]);
 }
 
 async function screenshot(name) {
@@ -283,8 +348,14 @@ async function main() {
             artifact('native-failure-ui.json'),
             `${JSON.stringify(tree, null, 2)}\n`,
           )),
+          captureSimulatorDiagnostics(),
         ]);
-        artifacts.push('native-failure.png', 'native-failure-ui.json');
+        artifacts.push(
+          'native-failure.png',
+          'native-failure-ui.json',
+          'native-simulator-apps.txt',
+          'native-simulator-log.txt',
+        );
       }
       const evidence = {
         checks,

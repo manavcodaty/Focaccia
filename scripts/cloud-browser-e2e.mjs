@@ -24,8 +24,8 @@ const artifactDir = path.resolve(
   process.env.FOCACCIA_CLOUD_ARTIFACT_DIR ?? path.join(process.cwd(), 'artifacts/cloud-browser'),
 );
 const runId = randomUUID().replaceAll('-', '').slice(0, 12);
-const eventId = `cloud_${runId}`;
 const eventName = `Cloud E2E ${runId}`;
+const eventId = `cloud_e2e_${runId}`;
 const attendeeEmail = `attendee-${runId}@example.com`;
 const attendeePassword = `Attendee-${randomUUID()}!`;
 
@@ -54,7 +54,6 @@ try {
 
   await organizerPage.goto(`${webUrl}/events/new`, { waitUntil: 'domcontentloaded' });
   await organizerPage.getByLabel('Event name', { exact: true }).fill(eventName);
-  await organizerPage.getByLabel('Event ID', { exact: true }).fill(eventId);
   await organizerPage.getByLabel('Description', { exact: true }).fill('Cloud end-to-end verification event.');
   await organizerPage.getByLabel('Location', { exact: true }).fill('Cloud verification hall');
   await organizerPage.getByRole('checkbox', { name: /Listed publicly/ }).check();

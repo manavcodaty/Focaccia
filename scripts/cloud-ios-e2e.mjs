@@ -144,7 +144,7 @@ async function main() {
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
     await launchGate();
-    await tapNode(simulatorUdid, 'Set up gate');
+    await tapNode(simulatorUdid, 'Set up gate', { retryIfStillVisible: true });
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 90_000 });
     await pasteIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
     await pasteIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);

@@ -100,30 +100,54 @@ export async function waitForNode(udid, matcher, { timeoutMs = 60_000, label = S
 }
 
 export async function tapNode(udid, matcher, options = {}) {
-  const node = await waitForNode(udid, matcher, options);
-  const frame = node.frame;
-  const root = (await describeUi(udid))?.tree?.frame ?? { width: 402, height: 874 };
-  if (
-    !frame
-    || !Number.isFinite(frame.x)
-    || !Number.isFinite(frame.y)
-    || !Number.isFinite(frame.width)
-    || !Number.isFinite(frame.height)
-    || frame.width <= 0
-    || frame.height <= 0
-  ) {
-    throw new Error(`Accessibility node ${String(matcher)} has no tappable frame.`);
+  const {
+    retryIfStillVisible = false,
+    retryCount = 3,
+    retryDelayMs = 250,
+    ...waitOptions
+  } = options;
+  const attempts = retryIfStillVisible ? retryCount : 1;
+  let lastNode = null;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const node = await waitForNode(udid, matcher, waitOptions);
+    lastNode = node;
+    const frame = node.frame;
+    const root = (await describeUi(udid))?.tree?.frame ?? { width: 402, height: 874 };
+    if (
+      !frame
+      || !Number.isFinite(frame.x)
+      || !Number.isFinite(frame.y)
+      || !Number.isFinite(frame.width)
+      || !Number.isFinite(frame.height)
+      || frame.width <= 0
+      || frame.height <= 0
+    ) {
+      throw new Error(`Accessibility node ${String(matcher)} has no tappable frame.`);
+    }
+
+    await runCommand('baguette', [
+      'tap',
+      '--udid', udid,
+      '--x', String(frame.x + frame.width / 2),
+      '--y', String(frame.y + frame.height / 2),
+      '--width', String(root.width),
+      '--height', String(root.height),
+    ]);
+
+    if (!retryIfStillVisible) {
+      return node;
+    }
+
+    await sleep(retryDelayMs);
+    try {
+      await waitForNode(udid, matcher, { ...waitOptions, timeoutMs: retryDelayMs });
+    } catch {
+      return node;
+    }
   }
 
-  await runCommand('baguette', [
-    'tap',
-    '--udid', udid,
-    '--x', String(frame.x + frame.width / 2),
-    '--y', String(frame.y + frame.height / 2),
-    '--width', String(root.width),
-    '--height', String(root.height),
-  ]);
-  return node;
+  return lastNode;
 }
 
 export async function pasteIntoNode(udid, matcher, value, options = {}) {

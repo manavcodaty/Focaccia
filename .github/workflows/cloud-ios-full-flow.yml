@@ -37,10 +37,8 @@ jobs:
         with:
           version: 10.33.0
 
-      - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: 2.105.0
+      - name: Install Supabase CLI from npm
+        run: npx --yes supabase@2.105.0 --version
 
       - name: Install Cloudflare Quick Tunnel client
         shell: bash
@@ -97,9 +95,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          supabase start --workdir .focaccia/runtime -x studio,logflare,vector
+          npx --yes supabase@2.105.0 start --workdir .focaccia/runtime -x studio,logflare,vector
           STATUS_FILE="$RUNNER_TEMP/focaccia-supabase.env"
-          supabase status --workdir .focaccia/runtime -o env > "$STATUS_FILE"
+          npx --yes supabase@2.105.0 status --workdir .focaccia/runtime -o env > "$STATUS_FILE"
           read_status() {
             sed -n "s/^export //; s/^$1=//p" "$STATUS_FILE" | head -n 1
           }
@@ -165,7 +163,7 @@ jobs:
           EOF
           pnpm run db:functions:env
           test "$(sed -n 's/^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=//p' supabase/functions/.env)" = 'organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com'
-          nohup supabase functions serve \
+          nohup npx --yes supabase@2.105.0 functions serve \
             --workdir .focaccia/runtime \
             --no-verify-jwt \
             --env-file "$GITHUB_WORKSPACE/supabase/functions/.env" \

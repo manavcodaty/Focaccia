@@ -49,6 +49,28 @@ async function fillStable(page, locator, value, label) {
   assert.equal(await locator.inputValue(), value, `${label} should retain its value after hydration`);
 }
 
+async function fillLoginCredentials(page, emailInput, passwordInput) {
+  // A tunneled Next.js auth card can re-render the controlled email input
+  // when the password field receives focus. Reassert both values together
+  // immediately before submission so browser validation cannot observe a
+  // stale empty email field.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await fillStable(page, emailInput, organizerEmail, 'organizer email');
+    await fillStable(page, passwordInput, organizerPassword, 'organizer password');
+    await emailInput.fill(organizerEmail);
+    await emailInput.press('Tab');
+    await page.waitForTimeout(250);
+    if (
+      (await emailInput.inputValue()) === organizerEmail
+      && (await passwordInput.inputValue()) === organizerPassword
+    ) {
+      return;
+    }
+  }
+  assert.equal(await emailInput.inputValue(), organizerEmail, 'organizer email should be present before submit');
+  assert.equal(await passwordInput.inputValue(), organizerPassword, 'organizer password should be present before submit');
+}
+
 const webUrl = requiredEnv('FOCACCIA_CLOUD_WEB_URL');
 const ticketsUrl = requiredEnv('FOCACCIA_CLOUD_TICKETS_URL');
 const organizerEmail = requiredEnv('FOCACCIA_CLOUD_ORGANIZER_EMAIL');
@@ -84,8 +106,7 @@ try {
   await organizerPage.locator('form button[type="submit"]').waitFor({ state: 'visible' });
   const organizerEmailInput = organizerPage.getByLabel('Email', { exact: true });
   const organizerPasswordInput = organizerPage.getByLabel('Password', { exact: true });
-  await fillStable(organizerPage, organizerEmailInput, organizerEmail, 'organizer email');
-  await fillStable(organizerPage, organizerPasswordInput, organizerPassword, 'organizer password');
+  await fillLoginCredentials(organizerPage, organizerEmailInput, organizerPasswordInput);
   await organizerPage.locator('form button[type="submit"]').click();
   await organizerPage.waitForURL(/\/dashboard(?:\?.*)?$/, {
     timeout: 45_000,

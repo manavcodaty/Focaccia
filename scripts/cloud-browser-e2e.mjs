@@ -84,7 +84,10 @@ try {
   await fillStable(organizerPage, organizerEmailInput, organizerEmail, 'organizer email');
   await fillStable(organizerPage, organizerPasswordInput, organizerPassword, 'organizer password');
   await organizerPage.locator('form button[type="submit"]').click();
-  await organizerPage.waitForURL(/\/dashboard(?:\?.*)?$/, { timeout: 45_000 });
+  await organizerPage.waitForURL(/\/dashboard(?:\?.*)?$/, {
+    timeout: 45_000,
+    waitUntil: 'domcontentloaded',
+  });
   await waitForVisible(organizerPage.getByRole('heading', { name: 'Events', exact: true }), 'organizer dashboard');
 
   await organizerPage.goto(`${webUrl}/events/new`, { waitUntil: 'domcontentloaded' });
@@ -121,16 +124,19 @@ try {
   await fillStable(attendeePage, attendeePage.locator('input[type="email"]'), attendeeEmail, 'attendee email');
   await fillStable(attendeePage, attendeePage.locator('input[type="password"]'), attendeePassword, 'attendee password');
   await attendeePage.locator('form button[type="submit"]').click();
-  await attendeePage.waitForURL(/\/tickets(?:\?.*)?$/, { timeout: 45_000 });
+  await attendeePage.waitForURL(/\/tickets(?:\?.*)?$/, {
+    timeout: 45_000,
+    waitUntil: 'domcontentloaded',
+  });
 
   await attendeePage.goto(`${ticketsUrl}/`, { waitUntil: 'domcontentloaded' });
   const eventLink = attendeePage.getByRole('link', { name: `View ${eventName}`, exact: true });
   await waitForVisible(eventLink, 'listed event');
   await eventLink.click();
-  await attendeePage.waitForURL(new RegExp(`/events/${eventId}$`));
+  await attendeePage.waitForURL(new RegExp(`/events/${eventId}$`), { waitUntil: 'domcontentloaded' });
   await waitForVisible(attendeePage.getByRole('heading', { name: eventName, exact: true }), 'event detail');
   await attendeePage.getByText('Claim free ticket', { exact: true }).click();
-  await attendeePage.waitForURL(/\/confirmation\/[^/]+$/);
+  await attendeePage.waitForURL(/\/confirmation\/[^/]+$/, { waitUntil: 'domcontentloaded' });
   await waitForVisible(attendeePage.getByText('Your place is saved', { exact: true }), 'ticket confirmation');
   const claimCode = (await attendeePage.locator('.claim-code-panel strong').textContent())?.trim() ?? '';
   assert.match(claimCode, /^[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){2}$/);

@@ -516,8 +516,11 @@ jobs:
             'EXPO_PUBLIC_FOCACCIA_NETWORK_MODE=local',
             `EXPO_PUBLIC_FOCACCIA_LOCAL_HOST=${host}`,
             `EXPO_PUBLIC_FOCACCIA_SUPABASE_URL=http://${host}:54331`,
-            `EXPO_PUBLIC_FOCACCIA_WEB_URL=${process.env.FOCACCIA_CLOUD_WEB_URL}`,
-            `EXPO_PUBLIC_FOCACCIA_TICKETS_URL=${process.env.FOCACCIA_CLOUD_TICKETS_URL}`,
+            // The native clients only use Supabase directly. Keep their
+            // local-mode browser origins internally consistent; the Ubuntu
+            // browser job exercises the public web and tickets tunnels.
+            `EXPO_PUBLIC_FOCACCIA_WEB_URL=http://${host}:3000`,
+            `EXPO_PUBLIC_FOCACCIA_TICKETS_URL=http://${host}:3001`,
             `EXPO_PUBLIC_SUPABASE_ANON_KEY=${process.env.FOCACCIA_CLOUD_ANON_KEY}`,
           ];
           writeFileSync('apps/enrollment/.env.local', `${common.join('\n')}\n`, { mode: 0o600 });

@@ -209,7 +209,15 @@ async function main() {
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
     await launchGate();
-    await tapNode(simulatorUdid, 'Set up gate');
+    await tapNode(simulatorUdid, 'Set up gate', {
+      // Hosted simulators can occasionally deliver the first HID tap while
+      // the React Native ScrollView is still settling after launch. If the
+      // button remains visible, retry the same semantic tap before waiting
+      // for the credential screen.
+      retryIfStillVisible: true,
+      retryCount: 5,
+      retryDelayMs: 400,
+    });
     // The submit button is intentionally disabled until both fields contain
     // credentials, and waitForNode ignores disabled controls. Wait for the
     // enabled first field before injecting the credentials, then wait for the

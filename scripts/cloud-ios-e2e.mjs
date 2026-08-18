@@ -229,7 +229,16 @@ async function main() {
     await typeIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
     await typeIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
-    await tapNode(simulatorUdid, 'Sign in organizer');
+    // A software keyboard can still own the lower part of the screen after
+    // the short Baguette typing session closes. Escape it before tapping the
+    // submit button, then retry if the hosted HID tap was consumed by the
+    // keyboard transition instead of the React Native button.
+    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
+    await tapNode(simulatorUdid, 'Sign in organizer', {
+      retryIfStillVisible: true,
+      retryCount: 5,
+      retryDelayMs: 500,
+    });
     await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, 'Provision this gate', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Scanner live', { timeoutMs: 120_000 });
@@ -244,7 +253,12 @@ async function main() {
 
     await typeIntoNode(simulatorUdid, 'Email', context.attendeeEmail);
     await typeIntoNode(simulatorUdid, 'Password', context.attendeePassword);
-    await tapNode(simulatorUdid, 'Sign in');
+    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
+    await tapNode(simulatorUdid, 'Sign in', {
+      retryIfStillVisible: true,
+      retryCount: 5,
+      retryDelayMs: 500,
+    });
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, new RegExp(context.eventName));
     await waitForNode(simulatorUdid, 'Create event pass', { timeoutMs: 90_000 });

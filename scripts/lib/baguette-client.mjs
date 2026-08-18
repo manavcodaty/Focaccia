@@ -226,9 +226,9 @@ export async function tapNode(udid, matcher, options = {}) {
   let lastNode = null;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const node = await waitForNode(udid, matcher, waitOptions);
+    let node = await waitForNode(udid, matcher, waitOptions);
     lastNode = node;
-    const frame = node.frame;
+    let frame = node.frame;
     const root = (await describeUi(udid))?.tree?.frame ?? { width: 402, height: 874 };
     if (
       !frame
@@ -240,6 +240,36 @@ export async function tapNode(udid, matcher, options = {}) {
       || frame.height <= 0
     ) {
       throw new Error(`Accessibility node ${String(matcher)} has no tappable frame.`);
+    }
+
+    // React Native ScrollViews report content coordinates in the
+    // accessibility tree. A control can therefore be enabled and match the
+    // requested label while still being below the simulator viewport. Scroll
+    // the same persistent Baguette input session, then re-read the node so
+    // the eventual tap uses its post-scroll frame.
+    for (let scrollAttempt = 0; scrollAttempt < 10; scrollAttempt += 1) {
+      const visible = frame.y < root.height && frame.y + frame.height > 0;
+      if (visible) break;
+      if (!activeInputSession) {
+        throw new Error(`Accessibility node ${String(matcher)} is off-screen and no Baguette input session is active.`);
+      }
+
+      const deltaY = frame.y >= root.height
+        ? -Math.min(800, frame.y - root.height + 120)
+        : Math.min(800, -frame.y + 120);
+      await activeInputSession.dispatch({ type: 'scroll', deltaX: 0, deltaY });
+      await sleep(350);
+      node = await waitForNode(udid, matcher, { ...waitOptions, timeoutMs: Math.min(waitOptions.timeoutMs ?? 60_000, 5_000) });
+      lastNode = node;
+      const nextFrame = node.frame;
+      if (!nextFrame) {
+        throw new Error(`Accessibility node ${String(matcher)} lost its frame after scrolling.`);
+      }
+      frame = nextFrame;
+    }
+
+    if (!(frame.y < root.height && frame.y + frame.height > 0)) {
+      throw new Error(`Accessibility node ${String(matcher)} remained off-screen after scrolling.`);
     }
 
     const tap = {

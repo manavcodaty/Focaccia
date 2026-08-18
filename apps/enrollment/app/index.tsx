@@ -17,6 +17,8 @@ import type { AuthMode } from '../src/lib/auth-validation';
 import { useAuth } from '../src/state/auth-context';
 import { palette, radii, typography } from '../src/theme';
 
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
+
 export default function AuthScreen() {
   const router = useRouter();
   const { error, isLoading, session, signInOrUp } = useAuth();
@@ -106,15 +108,15 @@ export default function AuthScreen() {
           <TextInput
             accessibilityLabel="Password"
             autoCapitalize="none"
-            autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+            autoComplete={isCloudE2E ? 'off' : mode === 'sign-in' ? 'current-password' : 'new-password'}
             onChangeText={setPassword}
             onSubmitEditing={() => void handleSubmit()}
             placeholder="At least eight characters"
             placeholderTextColor={palette.hintOfGrey}
             returnKeyType="done"
-            secureTextEntry
+            secureTextEntry={!isCloudE2E}
             style={styles.input}
-            textContentType={mode === 'sign-in' ? 'password' : 'newPassword'}
+            textContentType={isCloudE2E ? 'none' : mode === 'sign-in' ? 'password' : 'newPassword'}
             value={password}
           />
         </View>

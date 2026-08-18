@@ -29,6 +29,8 @@ import type { ProvisioningQrPayload } from '../src/lib/types';
 import { useGate } from '../src/state/gate-context';
 import { palette, radii, typography } from '../src/theme';
 
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
+
 function PermissionFallback({
   body,
   onPrimaryPress,
@@ -241,10 +243,11 @@ function ProvisionScreenBody({
               accessibilityLabel="Organizer password"
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete={isCloudE2E ? 'off' : 'current-password'}
               onChangeText={setPassword}
               placeholder="Password"
               placeholderTextColor={palette.mutedStone}
-              secureTextEntry
+              secureTextEntry={!isCloudE2E}
               style={[
                 styles.input,
                 {

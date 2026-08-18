@@ -514,6 +514,7 @@ jobs:
           const host = process.env.FOCACCIA_CLOUD_LOCAL_HOST;
           const common = [
             'EXPO_PUBLIC_FOCACCIA_NETWORK_MODE=local',
+            'EXPO_PUBLIC_FOCACCIA_CLOUD_E2E=1',
             `EXPO_PUBLIC_FOCACCIA_LOCAL_HOST=${host}`,
             `EXPO_PUBLIC_FOCACCIA_SUPABASE_URL=http://${host}:54331`,
             // The native clients only use Supabase directly. Keep their
@@ -526,7 +527,6 @@ jobs:
           writeFileSync('apps/enrollment/.env.local', `${common.join('\n')}\n`, { mode: 0o600 });
           writeFileSync('apps/gate/.env.local', `${[
             ...common,
-            'EXPO_PUBLIC_FOCACCIA_CLOUD_E2E=1',
             `EXPO_PUBLIC_FOCACCIA_E2E_PROVISIONING_PAYLOAD=${encodeURIComponent(JSON.stringify(context.provisioningPayload))}`,
           ].join('\n')}\n`, { mode: 0o600 });
           NODE

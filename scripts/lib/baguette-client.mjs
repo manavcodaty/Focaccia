@@ -236,7 +236,20 @@ export async function tapNode(udid, matcher, options = {}) {
   let lastNode = null;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    let node = await waitForNode(udid, matcher, waitOptions);
+    // After a tap, a React Native navigation transition can begin just after
+    // the post-tap visibility check. Subsequent retry attempts must therefore
+    // use a short probe; a full wait would turn a successful first tap into a
+    // false timeout once the original node has disappeared.
+    const attemptWaitOptions = attempt === 0
+      ? waitOptions
+      : { ...waitOptions, timeoutMs: Math.min(waitOptions.timeoutMs ?? 60_000, retryDelayMs) };
+    let node;
+    try {
+      node = await waitForNode(udid, matcher, attemptWaitOptions);
+    } catch (error) {
+      if (attempt > 0) return lastNode;
+      throw error;
+    }
     lastNode = node;
     let frame = node.frame;
     const root = (await describeUi(udid))?.tree?.frame ?? { width: 402, height: 874 };

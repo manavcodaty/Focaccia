@@ -139,6 +139,16 @@ export async function stopBaguetteInput() {
   await session?.close();
 }
 
+async function runWithShortInputSession(udid, action) {
+  const ownsSession = !activeInputSession;
+  if (ownsSession) await startBaguetteInput(udid);
+  try {
+    return await action(activeInputSession);
+  } finally {
+    if (ownsSession) await stopBaguetteInput();
+  }
+}
+
 export async function describeUi(udid) {
   const { stdout } = await runCommand('baguette', ['describe-ui', '--udid', udid]);
   return JSON.parse(stdout);
@@ -311,13 +321,17 @@ export async function tapNode(udid, matcher, options = {}) {
 }
 
 export async function pasteIntoNode(udid, matcher, value, options = {}) {
-  await tapNode(udid, matcher, options);
-  await runCommand('baguette', ['paste', '--udid', udid, '--text', value]);
+  await runWithShortInputSession(udid, async (session) => {
+    await tapNode(udid, matcher, options);
+    await session.dispatch({ type: 'paste', text: value, press: true });
+  });
 }
 
 export async function typeIntoNode(udid, matcher, value, options = {}) {
-  await tapNode(udid, matcher, options);
-  await runCommand('baguette', ['type', '--udid', udid, '--text', value]);
+  await runWithShortInputSession(udid, async (session) => {
+    await tapNode(udid, matcher, options);
+    await session.dispatch({ type: 'type', text: value });
+  });
 }
 
 export async function readSimulatorClipboard(udid) {

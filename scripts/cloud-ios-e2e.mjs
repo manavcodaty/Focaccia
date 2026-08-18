@@ -20,6 +20,7 @@ import {
   stopBaguetteInput,
   takeSimulatorScreenshot,
   tapNode,
+  typeIntoNode,
   waitForNode,
 } from './lib/baguette-client.mjs';
 
@@ -217,10 +218,13 @@ async function main() {
     // The submit button is intentionally disabled until both fields contain
     // credentials, and waitForNode ignores disabled controls. Wait for the
     // enabled first field before injecting the credentials, then wait for the
-    // button to become enabled as a postcondition of the two pastes.
+    // button to become enabled as a postcondition of the two credential inputs.
     await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
-    await pasteIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
-    await pasteIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);
+    // Type credentials through the simulator keyboard. Clipboard paste into a
+    // secure React Native TextInput can invoke iOS Password AutoFill/Safari
+    // view services on hosted runtimes and steal the app foreground.
+    await typeIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
+    await typeIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     await tapNode(simulatorUdid, 'Sign in organizer');
     await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
@@ -235,8 +239,8 @@ async function main() {
     checks.camera_image_source_started = true;
     await launchEnrollment();
 
-    await pasteIntoNode(simulatorUdid, 'Email', context.attendeeEmail);
-    await pasteIntoNode(simulatorUdid, 'Password', context.attendeePassword);
+    await typeIntoNode(simulatorUdid, 'Email', context.attendeeEmail);
+    await typeIntoNode(simulatorUdid, 'Password', context.attendeePassword);
     await tapNode(simulatorUdid, 'Sign in');
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, new RegExp(context.eventName));

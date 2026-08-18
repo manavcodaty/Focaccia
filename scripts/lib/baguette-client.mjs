@@ -318,6 +318,15 @@ export async function pasteIntoNode(udid, matcher, value, options = {}) {
   }
 }
 
+export async function typeIntoNode(udid, matcher, value, options = {}) {
+  await tapNode(udid, matcher, options);
+  if (activeInputSession) {
+    await activeInputSession.dispatch({ type: 'type', text: value });
+  } else {
+    await runCommand('baguette', ['type', '--udid', udid, '--text', value]);
+  }
+}
+
 export async function readSimulatorClipboard(udid) {
   const { stdout } = await runCommand('baguette', ['clipboard', 'get', '--udid', udid]);
   return stdout.trim();

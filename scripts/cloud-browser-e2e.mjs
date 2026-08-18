@@ -33,12 +33,15 @@ async function waitForHydration(page, locator, label) {
 async function fillStable(page, locator, value, label) {
   await waitForHydration(page, locator, label);
   let stableChecks = 0;
-  for (let attempt = 0; attempt < 12; attempt += 1) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
     await locator.fill(value);
     await page.waitForTimeout(250);
     if ((await locator.inputValue()) === value) {
       stableChecks += 1;
-      if (stableChecks >= 3) return;
+      // A tunneled Next.js page can finish replacing its server-rendered
+      // form after the first successful fill. Require two quiet seconds so
+      // the controlled React input has survived hydration before submitting.
+      if (stableChecks >= 8) return;
     } else {
       stableChecks = 0;
     }
@@ -79,8 +82,8 @@ try {
   organizerPage = await context.newPage();
   await organizerPage.goto(`${webUrl}/login`, { waitUntil: 'domcontentloaded' });
   await organizerPage.locator('form button[type="submit"]').waitFor({ state: 'visible' });
-  const organizerEmailInput = organizerPage.locator('input[type="email"]');
-  const organizerPasswordInput = organizerPage.locator('input[type="password"]');
+  const organizerEmailInput = organizerPage.getByLabel('Email', { exact: true });
+  const organizerPasswordInput = organizerPage.getByLabel('Password', { exact: true });
   await fillStable(organizerPage, organizerEmailInput, organizerEmail, 'organizer email');
   await fillStable(organizerPage, organizerPasswordInput, organizerPassword, 'organizer password');
   await organizerPage.locator('form button[type="submit"]').click();

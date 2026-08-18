@@ -244,20 +244,25 @@ export async function tapNode(udid, matcher, options = {}) {
 
     // React Native ScrollViews report content coordinates in the
     // accessibility tree. A control can therefore be enabled and match the
-    // requested label while still being below the simulator viewport. Scroll
-    // the same persistent Baguette input session, then re-read the node so
-    // the eventual tap uses its post-scroll frame.
+    // requested label while still being below the simulator viewport. Use a
+    // one-shot swipe so the cloud flow does not need a long-lived HID session.
     for (let scrollAttempt = 0; scrollAttempt < 10; scrollAttempt += 1) {
       const visible = frame.y < root.height && frame.y + frame.height > 0;
       if (visible) break;
-      if (!activeInputSession) {
-        throw new Error(`Accessibility node ${String(matcher)} is off-screen and no Baguette input session is active.`);
-      }
-
-      const deltaY = frame.y >= root.height
-        ? -Math.min(800, frame.y - root.height + 120)
-        : Math.min(800, -frame.y + 120);
-      await activeInputSession.dispatch({ type: 'scroll', deltaX: 0, deltaY });
+      const direction = frame.y >= root.height ? -1 : 1;
+      const startY = direction < 0 ? root.height * 0.78 : root.height * 0.25;
+      const endY = direction < 0 ? root.height * 0.25 : root.height * 0.78;
+      await runCommand('baguette', [
+        'swipe',
+        '--udid', udid,
+        '--start-x', String(root.width / 2),
+        '--start-y', String(startY),
+        '--end-x', String(root.width / 2),
+        '--end-y', String(endY),
+        '--width', String(root.width),
+        '--height', String(root.height),
+        '--duration', '0.25',
+      ]);
       await sleep(350);
       node = await waitForNode(udid, matcher, { ...waitOptions, timeoutMs: Math.min(waitOptions.timeoutMs ?? 60_000, 5_000) });
       lastNode = node;
@@ -280,19 +285,15 @@ export async function tapNode(udid, matcher, options = {}) {
       height: root.height,
       duration: 0.1,
     };
-    if (activeInputSession) {
-      await activeInputSession.dispatch(tap);
-    } else {
-      await runCommand('baguette', [
-        'tap',
-        '--udid', udid,
-        '--x', String(tap.x),
-        '--y', String(tap.y),
-        '--width', String(tap.width),
-        '--height', String(tap.height),
-        '--duration', String(tap.duration),
-      ]);
-    }
+    await runCommand('baguette', [
+      'tap',
+      '--udid', udid,
+      '--x', String(tap.x),
+      '--y', String(tap.y),
+      '--width', String(tap.width),
+      '--height', String(tap.height),
+      '--duration', String(tap.duration),
+    ]);
 
     if (!retryIfStillVisible) {
       return node;
@@ -311,20 +312,12 @@ export async function tapNode(udid, matcher, options = {}) {
 
 export async function pasteIntoNode(udid, matcher, value, options = {}) {
   await tapNode(udid, matcher, options);
-  if (activeInputSession) {
-    await activeInputSession.dispatch({ type: 'paste', text: value, press: true });
-  } else {
-    await runCommand('baguette', ['paste', '--udid', udid, '--text', value]);
-  }
+  await runCommand('baguette', ['paste', '--udid', udid, '--text', value]);
 }
 
 export async function typeIntoNode(udid, matcher, value, options = {}) {
   await tapNode(udid, matcher, options);
-  if (activeInputSession) {
-    await activeInputSession.dispatch({ type: 'type', text: value });
-  } else {
-    await runCommand('baguette', ['type', '--udid', udid, '--text', value]);
-  }
+  await runCommand('baguette', ['type', '--udid', udid, '--text', value]);
 }
 
 export async function readSimulatorClipboard(udid) {

@@ -16,8 +16,6 @@ import {
   pasteIntoNode,
   readSimulatorClipboard,
   runCommand,
-  startBaguetteInput,
-  stopBaguetteInput,
   takeSimulatorScreenshot,
   tapNode,
   typeIntoNode,
@@ -204,12 +202,9 @@ async function main() {
     reconnect_sync: false,
   };
   let failure = null;
-  let inputStarted = false;
 
   try {
     await camera.uploadImage(provisioningQrPath);
-    await startBaguetteInput(simulatorUdid);
-    inputStarted = true;
 
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
@@ -345,57 +340,53 @@ async function main() {
     throw error;
   } finally {
     try {
-      if (inputStarted) await stopBaguetteInput();
+      await camera.stop();
     } finally {
-      try {
-        await camera.stop();
-      } finally {
-        const artifacts = [
-          'gate-provisioned.png',
-          'enrollment-pass.png',
-          'gate-entry-accepted-offline.png',
-          'gate-sync-pending.png',
-          'gate-sync-persisted-after-restart.png',
-          'gate-replay-rejected-offline.png',
-          'gate-sync-complete.png',
-          'organizer-dashboard-checked-in.png',
-        ];
-        if (failure) {
-          await Promise.allSettled([
-            takeSimulatorScreenshot(simulatorUdid, artifact('native-failure.png')),
-            describeUi(simulatorUdid).then((tree) => writeFile(
-              artifact('native-failure-ui.json'),
-              `${JSON.stringify(tree, null, 2)}\n`,
-            )),
-            captureSimulatorDiagnostics(),
-          ]);
-          artifacts.push(
-            'native-failure.png',
-            'native-failure-ui.json',
-            'native-simulator-apps.txt',
-            'native-simulator-log.txt',
-          );
-        }
-        const evidence = {
-          checks,
-          commit_sha: process.env.GITHUB_SHA ?? null,
-          event_id: context.eventId,
-          face_fixture_sha256: faceFixtureSha256,
-          failure,
-          network_loss_method: 'stopped_macOS_relay',
-          provisioning_mode: 'e2e_payload_injection',
-          provisioning_qr_camera_scan: false,
-          run_id: context.runId,
-          runner_os: process.env.RUNNER_OS ?? null,
-        };
-        await Promise.all([
-          writeFile(artifact('native-report.json'), `${JSON.stringify(evidence, null, 2)}\n`),
-          writeFile(artifact('evidence-manifest.json'), `${JSON.stringify({
-            ...evidence,
-            artifacts,
-          }, null, 2)}\n`),
+      const artifacts = [
+        'gate-provisioned.png',
+        'enrollment-pass.png',
+        'gate-entry-accepted-offline.png',
+        'gate-sync-pending.png',
+        'gate-sync-persisted-after-restart.png',
+        'gate-replay-rejected-offline.png',
+        'gate-sync-complete.png',
+        'organizer-dashboard-checked-in.png',
+      ];
+      if (failure) {
+        await Promise.allSettled([
+          takeSimulatorScreenshot(simulatorUdid, artifact('native-failure.png')),
+          describeUi(simulatorUdid).then((tree) => writeFile(
+            artifact('native-failure-ui.json'),
+            `${JSON.stringify(tree, null, 2)}\n`,
+          )),
+          captureSimulatorDiagnostics(),
         ]);
+        artifacts.push(
+          'native-failure.png',
+          'native-failure-ui.json',
+          'native-simulator-apps.txt',
+          'native-simulator-log.txt',
+        );
       }
+      const evidence = {
+        checks,
+        commit_sha: process.env.GITHUB_SHA ?? null,
+        event_id: context.eventId,
+        face_fixture_sha256: faceFixtureSha256,
+        failure,
+        network_loss_method: 'stopped_macOS_relay',
+        provisioning_mode: 'e2e_payload_injection',
+        provisioning_qr_camera_scan: false,
+        run_id: context.runId,
+        runner_os: process.env.RUNNER_OS ?? null,
+      };
+      await Promise.all([
+        writeFile(artifact('native-report.json'), `${JSON.stringify(evidence, null, 2)}\n`),
+        writeFile(artifact('evidence-manifest.json'), `${JSON.stringify({
+          ...evidence,
+          artifacts,
+        }, null, 2)}\n`),
+      ]);
     }
   }
 

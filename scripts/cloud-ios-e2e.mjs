@@ -206,6 +206,13 @@ async function main() {
   try {
     await camera.uploadImage(provisioningQrPath);
 
+    // Provisioning routes directly into the camera-backed scanner. Start the
+    // injected image source before the Gate app is launched so the scanner is
+    // already backed by a virtual rear camera when provisioning completes.
+    await camera.uploadImage(faceFixturePath);
+    await camera.start();
+    checks.camera_image_source_started = true;
+
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
     await launchGate();
@@ -246,9 +253,6 @@ async function main() {
     checks.provisioning_payload_injected = true;
     await screenshot('gate-provisioned.png');
 
-    await camera.uploadImage(faceFixturePath);
-    await camera.start();
-    checks.camera_image_source_started = true;
     await launchEnrollment();
 
     await typeIntoNode(simulatorUdid, 'Email', context.attendeeEmail);

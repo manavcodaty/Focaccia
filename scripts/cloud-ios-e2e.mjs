@@ -17,7 +17,6 @@ import {
   runCommand,
   takeSimulatorScreenshot,
   tapNode,
-  typeIntoNode,
   waitForNode,
 } from './lib/baguette-client.mjs';
 
@@ -249,8 +248,9 @@ async function main() {
 
     await launchEnrollment();
 
-    await typeIntoNode(simulatorUdid, 'Email', context.attendeeEmail);
-    await typeIntoNode(simulatorUdid, 'Password', context.attendeePassword);
+    await pasteIntoNode(simulatorUdid, 'Email', context.attendeeEmail);
+    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
+    await pasteIntoNode(simulatorUdid, 'Password', context.attendeePassword);
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await tapNode(simulatorUdid, 'Sign in', {
       retryIfStillVisible: true,

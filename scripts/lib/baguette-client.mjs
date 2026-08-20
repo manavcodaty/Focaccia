@@ -170,6 +170,7 @@ function matchesNode(node, matcher) {
 
 export function findNode(tree, matcher) {
   const queue = [tree?.tree ?? tree];
+  let fallback = null;
 
   while (queue.length > 0) {
     const node = queue.shift();
@@ -177,14 +178,21 @@ export function findNode(tree, matcher) {
       continue;
     }
     if (matchesNode(node, matcher)) {
-      return node;
+      // React Native forms commonly expose a visible static label followed
+      // by an AXTextField with the same accessibility label. Prefer the
+      // interactive node so a semantic tap focuses the control rather than
+      // landing on the text label.
+      if (/^AX(?:Button|TextField|SecureTextField)$/.test(node.role ?? '')) {
+        return node;
+      }
+      fallback ??= node;
     }
     if (Array.isArray(node.children)) {
       queue.push(...node.children);
     }
   }
 
-  return null;
+  return fallback;
 }
 
 function isTransientAccessibilityError(error) {

@@ -217,10 +217,12 @@ async function main() {
     // enabled first field before injecting the credentials, then wait for the
     // button to become enabled as a postcondition of the two credential inputs.
     await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
-    // Type credentials through the simulator keyboard. Clipboard paste into a
-    // secure React Native TextInput can invoke iOS Password AutoFill/Safari
-    // view services on hosted runtimes and steal the app foreground.
+    // Paste the email through the simulator keyboard, then explicitly dismiss
+    // the keyboard before targeting the second field. Hosted iOS simulators
+    // can otherwise deliver the second field tap to the first TextInput while
+    // the keyboard is still settling, inserting the password into the email.
     await pasteIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
+    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await pasteIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     // A software keyboard can still own the lower part of the screen after

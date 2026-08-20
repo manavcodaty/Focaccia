@@ -17,6 +17,7 @@ import {
   runCommand,
   takeSimulatorScreenshot,
   tapNode,
+  typeIntoNode,
   waitForNode,
 } from './lib/baguette-client.mjs';
 
@@ -216,13 +217,13 @@ async function main() {
     // enabled first field before injecting the credentials, then wait for the
     // button to become enabled as a postcondition of the two credential inputs.
     await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
-    // Paste the email through the simulator keyboard, then explicitly dismiss
+    // Enter the email through the simulator keyboard, then explicitly dismiss
     // the keyboard before targeting the second field. Hosted iOS simulators
     // can otherwise deliver the second field tap to the first TextInput while
     // the keyboard is still settling, inserting the password into the email.
-    await pasteIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
+    await typeIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
-    await pasteIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);
+    await typeIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     // A software keyboard can still own the lower part of the screen after
     // the short Baguette typing session closes. Escape it before tapping the
@@ -248,9 +249,9 @@ async function main() {
 
     await launchEnrollment();
 
-    await pasteIntoNode(simulatorUdid, 'Email', context.attendeeEmail);
+    await typeIntoNode(simulatorUdid, 'Email', context.attendeeEmail);
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
-    await pasteIntoNode(simulatorUdid, 'Password', context.attendeePassword);
+    await typeIntoNode(simulatorUdid, 'Password', context.attendeePassword);
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await tapNode(simulatorUdid, 'Sign in', {
       retryIfStillVisible: true,

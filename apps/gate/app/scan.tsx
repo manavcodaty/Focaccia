@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import {
+  Image,
   Linking,
   StyleSheet,
   Text,
@@ -21,10 +22,24 @@ import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { effectiveLivenessTimeoutMs } from '../src/lib/liveness';
+import { cloudE2EFixtureSource } from '../src/lib/cloud-e2e-photo';
 import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
+
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
+
+function CloudE2EPreview() {
+  return (
+    <View style={styles.cloudE2EPreview}>
+      <Image resizeMode="contain" source={cloudE2EFixtureSource} style={styles.cloudE2EImage} />
+      <Text accessibilityLabel="Cloud E2E image source ready" style={styles.cloudE2ELabel}>
+        Cloud E2E image source ready
+      </Text>
+    </View>
+  );
+}
 
 function GateFallback({
   body,
@@ -120,7 +135,7 @@ export default function ScanScreen() {
     );
   }
 
-  if (!device) {
+  if (!device && !isCloudE2E) {
     return (
       <GateFallback
         body="A rear camera is required for QR scanning and live verification."
@@ -131,7 +146,7 @@ export default function ScanScreen() {
     );
   }
 
-  if (!hasPermission) {
+  if (!hasPermission && !isCloudE2E) {
     return (
       <GateFallback
         body="Camera access is required to scan passes and complete offline verification."
@@ -188,12 +203,16 @@ export default function ScanScreen() {
                 },
               ]}
             >
-              <Camera
-                codeScanner={codeScanner}
-                device={device}
-                isActive={!isProcessing}
-                style={styles.camera}
-              />
+              {isCloudE2E ? (
+                <CloudE2EPreview />
+              ) : (
+                <Camera
+                  codeScanner={codeScanner}
+                  device={device!}
+                  isActive={!isProcessing}
+                  style={styles.camera}
+                />
+              )}
               <View style={styles.dimTop} />
               <View style={styles.dimBottom} />
               <View style={[styles.scanFrame, scanFrameStyle]} />
@@ -306,12 +325,16 @@ export default function ScanScreen() {
               },
             ]}
           >
-            <Camera
-              codeScanner={codeScanner}
-              device={device}
-              isActive={!isProcessing}
-              style={styles.camera}
-            />
+            {isCloudE2E ? (
+              <CloudE2EPreview />
+            ) : (
+              <Camera
+                codeScanner={codeScanner}
+                device={device!}
+                isActive={!isProcessing}
+                style={styles.camera}
+              />
+            )}
             <View style={styles.dimTop} />
             <View style={styles.dimBottom} />
             <View style={[styles.scanFrame, scanFrameStyle]} />
@@ -332,6 +355,9 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
+  cloudE2EImage: { ...StyleSheet.absoluteFillObject, opacity: 0.45 },
+  cloudE2ELabel: { backgroundColor: palette.ink, borderRadius: 999, color: palette.textInverse, fontSize: 13, margin: 18, paddingHorizontal: 12, paddingVertical: 8, textAlign: 'center' },
+  cloudE2EPreview: { alignItems: 'center', backgroundColor: palette.surfaceInverse, flex: 1, justifyContent: 'center' },
   dimBottom: {
     backgroundColor: palette.overlay,
     bottom: 0,

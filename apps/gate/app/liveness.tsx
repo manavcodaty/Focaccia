@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Linking,
   StyleSheet,
   Text,
@@ -29,10 +30,13 @@ import {
   type LivenessProgress,
 } from '../src/lib/liveness';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
+import { cloudE2EFixtureSource, prepareCloudE2EPhoto } from '../src/lib/cloud-e2e-photo';
 import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
+
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
 
 function verificationStatus(isProcessing: boolean, modelReady: boolean): string {
   if (isProcessing) {
@@ -71,6 +75,17 @@ function FallbackCard({
         ) : null}
       </SectionCard>
     </ScreenShell>
+  );
+}
+
+function CloudE2EPreview() {
+  return (
+    <View style={styles.cloudE2EPreview}>
+      <Image resizeMode="contain" source={cloudE2EFixtureSource} style={styles.cloudE2EImage} />
+      <Text accessibilityLabel="Cloud E2E image source ready" style={styles.cloudE2ELabel}>
+        Cloud E2E image source ready
+      </Text>
+    </View>
   );
 }
 
@@ -140,7 +155,7 @@ export default function LivenessScreen() {
   }, [challenge, failLiveness, isProcessing, pendingVerification, router]);
 
   async function handleVerificationCapture() {
-    if (!camera.current || !pendingVerification || !modelReady || isProcessing) {
+    if ((!isCloudE2E && !camera.current) || !pendingVerification || !modelReady || isProcessing) {
       return;
     }
 
@@ -148,9 +163,12 @@ export default function LivenessScreen() {
     setProcessingError(null);
 
     try {
-      const photo = await camera.current.takePhoto({
-        enableShutterSound: false,
-      });
+      const photo = isCloudE2E
+        ? await prepareCloudE2EPhoto()
+        : camera.current
+          ? await camera.current.takePhoto({ enableShutterSound: false })
+          : null;
+      if (!photo) throw new Error('The camera is not ready.');
       const embedding = await extractFaceEmbeddingFromPhoto({
         photoHeight: photo.height,
         photoPath: photo.path,
@@ -192,7 +210,7 @@ export default function LivenessScreen() {
     );
   }
 
-  if (!device) {
+  if (!device && !isCloudE2E) {
     return (
       <FallbackCard
         body="A rear camera is required for live liveness verification."
@@ -203,7 +221,7 @@ export default function LivenessScreen() {
     );
   }
 
-  if (!hasPermission) {
+  if (!hasPermission && !isCloudE2E) {
     return (
       <FallbackCard
         body="Camera access is required to complete the active liveness challenge."
@@ -262,13 +280,17 @@ export default function LivenessScreen() {
                 },
               ]}
             >
-              <Camera
-                ref={camera}
-                device={device}
-                isActive={true}
-                photo
-                style={styles.camera}
-              />
+              {isCloudE2E ? (
+                <CloudE2EPreview />
+              ) : (
+                <Camera
+                  ref={camera}
+                  device={device!}
+                  isActive={true}
+                  photo
+                  style={styles.camera}
+                />
+              )}
               <View style={styles.overlay} />
               <View style={[styles.guide, guideStyle]} />
               {isProcessing ? (
@@ -411,13 +433,17 @@ export default function LivenessScreen() {
               },
             ]}
           >
-            <Camera
-              ref={camera}
-              device={device}
-              isActive={true}
-              photo
-              style={styles.camera}
-            />
+            {isCloudE2E ? (
+              <CloudE2EPreview />
+            ) : (
+              <Camera
+                ref={camera}
+                device={device!}
+                isActive={true}
+                photo
+                style={styles.camera}
+              />
+            )}
             <View style={styles.overlay} />
             <View style={[styles.guide, guideStyle]} />
             {isProcessing ? (
@@ -461,6 +487,26 @@ export default function LivenessScreen() {
 const styles = StyleSheet.create({
   camera: {
     flex: 1,
+  },
+  cloudE2EImage: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.45,
+  },
+  cloudE2ELabel: {
+    backgroundColor: palette.ink,
+    borderRadius: 999,
+    color: palette.textInverse,
+    fontSize: 13,
+    margin: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    textAlign: 'center',
+  },
+  cloudE2EPreview: {
+    alignItems: 'center',
+    backgroundColor: palette.surfaceInverse,
+    flex: 1,
+    justifyContent: 'center',
   },
   eyebrow: {
     ...typography.title,

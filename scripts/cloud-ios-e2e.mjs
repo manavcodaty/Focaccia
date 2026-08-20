@@ -7,7 +7,6 @@ import path from 'node:path';
 import { chromium } from '@playwright/test';
 
 import {
-  BaguetteCamera,
   describeUi,
   findNode,
   grantCameraAccess,
@@ -38,9 +37,7 @@ const simulatorUdid = requiredEnv('FOCACCIA_IOS_SIMULATOR_UDID');
 const enrollmentAppPath = requiredEnv('FOCACCIA_ENROLLMENT_APP_PATH');
 const gateAppPath = requiredEnv('FOCACCIA_GATE_APP_PATH');
 const faceFixturePath = requiredEnv('FOCACCIA_FACE_FIXTURE_PATH');
-const provisioningQrPath = requiredEnv('FOCACCIA_PROVISIONING_QR_PATH');
 const webUrl = requiredEnv('FOCACCIA_CLOUD_WEB_URL');
-const baguetteUrl = process.env.FOCACCIA_BAGUETTE_URL?.trim() || 'http://127.0.0.1:8421';
 const proxyPidPath = requiredEnv('FOCACCIA_PROXY_PID_FILE');
 const faceFixtureSha256 = createHash('sha256').update(await readFile(faceFixturePath)).digest('hex');
 
@@ -185,7 +182,6 @@ async function main() {
   await grantCameraAccess(simulatorUdid, enrollmentBundleId);
   await grantCameraAccess(simulatorUdid, gateBundleId);
 
-  const camera = new BaguetteCamera({ baseUrl: baguetteUrl, udid: simulatorUdid });
   const checks = {
     camera_image_source_started: false,
     dashboard_checked_in: false,
@@ -204,15 +200,6 @@ async function main() {
   let failure = null;
 
   try {
-    await camera.uploadImage(provisioningQrPath);
-
-    // Provisioning routes directly into the camera-backed scanner. Start the
-    // injected image source before the Gate app is launched so the scanner is
-    // already backed by a virtual rear camera when provisioning completes.
-    await camera.uploadImage(faceFixturePath);
-    await camera.start();
-    checks.camera_image_source_started = true;
-
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
     await launchGate();
@@ -270,6 +257,8 @@ async function main() {
     await waitForNode(simulatorUdid, 'I consent and continue', { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, 'I consent and continue');
     await waitForNode(simulatorUdid, 'Capture and issue pass', { timeoutMs: 120_000 });
+    await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
+    checks.camera_image_source_started = true;
     await tapNode(simulatorUdid, 'Capture and issue pass', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Pass ready', { timeoutMs: 180_000 });
     checks.enrollment_pass_issued = true;
@@ -281,8 +270,6 @@ async function main() {
     const passToken = await readSimulatorClipboard(simulatorUdid);
     assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
 
-    await camera.uploadImage(faceFixturePath);
-    await camera.start();
     await launchGate();
     await tapNode(simulatorUdid, 'Open scanner', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Offline ready', { timeoutMs: 90_000 });
@@ -292,6 +279,7 @@ async function main() {
     await pasteIntoNode(simulatorUdid, 'Full pass token', passToken, { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, 'Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Capture and verify attendee', { timeoutMs: 120_000 });
+    await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
 
     await stopLocalProxy();
     await tapNode(simulatorUdid, 'Capture and verify attendee', { timeoutMs: 120_000 });
@@ -365,10 +353,7 @@ async function main() {
     failure = error instanceof Error ? error.message : String(error);
     throw error;
   } finally {
-    try {
-      await camera.stop();
-    } finally {
-      const artifacts = [
+    const artifacts = [
         'gate-provisioned.png',
         'enrollment-pass.png',
         'gate-entry-accepted-offline.png',
@@ -378,42 +363,41 @@ async function main() {
         'gate-sync-complete.png',
         'organizer-dashboard-checked-in.png',
       ];
-      if (failure) {
-        await Promise.allSettled([
-          takeSimulatorScreenshot(simulatorUdid, artifact('native-failure.png')),
-          describeUi(simulatorUdid).then((tree) => writeFile(
-            artifact('native-failure-ui.json'),
-            `${JSON.stringify(tree, null, 2)}\n`,
-          )),
-          captureSimulatorDiagnostics(),
-        ]);
-        artifacts.push(
-          'native-failure.png',
-          'native-failure-ui.json',
-          'native-simulator-apps.txt',
-          'native-simulator-log.txt',
-        );
-      }
-      const evidence = {
-        checks,
-        commit_sha: process.env.GITHUB_SHA ?? null,
-        event_id: context.eventId,
-        face_fixture_sha256: faceFixtureSha256,
-        failure,
-        network_loss_method: 'stopped_macOS_relay',
-        provisioning_mode: 'e2e_payload_injection',
-        provisioning_qr_camera_scan: false,
-        run_id: context.runId,
-        runner_os: process.env.RUNNER_OS ?? null,
-      };
-      await Promise.all([
-        writeFile(artifact('native-report.json'), `${JSON.stringify(evidence, null, 2)}\n`),
-        writeFile(artifact('evidence-manifest.json'), `${JSON.stringify({
-          ...evidence,
-          artifacts,
-        }, null, 2)}\n`),
+    if (failure) {
+      await Promise.allSettled([
+        takeSimulatorScreenshot(simulatorUdid, artifact('native-failure.png')),
+        describeUi(simulatorUdid).then((tree) => writeFile(
+          artifact('native-failure-ui.json'),
+          `${JSON.stringify(tree, null, 2)}\n`,
+        )),
+        captureSimulatorDiagnostics(),
       ]);
+      artifacts.push(
+        'native-failure.png',
+        'native-failure-ui.json',
+        'native-simulator-apps.txt',
+        'native-simulator-log.txt',
+      );
     }
+    const evidence = {
+      checks,
+      commit_sha: process.env.GITHUB_SHA ?? null,
+      event_id: context.eventId,
+      face_fixture_sha256: faceFixtureSha256,
+      failure,
+      network_loss_method: 'stopped_macOS_relay',
+      provisioning_mode: 'e2e_payload_injection',
+      provisioning_qr_camera_scan: false,
+      run_id: context.runId,
+      runner_os: process.env.RUNNER_OS ?? null,
+    };
+    await Promise.all([
+      writeFile(artifact('native-report.json'), `${JSON.stringify(evidence, null, 2)}\n`),
+      writeFile(artifact('evidence-manifest.json'), `${JSON.stringify({
+        ...evidence,
+        artifacts,
+      }, null, 2)}\n`),
+    ]);
   }
 
   assert.deepEqual(Object.values(checks), Array(Object.keys(checks).length).fill(true), 'The native cloud flow did not complete every acceptance stage.');

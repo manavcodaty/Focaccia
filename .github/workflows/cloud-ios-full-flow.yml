@@ -574,7 +574,7 @@ jobs:
             test "$pod_succeeded" -eq 1
           done
 
-      - name: Build Enrollment for the injected-camera simulator
+      - name: Build Enrollment for the fixture-driven cloud simulator
         shell: bash
         run: |
           set -o pipefail
@@ -596,7 +596,7 @@ jobs:
           test -n "$APP_PATH"
           echo "FOCACCIA_ENROLLMENT_APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
 
-      - name: Build Gate for the injected-camera simulator
+      - name: Build Gate for the fixture-driven cloud simulator
         shell: bash
         run: |
           set -o pipefail

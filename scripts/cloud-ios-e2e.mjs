@@ -220,8 +220,8 @@ async function main() {
     // Type credentials through the simulator keyboard. Clipboard paste into a
     // secure React Native TextInput can invoke iOS Password AutoFill/Safari
     // view services on hosted runtimes and steal the app foreground.
-    await typeIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
-    await typeIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);
+    await pasteIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail);
+    await pasteIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword);
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     // A software keyboard can still own the lower part of the screen after
     // the short Baguette typing session closes. Escape it before tapping the

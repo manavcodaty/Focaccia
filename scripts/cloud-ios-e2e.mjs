@@ -234,7 +234,12 @@ async function main() {
       retryDelayMs: 500,
     });
     await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, 'Provision this gate', { timeoutMs: 120_000 });
+    await tapNode(simulatorUdid, 'Provision this gate', {
+      retryIfStillVisible: true,
+      retryCount: 8,
+      retryDelayMs: 600,
+      timeoutMs: 120_000,
+    });
     await waitForNode(simulatorUdid, 'Scanner live', { timeoutMs: 120_000 });
     checks.gate_provisioned = true;
     checks.provisioning_payload_injected = true;

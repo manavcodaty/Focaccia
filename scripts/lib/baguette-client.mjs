@@ -349,8 +349,26 @@ export async function pasteIntoNode(udid, matcher, value, options = {}) {
 }
 
 export async function typeIntoNode(udid, matcher, value, options = {}) {
+  const { transport = 'baguette', ...tapOptions } = options;
+
+  if (transport === 'simctl') {
+    await tapNode(udid, matcher, tapOptions);
+    // The semantic tap acknowledgement can arrive before UIKit has committed
+    // the new first responder on a hosted simulator. Give the focus change a
+    // bounded settle window before sending the text.
+    await sleep(750);
+    try {
+      await runCommand('xcrun', ['simctl', 'io', udid, 'text', value]);
+    } catch {
+      // Do not include the credential-bearing command in the error. The
+      // hosted workflow artifact must remain safe to inspect after failures.
+      throw new Error(`simctl text injection failed for ${String(matcher)}.`);
+    }
+    return;
+  }
+
   await runWithShortInputSession(udid, async (session) => {
-    await tapNode(udid, matcher, options);
+    await tapNode(udid, matcher, tapOptions);
     // The semantic tap acknowledgement can arrive before UIKit has committed
     // the new first responder on a hosted simulator. Give the focus change a
     // bounded settle window before sending the first character.

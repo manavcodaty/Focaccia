@@ -351,6 +351,10 @@ export async function pasteIntoNode(udid, matcher, value, options = {}) {
 export async function typeIntoNode(udid, matcher, value, options = {}) {
   await runWithShortInputSession(udid, async (session) => {
     await tapNode(udid, matcher, options);
+    // The semantic tap acknowledgement can arrive before UIKit has committed
+    // the new first responder on a hosted simulator. Give the focus change a
+    // bounded settle window before sending the first character.
+    await sleep(750);
     // Hosted macOS simulator input can acknowledge a long `type` gesture
     // before UIKit has consumed every character. Dispatching one character at
     // a time keeps the semantic input path deterministic for credentials and

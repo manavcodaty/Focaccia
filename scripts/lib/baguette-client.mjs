@@ -351,7 +351,14 @@ export async function pasteIntoNode(udid, matcher, value, options = {}) {
 export async function typeIntoNode(udid, matcher, value, options = {}) {
   await runWithShortInputSession(udid, async (session) => {
     await tapNode(udid, matcher, options);
-    await session.dispatch({ type: 'type', text: value });
+    // Hosted macOS simulator input can acknowledge a long `type` gesture
+    // before UIKit has consumed every character. Dispatching one character at
+    // a time keeps the semantic input path deterministic for credentials and
+    // other short values used by the cloud flow.
+    for (const character of value) {
+      await session.dispatch({ type: 'type', text: character });
+      await sleep(40);
+    }
   });
 }
 

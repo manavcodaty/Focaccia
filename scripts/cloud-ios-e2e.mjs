@@ -294,7 +294,7 @@ async function main() {
 
     await launchGate();
     await tapAction('Open scanner', { timeoutMs: 90_000 });
-    await waitForNode(simulatorUdid, 'Offline ready', { timeoutMs: 90_000 });
+    await waitForNode(simulatorUdid, /Offline ready/, { timeoutMs: 90_000 });
     checks.revocation_cache_fresh = true;
     await waitForNode(simulatorUdid, 'Manual fallback', { timeoutMs: 90_000 });
     await tapAction('Manual fallback');

@@ -194,12 +194,14 @@ jobs:
           echo "FOCACCIA_CLOUD_TICKETS_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3001" >> "$GITHUB_ENV"
           echo 'FOCACCIA_CLOUD_ORGANIZER_EMAIL=browser-organizer@example.com' >> "$GITHUB_ENV"
           BROWSER_PASSWORD="$(node -e "console.log('Org-' + require('crypto').randomBytes(18).toString('base64url') + '!')")"
-          AUTH_TEST_PASSWORD="$(node -e "console.log('Auth-' + require('crypto').randomBytes(18).toString('base64url') + '!')")"
           echo "::add-mask::$BROWSER_PASSWORD"
-          echo "::add-mask::$AUTH_TEST_PASSWORD"
           echo "FOCACCIA_CLOUD_ORGANIZER_PASSWORD=$BROWSER_PASSWORD" >> "$GITHUB_ENV"
-          echo 'FOCACCIA_TEST_ORGANIZER_EMAIL=auth-check@example.com' >> "$GITHUB_ENV"
-          echo "FOCACCIA_TEST_ORGANIZER_PASSWORD=$AUTH_TEST_PASSWORD" >> "$GITHUB_ENV"
+          # The browser agent logs in as browser-organizer@example.com. Have
+          # the verification step create and promote that same account before
+          # the browser flow starts, rather than creating an unrelated test
+          # account whose password the browser never receives.
+          echo 'FOCACCIA_TEST_ORGANIZER_EMAIL=browser-organizer@example.com' >> "$GITHUB_ENV"
+          echo "FOCACCIA_TEST_ORGANIZER_PASSWORD=$BROWSER_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Select system browser for Playwright
         shell: bash

@@ -357,9 +357,9 @@ async function main() {
     checks.gate_liveness_capture_accepted = true;
     checks.offline_acceptance = true;
     await screenshot('gate-entry-accepted-offline.png');
-    await tapNode(simulatorUdid, 'Home');
+    await tapAction('Home');
     await waitForNode(simulatorUdid, /Sync pending/ , { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, 'Settings');
+    await tapAction('Settings');
     await waitForNode(simulatorUdid, 'Pending check-ins', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Pending check-ins: 1', { timeoutMs: 30_000 });
     checks.offline_queue_observed = true;
@@ -367,7 +367,7 @@ async function main() {
 
     // A restart must retain the durable offline queue before connectivity is restored.
     await launchGate();
-    await tapNode(simulatorUdid, 'Settings', { timeoutMs: 90_000 });
+    await tapAction('Settings', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Pending check-ins: 1', { timeoutMs: 30_000 });
     checks.queue_persisted_after_restart = true;
     await screenshot('gate-sync-persisted-after-restart.png');
@@ -379,14 +379,14 @@ async function main() {
     await tapAction('Manual fallback', { timeoutMs: 90_000 });
     await pasteIntoNode(simulatorUdid, 'Full pass token', passToken, { timeoutMs: 90_000 });
     await tapAction('Verify token offline', { timeoutMs: 90_000 });
-    await waitForNode(simulatorUdid, /^Entry rejected\./, { timeoutMs: 90_000 });
+    await waitForNode(simulatorUdid, /^Entry rejected\b/, { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /REPLAY_USED/, { timeoutMs: 30_000 });
     checks.replay_rejected = true;
     await screenshot('gate-replay-rejected-offline.png');
-    await tapNode(simulatorUdid, 'Home');
+    await tapAction('Home');
 
     await restartLocalProxy();
-    await tapNode(simulatorUdid, 'Settings', { timeoutMs: 90_000 });
+    await tapAction('Settings', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Pending check-ins: 1', { timeoutMs: 30_000 });
     await tapAction('Retry check-in synchronization', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /Check-in queue and revocation cache synchronized\./, { timeoutMs: 120_000 });

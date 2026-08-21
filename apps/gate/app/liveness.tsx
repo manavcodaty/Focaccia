@@ -133,7 +133,11 @@ export default function LivenessScreen() {
   }, [pendingVerification?.payload.pass_id]);
 
   useEffect(() => {
-    if (!pendingVerification || isProcessing) {
+    // The cloud-only fixture path performs the same local FaceNet/crypto work
+    // as production, but a bundled image can take longer than the interactive
+    // camera timeout on a hosted simulator. Let that deterministic operation
+    // finish; the real camera path keeps the production timeout unchanged.
+    if (isCloudE2E || !pendingVerification || isProcessing) {
       return;
     }
 

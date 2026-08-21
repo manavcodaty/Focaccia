@@ -176,6 +176,15 @@ async function screenshot(name) {
   await takeSimulatorScreenshot(simulatorUdid, artifact(name));
 }
 
+async function tapAction(matcher, options = {}) {
+  return tapNode(simulatorUdid, matcher, {
+    retryIfStillVisible: true,
+    retryCount: 6,
+    retryDelayMs: 500,
+    ...options,
+  });
+}
+
 async function main() {
   await installSimulatorApp(simulatorUdid, enrollmentAppPath);
   await installSimulatorApp(simulatorUdid, gateAppPath);
@@ -266,36 +275,36 @@ async function main() {
       timeoutMs: 90_000,
     });
     await waitForNode(simulatorUdid, 'Create event pass', { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, 'Create event pass');
+    await tapAction('Create event pass');
     await waitForNode(simulatorUdid, 'I consent and continue', { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, 'I consent and continue');
+    await tapAction('I consent and continue');
     await waitForNode(simulatorUdid, 'Capture and issue pass', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
     checks.camera_image_source_started = true;
-    await tapNode(simulatorUdid, 'Capture and issue pass', { timeoutMs: 120_000 });
+    await tapAction('Capture and issue pass', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Pass ready', { timeoutMs: 180_000 });
     checks.enrollment_pass_issued = true;
     checks.enrollment_camera_capture_completed = true;
     await screenshot('enrollment-pass.png');
 
-    await tapNode(simulatorUdid, 'Copy full signed token');
+    await tapAction('Copy full signed token');
     await waitForNode(simulatorUdid, /Full signed token copied briefly/);
     const passToken = await readSimulatorClipboard(simulatorUdid);
     assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
 
     await launchGate();
-    await tapNode(simulatorUdid, 'Open scanner', { timeoutMs: 90_000 });
+    await tapAction('Open scanner', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Offline ready', { timeoutMs: 90_000 });
     checks.revocation_cache_fresh = true;
     await waitForNode(simulatorUdid, 'Manual fallback', { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, 'Manual fallback');
+    await tapAction('Manual fallback');
     await pasteIntoNode(simulatorUdid, 'Full pass token', passToken, { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, 'Verify token offline', { timeoutMs: 90_000 });
+    await tapAction('Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Capture and verify attendee', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
 
     await stopLocalProxy();
-    await tapNode(simulatorUdid, 'Capture and verify attendee', { timeoutMs: 120_000 });
+    await tapAction('Capture and verify attendee', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, /^Entry accepted\./, { timeoutMs: 180_000 });
     checks.gate_liveness_capture_accepted = true;
     checks.offline_acceptance = true;
@@ -316,12 +325,12 @@ async function main() {
     await screenshot('gate-sync-persisted-after-restart.png');
 
     // Reusing the accepted token while still offline must be rejected locally.
-    await tapNode(simulatorUdid, 'Back');
+    await tapAction('Back');
     await waitForNode(simulatorUdid, 'Open scanner', { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, 'Open scanner');
-    await tapNode(simulatorUdid, 'Manual fallback', { timeoutMs: 90_000 });
+    await tapAction('Open scanner');
+    await tapAction('Manual fallback', { timeoutMs: 90_000 });
     await pasteIntoNode(simulatorUdid, 'Full pass token', passToken, { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, 'Verify token offline', { timeoutMs: 90_000 });
+    await tapAction('Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /^Entry rejected\./, { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /REPLAY_USED/, { timeoutMs: 30_000 });
     checks.replay_rejected = true;
@@ -331,7 +340,7 @@ async function main() {
     await restartLocalProxy();
     await tapNode(simulatorUdid, 'Settings', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Pending check-ins: 1', { timeoutMs: 30_000 });
-    await tapNode(simulatorUdid, 'Retry check-in synchronization', { timeoutMs: 90_000 });
+    await tapAction('Retry check-in synchronization', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /Check-in queue and revocation cache synchronized\./, { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Queue clear', { timeoutMs: 90_000 });
     checks.reconnect_sync = true;

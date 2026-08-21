@@ -182,7 +182,7 @@ export function findNode(tree, matcher) {
       // by an AXTextField with the same accessibility label. Prefer the
       // interactive node so a semantic tap focuses the control rather than
       // landing on the text label.
-      if (/^AX(?:Button|TextField|SecureTextField)$/.test(node.role ?? '')) {
+      if (/^AX(?:Button|TextField|SecureTextField|TextArea)$/.test(node.role ?? '')) {
         return node;
       }
       fallback ??= node;

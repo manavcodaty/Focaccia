@@ -298,7 +298,7 @@ async function main() {
     checks.revocation_cache_fresh = true;
     await waitForNode(simulatorUdid, 'Manual fallback', { timeoutMs: 90_000 });
     await tapAction('Manual fallback');
-    await pasteIntoNode(simulatorUdid, 'Full pass token', passToken, { timeoutMs: 90_000 });
+    await pasteIntoNode(simulatorUdid, /^Full pass token\b/, passToken, { timeoutMs: 90_000 });
     await tapAction('Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Capture and verify attendee', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });

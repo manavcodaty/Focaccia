@@ -377,9 +377,15 @@ export async function tapNode(udid, matcher, options = {}) {
 }
 
 export async function pasteIntoNode(udid, matcher, value, options = {}) {
-  const { press = true, focusTimeoutMs = 10_000, ...tapOptions } = options;
+  const { press = true, replace = false, focusTimeoutMs = 10_000, ...tapOptions } = options;
   await runWithShortInputSession(udid, async (session) => {
     await tapAndFocusNode(udid, matcher, tapOptions, { timeoutMs: focusTimeoutMs });
+    if (replace) {
+      await session.dispatch({ type: 'key', code: 'KeyA', modifiers: ['command'] });
+      await sleep(120);
+      await session.dispatch({ type: 'key', code: 'Backspace' });
+      await sleep(120);
+    }
     if (press) {
       await session.dispatch({ type: 'paste', text: value, press: true });
       return;

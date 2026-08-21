@@ -43,6 +43,7 @@ const faceFixtureSha256 = createHash('sha256').update(await readFile(faceFixture
 
 const enrollmentBundleId = 'com.facepass.enrollment';
 const gateBundleId = 'com.facepass.gate';
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const context = JSON.parse(await readFile(contextPath, 'utf8'));
 await mkdir(artifactDir, { recursive: true });
 
@@ -185,6 +186,34 @@ async function tapAction(matcher, options = {}) {
   });
 }
 
+async function fillInputExactly(matcher, value) {
+  let observedLength = 0;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await pasteIntoNode(simulatorUdid, matcher, value, {
+      press: false,
+      replace: true,
+      timeoutMs: 90_000,
+    });
+
+    const deadline = Date.now() + 10_000;
+    while (Date.now() < deadline) {
+      try {
+        const node = findNode(await describeUi(simulatorUdid), matcher);
+        if (typeof node?.value === 'string') {
+          observedLength = node.value.length;
+          if (node.value === value) return;
+        }
+      } catch {
+        // Keep polling while the hosted accessibility tree settles after paste.
+      }
+      await sleep(150);
+    }
+  }
+
+  throw new Error(`Hosted input did not settle to the expected value for ${String(matcher)} (observed ${observedLength} characters).`);
+}
+
 async function main() {
   await installSimulatorApp(simulatorUdid, enrollmentAppPath);
   await installSimulatorApp(simulatorUdid, gateAppPath);
@@ -230,9 +259,9 @@ async function main() {
     // the keyboard before targeting the second field. Hosted iOS simulators
     // can otherwise deliver the second field tap to the first TextInput while
     // the keyboard is still settling, inserting the password into the email.
-    await pasteIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail, { press: false });
+    await fillInputExactly('Organizer email', context.organizerEmail);
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
-    await pasteIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword, { press: false });
+    await fillInputExactly('Organizer password', context.organizerPassword);
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     // A software keyboard can still own the lower part of the screen after
     // the short Baguette typing session closes. Escape it before tapping the
@@ -258,9 +287,9 @@ async function main() {
 
     await launchEnrollment();
 
-    await pasteIntoNode(simulatorUdid, 'Email', context.attendeeEmail, { press: false });
+    await fillInputExactly('Email', context.attendeeEmail);
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
-    await pasteIntoNode(simulatorUdid, 'Password', context.attendeePassword, { press: false });
+    await fillInputExactly('Password', context.attendeePassword);
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await tapNode(simulatorUdid, 'Sign in', {
       retryIfStillVisible: true,

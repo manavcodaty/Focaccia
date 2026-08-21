@@ -221,9 +221,9 @@ async function main() {
     // the keyboard before targeting the second field. Hosted iOS simulators
     // can otherwise deliver the second field tap to the first TextInput while
     // the keyboard is still settling, inserting the password into the email.
-    await typeIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail, { transport: 'simctl' });
+    await pasteIntoNode(simulatorUdid, 'Organizer email', context.organizerEmail, { press: false });
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
-    await typeIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword, { transport: 'simctl' });
+    await pasteIntoNode(simulatorUdid, 'Organizer password', context.organizerPassword, { press: false });
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     // A software keyboard can still own the lower part of the screen after
     // the short Baguette typing session closes. Escape it before tapping the
@@ -249,9 +249,9 @@ async function main() {
 
     await launchEnrollment();
 
-    await typeIntoNode(simulatorUdid, 'Email', context.attendeeEmail, { transport: 'simctl' });
+    await pasteIntoNode(simulatorUdid, 'Email', context.attendeeEmail, { press: false });
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
-    await typeIntoNode(simulatorUdid, 'Password', context.attendeePassword, { transport: 'simctl' });
+    await pasteIntoNode(simulatorUdid, 'Password', context.attendeePassword, { press: false });
     await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await tapNode(simulatorUdid, 'Sign in', {
       retryIfStillVisible: true,

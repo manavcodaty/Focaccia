@@ -342,33 +342,28 @@ export async function tapNode(udid, matcher, options = {}) {
 }
 
 export async function pasteIntoNode(udid, matcher, value, options = {}) {
+  const { press = true, ...tapOptions } = options;
   await runWithShortInputSession(udid, async (session) => {
-    await tapNode(udid, matcher, options);
-    await session.dispatch({ type: 'paste', text: value, press: true });
+    await tapNode(udid, matcher, tapOptions);
+    // The semantic tap acknowledgement can arrive before UIKit has committed
+    // the new first responder on a hosted simulator.
+    await sleep(750);
+    if (press) {
+      await session.dispatch({ type: 'paste', text: value, press: true });
+      return;
+    }
+    // Set the pasteboard without asking Baguette to press Cmd+V. A separate,
+    // single key envelope avoids the repeated-paste gesture seen on hosted
+    // iOS 26 simulators while retaining exact punctuation in credentials.
+    await session.dispatch({ type: 'paste', text: value, press: false });
+    await sleep(250);
+    await session.dispatch({ type: 'key', code: 'KeyV', modifiers: ['command'] });
   });
 }
 
 export async function typeIntoNode(udid, matcher, value, options = {}) {
-  const { transport = 'baguette', ...tapOptions } = options;
-
-  if (transport === 'simctl') {
-    await tapNode(udid, matcher, tapOptions);
-    // The semantic tap acknowledgement can arrive before UIKit has committed
-    // the new first responder on a hosted simulator. Give the focus change a
-    // bounded settle window before sending the text.
-    await sleep(750);
-    try {
-      await runCommand('xcrun', ['simctl', 'io', udid, 'text', value]);
-    } catch {
-      // Do not include the credential-bearing command in the error. The
-      // hosted workflow artifact must remain safe to inspect after failures.
-      throw new Error(`simctl text injection failed for ${String(matcher)}.`);
-    }
-    return;
-  }
-
   await runWithShortInputSession(udid, async (session) => {
-    await tapNode(udid, matcher, tapOptions);
+    await tapNode(udid, matcher, options);
     // The semantic tap acknowledgement can arrive before UIKit has committed
     // the new first responder on a hosted simulator. Give the focus change a
     // bounded settle window before sending the first character.

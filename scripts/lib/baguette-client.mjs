@@ -311,7 +311,8 @@ export async function tapNode(udid, matcher, options = {}) {
     // requested label while still being below the simulator viewport. Use a
     // one-shot swipe so the cloud flow does not need a long-lived HID session.
     for (let scrollAttempt = 0; scrollAttempt < 10; scrollAttempt += 1) {
-      const visible = frame.y < root.height && frame.y + frame.height > 0;
+      const frameCenterY = frame.y + frame.height / 2;
+      const visible = frameCenterY > 0 && frameCenterY < root.height;
       if (visible) break;
       const direction = frame.y >= root.height ? -1 : 1;
       const startY = direction < 0 ? root.height * 0.78 : root.height * 0.25;
@@ -337,7 +338,8 @@ export async function tapNode(udid, matcher, options = {}) {
       frame = nextFrame;
     }
 
-    if (!(frame.y < root.height && frame.y + frame.height > 0)) {
+    const frameCenterY = frame.y + frame.height / 2;
+    if (!(frameCenterY > 0 && frameCenterY < root.height)) {
       throw new Error(`Accessibility node ${String(matcher)} remained off-screen after scrolling.`);
     }
 

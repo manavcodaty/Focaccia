@@ -214,6 +214,25 @@ async function fillInputExactly(matcher, value) {
   throw new Error(`Hosted input did not settle to the expected value for ${String(matcher)} (observed ${observedLength} characters).`);
 }
 
+async function readCloudE2EToken() {
+  const prefix = 'Cloud E2E signed token ';
+  const deadline = Date.now() + 10_000;
+
+  while (Date.now() < deadline) {
+    try {
+      const node = findNode(await describeUi(simulatorUdid), new RegExp(`^${prefix}`));
+      const raw = [node?.label, node?.value, node?.title]
+        .find((value) => typeof value === 'string' && value.startsWith(prefix));
+      if (raw) return raw.slice(prefix.length);
+    } catch {
+      // Keep polling while the hosted accessibility tree settles after copy.
+    }
+    await sleep(150);
+  }
+
+  return '';
+}
+
 async function main() {
   await installSimulatorApp(simulatorUdid, enrollmentAppPath);
   await installSimulatorApp(simulatorUdid, gateAppPath);
@@ -318,7 +337,7 @@ async function main() {
 
     await tapAction('Copy full signed token');
     await waitForNode(simulatorUdid, /Full signed token copied briefly/);
-    const passToken = await readSimulatorClipboard(simulatorUdid);
+    const passToken = await readCloudE2EToken() || await readSimulatorClipboard(simulatorUdid);
     assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
 
     await launchGate();

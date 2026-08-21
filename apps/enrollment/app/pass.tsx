@@ -13,6 +13,7 @@ import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, radii, typography } from '../src/theme';
 
 const PASS_TOKEN_CLIPBOARD_TTL_MS = 60_000;
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
 
 async function copyPassTokenToClipboard(
   token: string,
@@ -102,6 +103,11 @@ export default function PassScreen() {
       </SectionCard>
 
       {message ? <StatusBanner message={message} tone={message.includes('copied') ? 'success' : 'warning'} /> : null}
+      {isCloudE2E && message?.includes('copied') ? (
+        <Text accessibilityLabel={`Cloud E2E signed token ${pass.token}`} style={styles.cloudE2ETokenBridge}>
+          Cloud E2E token bridge ready
+        </Text>
+      ) : null}
 
       <View style={styles.actions}>
         {ticket && remaining > 0 ? (
@@ -129,6 +135,7 @@ export default function PassScreen() {
 const styles = StyleSheet.create({
   actions: { gap: 12 },
   body: { ...typography.body, color: palette.ink, fontSize: 15, lineHeight: 23 },
+  cloudE2ETokenBridge: { ...typography.body, color: palette.mutedStone, fontSize: 12, textAlign: 'center' },
   eventMeta: { ...typography.body, color: palette.mutedStone, fontSize: 14 },
   eventName: { ...typography.display, color: palette.ink, fontSize: 30, lineHeight: 35, textAlign: 'center' },
   generation: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 15, textAlign: 'center' },

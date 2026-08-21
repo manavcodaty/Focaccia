@@ -353,7 +353,7 @@ async function main() {
 
     await stopLocalProxy();
     await tapAction('Capture and verify attendee', { timeoutMs: 120_000 });
-    await waitForNode(simulatorUdid, /^Entry accepted\./, { timeoutMs: 180_000 });
+    await waitForNode(simulatorUdid, /^Entry accepted\b/, { timeoutMs: 180_000 });
     checks.gate_liveness_capture_accepted = true;
     checks.offline_acceptance = true;
     await screenshot('gate-entry-accepted-offline.png');

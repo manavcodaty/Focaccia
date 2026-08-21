@@ -408,9 +408,29 @@ export async function typeIntoNode(udid, matcher, value, options = {}) {
   });
 }
 
-export async function readSimulatorClipboard(udid) {
-  const { stdout } = await runCommand('baguette', ['clipboard', 'get', '--udid', udid]);
-  return stdout.trim();
+export async function readSimulatorClipboard(udid, { timeoutMs = 10_000 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+
+  // Expo Clipboard resolves its write before the hosted simulator's pasteboard
+  // service is always observable by Baguette. Retry both hosted readers so a
+  // successful copy action is not mistaken for an empty signed token.
+  while (Date.now() < deadline) {
+    for (const [command, args] of [
+      ['baguette', ['clipboard', 'get', '--udid', udid]],
+      ['xcrun', ['simctl', 'pbpaste', udid]],
+    ]) {
+      try {
+        const { stdout } = await runCommand(command, args);
+        const value = stdout.trim();
+        if (value) return value;
+      } catch {
+        // Try the other hosted pasteboard reader before the next poll.
+      }
+    }
+    await sleep(250);
+  }
+
+  return '';
 }
 
 export async function launchSimulatorApp(udid, bundleId) {

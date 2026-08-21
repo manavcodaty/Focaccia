@@ -233,6 +233,39 @@ export async function waitForNode(udid, matcher, { timeoutMs = 60_000, label = S
   throw new Error(`Timed out waiting for ${label}. Visible accessibility text: ${visibleText.slice(0, 80).join(' | ')}`);
 }
 
+export async function waitForFocusedNode(udid, matcher, { timeoutMs = 10_000, label = String(matcher) } = {}) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    try {
+      const tree = await describeUi(udid);
+      const node = findNode(tree, matcher);
+      if (node?.focused) return node;
+    } catch (error) {
+      if (!isTransientAccessibilityError(error)) throw error;
+    }
+    await sleep(150);
+  }
+
+  throw new Error(`Timed out waiting for ${label} to receive focus.`);
+}
+
+async function tapAndFocusNode(udid, matcher, tapOptions, focusOptions) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await tapNode(udid, matcher, tapOptions);
+    try {
+      return await waitForFocusedNode(udid, matcher, focusOptions);
+    } catch (error) {
+      lastError = error;
+      await sleep(400);
+    }
+  }
+
+  throw lastError ?? new Error(`Unable to focus ${String(matcher)}.`);
+}
+
 export async function tapNode(udid, matcher, options = {}) {
   const {
     retryIfStillVisible = false,
@@ -342,12 +375,9 @@ export async function tapNode(udid, matcher, options = {}) {
 }
 
 export async function pasteIntoNode(udid, matcher, value, options = {}) {
-  const { press = true, ...tapOptions } = options;
+  const { press = true, focusTimeoutMs = 10_000, ...tapOptions } = options;
   await runWithShortInputSession(udid, async (session) => {
-    await tapNode(udid, matcher, tapOptions);
-    // The semantic tap acknowledgement can arrive before UIKit has committed
-    // the new first responder on a hosted simulator.
-    await sleep(750);
+    await tapAndFocusNode(udid, matcher, tapOptions, { timeoutMs: focusTimeoutMs });
     if (press) {
       await session.dispatch({ type: 'paste', text: value, press: true });
       return;
@@ -362,12 +392,9 @@ export async function pasteIntoNode(udid, matcher, value, options = {}) {
 }
 
 export async function typeIntoNode(udid, matcher, value, options = {}) {
+  const { focusTimeoutMs = 10_000, ...tapOptions } = options;
   await runWithShortInputSession(udid, async (session) => {
-    await tapNode(udid, matcher, options);
-    // The semantic tap acknowledgement can arrive before UIKit has committed
-    // the new first responder on a hosted simulator. Give the focus change a
-    // bounded settle window before sending the first character.
-    await sleep(750);
+    await tapAndFocusNode(udid, matcher, tapOptions, { timeoutMs: focusTimeoutMs });
     // Hosted macOS simulator input can acknowledge a long `type` gesture
     // before UIKit has consumed every character. Dispatching one character at
     // a time keeps the semantic input path deterministic for credentials and

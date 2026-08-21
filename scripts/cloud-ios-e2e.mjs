@@ -259,7 +259,12 @@ async function main() {
       retryDelayMs: 500,
     });
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, new RegExp(context.eventName));
+    await tapNode(simulatorUdid, new RegExp(context.eventName), {
+      retryIfStillVisible: true,
+      retryCount: 6,
+      retryDelayMs: 500,
+      timeoutMs: 90_000,
+    });
     await waitForNode(simulatorUdid, 'Create event pass', { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, 'Create event pass');
     await waitForNode(simulatorUdid, 'I consent and continue', { timeoutMs: 90_000 });

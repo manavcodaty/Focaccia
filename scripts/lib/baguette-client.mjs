@@ -314,7 +314,7 @@ export async function tapNode(udid, matcher, options = {}) {
       const frameCenterY = frame.y + frame.height / 2;
       const visible = frameCenterY > 0 && frameCenterY < root.height;
       if (visible) break;
-      const direction = frame.y >= root.height ? -1 : 1;
+      const direction = frameCenterY >= root.height ? -1 : 1;
       const startY = direction < 0 ? root.height * 0.78 : root.height * 0.25;
       const endY = direction < 0 ? root.height * 0.25 : root.height * 0.78;
       await runCommand('baguette', [

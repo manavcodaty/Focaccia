@@ -435,7 +435,11 @@ async function main() {
 
     await restartLocalProxy();
     await tapAction('Settings', { timeoutMs: 90_000 });
-    await waitForMetric('Pending check-ins', 1, { timeoutMs: 30_000 });
+    // Restoring connectivity can trigger the app's automatic foreground sync
+    // before the explicit retry below. Queue persistence was already proven
+    // while offline, so accept either intermediate state here and assert the
+    // synchronized confirmation plus a clear queue as the reconnect result.
+    await waitForNode(simulatorUdid, /Queue clear|Sync pending/, { timeoutMs: 30_000 });
     await tapAction('Retry check-in synchronization', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /Check-in queue and revocation cache synchronized\./, { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Queue clear', { timeoutMs: 90_000 });

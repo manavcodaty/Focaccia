@@ -425,7 +425,7 @@ async function main() {
     await waitForNode(simulatorUdid, 'Open scanner', { timeoutMs: 90_000 });
     await tapAction('Open scanner');
     await tapAction('Manual fallback', { timeoutMs: 90_000 });
-    await pasteIntoNode(simulatorUdid, 'Full pass token', passToken, { timeoutMs: 90_000 });
+    await pasteIntoNode(simulatorUdid, /^Full pass token\b/, passToken, { timeoutMs: 90_000 });
     await tapAction('Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /^Entry rejected\b/, { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /REPLAY_USED/, { timeoutMs: 30_000 });

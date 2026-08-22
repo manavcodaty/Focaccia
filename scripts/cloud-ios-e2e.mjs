@@ -214,6 +214,55 @@ async function fillInputExactly(matcher, value) {
   throw new Error(`Hosted input did not settle to the expected value for ${String(matcher)} (observed ${observedLength} characters).`);
 }
 
+function accessibilityNodeText(node) {
+  return [node?.label, node?.title, node?.value, node?.identifier]
+    .filter((value) => typeof value === 'string')
+    .join(' ')
+    .trim();
+}
+
+function containsMetric(tree, label, value) {
+  const expectedLabel = label.trim().toLowerCase();
+  const expectedValue = String(value).trim().toLowerCase();
+
+  const visit = (node) => {
+    if (!node || node.hidden) return false;
+    const ownText = accessibilityNodeText(node).replace(/\s+/g, ' ').toLowerCase();
+    if (
+      ownText === `${expectedLabel}: ${expectedValue}`
+      || ownText === `${expectedLabel} ${expectedValue}`
+    ) {
+      return true;
+    }
+
+    const children = Array.isArray(node.children) ? node.children.filter((child) => !child?.hidden) : [];
+    for (let index = 0; index < children.length - 1; index += 1) {
+      const childText = accessibilityNodeText(children[index]).toLowerCase();
+      const nextText = accessibilityNodeText(children[index + 1]).toLowerCase();
+      if ((childText === expectedLabel || childText === `${expectedLabel}:`) && nextText === expectedValue) {
+        return true;
+      }
+    }
+
+    return children.some(visit);
+  };
+
+  return visit(tree?.tree ?? tree);
+}
+
+async function waitForMetric(label, value, { timeoutMs = 60_000 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      if (containsMetric(await describeUi(simulatorUdid), label, value)) return;
+    } catch {
+      // Keep polling while the hosted accessibility tree settles.
+    }
+    await sleep(300);
+  }
+  throw new Error(`Timed out waiting for ${label}: ${value}.`);
+}
+
 async function readCloudE2EToken() {
   const prefix = 'Cloud E2E signed token ';
   const deadline = Date.now() + 10_000;
@@ -360,15 +409,14 @@ async function main() {
     await tapAction('Home');
     await waitForNode(simulatorUdid, /Sync pending/ , { timeoutMs: 90_000 });
     await tapAction('Settings');
-    await waitForNode(simulatorUdid, 'Pending check-ins', { timeoutMs: 90_000 });
-    await waitForNode(simulatorUdid, 'Pending check-ins: 1', { timeoutMs: 30_000 });
+    await waitForMetric('Pending check-ins', 1, { timeoutMs: 90_000 });
     checks.offline_queue_observed = true;
     await screenshot('gate-sync-pending.png');
 
     // A restart must retain the durable offline queue before connectivity is restored.
     await launchGate();
     await tapAction('Settings', { timeoutMs: 90_000 });
-    await waitForNode(simulatorUdid, 'Pending check-ins: 1', { timeoutMs: 30_000 });
+    await waitForMetric('Pending check-ins', 1, { timeoutMs: 30_000 });
     checks.queue_persisted_after_restart = true;
     await screenshot('gate-sync-persisted-after-restart.png');
 
@@ -387,7 +435,7 @@ async function main() {
 
     await restartLocalProxy();
     await tapAction('Settings', { timeoutMs: 90_000 });
-    await waitForNode(simulatorUdid, 'Pending check-ins: 1', { timeoutMs: 30_000 });
+    await waitForMetric('Pending check-ins', 1, { timeoutMs: 30_000 });
     await tapAction('Retry check-in synchronization', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /Check-in queue and revocation cache synchronized\./, { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Queue clear', { timeoutMs: 90_000 });

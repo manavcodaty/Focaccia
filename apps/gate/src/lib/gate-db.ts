@@ -405,6 +405,14 @@ export class GateRepository {
     );
   }
 
+  async retryPendingSyncItems(nowIso: string): Promise<void> {
+    await this.driver.run(
+      `update checkin_sync_queue set status = 'pending', next_attempt_at = ?,
+       last_error_code = null where status in ('pending', 'blocked')`,
+      [nowIso],
+    );
+  }
+
   async markSyncSucceeded(idempotencyKey: string, syncedAtIso: string): Promise<void> {
     await this.driver.run(
       `update checkin_sync_queue set status = 'synced', synced_at = ?,

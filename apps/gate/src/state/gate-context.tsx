@@ -131,7 +131,7 @@ export function GateProvider({ children }: PropsWithChildren) {
     syncLock.current = true;
     setSyncInProgress(true);
     try {
-      if (retryBlocked) await repo.retryBlockedSyncItems(new Date().toISOString());
+      if (retryBlocked) await repo.retryPendingSyncItems(new Date().toISOString());
       await flushCheckinQueue({ repository: repo, send: recordGateCheckin });
       let refreshError: unknown;
       try {

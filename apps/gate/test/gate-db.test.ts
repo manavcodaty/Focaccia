@@ -227,6 +227,24 @@ test('tracks retry, blocked, and synchronized queue states', async () => {
   assert.equal(stats.syncedCheckinCount, 1);
 });
 
+test('manual retry makes a backoff-delayed pending check-in due immediately', async () => {
+  const database = new DatabaseSync(':memory:');
+  const repository = new GateRepository(new NodeSqliteDriver(database));
+  await repository.migrate();
+  await repository.recordAcceptedDecision(log, syncItem);
+
+  await repository.markSyncRetry(
+    syncItem.idempotency_key,
+    1,
+    '2026-06-14T09:30:00.000Z',
+    'network_error',
+  );
+  assert.equal((await repository.listDueSyncItems('2026-06-14T08:31:00.000Z')).length, 0);
+
+  await repository.retryPendingSyncItems('2026-06-14T08:31:00.000Z');
+  assert.equal((await repository.listDueSyncItems('2026-06-14T08:31:00.000Z')).length, 1);
+});
+
 test('queue runner retries transport failures and treats duplicate receipt as success', async () => {
   const database = new DatabaseSync(':memory:');
   const repository = new GateRepository(new NodeSqliteDriver(database));

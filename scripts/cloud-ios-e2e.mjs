@@ -282,6 +282,54 @@ async function readCloudE2EToken() {
   return '';
 }
 
+async function fillStableBrowserInput(page, locator, value, label) {
+  let stableChecks = 0;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await locator.fill(value);
+    const deadline = Date.now() + 10_000;
+
+    while (Date.now() < deadline) {
+      if ((await locator.inputValue()) === value) {
+        stableChecks += 1;
+        if (stableChecks >= 8) return;
+      } else {
+        stableChecks = 0;
+      }
+      await page.waitForTimeout(250);
+    }
+  }
+
+  assert.equal(await locator.inputValue(), value, `${label} should retain its value after hydration`);
+}
+
+async function fillOrganizerBrowserLogin(page) {
+  await page.locator('form button[type="submit"]').waitFor({ state: 'visible', timeout: 45_000 });
+  const emailInput = page.getByLabel('Email', { exact: true });
+  const passwordInput = page.getByLabel('Password', { exact: true });
+
+  // The tunneled Next.js auth card can re-render its controlled email input
+  // while the password field receives focus. Reassert both values together
+  // immediately before submission so the auth request cannot observe a
+  // transient empty or stale field.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await fillStableBrowserInput(page, emailInput, context.organizerEmail, 'organizer email');
+    await fillStableBrowserInput(page, passwordInput, context.organizerPassword, 'organizer password');
+    await emailInput.fill(context.organizerEmail);
+    await emailInput.press('Tab');
+    await page.waitForTimeout(250);
+    if (
+      (await emailInput.inputValue()) === context.organizerEmail
+      && (await passwordInput.inputValue()) === context.organizerPassword
+    ) {
+      return;
+    }
+  }
+
+  assert.equal(await emailInput.inputValue(), context.organizerEmail, 'organizer email should be present before submit');
+  assert.equal(await passwordInput.inputValue(), context.organizerPassword, 'organizer password should be present before submit');
+}
+
 async function main() {
   await installSimulatorApp(simulatorUdid, enrollmentAppPath);
   await installSimulatorApp(simulatorUdid, gateAppPath);
@@ -454,8 +502,7 @@ async function main() {
     const page = await browser.newPage({ viewport: { height: 1000, width: 1440 } });
     try {
       await page.goto(`${webUrl}/login`, { waitUntil: 'domcontentloaded' });
-      await page.getByLabel('Email', { exact: true }).fill(context.organizerEmail);
-      await page.getByLabel('Password', { exact: true }).fill(context.organizerPassword);
+      await fillOrganizerBrowserLogin(page);
       await page.locator('form button[type="submit"]').click();
       await page.waitForURL(/\/dashboard(?:\?.*)?$/, {
         timeout: 45_000,

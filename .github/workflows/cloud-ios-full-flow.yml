@@ -107,7 +107,9 @@ jobs:
           STATUS_FILE="$RUNNER_TEMP/focaccia-supabase.env"
           npx --yes supabase@2.105.0 status --workdir .focaccia/runtime -o env > "$STATUS_FILE"
           read_status() {
-            sed -n "s/^export //; s/^$1=//p" "$STATUS_FILE" | head -n 1
+            sed -n "s/^export //; s/^$1=//p" "$STATUS_FILE" \
+              | head -n 1 \
+              | sed -e 's/^"//' -e 's/"$//'
           }
           API_URL="$(read_status API_URL)"
           ANON_KEY="$(read_status ANON_KEY)"

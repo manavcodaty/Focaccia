@@ -1,0 +1,37 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "Skip to content" [ref=e3] [cursor=pointer]:
+      - /url: "#main-content"
+    - generic [ref=e4]:
+      - link "Focaccia tickets home" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - text: Focaccia
+      - navigation "Primary navigation" [ref=e6]:
+        - link "Discover" [ref=e7] [cursor=pointer]:
+          - /url: /
+        - link "Privacy" [ref=e8] [cursor=pointer]:
+          - /url: /privacy
+      - status "Loading account" [ref=e10]
+  - main [ref=e11]:
+    - generic [ref=e13]:
+      - generic [ref=e14]: Local network
+      - paragraph [ref=e15]: Public programme
+      - heading "Choose somewhere worth showing up for." [level=1] [ref=e16]
+      - paragraph [ref=e17]: Browse real listed events, claim a free ticket, then enroll privately on your iPhone.
+    - region [ref=e18]:
+      - generic [ref=e19]:
+        - heading "Upcoming events" [level=2] [ref=e21]
+        - paragraph [ref=e22]: Only events deliberately listed by their organizer appear here.
+      - status "Loading events" [ref=e23]
+  - contentinfo [ref=e45]:
+    - generic [ref=e46]:
+      - generic [ref=e47]:
+        - strong [ref=e48]: Focaccia tickets
+        - paragraph [ref=e49]: Free event tickets for the controlled EPQ deployment.
+      - navigation "Footer navigation" [ref=e50]:
+        - link "Discover" [ref=e51] [cursor=pointer]:
+          - /url: /
+        - link "My tickets" [ref=e52] [cursor=pointer]:
+          - /url: /tickets
+        - link "Privacy" [ref=e53] [cursor=pointer]:
+          - /url: /privacy

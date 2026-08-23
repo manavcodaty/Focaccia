@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Linking,
   ScrollView,
   StyleSheet,
@@ -21,6 +22,7 @@ import { PrimaryButton } from '../src/components/primary-button';
 import { StatusBanner } from '../src/components/status-banner';
 import { enrollmentApi, FunctionApiError, type IssuePassResponse } from '../src/lib/api';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '../src/lib/embedding-model';
+import { cloudE2EFixtureSource, prepareCloudE2EPhoto } from '../src/lib/cloud-e2e-photo';
 import { issuanceCoordinator, passVault } from '../src/lib/enrollment-storage';
 import { createIdempotencyKey } from '../src/lib/idempotency-key';
 import {
@@ -33,6 +35,8 @@ import type { PendingPassIssuance } from '../src/lib/ticket-state';
 import { useAuth } from '../src/state/auth-context';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, radii, typography } from '../src/theme';
+
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
 
 function phaseLabel(phase: PassProcessingPhase | null, hasPending: boolean): string {
   if (hasPending && phase === null) return 'A previous signing request is ready to resume.';
@@ -97,11 +101,11 @@ export default function CaptureScreen() {
     return <Fallback title="Consent required" body="Review and accept the privacy details before camera capture starts." label="Review consent" onPress={() => router.replace('/consent')} />;
   }
 
-  if (!device && !hasPending) {
+  if (!device && !hasPending && !isCloudE2E) {
     return <Fallback title="Front camera unavailable" body="A front camera could not be found on this device." label="Open help" onPress={() => router.push('/help')} />;
   }
 
-  if (!hasPermission && !hasPending) {
+  if (!hasPermission && !hasPending && !isCloudE2E) {
     return (
       <Fallback
         title="Camera permission required"
@@ -121,7 +125,7 @@ export default function CaptureScreen() {
       !user ||
       !ticket ||
       !selection ||
-      (!hasPending && (!camera.current || !modelReady))
+      (!hasPending && (!modelReady || (!isCloudE2E && !camera.current)))
     ) {
       return;
     }
@@ -134,8 +138,12 @@ export default function CaptureScreen() {
     try {
       const pass = await issuanceCoordinator.issue<IssuePassResponse>({
         createPending: async () => {
-          if (!camera.current) throw new Error('The camera is not ready.');
-          const photo = await camera.current.takePhoto({ enableShutterSound: false });
+          const photo = isCloudE2E
+            ? await prepareCloudE2EPhoto()
+            : camera.current
+              ? await camera.current.takePhoto({ enableShutterSound: false })
+              : null;
+          if (!photo) throw new Error('The camera is not ready.');
           const embedding = await extractFaceEmbeddingFromPhoto({
             photoHeight: photo.height,
             photoPath: photo.path,
@@ -214,7 +222,16 @@ export default function CaptureScreen() {
 
           {!hasPending ? (
             <View style={styles.cameraStage}>
-              <Camera ref={camera} device={device!} isActive={true} photo style={StyleSheet.absoluteFill} />
+              {isCloudE2E ? (
+                <View style={styles.cloudE2EPreview}>
+                  <Image resizeMode="contain" source={cloudE2EFixtureSource} style={styles.cloudE2EImage} />
+                  <Text accessibilityLabel="Cloud E2E image source ready" style={styles.cloudE2ELabel}>
+                    Cloud E2E image source ready
+                  </Text>
+                </View>
+              ) : (
+                <Camera ref={camera} device={device!} isActive={true} photo style={StyleSheet.absoluteFill} />
+              )}
               <View style={styles.cameraTint} />
               <CameraGuide ready={modelReady && !isProcessing} />
             </View>
@@ -270,6 +287,9 @@ function Fallback({ body, label, onPress, secondaryLabel, secondaryPress, title 
 const styles = StyleSheet.create({
   cameraStage: { alignSelf: 'center', aspectRatio: 0.82, backgroundColor: palette.surfaceInverse, borderRadius: radii.credential, maxHeight: 500, overflow: 'hidden', width: '100%' },
   cameraTint: { ...StyleSheet.absoluteFillObject, backgroundColor: palette.overlay },
+  cloudE2EImage: { ...StyleSheet.absoluteFillObject, opacity: 0.45 },
+  cloudE2ELabel: { backgroundColor: palette.ink, borderRadius: radii.control, color: palette.textInverse, fontSize: 13, margin: 18, paddingHorizontal: 12, paddingVertical: 8, textAlign: 'center' },
+  cloudE2EPreview: { alignItems: 'center', backgroundColor: palette.surfaceInverse, flex: 1, justifyContent: 'center' },
   content: { alignSelf: 'center', flexGrow: 1, gap: 18, maxWidth: 520, padding: 16, width: '100%' },
   controls: { backgroundColor: palette.canvas, borderRadius: radii.panel, gap: 12, padding: 18 },
   eyebrow: { ...typography.bodyStrong, color: palette.warmMist, fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase' },

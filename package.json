@@ -18,7 +18,7 @@
     "db:reset": "supabase db reset --local --no-seed",
     "db:verify": "bash ./scripts/verify-db-schema.sh",
     "infra:verify": "pnpm run db:verify",
-    "verify:network-config": "pnpm --filter @face-pass/shared test:network-coverage && node --test ./scripts/auto-update-ip.test.mjs && node --test ./scripts/sync-ticket-dev-env.test.mjs && node --test ./scripts/organizer-dev.test.mjs && node --test ./scripts/tickets-dev.test.mjs && node --test ./scripts/network-foundation.test.mjs && node --experimental-strip-types --test ./supabase/functions/_shared/cors.test.ts",
+    "verify:network-config": "pnpm --filter @face-pass/shared test:network-coverage && node --test ./scripts/auto-update-ip.test.mjs && node --test ./scripts/sync-ticket-dev-env.test.mjs && node --test ./scripts/organizer-dev.test.mjs && node --test ./scripts/tickets-dev.test.mjs && node --test ./scripts/network-foundation.test.mjs && node --test ./scripts/baguette-client.test.mjs && node --experimental-strip-types --test ./supabase/functions/_shared/cors.test.ts",
     "verify:local-network": "node ./scripts/verify-network.mjs local",
     "verify:phase2-schema": "bash ./scripts/verify-phase2-schema.sh",
     "verify:phase2": "pnpm verify:phase2-schema && pnpm --filter @face-pass/shared test:phase2-coverage && pnpm --filter @face-pass/shared build && node ./scripts/test-phase2.mjs",
@@ -32,6 +32,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.11.0",
     "@babel/core": "7.29.6",
-    "@playwright/test": "1.57.0"
+    "@playwright/test": "1.57.0",
+    "babel-preset-expo": "~55.0.16"
   }
 }

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import http from 'node:http';
+import net from 'node:net';
 import path from 'node:path';
 import test from 'node:test';
 
@@ -112,6 +114,96 @@ test('LAN proxy enforces exact browser origins and native no-Origin requests', a
     const rejectedResponse = await fetch(url, { headers: { Origin: 'https://attacker.example' } });
     assert.equal(rejectedResponse.status, 403);
   } finally {
+    await proxy.close();
+    await new Promise((resolve, reject) => upstream.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test('LAN proxy forwards WebSocket upgrade head bytes to the correct socket', async () => {
+  const clientHead = Buffer.from('client-first-frame');
+  const upstreamHead = Buffer.from('upstream-first-frame');
+  let upstreamUpgradeHead = Buffer.alloc(0);
+  let receivedClientHeadResolve;
+  const receivedClientHeadPromise = new Promise((resolve) => {
+    receivedClientHeadResolve = resolve;
+  });
+  const upstream = http.createServer();
+  upstream.on('upgrade', (_request, socket, head) => {
+    upstreamUpgradeHead = Buffer.from(head);
+    let received = Buffer.from(head);
+    socket.on('data', (chunk) => {
+      received = Buffer.concat([received, chunk]);
+      if (received.includes(clientHead)) {
+        receivedClientHeadResolve();
+        socket.end();
+      }
+    });
+    socket.write(
+      Buffer.concat([
+        Buffer.from('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n'),
+        upstreamHead,
+      ]),
+    );
+  });
+  await new Promise((resolve, reject) => {
+    upstream.once('error', reject);
+    upstream.listen(0, '127.0.0.1', resolve);
+  });
+  const upstreamAddress = upstream.address();
+  const proxy = createLanSupabaseProxy({
+    allowedOrigins: ['http://192.168.1.50:3000'],
+    bindHost: '127.0.0.1',
+    bindPort: 0,
+    upstreamPort: upstreamAddress.port,
+  });
+  let client;
+
+  try {
+    const proxyAddress = await proxy.listen();
+    client = net.connect(proxyAddress.port, '127.0.0.1');
+    await new Promise((resolve, reject) => {
+      client.once('error', reject);
+      client.once('connect', resolve);
+    });
+    const responsePromise = new Promise((resolve, reject) => {
+      const chunks = [];
+      const timer = setTimeout(() => reject(new Error('Timed out waiting for proxied WebSocket response.')), 5_000);
+      client.on('data', (chunk) => {
+        chunks.push(chunk);
+        const response = Buffer.concat(chunks);
+        if (response.includes(upstreamHead)) {
+          clearTimeout(timer);
+          resolve(response);
+        }
+      });
+      client.once('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+    });
+    client.write(
+      Buffer.concat([
+        Buffer.from(
+          'GET /realtime/v1/websocket HTTP/1.1\r\n'
+          + 'Host: 127.0.0.1\r\n'
+          + 'Origin: http://192.168.1.50:3000\r\n'
+          + 'Connection: Upgrade\r\n'
+          + 'Upgrade: websocket\r\n'
+          + 'Sec-WebSocket-Version: 13\r\n'
+          + 'Sec-WebSocket-Key: ZHVtbXkta2V5\r\n\r\n',
+        ),
+        clientHead,
+      ]),
+    );
+    const response = await responsePromise;
+    await Promise.race([
+      receivedClientHeadPromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out waiting for client upgrade bytes.')), 5_000)),
+    ]);
+    assert.equal(upstreamUpgradeHead.length, 0);
+    assert.match(response.toString(), /^HTTP\/1\.1 101 Switching Protocols/);
+  } finally {
+    client?.destroy();
     await proxy.close();
     await new Promise((resolve, reject) => upstream.close((error) => error ? reject(error) : resolve()));
   }

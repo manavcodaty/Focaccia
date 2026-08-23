@@ -1,5 +1,5 @@
 import http from 'node:http';
-import net from 'node:net';
+import https from 'node:https';
 import { Transform } from 'node:stream';
 import { pathToFileURL } from 'node:url';
 
@@ -78,14 +78,42 @@ function sanitizeResponseHeaders(headers, origin, allowedOrigins) {
   return { ...sanitized, ...corsHeaders(origin, allowedOrigins) };
 }
 
-function sanitizeHeaders(headers, upstreamHost, upstreamPort) {
+function sanitizeHeaders(headers, upstreamHostHeader) {
   const sanitized = { ...headers };
   delete sanitized['proxy-authorization'];
   delete sanitized['proxy-connection'];
   delete sanitized['x-forwarded-host'];
   delete sanitized['x-forwarded-proto'];
-  sanitized.host = `${upstreamHost}:${upstreamPort}`;
+  sanitized.host = upstreamHostHeader;
   return sanitized;
+}
+
+function resolveUpstreamTarget({ upstreamHost, upstreamPort, upstreamUrl }) {
+  if (upstreamUrl) {
+    const parsed = new URL(upstreamUrl);
+
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error('Supabase proxy upstream URL must use HTTP or HTTPS.');
+    }
+
+    if (parsed.pathname !== '/' || parsed.search || parsed.hash) {
+      throw new Error('Supabase proxy upstream URL must identify an origin without a path or query.');
+    }
+
+    return {
+      hostHeader: parsed.host,
+      hostname: parsed.hostname,
+      port: Number(parsed.port || (parsed.protocol === 'https:' ? 443 : 80)),
+      protocol: parsed.protocol,
+    };
+  }
+
+  return {
+    hostHeader: `${upstreamHost}:${upstreamPort}`,
+    hostname: upstreamHost,
+    port: upstreamPort,
+    protocol: 'http:',
+  };
 }
 
 export function createLanSupabaseProxy({
@@ -94,7 +122,9 @@ export function createLanSupabaseProxy({
   bindPort = DEFAULT_BIND_PORT,
   upstreamHost = UPSTREAM_HOST,
   upstreamPort = UPSTREAM_PORT,
+  upstreamUrl,
 } = {}) {
+  const upstreamTarget = resolveUpstreamTarget({ upstreamHost, upstreamPort, upstreamUrl });
   const server = http.createServer((request, response) => {
     const requestPath = request.url ?? '/';
 
@@ -135,12 +165,14 @@ export function createLanSupabaseProxy({
       return;
     }
 
-    const upstream = http.request({
-      headers: sanitizeHeaders(request.headers, upstreamHost, upstreamPort),
-      host: upstreamHost,
+    const requestModule = upstreamTarget.protocol === 'https:' ? https : http;
+    const upstream = requestModule.request({
+      headers: sanitizeHeaders(request.headers, upstreamTarget.hostHeader),
+      hostname: upstreamTarget.hostname,
       method: request.method,
       path: requestPath,
-      port: upstreamPort,
+      port: upstreamTarget.port,
+      protocol: upstreamTarget.protocol,
     }, (upstreamResponse) => {
       response.writeHead(
         upstreamResponse.statusCode ?? 502,
@@ -194,19 +226,37 @@ export function createLanSupabaseProxy({
       return;
     }
 
-    const upstream = net.connect(upstreamPort, upstreamHost, () => {
-      const headers = Object.entries(sanitizeHeaders(request.headers, upstreamHost, upstreamPort))
+    const requestModule = upstreamTarget.protocol === 'https:' ? https : http;
+    const upstreamRequest = requestModule.request({
+      headers: sanitizeHeaders(request.headers, upstreamTarget.hostHeader),
+      hostname: upstreamTarget.hostname,
+      method: request.method ?? 'GET',
+      path: requestPath,
+      port: upstreamTarget.port,
+      protocol: upstreamTarget.protocol,
+    });
+
+    upstreamRequest.once('upgrade', (upstreamResponse, upstreamSocket, upstreamHead) => {
+      const headers = Object.entries(upstreamResponse.headers)
         .filter(([, value]) => value !== undefined)
         .map(([name, value]) => `${name}: ${Array.isArray(value) ? value.join(', ') : value}`)
         .join('\r\n');
-      upstream.write(`${request.method ?? 'GET'} ${requestPath} HTTP/${request.httpVersion}\r\n${headers}\r\n\r\n`);
-      upstream.write(head);
-      socket.pipe(upstream).pipe(socket);
+      socket.write(`HTTP/${upstreamResponse.httpVersion} ${upstreamResponse.statusCode} ${upstreamResponse.statusMessage ?? ''}\r\n${headers}\r\n\r\n`);
+      socket.write(upstreamHead);
+      if (head.length > 0) {
+        upstreamSocket.write(head);
+      }
+      socket.pipe(upstreamSocket).pipe(socket);
     });
 
-    upstream.setTimeout(60_000, () => upstream.destroy());
-    upstream.on('error', () => socket.destroy());
-    socket.on('error', () => upstream.destroy());
+    upstreamRequest.once('response', (upstreamResponse) => {
+      upstreamResponse.resume();
+      socket.end(`HTTP/1.1 ${upstreamResponse.statusCode ?? 502} ${upstreamResponse.statusMessage ?? 'Bad Gateway'}\r\nConnection: close\r\n\r\n`);
+    });
+    upstreamRequest.setTimeout(60_000, () => upstreamRequest.destroy());
+    upstreamRequest.on('error', () => socket.destroy());
+    socket.on('error', () => upstreamRequest.destroy());
+    upstreamRequest.end();
   });
 
   return {
@@ -233,8 +283,11 @@ async function main() {
   const bindPort = Number(process.env.FOCACCIA_LAN_PROXY_PORT ?? DEFAULT_BIND_PORT);
   const upstreamHost = process.env.FOCACCIA_SUPABASE_UPSTREAM_HOST ?? UPSTREAM_HOST;
   const upstreamPort = Number(process.env.FOCACCIA_SUPABASE_UPSTREAM_PORT ?? UPSTREAM_PORT);
+  const upstreamUrl = process.env.FOCACCIA_SUPABASE_UPSTREAM_URL?.trim();
   if (!['127.0.0.1', '::1', 'localhost'].includes(upstreamHost)) {
-    throw new Error('Supabase proxy upstream must use a loopback host.');
+    if (!upstreamUrl) {
+      throw new Error('Supabase proxy upstream must use a loopback host unless an upstream URL is configured.');
+    }
   }
   if (!Number.isInteger(upstreamPort) || upstreamPort < 1 || upstreamPort > 65_535) {
     throw new Error('Supabase proxy upstream port is invalid.');
@@ -245,6 +298,7 @@ async function main() {
     bindPort,
     upstreamHost,
     upstreamPort,
+    upstreamUrl,
   });
 
   await proxy.listen();

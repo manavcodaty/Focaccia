@@ -1,0 +1,165 @@
+name: iOS simulator verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/ios-simulator-verification
+
+permissions:
+  contents: read
+
+env:
+  COCOAPODS_DISABLE_STATS: 'true'
+  EXPO_PUBLIC_FOCACCIA_NETWORK_MODE: tunnel
+  EXPO_PUBLIC_FOCACCIA_SUPABASE_URL: https://focaccia-ci.test
+  EXPO_PUBLIC_FOCACCIA_WEB_URL: https://focaccia-ci.test
+  EXPO_PUBLIC_FOCACCIA_TICKETS_URL: https://focaccia-ci.test
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: focaccia-ci-public-fixture
+
+jobs:
+  ios-simulator:
+    name: Build and launch both iOS apps
+    runs-on: macos-26
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out Focaccia
+        uses: actions/checkout@v4
+
+      - name: Select Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Select Xcode supported by React Native
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          XCODE_APPS=(/Applications/Xcode_26*.app)
+          if (( ${#XCODE_APPS[@]} == 0 )); then
+            XCODE_APPS=(/Applications/Xcode_16*.app)
+          fi
+          test "${#XCODE_APPS[@]}" -gt 0
+          XCODE_APP="${XCODE_APPS[${#XCODE_APPS[@]} - 1]}"
+          echo "Selecting $XCODE_APP"
+          sudo xcode-select --switch "$XCODE_APP/Contents/Developer"
+
+      - name: Verify repository and native prerequisites
+        run: |
+          node --version
+          pnpm --version
+          xcodebuild -version
+          pod --version
+          xcrun simctl list runtimes
+          xcrun simctl list devices available
+
+      - name: Run mobile package verification
+        run: |
+          pnpm --filter @face-pass/shared build
+          pnpm --dir apps/enrollment typecheck
+          pnpm --dir apps/enrollment test
+          pnpm --dir apps/gate typecheck
+          pnpm --dir apps/gate test
+          pnpm --dir apps/gate test:offline
+          # test:provisioning needs a running local Supabase/Colima stack and
+          # server-only test configuration; it is intentionally verified in
+          # the repository's local phase-6 gate, not on this hosted runner.
+
+      - name: Boot an available iPhone simulator
+        run: |
+          set -euo pipefail
+          SIMULATOR_LINE="$(xcrun simctl list devices available | awk '
+            /^-- iOS / { in_runtime=1; next }
+            /^-- / { in_runtime=0 }
+            in_runtime && /iPhone/ { simulator=$0 }
+            END { print simulator }
+          ')"
+          SIMULATOR_UDID="$(printf '%s\n' "$SIMULATOR_LINE" | grep -Eo '[A-F0-9]{8}(-[A-F0-9]{4}){3}-[A-F0-9]{12}')"
+          test -n "$SIMULATOR_UDID"
+          echo "SIMULATOR_UDID=$SIMULATOR_UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$SIMULATOR_UDID" 2>/dev/null || true
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+
+      - name: Cache CocoaPods installations
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            apps/enrollment/ios/Pods
+            apps/gate/ios/Pods
+          key: ${{ runner.os }}-xcode26-cocoapods-${{ hashFiles('apps/enrollment/ios/Podfile.lock', 'apps/gate/ios/Podfile.lock', 'pnpm-lock.yaml') }}
+
+      - name: Install CocoaPods dependencies
+        run: |
+          set -euo pipefail
+          for app in enrollment gate; do
+            (cd "apps/$app/ios" && pod install --no-repo-update --verbose)
+          done
+
+      - name: Build enrollment for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace apps/enrollment/ios/FacePassEnrollment.xcworkspace \
+            -scheme FacePassEnrollment \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/enrollment-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=YES \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build | xcbeautify
+
+      - name: Install and launch enrollment
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/focaccia-ios-simulator"
+          APP_PATH="$(find "$RUNNER_TEMP/enrollment-derived/Build/Products" -type d -name 'FacePassEnrollment.app' -print -quit)"
+          test -n "$APP_PATH"
+          xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
+          xcrun simctl launch "$SIMULATOR_UDID" com.facepass.enrollment
+          sleep 5
+          xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/focaccia-ios-simulator/enrollment.png"
+
+      - name: Build gate for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace apps/gate/ios/FacePassGate.xcworkspace \
+            -scheme FacePassGate \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/gate-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=YES \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build | xcbeautify
+
+      - name: Install and launch gate
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find "$RUNNER_TEMP/gate-derived/Build/Products" -type d -name 'FacePassGate.app' -print -quit)"
+          test -n "$APP_PATH"
+          xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
+          xcrun simctl launch "$SIMULATOR_UDID" com.facepass.gate
+          sleep 5
+          xcrun simctl io "$SIMULATOR_UDID" screenshot "$RUNNER_TEMP/focaccia-ios-simulator/gate.png"
+
+      - name: Upload simulator proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: focaccia-ios-simulator-proof
+          path: ${{ runner.temp }}/focaccia-ios-simulator
+          if-no-files-found: warn

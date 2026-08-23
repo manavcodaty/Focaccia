@@ -1,0 +1,242 @@
+name: cloud full flow
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/ios-simulator-verification
+
+permissions:
+  contents: read
+
+jobs:
+  cloud-full-flow:
+    name: Supabase, web, tickets, and browser agent
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      FOCACCIA_DOCKER_HOST: unix:///var/run/docker.sock
+
+    steps:
+      - name: Check out Focaccia
+        uses: actions/checkout@v4
+
+      - name: Select Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.105.0
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Increase Docker shared memory for Edge Runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo install -d -m 0755 /etc/docker
+          printf '%s\n' '{"default-shm-size":"1g"}' | sudo tee /etc/docker/daemon.json >/dev/null
+          sudo systemctl restart docker
+          docker info --format '{{.ServerVersion}}'
+
+      - name: Build shared package and prepare isolated runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOCAL_HOST="$(ip -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i += 1) if ($i == "src") {print $(i + 1); exit}}')"
+          test -n "$LOCAL_HOST"
+          case "$LOCAL_HOST" in
+            10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) ;;
+            *) echo "Unexpected runner address: $LOCAL_HOST" >&2; exit 1 ;;
+          esac
+          pnpm --filter @face-pass/shared build
+          cat > .env.local <<EOF
+          FOCACCIA_NETWORK_MODE=local
+          FOCACCIA_LOCAL_HOST=$LOCAL_HOST
+          FOCACCIA_LOCAL_SUPABASE_URL=http://$LOCAL_HOST:54331
+          FOCACCIA_LOCAL_WEB_URL=http://$LOCAL_HOST:3000
+          FOCACCIA_LOCAL_TICKETS_URL=http://$LOCAL_HOST:3001
+          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com
+          EOF
+          node --input-type=module <<'NODE'
+          import { loadNetworkEnvironment } from './scripts/lib/network-environment.mjs';
+          import { prepareRuntimeProject } from './scripts/lib/network-runtime.mjs';
+          const { config } = loadNetworkEnvironment('local');
+          prepareRuntimeProject(config);
+          NODE
+          echo "FOCACCIA_CLOUD_LOCAL_HOST=$LOCAL_HOST" >> "$GITHUB_ENV"
+
+      - name: Start isolated Supabase and Edge Functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase start --workdir .focaccia/runtime -x studio,logflare,vector
+          STATUS_FILE="$RUNNER_TEMP/focaccia-supabase.env"
+          supabase status --workdir .focaccia/runtime -o env > "$STATUS_FILE"
+          read_status() {
+            sed -n "s/^export //; s/^$1=//p" "$STATUS_FILE" | head -n 1
+          }
+          API_URL="$(read_status API_URL)"
+          ANON_KEY="$(read_status ANON_KEY)"
+          SERVICE_ROLE_KEY="$(read_status SERVICE_ROLE_KEY)"
+          test -n "$API_URL"
+          test -n "$ANON_KEY"
+          test -n "$SERVICE_ROLE_KEY"
+          SECRET_WRAPPING_KEY="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
+          CLAIM_CODE_PEPPER="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
+          cat > supabase/functions/.env.local <<EOF
+          SUPABASE_URL=$API_URL
+          SUPABASE_ANON_KEY=$ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+          FACE_PASS_SECRET_WRAPPING_KEY_B64URL=$SECRET_WRAPPING_KEY
+          FOCACCIA_CLAIM_CODE_PEPPER=$CLAIM_CODE_PEPPER
+          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com
+          FOCACCIA_NETWORK_MODE=local
+          FOCACCIA_LOCAL_HOST=$FOCACCIA_CLOUD_LOCAL_HOST
+          FOCACCIA_LOCAL_SUPABASE_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:54331
+          FOCACCIA_LOCAL_WEB_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3000
+          FOCACCIA_LOCAL_TICKETS_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3001
+          EOF
+          pnpm run db:functions:env
+          test "$(sed -n 's/^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=//p' supabase/functions/.env)" = 'organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com'
+          for app in web tickets; do
+            cat > "apps/$app/.env.local" <<EOF
+          NEXT_PUBLIC_FOCACCIA_NETWORK_MODE=local
+          NEXT_PUBLIC_FOCACCIA_LOCAL_HOST=$FOCACCIA_CLOUD_LOCAL_HOST
+          NEXT_PUBLIC_FOCACCIA_SUPABASE_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:54331
+          NEXT_PUBLIC_FOCACCIA_WEB_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3000
+          NEXT_PUBLIC_FOCACCIA_TICKETS_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3001
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
+          EOF
+          done
+          nohup env \
+            FOCACCIA_LOCAL_HOST="$FOCACCIA_CLOUD_LOCAL_HOST" \
+            FOCACCIA_LAN_PROXY_PORT=54331 \
+            FOCACCIA_ALLOWED_BROWSER_ORIGINS="http://$FOCACCIA_CLOUD_LOCAL_HOST:3000,http://$FOCACCIA_CLOUD_LOCAL_HOST:3001,http://127.0.0.1:3000,http://127.0.0.1:3001" \
+            node scripts/lan-supabase-proxy.mjs \
+            > "$RUNNER_TEMP/focaccia-proxy.log" 2>&1 &
+          nohup supabase functions serve \
+            --workdir .focaccia/runtime \
+            --no-verify-jwt \
+            --env-file "$GITHUB_WORKSPACE/supabase/functions/.env" \
+            > "$RUNNER_TEMP/focaccia-functions.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            if docker inspect supabase_edge_runtime_Focaccia --format '{{.HostConfig.ShmSize}}' 2>/dev/null | grep -qx '1073741824'; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo 'Edge Runtime did not receive the expected 1 GiB shared-memory mount.' >&2
+              docker inspect supabase_edge_runtime_Focaccia --format '{{.HostConfig.ShmSize}}' >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail --output /dev/null "http://$FOCACCIA_CLOUD_LOCAL_HOST:54331/.focaccia/health" \
+              && curl --silent --fail --output /dev/null "http://127.0.0.1:54321/auth/v1/health"; then
+              break
+            fi
+            if [ "$attempt" -eq 60 ]; then
+              echo 'Supabase or proxy did not become ready.' >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          for attempt in $(seq 1 60); do
+            FUNCTION_STATUS="$(curl --silent --show-error --output /tmp/focaccia-function-response.json --write-out '%{http_code}' \
+              -X POST \
+              -H "apikey: $ANON_KEY" \
+              -H 'Content-Type: application/json' \
+              --data '{}' \
+              "http://127.0.0.1:54321/functions/v1/get-public-events" || true)"
+            if [ "$FUNCTION_STATUS" = '200' ]; then
+              break
+            fi
+            if [ "$attempt" -eq 60 ]; then
+              echo 'Edge Functions did not become ready.' >&2
+              sed -n '1,160p' "$RUNNER_TEMP/focaccia-functions.log" >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Start web and tickets apps
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup pnpm --dir apps/web exec next dev --hostname 0.0.0.0 --port 3000 \
+            > "$RUNNER_TEMP/focaccia-web.log" 2>&1 &
+          nohup pnpm --dir apps/tickets exec next dev --hostname 0.0.0.0 --port 3001 \
+            > "$RUNNER_TEMP/focaccia-tickets.log" 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl --silent --fail --output /dev/null "http://$FOCACCIA_CLOUD_LOCAL_HOST:3000/login" \
+              && curl --silent --fail --output /dev/null "http://$FOCACCIA_CLOUD_LOCAL_HOST:3001/api/health"; then
+              break
+            fi
+            if [ "$attempt" -eq 90 ]; then
+              echo 'Focaccia web apps did not become ready.' >&2
+              sed -n '1,200p' "$RUNNER_TEMP/focaccia-web.log" >&2 || true
+              sed -n '1,200p' "$RUNNER_TEMP/focaccia-tickets.log" >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "FOCACCIA_CLOUD_WEB_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3000" >> "$GITHUB_ENV"
+          echo "FOCACCIA_CLOUD_TICKETS_URL=http://$FOCACCIA_CLOUD_LOCAL_HOST:3001" >> "$GITHUB_ENV"
+          echo 'FOCACCIA_CLOUD_ORGANIZER_EMAIL=browser-organizer@example.com' >> "$GITHUB_ENV"
+          BROWSER_PASSWORD="$(node -e "console.log('Org-' + require('crypto').randomBytes(18).toString('base64url') + '!')")"
+          echo "::add-mask::$BROWSER_PASSWORD"
+          echo "FOCACCIA_CLOUD_ORGANIZER_PASSWORD=$BROWSER_PASSWORD" >> "$GITHUB_ENV"
+          # The browser agent logs in as browser-organizer@example.com. Have
+          # the verification step create and promote that same account before
+          # the browser flow starts, rather than creating an unrelated test
+          # account whose password the browser never receives.
+          echo 'FOCACCIA_TEST_ORGANIZER_EMAIL=browser-organizer@example.com' >> "$GITHUB_ENV"
+          echo "FOCACCIA_TEST_ORGANIZER_PASSWORD=$BROWSER_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Select system browser for Playwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER_BIN="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$BROWSER_BIN" ]; then
+            sudo apt-get update
+            sudo apt-get install -y chromium
+            BROWSER_BIN="$(command -v chromium)"
+          fi
+          test -x "$BROWSER_BIN"
+          "$BROWSER_BIN" --version
+          echo "FOCACCIA_BROWSER_EXECUTABLE_PATH=$BROWSER_BIN" >> "$GITHUB_ENV"
+
+      - name: Verify database schema and Edge Function flow
+        run: |
+          set -euo pipefail
+          pnpm verify:phase2
+          node scripts/test-phase4.mjs
+          node apps/web/scripts/verify-auth.mjs
+          node apps/web/scripts/verify-dashboard.mjs
+
+      - name: Run browser agent through organizer and attendee flow
+        env:
+          FOCACCIA_CLOUD_ARTIFACT_DIR: ${{ runner.temp }}/focaccia-cloud-browser
+        run: node scripts/cloud-browser-e2e.mjs
+
+      - name: Upload cloud full-flow proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: focaccia-cloud-full-flow-proof
+          path: |
+            ${{ runner.temp }}/focaccia-cloud-browser
+            ${{ runner.temp }}/focaccia-*.log
+            ${{ runner.temp }}/focaccia-function-response.json
+          if-no-files-found: warn

@@ -14,7 +14,10 @@ export function MetricRow({
   const layout = useResponsiveLayout();
 
   return (
-    <View style={[styles.row, { gap: scaleSpacing(layout, 12, 1.06), paddingVertical: scaleSpacing(layout, 12, 1.06) }]}>
+    <View
+      accessibilityLabel={`${label}: ${value}`}
+      style={[styles.row, { gap: scaleSpacing(layout, 12, 1.06), paddingVertical: scaleSpacing(layout, 12, 1.06) }]}
+    >
       <Text style={[styles.label, { fontSize: scaleFont(layout, 13) }]}>{label}</Text>
       <Text style={[styles.value, { fontSize: scaleFont(layout, 15) }]}>{value}</Text>
     </View>

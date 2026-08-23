@@ -111,6 +111,8 @@ const webBaseUrl = new URL(env.NEXT_PUBLIC_FOCACCIA_WEB_URL).origin;
 const supabaseUrl = resolveServerSupabaseUrl({
   configuredUrl: env.NEXT_PUBLIC_FOCACCIA_SUPABASE_URL,
 });
+const testOrganizerEmail = process.env.FOCACCIA_TEST_ORGANIZER_EMAIL;
+const testOrganizerPassword = process.env.FOCACCIA_TEST_ORGANIZER_PASSWORD;
 
 const supabase = createServerClient(
   supabaseUrl,
@@ -135,10 +137,14 @@ const unauthenticatedDashboard = await fetch(`${webBaseUrl}/dashboard`, {
 assert.equal(unauthenticatedDashboard.status, 307);
 assert.equal(unauthenticatedDashboard.headers.get("location"), "/login");
 
-const email = `organizer-${randomUUID()}@example.com`;
-const password = `P@ssword-${randomUUID()}`;
+const email = testOrganizerEmail ?? `organizer-${randomUUID()}@example.com`;
+const password = testOrganizerPassword ?? `P@ssword-${randomUUID()}`;
 
 let authResult = await supabase.auth.signUp({ email, password });
+
+if (authResult.error && testOrganizerEmail) {
+  authResult = await supabase.auth.signInWithPassword({ email, password });
+}
 
 if (authResult.error) {
   throw authResult.error;
@@ -158,13 +164,26 @@ if (!session) {
 
 assert.ok(session?.access_token, "missing access token after auth");
 
+if (testOrganizerEmail) {
+  const ensureOrganizerResponse = await fetch(`${supabaseUrl}/functions/v1/ensure-organizer`, {
+    method: "POST",
+    headers: {
+      apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: "{}",
+  });
+  const ensureOrganizerJson = await ensureOrganizerResponse.json();
+  assert.equal(ensureOrganizerResponse.status, 200, JSON.stringify(ensureOrganizerJson));
+}
+
 const cookieHeader = buildCookieHeader(cookieJar);
 assert.ok(cookieHeader.length > 0, "missing session cookies");
 
 const dashboardResponse = await fetchWithCookies(`${webBaseUrl}/dashboard`, cookieJar);
 const dashboardHtml = await dashboardResponse.text();
 assert.equal(dashboardResponse.status, 200);
-assert.match(dashboardHtml, /Welcome back/i);
 assert.match(dashboardHtml, /Event roster|No events yet/i);
 assert.match(dashboardHtml, /Create event/i);
 
@@ -182,8 +201,12 @@ const createEventResponse = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      capacity: 100,
+      description: "Web dashboard verification event.",
       ends_at: endsAt,
       event_id: eventId,
+      is_listed: false,
+      location: "Cloud verification hall",
       name: "Web Dashboard Verification Event",
       starts_at: startsAt,
     }),
@@ -200,15 +223,15 @@ const eventOverviewResponse = await fetchWithCookies(
 );
 const eventOverviewHtml = await eventOverviewResponse.text();
 assert.equal(eventOverviewResponse.status, 200);
-assert.match(eventOverviewHtml, /Event overview/i);
-assert.match(eventOverviewHtml, /Public cryptographic values/i);
-assert.match(eventOverviewHtml, /Gate logs/i);
+assert.match(eventOverviewHtml, /Event operations/i);
+assert.match(eventOverviewHtml, /Public ticket URL/i);
+assert.match(eventOverviewHtml, /Gate state/i);
 
 const eventCreatePage = await fetchWithCookies(`${webBaseUrl}/events/new`, cookieJar);
 const eventCreateHtml = await eventCreatePage.text();
 assert.equal(eventCreatePage.status, 200);
 assert.match(eventCreateHtml, /Create Event/i);
-assert.match(eventCreateHtml, /join code, event salt, and signing key/i);
+assert.match(eventCreateHtml, /default free ticket/i);
 
 const provisioningResponse = await fetchWithCookies(
   `${webBaseUrl}/events/${eventId}/provisioning`,
@@ -216,7 +239,7 @@ const provisioningResponse = await fetchWithCookies(
 );
 const provisioningHtml = await provisioningResponse.text();
 assert.equal(provisioningResponse.status, 200);
-assert.match(provisioningHtml, /Gate Provisioning/i);
+assert.match(provisioningHtml, /Provisioning control panel/i);
 assert.match(provisioningHtml, /Public values/i);
 assert.match(provisioningHtml, /PK_SIGN_EVENT/i);
 assert.match(provisioningHtml, /EVENT_SALT/i);

@@ -102,7 +102,6 @@ export default function PassScreen() {
       </SectionCard>
 
       {message ? <StatusBanner message={message} tone={message.includes('copied') ? 'success' : 'warning'} /> : null}
-
       <View style={styles.actions}>
         {ticket && remaining > 0 ? (
           <PrimaryButton

@@ -243,6 +243,9 @@ export function createLanSupabaseProxy({
         .join('\r\n');
       socket.write(`HTTP/${upstreamResponse.httpVersion} ${upstreamResponse.statusCode} ${upstreamResponse.statusMessage ?? ''}\r\n${headers}\r\n\r\n`);
       socket.write(upstreamHead);
+      if (head.length > 0) {
+        upstreamSocket.write(head);
+      }
       socket.pipe(upstreamSocket).pipe(socket);
     });
 
@@ -253,7 +256,7 @@ export function createLanSupabaseProxy({
     upstreamRequest.setTimeout(60_000, () => upstreamRequest.destroy());
     upstreamRequest.on('error', () => socket.destroy());
     socket.on('error', () => upstreamRequest.destroy());
-    upstreamRequest.end(head);
+    upstreamRequest.end();
   });
 
   return {

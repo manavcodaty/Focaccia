@@ -19,3 +19,9 @@ test('shared enrollment feedback and controls expose accessible state', async ()
   assert.match(tickets, /accessibilityLabel="Copy account email"/);
 });
 
+test('cloud E2E does not expose the signed pass token through accessibility', async () => {
+  const passScreen = await source('../app/pass.tsx');
+
+  assert.doesNotMatch(passScreen, /accessibilityLabel=\{`Cloud E2E signed token \$\{pass\.token\}`\}/);
+  assert.doesNotMatch(passScreen, /accessibilityLabel={[^}]*pass\.token/);
+});

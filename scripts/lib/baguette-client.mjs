@@ -473,7 +473,7 @@ function maskedWebSocketFrame(message) {
   return Buffer.concat([header, mask, masked]);
 }
 
-class CameraWebSocket {
+export class CameraWebSocket {
   constructor({ host, port, udid }) {
     this.host = host;
     this.port = port;
@@ -489,6 +489,20 @@ class CameraWebSocket {
     await new Promise((resolve, reject) => {
       const socket = net.connect(this.port, this.host);
       this.socket = socket;
+      let settled = false;
+      const resolveOnce = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      const rejectOnce = (error) => {
+        const reason = error instanceof Error ? error : new Error(String(error));
+        if (!settled) {
+          settled = true;
+          reject(reason);
+        }
+        if (!socket.destroyed) socket.destroy();
+      };
       socket.setTimeout(15_000, () => socket.destroy(new Error('Baguette camera WebSocket connection timed out.')));
       const key = crypto.randomBytes(16).toString('base64');
       socket.on('connect', () => {
@@ -504,13 +518,17 @@ class CameraWebSocket {
         ].join('\r\n'));
       });
       socket.on('data', (chunk) => {
-        this.buffer = Buffer.concat([this.buffer, chunk]);
-        this.parseFrames();
-        if (this.upgraded) resolve();
+        try {
+          this.buffer = Buffer.concat([this.buffer, chunk]);
+          this.parseFrames();
+          if (this.upgraded) resolveOnce();
+        } catch (error) {
+          rejectOnce(error);
+        }
       });
-      socket.on('error', reject);
+      socket.on('error', rejectOnce);
       socket.on('close', () => {
-        if (!this.upgraded) reject(new Error('Baguette camera WebSocket closed during handshake.'));
+        if (!this.upgraded) rejectOnce(new Error('Baguette camera WebSocket closed during handshake.'));
         for (const waiter of this.waiters.splice(0)) waiter.reject(new Error('Baguette camera WebSocket closed.'));
       });
     });

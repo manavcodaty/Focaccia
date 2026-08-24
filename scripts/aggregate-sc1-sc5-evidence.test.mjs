@@ -4,8 +4,11 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
+  realpathSync,
   renameSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -45,7 +48,10 @@ function crc32(bytes) {
 }
 
 function pngChunk(type, data = Buffer.alloc(0)) {
-  const typeBytes = Buffer.from(type, 'ascii');
+  return pngChunkBytes(Buffer.from(type, 'ascii'), data);
+}
+
+function pngChunkBytes(typeBytes, data = Buffer.alloc(0)) {
   const chunk = Buffer.alloc(12 + data.length);
   chunk.writeUInt32BE(data.length, 0);
   typeBytes.copy(chunk, 4);
@@ -98,6 +104,10 @@ function createTinyPng(options = {}) {
 
 function insertBeforePngIend(png, chunk) {
   return Buffer.concat([png.subarray(0, png.length - 12), chunk, png.subarray(png.length - 12)]);
+}
+
+function insertAfterPngIhdr(png, chunk) {
+  return Buffer.concat([png.subarray(0, 33), chunk, png.subarray(33)]);
 }
 
 function jpegSegment(marker, data) {
@@ -336,7 +346,7 @@ function blockedControlRecord(overrides = {}) {
 }
 
 function makeFixture(records) {
-  const root = mkdtempSync(path.join(tmpdir(), 'focaccia-sc1-sc5-test-'));
+  const root = realpathSync(mkdtempSync(path.join(tmpdir(), 'focaccia-sc1-sc5-test-')));
   const input = path.join(root, 'input');
   const output = path.join(root, 'receipt');
   const artifacts = path.join(input, 'artifacts');
@@ -382,9 +392,17 @@ function makeFixture(records) {
   return { input, output, root };
 }
 
-function runReducer(input, output) {
+function runReducer(input, output, environment = {}) {
   return spawnSync(process.execPath, [reducerPath, '--input', input, '--output', output], {
     encoding: 'utf8',
+    env: { ...process.env, ...environment },
+  });
+}
+
+function listFixtureFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const candidate = path.join(directory, entry.name);
+    return entry.isDirectory() ? listFixtureFiles(candidate) : [candidate];
   });
 }
 
@@ -457,6 +475,112 @@ test('accepts one complete PASS run as one of ten required observations', () => 
       );
       assert.ok(receipt.criteria[criterion].results[0].artifact_paths.length > 0);
     }
+  } finally {
+    rmSync(fixture.root, { force: true, recursive: true });
+  }
+});
+
+test('rejects aliased or nested input and output directories', async (t) => {
+  const cases = [
+    ['same directory', (fixture) => fixture.input],
+    ['output nested inside input', (fixture) => path.join(fixture.input, 'receipt')],
+    ['input nested inside output', (fixture) => fixture.root],
+  ];
+
+  for (const [name, selectOutput] of cases) {
+    await t.test(name, () => {
+      const fixture = makeFixture([passRecord()]);
+      const output = selectOutput(fixture);
+      try {
+        const result = runReducer(fixture.input, output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /input and output directories must be separate/i);
+        assert.equal(
+          existsSync(path.join(output, 'sc1-sc5-evidence-receipt.json')),
+          false,
+        );
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects symlinked output directories and output ancestors', async (t) => {
+  const cases = [
+    ['output directory', false],
+    ['output ancestor', true],
+  ];
+
+  for (const [name, nested] of cases) {
+    await t.test(name, () => {
+      const fixture = makeFixture([passRecord()]);
+      const realOutput = path.join(fixture.root, `real-${name.replace(' ', '-')}`);
+      const outputLink = path.join(fixture.root, `linked-${name.replace(' ', '-')}`);
+      mkdirSync(realOutput, { recursive: true });
+      symlinkSync(realOutput, outputLink);
+      const output = nested ? path.join(outputLink, 'receipt') : outputLink;
+      try {
+        const result = runReducer(fixture.input, output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /unsafe.*symlink|symlink.*output/i);
+        assert.equal(existsSync(path.join(realOutput, 'sc1-sc5-evidence-receipt.json')), false);
+        assert.equal(existsSync(path.join(realOutput, 'receipt')), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects symlinked receipt destinations without overwriting their targets', async (t) => {
+  for (const receiptName of [
+    'sc1-sc5-evidence-receipt.json',
+    'sc1-sc5-evidence-receipt.md',
+  ]) {
+    await t.test(receiptName, () => {
+      const fixture = makeFixture([passRecord()]);
+      mkdirSync(fixture.output, { recursive: true });
+      const target = path.join(fixture.root, `outside-${path.extname(receiptName).slice(1)}`);
+      const original = `DO_NOT_OVERWRITE_${path.extname(receiptName).slice(1).toUpperCase()}`;
+      writeFileSync(target, original);
+      symlinkSync(target, path.join(fixture.output, receiptName));
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /unsafe symlinked receipt destination/i);
+        assert.equal(readFileSync(target, 'utf8'), original);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('atomically replaces normal receipts on rerun with private file modes', () => {
+  const fixture = makeFixture([passRecord()]);
+  try {
+    const first = runReducer(fixture.input, fixture.output);
+    assert.equal(first.status, 0, first.stderr);
+    const receiptNames = [
+      'sc1-sc5-evidence-receipt.json',
+      'sc1-sc5-evidence-receipt.md',
+    ];
+    const firstContents = receiptNames.map((name) => readFileSync(
+      path.join(fixture.output, name),
+      'utf8',
+    ));
+
+    const second = runReducer(fixture.input, fixture.output);
+    assert.equal(second.status, 0, second.stderr);
+    assert.deepEqual(
+      receiptNames.map((name) => readFileSync(path.join(fixture.output, name), 'utf8')),
+      firstContents,
+    );
+    for (const name of receiptNames) {
+      assert.equal(statSync(path.join(fixture.output, name)).mode & 0o777, 0o600);
+    }
+    assert.deepEqual(readdirSync(fixture.output).sort(), receiptNames.sort());
   } finally {
     rmSync(fixture.root, { force: true, recursive: true });
   }
@@ -585,9 +709,9 @@ test('states the controlled-evidence boundary without inferring latency', () => 
     assert.match(markdown, /Latency is never inferred from zero or missing fields\./);
     assert.equal(
       receipt.evidence_scope.image_review_trust_boundary,
-      'only structurally decoded PNG image evidence is supported; reducer verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof',
+      'only canonical stripped, structurally decoded PNG image evidence is supported; reducer accepts only IHDR, IDAT, and IEND chunks and verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof',
     );
-    assert.match(markdown, /only structurally decoded PNG image evidence is supported/i);
+    assert.match(markdown, /only canonical stripped, structurally decoded PNG image evidence is supported/i);
     assert.match(markdown, /exact zlib-decoded scanline structure/i);
     assert.match(markdown, /cannot independently determine whether pixel content contains secrets/i);
     assert.match(markdown, /attested trust boundary, not automated proof/i);
@@ -934,6 +1058,43 @@ test('rejects malformed scalar contract metadata', async (t) => {
   }
 });
 
+test('rejects normalized or out-of-range RFC3339 timestamps', async (t) => {
+  const invalidTimestamps = [
+    ['nonexistent calendar day', '2026-02-30T00:00:00.000Z'],
+    ['hour 24', '2026-08-24T24:00:00.000Z'],
+    ['minute 60', '2026-08-24T23:60:00.000Z'],
+    ['second 60', '2026-08-24T23:59:60.000Z'],
+    ['offset hour 24', '2026-08-24T23:59:59.000+24:00'],
+    ['offset minute 60', '2026-08-24T23:59:59.000+04:60'],
+  ];
+
+  for (const [name, startedAt] of invalidTimestamps) {
+    await t.test(name, () => {
+      const fixture = makeFixture([passRecord({ started_at: startedAt })]);
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /invalid started_at/i);
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('accepts a real leap day and a valid RFC3339 offset', () => {
+  const fixture = makeFixture([passRecord({
+    started_at: '2024-02-29T23:59:59.123456789+14:30',
+  })]);
+  try {
+    const result = runReducer(fixture.input, fixture.output);
+    assert.equal(result.status, 0, result.stderr);
+  } finally {
+    rmSync(fixture.root, { force: true, recursive: true });
+  }
+});
+
 test('rejects malformed structured evidence sections', async (t) => {
   const cases = [
     ['security_matrix', (record) => { record.security_matrix = []; }],
@@ -962,6 +1123,181 @@ test('rejects malformed structured evidence sections', async (t) => {
       }
     });
   }
+});
+
+test('rejects duplicate artifact paths in manifests and evidence sections', async (t) => {
+  const cases = [
+    ['record manifest', (record) => {
+      record.artifact_paths = [...record.artifact_paths, record.artifact_paths[0]];
+    }],
+    ['criterion section', (record) => {
+      record.checks.SC1.artifact_paths = [
+        ...record.checks.SC1.artifact_paths,
+        record.checks.SC1.artifact_paths[0],
+      ];
+    }],
+  ];
+
+  for (const [name, mutate] of cases) {
+    await t.test(name, () => {
+      const record = passRecord();
+      mutate(record);
+      const fixture = makeFixture([record]);
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /duplicate.*artifact_paths/i);
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('enforces finite reducer resource budgets with lower test limits', async (t) => {
+  await t.test('record count', () => {
+    const fixture = makeFixture([
+      passRecord({ run_id: 'run-budget-1' }),
+      passRecord({
+        run_id: 'run-budget-2',
+        workflow_run_url: 'https://github.com/example/Focaccia/actions/runs/1002',
+      }),
+    ]);
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_RECORDS: '1',
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /record count.*budget/i);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('recursive file count', () => {
+    const fixture = makeFixture([passRecord()]);
+    const fileCount = listFixtureFiles(fixture.input).length;
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_RECURSIVE_FILES: String(fileCount - 1),
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /file count.*budget/i);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('recursive depth', () => {
+    const fixture = makeFixture([passRecord()]);
+    writeFixtureArtifact(
+      fixture,
+      'artifacts/level-one/level-two/probe.txt',
+      Buffer.from('safe evidence'),
+    );
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_RECURSION_DEPTH: '1',
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /recursion depth.*budget/i);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('per-file bytes', () => {
+    const fixture = makeFixture([passRecord()]);
+    const largestFile = Math.max(...listFixtureFiles(fixture.input).map(
+      (file) => statSync(file).size,
+    ));
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_FILE_BYTES: String(largestFile - 1),
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /per-file.*budget/i);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('total bytes', () => {
+    const fixture = makeFixture([passRecord()]);
+    const totalBytes = listFixtureFiles(fixture.input).reduce(
+      (total, file) => total + statSync(file).size,
+      0,
+    );
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_TOTAL_BYTES: String(totalBytes - 1),
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /total bytes.*budget/i);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('artifact paths per record', () => {
+    const fixture = makeFixture([passRecord()]);
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_ARTIFACT_PATHS_PER_RECORD: '3',
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /artifact_paths.*budget/i);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('record JSON bytes', () => {
+    const fixture = makeFixture([passRecord()]);
+    const recordFile = path.join(fixture.input, 'run-01.json');
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_RECORD_JSON_BYTES: String(statSync(recordFile).size - 1),
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /record JSON.*budget/i);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('PNG compressed bytes', () => {
+    const record = passRecord();
+    addImageEvidence(record, 'artifacts/budget.png', VALID_PNG, 'image/png');
+    const fixture = makeFixture([record]);
+    writeFixtureArtifact(fixture, 'artifacts/budget.png', VALID_PNG);
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_PNG_COMPRESSED_BYTES: '1',
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /PNG compressed.*budget/i);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('PNG decoded bytes', () => {
+    const record = passRecord();
+    addImageEvidence(record, 'artifacts/budget.png', VALID_PNG, 'image/png');
+    const fixture = makeFixture([record]);
+    writeFixtureArtifact(fixture, 'artifacts/budget.png', VALID_PNG);
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_PNG_DECODED_BYTES: '4',
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /PNG decoded.*budget/i);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
 });
 
 test('rejects unsafe or missing artifact references', async (t) => {
@@ -1706,6 +2042,74 @@ test('rejects secret-bearing artifacts without printing secret values', async (t
   }
 });
 
+test('rejects secret assignments in every parsed string without echoing values', async (t) => {
+  const cases = [
+    [
+      'runner_os password assignment',
+      'password',
+      'hunter2',
+      (record, sentinel) => { record.runner_os = `macOS password=${sentinel}`; },
+    ],
+    [
+      'message service-role assignment',
+      'service-role',
+      'SERVICE_ROLE_ASSIGNMENT_SENTINEL_2h8m',
+      (record, sentinel) => {
+        record.metadata = { message: `service_role_key=${sentinel}` };
+      },
+    ],
+    [
+      'detail private-key assignment',
+      'private-key',
+      'PRIVATE_KEY_ASSIGNMENT_SENTINEL_5k3p',
+      (record, sentinel) => { record.metadata = { detail: `private_key: ${sentinel}` }; },
+    ],
+    [
+      'message full-token assignment',
+      'full-token',
+      'FULL_TOKEN_ASSIGNMENT_SENTINEL_9v6q',
+      (record, sentinel) => { record.metadata = { message: `fullPassToken=${sentinel}` }; },
+    ],
+    [
+      'detail provisioning-payload assignment',
+      'provisioning-payload',
+      'PROVISIONING_ASSIGNMENT_SENTINEL_4c7n',
+      (record, sentinel) => {
+        record.metadata = { detail: `provisioning_payload=${sentinel}` };
+      },
+    ],
+  ];
+
+  for (const [name, category, sentinel, mutate] of cases) {
+    await t.test(name, () => {
+      const record = passRecord();
+      mutate(record, sentinel);
+      const fixture = makeFixture([record]);
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, new RegExp(category));
+        assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('allows safe prose that names secret categories without assigning values', () => {
+  const fixture = makeFixture([passRecord({
+    review_note: 'password, service-role, private-key, full-token, and provisioning-payload categories reviewed without retained values',
+  })]);
+  try {
+    const result = runReducer(fixture.input, fixture.output);
+    assert.equal(result.status, 0, result.stderr);
+  } finally {
+    rmSync(fixture.root, { force: true, recursive: true });
+  }
+});
+
 test('accepts checksum-bound fully decoded PNG evidence with substantive safety attestations', async (t) => {
   const cases = [
     ['RGBA scanline', 'artifacts/gate-capture.png', VALID_PNG],
@@ -1718,22 +2122,6 @@ test('accepts checksum-bound fully decoded PNG evidence with substantive safety 
         scanlines: Buffer.concat(
           Array.from({ length: 5 }, (_, filter) => Buffer.from([filter, 0, 0, 0, 0])),
         ),
-      }),
-    ],
-    [
-      'packed indexed pixels with a complete palette',
-      'artifacts/indexed-capture.png',
-      createTinyPng({
-        bitDepth: 2,
-        colorType: 3,
-        palette: Buffer.from([
-          0x00, 0x00, 0x00,
-          0x55, 0x55, 0x55,
-          0xaa, 0xaa, 0xaa,
-          0xff, 0xff, 0xff,
-        ]),
-        scanlines: Buffer.from([0, 0x1b]),
-        width: 4,
       }),
     ],
     [
@@ -1812,7 +2200,7 @@ test('rejects CRC-correct PNGs with invalid decoded pixel streams', async (t) =>
   }
 });
 
-test('rejects unsupported PNG headers and invalid indexed palettes', async (t) => {
+test('rejects unsupported PNG headers and indexed color', async (t) => {
   const cases = [
     ['Adam7 interlace', createTinyPng({ interlaceMethod: 1 }), /invalid PNG structure/i],
     ['unsupported compression method', createTinyPng({ compressionMethod: 1 }), /invalid PNG structure/i],
@@ -1824,28 +2212,19 @@ test('rejects unsupported PNG headers and invalid indexed palettes', async (t) =
     ],
     [
       'dimension above the decoder bound',
-      createTinyPng({ scanlines: Buffer.from([0]), width: 16_385 }),
+      createTinyPng({ scanlines: Buffer.from([0]), width: 8_193 }),
       /invalid PNG structure/i,
     ],
     [
-      'indexed color without PLTE',
-      createTinyPng({ bitDepth: 1, colorType: 3, palette: null }),
-      /invalid PNG structure/i,
-    ],
-    [
-      'indexed palette exceeds bit-depth capacity',
-      createTinyPng({ bitDepth: 1, colorType: 3, palette: Buffer.alloc(9) }),
-      /invalid PNG structure/i,
-    ],
-    [
-      'indexed pixel refers outside palette',
+      'indexed color even with a complete palette',
       createTinyPng({
-        bitDepth: 1,
+        bitDepth: 2,
         colorType: 3,
-        palette: Buffer.alloc(3),
-        scanlines: Buffer.from([0, 0x80]),
+        palette: Buffer.alloc(12),
+        scanlines: Buffer.from([0, 0x1b]),
+        width: 4,
       }),
-      /invalid PNG pixel stream/i,
+      /invalid PNG structure/i,
     ],
   ];
 
@@ -1866,6 +2245,61 @@ test('rejects unsupported PNG headers and invalid indexed palettes', async (t) =
         rmSync(fixture.root, { force: true, recursive: true });
       }
     });
+  }
+});
+
+test('rejects every non-canonical PNG chunk without echoing hidden data', async (t) => {
+  const plteSentinel = 'PNG_PLTE_SECRET_SENTINEL_8f2k';
+  const plteData = Buffer.from(plteSentinel.padEnd(
+    Math.ceil(plteSentinel.length / 3) * 3,
+    '_',
+  ));
+  const cases = [
+    ['PLTE', pngChunk('PLTE', plteData), plteSentinel],
+    ['ancillary pHYs', pngChunk('pHYs', Buffer.from([...Buffer.from('PHYSKEY8'), 0])), 'PHYSKEY8'],
+    ['text', pngChunk('tEXt', Buffer.from('PNG_TEXT_SECRET_SENTINEL_4q9m')), 'PNG_TEXT_SECRET_SENTINEL_4q9m'],
+    ['unknown ancillary', pngChunk('ruSt', Buffer.from('PNG_UNKNOWN_SECRET_SENTINEL_6n3v')), 'PNG_UNKNOWN_SECRET_SENTINEL_6n3v'],
+  ];
+
+  for (const [name, chunk, sentinel] of cases) {
+    await t.test(name, () => {
+      const bytes = insertAfterPngIhdr(VALID_PNG, chunk);
+      const artifactPath = 'artifacts/non-canonical.png';
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, 'image/png');
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /non-canonical PNG chunk/i);
+        assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects high-bit PNG chunk type aliases before ASCII conversion', () => {
+  const highBitPlteAlias = Buffer.from([0xd0, 0xcc, 0xd4, 0xc5]);
+  const bytes = insertAfterPngIhdr(
+    VALID_PNG,
+    pngChunkBytes(highBitPlteAlias, Buffer.alloc(3)),
+  );
+  const artifactPath = 'artifacts/high-bit-chunk.png';
+  const record = passRecord();
+  addImageEvidence(record, artifactPath, bytes, 'image/png');
+  const fixture = makeFixture([record]);
+  writeFixtureArtifact(fixture, artifactPath, bytes);
+  try {
+    const result = runReducer(fixture.input, fixture.output);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /invalid PNG chunk type/i);
+    assert.equal(existsSync(fixture.output), false);
+  } finally {
+    rmSync(fixture.root, { force: true, recursive: true });
   }
 });
 
@@ -1907,7 +2341,7 @@ test('rejects malformed PNG structure despite a matching image attestation', asy
   }
 });
 
-test('rejects PNG text and comment metadata without echoing payloads', async (t) => {
+test('rejects PNG text and comment chunks without echoing payloads', async (t) => {
   for (const chunkType of ['tEXt', 'zTXt', 'iTXt', 'cOMM']) {
     await t.test(chunkType, () => {
       const sentinel = `PNG_METADATA_SENTINEL_${chunkType}`;
@@ -1921,7 +2355,7 @@ test('rejects PNG text and comment metadata without echoing payloads', async (t)
       try {
         const result = runReducer(fixture.input, fixture.output);
         assert.notEqual(result.status, 0);
-        assert.match(result.stderr, /forbidden PNG metadata/i);
+        assert.match(result.stderr, /non-canonical PNG chunk/i);
         assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
         assert.equal(existsSync(fixture.output), false);
       } finally {
@@ -2243,6 +2677,70 @@ test('sorts results by run ID for deterministic output', () => {
     );
   } finally {
     rmSync(fixture.root, { force: true, recursive: true });
+  }
+});
+
+test('produces identical receipts for permuted filenames, paths, and diagnostic codes', () => {
+  const makeControl = (artifactPaths, diagnosticCodes) => blockedControlRecord({
+    artifact_paths: artifactPaths,
+    failure: {
+      category: 'REMOTE_DISPATCH_PROHIBITED',
+      diagnostics: { diagnostic_codes: diagnosticCodes },
+      reason_code: 'ZERO_COST_UNVERIFIED',
+    },
+  });
+  const fixtureA = makeFixture([makeControl(
+    ['artifacts/security.json', 'artifacts/journey.json'],
+    ['NOT_AUTHORIZED_TO_PUSH', 'MISSING_USER_PLAN_SCOPE', 'NOT_AUTHORIZED_TO_PUSH'],
+  )]);
+  const fixtureB = makeFixture([makeControl(
+    ['artifacts/journey.json', 'artifacts/security.json'],
+    ['MISSING_USER_PLAN_SCOPE', 'NOT_AUTHORIZED_TO_PUSH'],
+  )]);
+  renameSync(
+    path.join(fixtureA.input, 'run-01.json'),
+    path.join(fixtureA.input, 'z-control.json'),
+  );
+  renameSync(
+    path.join(fixtureB.input, 'run-01.json'),
+    path.join(fixtureB.input, 'a-control.json'),
+  );
+
+  try {
+    const resultA = runReducer(fixtureA.input, fixtureA.output);
+    const resultB = runReducer(fixtureB.input, fixtureB.output);
+    assert.equal(resultA.status, 0, resultA.stderr);
+    assert.equal(resultB.status, 0, resultB.stderr);
+    const jsonA = readFileSync(
+      path.join(fixtureA.output, 'sc1-sc5-evidence-receipt.json'),
+      'utf8',
+    );
+    const jsonB = readFileSync(
+      path.join(fixtureB.output, 'sc1-sc5-evidence-receipt.json'),
+      'utf8',
+    );
+    const markdownA = readFileSync(
+      path.join(fixtureA.output, 'sc1-sc5-evidence-receipt.md'),
+      'utf8',
+    );
+    const markdownB = readFileSync(
+      path.join(fixtureB.output, 'sc1-sc5-evidence-receipt.md'),
+      'utf8',
+    );
+    assert.equal(jsonB, jsonA);
+    assert.equal(markdownB, markdownA);
+    const receipt = JSON.parse(jsonA);
+    assert.deepEqual(receipt.blocked_scenarios[0].artifact_paths, [
+      'artifacts/journey.json',
+      'artifacts/security.json',
+    ]);
+    assert.deepEqual(receipt.failure_records[0].diagnostics.diagnostic_codes, [
+      'MISSING_USER_PLAN_SCOPE',
+      'NOT_AUTHORIZED_TO_PUSH',
+    ]);
+  } finally {
+    rmSync(fixtureA.root, { force: true, recursive: true });
+    rmSync(fixtureB.root, { force: true, recursive: true });
   }
 });
 

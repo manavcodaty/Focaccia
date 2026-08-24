@@ -1,14 +1,21 @@
 #!/usr/bin/env node
 
 import {
+  closeSync,
+  constants as fsConstants,
+  fchmodSync,
+  fsyncSync,
   lstatSync,
   mkdirSync,
+  openSync,
   readFileSync,
   readdirSync,
   realpathSync,
+  renameSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { isDeepStrictEqual, TextDecoder } from 'node:util';
 import { inflateSync } from 'node:zlib';
@@ -16,8 +23,26 @@ import { inflateSync } from 'node:zlib';
 const CRITERIA = ['SC1', 'SC2', 'SC3', 'SC4', 'SC5'];
 const REQUIRED_RUNS = 10;
 const RAW_EVIDENCE_SCHEMA_VERSION = 'sc1-sc5-raw-evidence-v1';
-const MAX_PNG_DIMENSION = 16_384;
-const MAX_PNG_PIXEL_STREAM_BYTES = 64 * 1024 * 1024;
+const MAX_RECORDS = lowerTestBudget('MAX_RECORDS', 100);
+const MAX_RECURSIVE_FILES = lowerTestBudget('MAX_RECURSIVE_FILES', 1_000);
+const MAX_RECURSION_DEPTH = lowerTestBudget('MAX_RECURSION_DEPTH', 8);
+const MAX_FILE_BYTES = lowerTestBudget('MAX_FILE_BYTES', 16 * 1024 * 1024);
+const MAX_TOTAL_BYTES = lowerTestBudget('MAX_TOTAL_BYTES', 256 * 1024 * 1024);
+const MAX_ARTIFACT_PATHS_PER_RECORD = lowerTestBudget(
+  'MAX_ARTIFACT_PATHS_PER_RECORD',
+  256,
+);
+const MAX_RECORD_JSON_BYTES = lowerTestBudget('MAX_RECORD_JSON_BYTES', 2 * 1024 * 1024);
+const MAX_PNG_COMPRESSED_BYTES = lowerTestBudget(
+  'MAX_PNG_COMPRESSED_BYTES',
+  16 * 1024 * 1024,
+);
+const MAX_PNG_DECODED_BYTES = lowerTestBudget(
+  'MAX_PNG_DECODED_BYTES',
+  64 * 1024 * 1024,
+);
+const MAX_PNG_DIMENSION = 8_192;
+const CRC32_TABLE = createCrc32Table();
 const IMAGE_REVIEW_METHODS = new Set([
   'MANUAL_VISUAL_SECRET_REVIEW',
   'MANUAL_VISUAL_SECRET_REVIEW_AND_REDACTION',
@@ -139,6 +164,17 @@ const REQUIRED_RECORD_FIELDS = [
   'failure',
 ];
 
+function lowerTestBudget(name, hardMaximum) {
+  const raw = process.env[`SC1_SC5_TEST_${name}`];
+  if (raw === undefined) return hardMaximum;
+  if (!/^[1-9]\d*$/.test(raw)) throw new Error('Invalid reducer test budget override');
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value > hardMaximum) {
+    throw new Error('Invalid reducer test budget override');
+  }
+  return value;
+}
+
 function parseArguments(argv) {
   const inputIndex = argv.indexOf('--input');
   const outputIndex = argv.indexOf('--output');
@@ -153,26 +189,102 @@ function parseArguments(argv) {
   };
 }
 
+function validateInputAndOutputPaths(inputDirectory, outputDirectory) {
+  assertSeparateDirectories(inputDirectory, outputDirectory);
+  assertPathHasNoSymlinks(inputDirectory, 'input');
+  const inputStats = lstatSync(inputDirectory);
+  if (!inputStats.isDirectory()) throw new Error('Input path must be a directory');
+  const inputRealPath = realpathSync(inputDirectory);
+
+  assertPathHasNoSymlinks(outputDirectory, 'output');
+  return { inputDirectory: inputRealPath, outputDirectory };
+}
+
+function createSafeOutputDirectory(inputDirectory, outputDirectory) {
+  mkdirSync(outputDirectory, { mode: 0o700, recursive: true });
+  assertPathHasNoSymlinks(outputDirectory, 'output');
+  const outputStats = lstatSync(outputDirectory);
+  if (!outputStats.isDirectory() || outputStats.isSymbolicLink()) {
+    throw new Error('Unsafe output directory rejected');
+  }
+  const outputRealPath = realpathSync(outputDirectory);
+  assertSeparateDirectories(inputDirectory, outputRealPath);
+  return outputRealPath;
+}
+
+function assertSeparateDirectories(inputDirectory, outputDirectory) {
+  if (isSameOrNestedPath(inputDirectory, outputDirectory)
+    || isSameOrNestedPath(outputDirectory, inputDirectory)) {
+    throw new Error('Input and output directories must be separate and non-nested');
+  }
+}
+
+function isSameOrNestedPath(candidate, ancestor) {
+  const relative = path.relative(ancestor, candidate);
+  return relative === '' || (
+    relative !== '..'
+    && !relative.startsWith(`..${path.sep}`)
+    && !path.isAbsolute(relative)
+  );
+}
+
+function assertPathHasNoSymlinks(candidate, label) {
+  const parsed = path.parse(candidate);
+  let current = parsed.root;
+  const components = candidate.slice(parsed.root.length).split(path.sep).filter(Boolean);
+  for (const component of components) {
+    current = path.join(current, component);
+    let stats;
+    try {
+      stats = lstatSync(current);
+    } catch (error) {
+      if (error?.code === 'ENOENT') return;
+      throw error;
+    }
+    if (stats.isSymbolicLink()) {
+      throw new Error(`Unsafe ${label} path contains a symlink`);
+    }
+  }
+}
+
 function readRecords(inputDirectory) {
-  const recordNames = readdirSync(inputDirectory).filter((name) => name.endsWith('.json'));
+  const recordNames = readdirSync(inputDirectory, { withFileTypes: true })
+    .filter((entry) => entry.name.endsWith('.json'))
+    .map((entry) => entry.name)
+    .sort(compareLexically);
   if (recordNames.some((name) => /baseline/i.test(name))) {
     throw new Error('Historical baseline files are unsafe and cannot be aggregated');
   }
   if (recordNames.length === 0) {
     throw new Error('No target or control records found in the input directory');
   }
-  const discoveredImagePaths = scanInputDirectoryForSecrets(inputDirectory);
+  if (recordNames.length > MAX_RECORDS) {
+    throw new Error('Input record count exceeds resource budget');
+  }
+  for (const name of recordNames) {
+    const stats = lstatSync(path.join(inputDirectory, name));
+    if (stats.isFile() && stats.size > MAX_RECORD_JSON_BYTES) {
+      throw new Error('Record JSON exceeds resource budget');
+    }
+  }
+
+  const context = createValidationContext(inputDirectory);
+  scanInputDirectoryForSecrets(inputDirectory, context);
+  const discoveredImagePaths = context.imagePaths;
 
   const records = recordNames
     .map((name) => {
-      const record = JSON.parse(readFileSync(path.join(inputDirectory, name), 'utf8'));
-      assertNoSecrets(record);
+      const cached = context.filesByPath.get(path.join(inputDirectory, name));
+      if (cached === undefined || !cached.isJson) {
+        throw new Error('Run record is not valid JSON evidence');
+      }
+      const record = cached.parsedJson;
       if (isHistoricalBaselineRecord(record)) {
         throw new Error('Historical baseline records are unsafe and cannot be aggregated');
       }
       return record;
     })
-    .map((record, index) => validateRequiredFields(record, index, inputDirectory));
+    .map((record, index) => validateRequiredFields(record, index, context));
 
   const runIds = new Set();
   for (const record of records) {
@@ -187,11 +299,29 @@ function readRecords(inputDirectory) {
     throw new Error('Missing image safety attestation for unreferenced image evidence');
   }
 
-  return records.sort((left, right) => {
-    if (left.run_id < right.run_id) return -1;
-    if (left.run_id > right.run_id) return 1;
-    return 0;
-  });
+  return records.sort((left, right) => compareLexically(left.run_id, right.run_id));
+}
+
+function createValidationContext(inputDirectory) {
+  return {
+    fileCount: 0,
+    filesByPath: new Map(),
+    filesByRealPath: new Map(),
+    imagePaths: [],
+    inputDirectory,
+    totalBytes: 0,
+    validatedArtifacts: new Map(),
+  };
+}
+
+function compareLexically(left, right) {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
+function sortedUnique(values) {
+  return [...new Set(values)].sort(compareLexically);
 }
 
 function validateBatchIsolation(records) {
@@ -219,7 +349,7 @@ function validateBatchIsolation(records) {
   }
 }
 
-function validateRequiredFields(record, index, inputDirectory) {
+function validateRequiredFields(record, index, context) {
   if (!isPlainObject(record)) {
     throw new Error(`Run record ${index + 1} must be an object`);
   }
@@ -385,8 +515,8 @@ function validateRequiredFields(record, index, inputDirectory) {
       );
     }
   }
-  validateArtifactFiles(record, inputDirectory, index);
-  validateRawPassEvidence(record, inputDirectory, index);
+  validateArtifactFiles(record, context, index);
+  validateRawPassEvidence(record, context, index);
 
   if (record.status !== 'PASS') validateFailureSchema(record.failure, index);
 
@@ -550,6 +680,16 @@ function secretCategoryForKey(key) {
 }
 
 function secretCategoryForValue(value) {
+  const assignmentRules = [
+    ['password', /\b(?:password|passwd|passphrase)\b\s*[:=]\s*(?!\[?(?:REDACTED|REMOVED|MASKED)\]?|\*{3,})\S+/i],
+    ['service-role', /\bservice[_ -]?role[_ -]?(?:key|secret|token)\b\s*[:=]\s*(?!\[?(?:REDACTED|REMOVED|MASKED)\]?|\*{3,})\S+/i],
+    ['private-key', /\bprivate[_ -]?key\b\s*[:=]\s*(?!\[?(?:REDACTED|REMOVED|MASKED)\]?|\*{3,})\S+/i],
+    ['full-token', /\b(?:(?:access|refresh|auth|bearer|github|gitlab|full)[_ -]?token|(?:full[_ -]?)?pass[_ -]?token)\b\s*[:=]\s*(?!\[?(?:REDACTED|REMOVED|MASKED)\]?|\*{3,})\S+/i],
+    ['provisioning-payload', /\b(?:provisioning|qr)(?:[_ -]?qr)?[_ -]?payload\b\s*[:=]\s*(?!\[?(?:REDACTED|REMOVED|MASKED)\]?|\*{3,})\S+/i],
+  ];
+  for (const [category, pattern] of assignmentRules) {
+    if (pattern.test(value)) return category;
+  }
   if (/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/.test(value)) return 'private-key';
   if (/\bBearer\s+[A-Za-z0-9._~+/=-]{16,}/i.test(value)) return 'full-token';
   if (/\b(?:gh[pousr]|github_pat|glpat|sbp|sk_live)_[A-Za-z0-9_-]{16,}\b/.test(value)) {
@@ -577,46 +717,72 @@ function validateArtifactPathList(value, field, index) {
     || value.some((entry) => typeof entry !== 'string' || entry.length === 0)) {
     throw new Error(`Run record ${index + 1} has invalid ${field}`);
   }
+  if (value.length > MAX_ARTIFACT_PATHS_PER_RECORD) {
+    throw new Error(`Run record ${index + 1} ${field} exceeds artifact_paths resource budget`);
+  }
+  if (new Set(value).size !== value.length) {
+    throw new Error(`Run record ${index + 1} has duplicate ${field}`);
+  }
 }
 
-function validateArtifactFiles(record, inputDirectory, index) {
-  const inputRoot = realpathSync(inputDirectory);
+function validateArtifactFiles(record, context, index) {
   const imageArtifacts = [];
 
   for (const artifactPath of record.artifact_paths) {
-    const isNormalizedRelativePath = !path.isAbsolute(artifactPath)
-      && !artifactPath.includes('\\')
-      && artifactPath.length <= 1024
-      && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(artifactPath)
-      && artifactPath === path.posix.normalize(artifactPath)
-      && !artifactPath.split('/').some((part) => part === '' || part === '.' || part === '..');
-    if (!isNormalizedRelativePath) {
-      throw new Error(`Run record ${index + 1} has invalid artifact_paths reference`);
-    }
-
-    const candidate = path.resolve(inputRoot, artifactPath);
-    try {
-      const candidateRealPath = realpathSync(candidate);
-      const staysInsideInput = candidateRealPath.startsWith(`${inputRoot}${path.sep}`);
-      const stats = lstatSync(candidate);
-      if (!staysInsideInput || stats.isSymbolicLink() || !stats.isFile()) {
-        throw new Error('unsafe artifact');
-      }
-    } catch (error) {
-      throw new Error(`Run record ${index + 1} has invalid artifact_paths reference`);
-    }
-
-    const mediaType = assertArtifactHasNoSecrets(candidate);
-    if (mediaType !== null) imageArtifacts.push({ artifactPath, candidate, mediaType });
+    const artifact = getValidatedArtifact(artifactPath, context, index);
+    if (artifact.mediaType !== null) imageArtifacts.push({ artifactPath, ...artifact });
   }
 
   validateImageSafetyAttestations(record, imageArtifacts, index);
 }
 
-function assertArtifactHasNoSecrets(artifactPath) {
-  const bytes = readFileSync(artifactPath);
+function getValidatedArtifact(artifactPath, context, index) {
+  const cached = context.validatedArtifacts.get(artifactPath);
+  if (cached !== undefined) return cached;
+
+  const isNormalizedRelativePath = !path.isAbsolute(artifactPath)
+    && !artifactPath.includes('\\')
+    && artifactPath.length <= 1024
+    && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(artifactPath)
+    && artifactPath === path.posix.normalize(artifactPath)
+    && !artifactPath.split('/').some((part) => part === '' || part === '.' || part === '..');
+  if (!isNormalizedRelativePath) {
+    throw new Error(`Run record ${index + 1} has invalid artifact_paths reference`);
+  }
+
+  const candidate = path.resolve(context.inputDirectory, artifactPath);
+  let candidateRealPath;
+  try {
+    candidateRealPath = realpathSync(candidate);
+    const staysInsideInput = candidateRealPath.startsWith(
+      `${context.inputDirectory}${path.sep}`,
+    );
+    const stats = lstatSync(candidate);
+    if (!staysInsideInput || stats.isSymbolicLink() || !stats.isFile()) {
+      throw new Error('unsafe artifact');
+    }
+  } catch (error) {
+    throw new Error(`Run record ${index + 1} has invalid artifact_paths reference`);
+  }
+
+  const scanned = context.filesByRealPath.get(candidateRealPath);
+  if (scanned === undefined) {
+    throw new Error(`Run record ${index + 1} has invalid artifact_paths reference`);
+  }
+  const validated = {
+    bytes: scanned.bytes,
+    mediaType: scanned.mediaType,
+    parsedJson: scanned.parsedJson,
+  };
+  context.validatedArtifacts.set(artifactPath, validated);
+  return validated;
+}
+
+function inspectArtifactBytes(artifactPath, bytes) {
   const imageMediaType = classifyImageEvidence(artifactPath, bytes);
-  if (imageMediaType !== null) return imageMediaType;
+  if (imageMediaType !== null) {
+    return { isJson: false, mediaType: imageMediaType, parsedJson: null };
+  }
   if (bytes.includes(0)) {
     throw new Error('Unsupported NUL-bearing binary evidence rejected');
   }
@@ -638,21 +804,11 @@ function assertArtifactHasNoSecrets(artifactPath) {
 
   if (isJson) {
     assertNoSecrets(parsed);
-    return null;
+    return { isJson: true, mediaType: null, parsedJson: parsed };
   }
 
   assertNoSecrets(text);
-  const assignmentRules = [
-    ['password', /\b(?:password|passwd|passphrase)\b\s*[:=]\s*(?!\[?(?:REDACTED|REMOVED|MASKED)\]?|\*{3,})\S+/i],
-    ['service-role', /\bservice[_-]?role[_-]?(?:key|secret|token)\b\s*[:=]\s*\S+/i],
-    ['private-key', /\bprivate[_-]?key\b\s*[:=]\s*\S+/i],
-    ['full-token', /\b(?:(?:access|refresh|auth|bearer|github|full|pass)[_-]?token|full[_-]?pass[_-]?token)\b\s*[:=]\s*\S+/i],
-    ['provisioning-payload', /\b(?:provisioning|qr)(?:[_-]qr)?[_-]payload\b\s*[:=]\s*\S+/i],
-  ];
-  for (const [category, pattern] of assignmentRules) {
-    if (pattern.test(text)) throwSecretError(category);
-  }
-  return null;
+  return { isJson: false, mediaType: null, parsedJson: null };
 }
 
 function classifyImageEvidence(artifactPath, bytes) {
@@ -683,26 +839,12 @@ function validatePngStructure(bytes, signature) {
   const invalidPixelStream = () => {
     throw new Error('Invalid PNG pixel stream rejected');
   };
-  const forbiddenMetadata = () => {
-    throw new Error('Forbidden PNG metadata rejected');
-  };
-  const safeAncillaryChunks = new Set([
-    'PLTE',
-    'tRNS',
-    'cHRM',
-    'gAMA',
-    'sRGB',
-    'pHYs',
-    'bKGD',
-  ]);
-  const forbiddenChunks = new Set(['tEXt', 'zTXt', 'iTXt', 'eXIf', 'iCCP']);
   const singletonChunks = new Set();
   let offset = signature.length;
   let chunkIndex = 0;
   let header = null;
   let sawIdat = false;
   let idatBytes = 0;
-  let paletteEntries = null;
   const idatChunks = [];
 
   while (offset < bytes.length) {
@@ -710,8 +852,13 @@ function validatePngStructure(bytes, signature) {
     const length = bytes.readUInt32BE(offset);
     if (length > bytes.length - offset - 12) invalid();
     const typeBytes = bytes.subarray(offset + 4, offset + 8);
+    if ([...typeBytes].some((byte) => !(
+      byte >= 0x41 && byte <= 0x5a
+      || byte >= 0x61 && byte <= 0x7a
+    ))) {
+      throw new Error('Invalid PNG chunk type rejected');
+    }
     const type = typeBytes.toString('ascii');
-    if (!/^[A-Za-z]{4}$/.test(type)) invalid();
     const dataStart = offset + 8;
     const dataEnd = dataStart + length;
     const chunkEnd = dataEnd + 4;
@@ -729,7 +876,6 @@ function validatePngStructure(bytes, signature) {
       const validBitDepths = {
         0: [1, 2, 4, 8, 16],
         2: [8, 16],
-        3: [1, 2, 4, 8],
         4: [8, 16],
         6: [8, 16],
       };
@@ -747,9 +893,11 @@ function validatePngStructure(bytes, signature) {
       const rowBytes = Math.ceil(width * channels * bitDepth / 8);
       const pixelStreamBytes = height * (rowBytes + 1);
       if (!Number.isSafeInteger(pixelStreamBytes)
-        || pixelStreamBytes <= 0
-        || pixelStreamBytes > MAX_PNG_PIXEL_STREAM_BYTES) {
+        || pixelStreamBytes <= 0) {
         invalid();
+      }
+      if (pixelStreamBytes > MAX_PNG_DECODED_BYTES) {
+        throw new Error('PNG decoded bytes exceed resource budget');
       }
       header = {
         bitDepth,
@@ -767,37 +915,27 @@ function validatePngStructure(bytes, signature) {
       }
       sawIdat = true;
       idatBytes += length;
-      if (idatBytes > MAX_PNG_PIXEL_STREAM_BYTES) invalid();
+      if (idatBytes > MAX_PNG_COMPRESSED_BYTES) {
+        throw new Error('PNG compressed bytes exceed resource budget');
+      }
       idatChunks.push(data);
     } else if (type === 'IEND') {
       if (length !== 0
         || !sawIdat
         || idatBytes === 0
         || singletonChunks.has(type)
-        || chunkEnd !== bytes.length
-        || header.colorType === 3 && paletteEntries === null) {
+        || chunkEnd !== bytes.length) {
         invalid();
       }
       validatePngPixelStream(
         Buffer.concat(idatChunks, idatBytes),
         header,
-        paletteEntries,
         invalidPixelStream,
       );
       singletonChunks.add(type);
       return;
     } else {
-      if (forbiddenChunks.has(type) || !safeAncillaryChunks.has(type)) forbiddenMetadata();
-      if (!singletonChunks.has('IHDR') || sawIdat || singletonChunks.has(type)) invalid();
-      validateSafePngAncillaryChunk(
-        type,
-        data,
-        header,
-        paletteEntries,
-        invalid,
-      );
-      singletonChunks.add(type);
-      if (type === 'PLTE') paletteEntries = data.length / 3;
+      throw new Error('Non-canonical PNG chunk rejected');
     }
 
     if (sawIdat && type !== 'IDAT') singletonChunks.add('IDAT_ENDED');
@@ -807,37 +945,7 @@ function validatePngStructure(bytes, signature) {
   invalid();
 }
 
-function validateSafePngAncillaryChunk(type, data, header, paletteEntries, invalid) {
-  const { bitDepth, colorType } = header;
-  if (type === 'PLTE'
-    && (data.length === 0
-      || data.length > 768
-      || data.length % 3 !== 0
-      || [0, 4].includes(colorType)
-      || colorType === 3 && data.length / 3 > 2 ** bitDepth)) {
-    invalid();
-  }
-  if (type === 'tRNS'
-    && (data.length === 0
-      || [4, 6].includes(colorType)
-      || colorType === 0 && data.length !== 2
-      || colorType === 2 && data.length !== 6
-      || colorType === 3 && (paletteEntries === null || data.length > paletteEntries))) {
-    invalid();
-  }
-  if (type === 'cHRM' && data.length !== 32) invalid();
-  if (type === 'gAMA' && (data.length !== 4 || data.readUInt32BE(0) === 0)) invalid();
-  if (type === 'sRGB' && (data.length !== 1 || data[0] > 3)) invalid();
-  if (type === 'pHYs' && (data.length !== 9 || data[8] > 1)) invalid();
-  const backgroundLengths = { 0: 2, 2: 6, 3: 1, 4: 2, 6: 6 };
-  if (type === 'bKGD'
-    && (data.length !== backgroundLengths[colorType]
-      || colorType === 3 && (paletteEntries === null || data[0] >= paletteEntries))) {
-    invalid();
-  }
-}
-
-function validatePngPixelStream(compressed, header, paletteEntries, invalid) {
+function validatePngPixelStream(compressed, header, invalid) {
   let inflated;
   try {
     const result = inflateSync(compressed, {
@@ -864,9 +972,6 @@ function validatePngPixelStream(compressed, header, paletteEntries, invalid) {
       previousRow,
       header.bytesPerPixel,
     );
-    if (header.colorType === 3) {
-      validatePngPaletteIndexes(decodedRow, header, paletteEntries, invalid);
-    }
     previousRow = decodedRow;
     offset += header.rowBytes + 1;
   }
@@ -903,26 +1008,22 @@ function paethPredictor(left, above, upperLeft) {
   return upperLeft;
 }
 
-function validatePngPaletteIndexes(decodedRow, header, paletteEntries, invalid) {
-  const mask = 2 ** header.bitDepth - 1;
-  for (let pixel = 0; pixel < header.width; pixel += 1) {
-    const bitOffset = pixel * header.bitDepth;
-    const byte = decodedRow[Math.floor(bitOffset / 8)];
-    const shift = 8 - header.bitDepth - bitOffset % 8;
-    const paletteIndex = byte >> shift & mask;
-    if (paletteIndex >= paletteEntries) invalid();
-  }
-}
-
 function crc32(bytes) {
   let crc = 0xffffffff;
   for (const byte of bytes) {
-    crc ^= byte;
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-    }
+    crc = CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
   }
   return (crc ^ 0xffffffff) >>> 0;
+}
+
+function createCrc32Table() {
+  return Uint32Array.from({ length: 256 }, (_, value) => {
+    let crc = value;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = crc >>> 1 ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+    return crc >>> 0;
+  });
 }
 
 function validateImageSafetyAttestations(record, imageArtifacts, index) {
@@ -952,7 +1053,7 @@ function validateImageSafetyAttestations(record, imageArtifacts, index) {
   const seenPaths = new Set();
   for (const attestation of attestations) {
     if (!isPlainObject(attestation)
-      || !isDeepStrictEqual(Object.keys(attestation).sort(), expectedKeys)
+      || !isDeepStrictEqual(Object.keys(attestation).sort(compareLexically), expectedKeys)
       || typeof attestation.artifact_path !== 'string'
       || attestation.media_type !== 'image/png'
       || seenPaths.has(attestation.artifact_path)) {
@@ -961,7 +1062,7 @@ function validateImageSafetyAttestations(record, imageArtifacts, index) {
     seenPaths.add(attestation.artifact_path);
   }
 
-  for (const { artifactPath, candidate, mediaType } of imageArtifacts) {
+  for (const { artifactPath, bytes, mediaType } of imageArtifacts) {
     const attestation = attestations.find((entry) => entry.artifact_path === artifactPath);
     if (attestation === undefined) {
       throw new Error(`Run record ${index + 1} is missing image safety attestation`);
@@ -976,7 +1077,7 @@ function validateImageSafetyAttestations(record, imageArtifacts, index) {
     if (!IMAGE_REVIEW_METHODS.has(attestation.review_method)) {
       throw new Error(`Run record ${index + 1} has a non-substantive image safety review method`);
     }
-    const digest = createHash('sha256').update(readFileSync(candidate)).digest('hex');
+    const digest = createHash('sha256').update(bytes).digest('hex');
     if (!isSha256(attestation.sha256) || attestation.sha256 !== digest) {
       throw new Error(`Run record ${index + 1} image safety attestation sha256 mismatch`);
     }
@@ -986,9 +1087,12 @@ function validateImageSafetyAttestations(record, imageArtifacts, index) {
   }
 }
 
-function scanInputDirectoryForSecrets(directory, rootDirectory = directory, imagePaths = []) {
+function scanInputDirectoryForSecrets(directory, context, depth = 0) {
+  if (depth > MAX_RECURSION_DEPTH) {
+    throw new Error('Input recursion depth exceeds resource budget');
+  }
   const entries = readdirSync(directory, { withFileTypes: true })
-    .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
+    .sort((left, right) => compareLexically(left.name, right.name));
 
   for (const entry of entries) {
     const candidate = path.join(directory, entry.name);
@@ -996,14 +1100,42 @@ function scanInputDirectoryForSecrets(directory, rootDirectory = directory, imag
       throw new Error('Input directory contains an unsafe symbolic link');
     }
     if (entry.isDirectory()) {
-      scanInputDirectoryForSecrets(candidate, rootDirectory, imagePaths);
+      scanInputDirectoryForSecrets(candidate, context, depth + 1);
     } else if (entry.isFile()) {
-      if (assertArtifactHasNoSecrets(candidate) !== null) {
-        imagePaths.push(path.relative(rootDirectory, candidate).split(path.sep).join('/'));
+      const stats = lstatSync(candidate);
+      context.fileCount += 1;
+      if (context.fileCount > MAX_RECURSIVE_FILES) {
+        throw new Error('Input recursive file count exceeds resource budget');
       }
+      if (stats.size > MAX_FILE_BYTES) {
+        throw new Error('Input per-file bytes exceed resource budget');
+      }
+      context.totalBytes += stats.size;
+      if (!Number.isSafeInteger(context.totalBytes) || context.totalBytes > MAX_TOTAL_BYTES) {
+        throw new Error('Input total bytes exceed resource budget');
+      }
+
+      const candidateRealPath = realpathSync(candidate);
+      if (!candidateRealPath.startsWith(`${context.inputDirectory}${path.sep}`)) {
+        throw new Error('Input file resolves outside the input directory');
+      }
+      const bytes = readFileSync(candidate);
+      if (bytes.length !== stats.size || bytes.length > MAX_FILE_BYTES) {
+        throw new Error('Input file changed while being validated');
+      }
+      const inspected = inspectArtifactBytes(candidate, bytes);
+      const cached = { bytes, ...inspected };
+      context.filesByPath.set(candidate, cached);
+      context.filesByRealPath.set(candidateRealPath, cached);
+      if (inspected.mediaType !== null) {
+        context.imagePaths.push(
+          path.relative(context.inputDirectory, candidate).split(path.sep).join('/'),
+        );
+      }
+    } else {
+      throw new Error('Input directory contains unsupported filesystem evidence');
     }
   }
-  return imagePaths;
 }
 
 function validateAuthoritativeCounts(authoritativeBackend, index) {
@@ -1013,8 +1145,8 @@ function validateAuthoritativeCounts(authoritativeBackend, index) {
     throw new Error(`Run record ${index + 1} has invalid authoritative backend counts`);
   }
 
-  const claimedKeys = Object.keys(claimed).sort();
-  const observedKeys = Object.keys(observed).sort();
+  const claimedKeys = Object.keys(claimed).sort(compareLexically);
+  const observedKeys = Object.keys(observed).sort(compareLexically);
   const countsAreValid = claimedKeys.length > 0
     && JSON.stringify(claimedKeys) === JSON.stringify(observedKeys)
     && claimedKeys.every((key) => Number.isInteger(claimed[key])
@@ -1028,13 +1160,13 @@ function validateAuthoritativeCounts(authoritativeBackend, index) {
   }
 }
 
-function validateRawPassEvidence(record, inputDirectory, index) {
+function validateRawPassEvidence(record, context, index) {
   for (const criterion of ['SC1', 'SC2', 'SC5']) {
     if (record.checks[criterion].status === 'PASS') {
       validateRawBinding(
         record,
         record.checks[criterion].artifact_paths,
-        inputDirectory,
+        context,
         index,
         criterion,
         record.checks[criterion],
@@ -1047,7 +1179,7 @@ function validateRawPassEvidence(record, inputDirectory, index) {
     validateRawBinding(
       record,
       record.privacy_audit.artifact_paths,
-      inputDirectory,
+      context,
       index,
       'privacy_audit',
       record.privacy_audit,
@@ -1058,7 +1190,7 @@ function validateRawPassEvidence(record, inputDirectory, index) {
     validateRawBinding(
       record,
       record.checks.SC3.artifact_paths,
-      inputDirectory,
+      context,
       index,
       'privacy_audit',
       record.privacy_audit,
@@ -1070,7 +1202,7 @@ function validateRawPassEvidence(record, inputDirectory, index) {
     validateRawBinding(
       record,
       record.security_matrix.artifact_paths,
-      inputDirectory,
+      context,
       index,
       'security_matrix',
       record.security_matrix,
@@ -1081,7 +1213,7 @@ function validateRawPassEvidence(record, inputDirectory, index) {
     validateRawBinding(
       record,
       record.checks.SC4.artifact_paths,
-      inputDirectory,
+      context,
       index,
       'security_matrix',
       record.security_matrix,
@@ -1093,7 +1225,7 @@ function validateRawPassEvidence(record, inputDirectory, index) {
     validateRawBinding(
       record,
       record.authoritative_backend.artifact_paths,
-      inputDirectory,
+      context,
       index,
       'authoritative_backend',
       record.authoritative_backend,
@@ -1105,19 +1237,15 @@ function validateRawPassEvidence(record, inputDirectory, index) {
 function validateRawBinding(
   record,
   artifactPaths,
-  inputDirectory,
+  context,
   index,
   claimName,
   expected,
   selectCandidate,
 ) {
   for (const artifactPath of artifactPaths) {
-    let parsed;
-    try {
-      parsed = JSON.parse(readFileSync(path.resolve(inputDirectory, artifactPath), 'utf8'));
-    } catch {
-      continue;
-    }
+    const parsed = context.validatedArtifacts.get(artifactPath)?.parsedJson;
+    if (parsed === null || parsed === undefined) continue;
     if (parsed?.schema_version !== RAW_EVIDENCE_SCHEMA_VERSION) continue;
     const candidate = selectCandidate(parsed?.runs?.[record.run_id]);
     if (isDeepStrictEqual(candidate, expected)) return;
@@ -1318,9 +1446,30 @@ function isSha256(value) {
 }
 
 function isIsoTimestamp(value) {
-  return typeof value === 'string'
-    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
-    && Number.isFinite(Date.parse(value));
+  if (typeof value !== 'string') return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(?:Z|[+-](\d{2}):(\d{2}))$/.exec(value);
+  if (match === null) return false;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText,
+    offsetHourText, offsetMinuteText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  const offsetHour = offsetHourText === undefined ? 0 : Number(offsetHourText);
+  const offsetMinute = offsetMinuteText === undefined ? 0 : Number(offsetMinuteText);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return month >= 1
+    && month <= 12
+    && day >= 1
+    && day <= daysInMonth[month - 1]
+    && hour <= 23
+    && minute <= 59
+    && second <= 59
+    && offsetHour <= 23
+    && offsetMinute <= 59;
 }
 
 function isWorkflowRunUrl(value) {
@@ -1372,11 +1521,11 @@ function buildReceipt(records) {
     failureCategoryMap.set(category, current);
   }
   const failureCategories = [...failureCategoryMap.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
+    .sort(([left], [right]) => compareLexically(left, right))
     .map(([category, runIds]) => ({
       category,
       count: runIds.length,
-      run_ids: [...runIds].sort(),
+      run_ids: sortedUnique(runIds),
     }));
   const failureRecords = records
     .filter((record) => record.status !== 'PASS')
@@ -1401,7 +1550,7 @@ function buildReceipt(records) {
   const blockedControlScenarios = controlRecords
     .filter((record) => record.status === 'BLOCKED')
     .map((record) => ({
-      artifact_paths: record.artifact_paths,
+      artifact_paths: sortedUnique(record.artifact_paths),
       category: getFailureCategory(record.failure),
       counts_toward_target: false,
       provenance: {
@@ -1420,9 +1569,9 @@ function buildReceipt(records) {
     );
     if (blockedCriteria.length === 0) return [];
     return [{
-      artifact_paths: [...new Set(blockedCriteria.flatMap(
+      artifact_paths: sortedUnique(blockedCriteria.flatMap(
         (criterion) => record.checks[criterion].artifact_paths,
-      ))].sort(),
+      )),
       category: getFailureCategory(record.failure),
       counts_toward_target: true,
       criteria: blockedCriteria,
@@ -1436,9 +1585,9 @@ function buildReceipt(records) {
       (criterion) => record.checks[criterion].status === 'NOT_TESTED',
     );
     if (criteriaNotTested.length === 0) return [];
-    const artifactPaths = [...new Set(criteriaNotTested.flatMap(
+    const artifactPaths = sortedUnique(criteriaNotTested.flatMap(
       (criterion) => record.checks[criterion].artifact_paths,
-    ))].sort();
+    ));
     return [{
       artifact_paths: artifactPaths,
       criteria: criteriaNotTested,
@@ -1472,7 +1621,7 @@ function buildReceipt(records) {
       traceable_results: traceableResults,
     },
     evidence_scope: {
-      image_review_trust_boundary: 'only structurally decoded PNG image evidence is supported; reducer verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof',
+      image_review_trust_boundary: 'only canonical stripped, structurally decoded PNG image evidence is supported; reducer accepts only IHDR, IDAT, and IEND chunks and verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof',
       repeated_fixture_runs: 'controlled software repeatability only',
       unestablished: UNESTABLISHED_EVIDENCE,
       latency_policy: 'never infer latency from zero or missing fields',
@@ -1539,7 +1688,7 @@ function getCriterionArtifactPaths(record, criterion) {
   } else if (criterion === 'SC4') {
     artifactPaths.push(...record.security_matrix.artifact_paths);
   }
-  return [...new Set(artifactPaths)].sort();
+  return sortedUnique(artifactPaths);
 }
 
 function getFailureCategory(failure) {
@@ -1552,13 +1701,18 @@ function getFailureCategory(failure) {
 function buildFailureRecord(record) {
   const failure = record.failure;
   const diagnostics = Object.hasOwn(failure, 'diagnostics')
-    ? Object.fromEntries(Object.keys(failure.diagnostics).sort().map(
-      (key) => [key, copySafeDiagnosticValue(failure.diagnostics[key])],
+    ? Object.fromEntries(Object.keys(failure.diagnostics).sort(compareLexically).map(
+      (key) => [
+        key,
+        key === 'diagnostic_codes'
+          ? sortedUnique(failure.diagnostics[key])
+          : copySafeDiagnosticValue(failure.diagnostics[key]),
+      ],
     ))
     : null;
 
   return {
-    artifact_paths: [...record.artifact_paths].sort(),
+    artifact_paths: sortedUnique(record.artifact_paths),
     category: getFailureCategory(failure),
     diagnostics,
     reason_code: failure.reason_code,
@@ -1701,22 +1855,98 @@ function buildMarkdown(receipt) {
     '',
     'Latency is never inferred from zero or missing fields.',
     '',
-    'Only structurally decoded PNG image evidence is supported; the reducer verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof.',
+    'Only canonical stripped, structurally decoded PNG image evidence is supported; the reducer accepts only IHDR, IDAT, and IEND chunks and verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof.',
   );
 
   return `${lines.join('\n')}\n`;
 }
 
+function validateReceiptDestinations(outputDirectory) {
+  for (const receiptName of [
+    'sc1-sc5-evidence-receipt.json',
+    'sc1-sc5-evidence-receipt.md',
+  ]) {
+    validateReceiptDestination(path.join(outputDirectory, receiptName));
+  }
+}
+
+function validateReceiptDestination(destination) {
+  let stats;
+  try {
+    stats = lstatSync(destination);
+  } catch (error) {
+    if (error?.code === 'ENOENT') return;
+    throw error;
+  }
+  if (stats.isSymbolicLink()) {
+    throw new Error('Unsafe symlinked receipt destination rejected');
+  }
+  if (!stats.isFile()) {
+    throw new Error('Unsafe non-file receipt destination rejected');
+  }
+}
+
+function writeReceiptAtomically(outputDirectory, receiptName, contents) {
+  const destination = path.join(outputDirectory, receiptName);
+  const temporary = path.join(
+    outputDirectory,
+    `.${receiptName}.${process.pid}.${randomUUID()}.tmp`,
+  );
+  let descriptor = null;
+  let renamed = false;
+  try {
+    descriptor = openSync(
+      temporary,
+      fsConstants.O_WRONLY
+        | fsConstants.O_CREAT
+        | fsConstants.O_EXCL
+        | fsConstants.O_NOFOLLOW,
+      0o600,
+    );
+    fchmodSync(descriptor, 0o600);
+    writeFileSync(descriptor, contents, { encoding: 'utf8' });
+    fsyncSync(descriptor);
+    closeSync(descriptor);
+    descriptor = null;
+    assertPathHasNoSymlinks(outputDirectory, 'output');
+    validateReceiptDestination(destination);
+    renameSync(temporary, destination);
+    renamed = true;
+  } finally {
+    try {
+      if (descriptor !== null) closeSync(descriptor);
+    } finally {
+      if (!renamed) {
+        try {
+          unlinkSync(temporary);
+        } catch (error) {
+          if (error?.code !== 'ENOENT') throw error;
+        }
+      }
+    }
+  }
+}
+
 function main() {
   const { input, output } = parseArguments(process.argv.slice(2));
-  const receipt = buildReceipt(readRecords(input));
-  mkdirSync(output, { recursive: true });
-  writeFileSync(
-    path.join(output, 'sc1-sc5-evidence-receipt.json'),
+  const {
+    inputDirectory,
+    outputDirectory: requestedOutputDirectory,
+  } = validateInputAndOutputPaths(input, output);
+  const receipt = buildReceipt(readRecords(inputDirectory));
+  const outputDirectory = createSafeOutputDirectory(
+    inputDirectory,
+    requestedOutputDirectory,
+  );
+  validateReceiptDestinations(outputDirectory);
+  writeReceiptAtomically(
+    outputDirectory,
+    'sc1-sc5-evidence-receipt.json',
     `${JSON.stringify(receipt, null, 2)}\n`,
   );
-  writeFileSync(
-    path.join(output, 'sc1-sc5-evidence-receipt.md'),
+  writeReceiptAtomically(
+    outputDirectory,
+    'sc1-sc5-evidence-receipt.md',
     buildMarkdown(receipt),
   );
 }

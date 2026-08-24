@@ -11,10 +11,13 @@ import {
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { isDeepStrictEqual, TextDecoder } from 'node:util';
+import { inflateSync } from 'node:zlib';
 
 const CRITERIA = ['SC1', 'SC2', 'SC3', 'SC4', 'SC5'];
 const REQUIRED_RUNS = 10;
 const RAW_EVIDENCE_SCHEMA_VERSION = 'sc1-sc5-raw-evidence-v1';
+const MAX_PNG_DIMENSION = 16_384;
+const MAX_PNG_PIXEL_STREAM_BYTES = 64 * 1024 * 1024;
 const IMAGE_REVIEW_METHODS = new Set([
   'MANUAL_VISUAL_SECRET_REVIEW',
   'MANUAL_VISUAL_SECRET_REVIEW_AND_REDACTION',
@@ -654,31 +657,31 @@ function assertArtifactHasNoSecrets(artifactPath) {
 
 function classifyImageEvidence(artifactPath, bytes) {
   const extension = path.extname(artifactPath).toLowerCase();
-  const extensionMediaType = extension === '.png'
-    ? 'image/png'
-    : extension === '.jpg' || extension === '.jpeg'
-      ? 'image/jpeg'
-      : null;
+  const hasJpegExtension = extension === '.jpg' || extension === '.jpeg';
   const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   const hasPngMagic = bytes.length >= pngSignature.length
     && bytes.subarray(0, pngSignature.length).equals(pngSignature);
   const hasJpegMagic = bytes.length >= 2
     && bytes[0] === 0xff
     && bytes[1] === 0xd8;
-  const magicMediaType = hasPngMagic ? 'image/png' : hasJpegMagic ? 'image/jpeg' : null;
 
-  if (extensionMediaType === null && magicMediaType === null) return null;
-  if (extensionMediaType !== magicMediaType) {
+  if (hasJpegExtension || hasJpegMagic) {
+    throw new Error('Unsupported JPEG evidence rejected');
+  }
+  if (extension !== '.png' && !hasPngMagic) return null;
+  if (extension !== '.png' || !hasPngMagic) {
     throw new Error('Image extension and magic bytes do not match');
   }
-  if (magicMediaType === 'image/png') validatePngStructure(bytes, pngSignature);
-  if (magicMediaType === 'image/jpeg') validateJpegStructure(bytes);
-  return extensionMediaType;
+  validatePngStructure(bytes, pngSignature);
+  return 'image/png';
 }
 
 function validatePngStructure(bytes, signature) {
   const invalid = () => {
     throw new Error('Invalid PNG structure rejected');
+  };
+  const invalidPixelStream = () => {
+    throw new Error('Invalid PNG pixel stream rejected');
   };
   const forbiddenMetadata = () => {
     throw new Error('Forbidden PNG metadata rejected');
@@ -696,10 +699,11 @@ function validatePngStructure(bytes, signature) {
   const singletonChunks = new Set();
   let offset = signature.length;
   let chunkIndex = 0;
-  let colorType = null;
+  let header = null;
   let sawIdat = false;
   let idatBytes = 0;
-  let sawPlte = false;
+  let paletteEntries = null;
+  const idatChunks = [];
 
   while (offset < bytes.length) {
     if (bytes.length - offset < 12) invalid();
@@ -721,7 +725,7 @@ function validatePngStructure(bytes, signature) {
       const width = data.readUInt32BE(0);
       const height = data.readUInt32BE(4);
       const bitDepth = data[8];
-      colorType = data[9];
+      const colorType = data[9];
       const validBitDepths = {
         0: [1, 2, 4, 8, 16],
         2: [8, 16],
@@ -731,12 +735,31 @@ function validatePngStructure(bytes, signature) {
       };
       if (width === 0
         || height === 0
+        || width > MAX_PNG_DIMENSION
+        || height > MAX_PNG_DIMENSION
         || !validBitDepths[colorType]?.includes(bitDepth)
         || data[10] !== 0
         || data[11] !== 0
-        || ![0, 1].includes(data[12])) {
+        || data[12] !== 0) {
         invalid();
       }
+      const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[colorType];
+      const rowBytes = Math.ceil(width * channels * bitDepth / 8);
+      const pixelStreamBytes = height * (rowBytes + 1);
+      if (!Number.isSafeInteger(pixelStreamBytes)
+        || pixelStreamBytes <= 0
+        || pixelStreamBytes > MAX_PNG_PIXEL_STREAM_BYTES) {
+        invalid();
+      }
+      header = {
+        bitDepth,
+        bytesPerPixel: Math.max(1, Math.ceil(channels * bitDepth / 8)),
+        colorType,
+        height,
+        pixelStreamBytes,
+        rowBytes,
+        width,
+      };
       singletonChunks.add(type);
     } else if (type === 'IDAT') {
       if (!singletonChunks.has('IHDR') || sawIdat && singletonChunks.has('IDAT_ENDED')) {
@@ -744,23 +767,37 @@ function validatePngStructure(bytes, signature) {
       }
       sawIdat = true;
       idatBytes += length;
+      if (idatBytes > MAX_PNG_PIXEL_STREAM_BYTES) invalid();
+      idatChunks.push(data);
     } else if (type === 'IEND') {
       if (length !== 0
         || !sawIdat
         || idatBytes === 0
         || singletonChunks.has(type)
         || chunkEnd !== bytes.length
-        || colorType === 3 && !sawPlte) {
+        || header.colorType === 3 && paletteEntries === null) {
         invalid();
       }
+      validatePngPixelStream(
+        Buffer.concat(idatChunks, idatBytes),
+        header,
+        paletteEntries,
+        invalidPixelStream,
+      );
       singletonChunks.add(type);
       return;
     } else {
       if (forbiddenChunks.has(type) || !safeAncillaryChunks.has(type)) forbiddenMetadata();
       if (!singletonChunks.has('IHDR') || sawIdat || singletonChunks.has(type)) invalid();
-      validateSafePngAncillaryChunk(type, data, colorType, invalid);
+      validateSafePngAncillaryChunk(
+        type,
+        data,
+        header,
+        paletteEntries,
+        invalid,
+      );
       singletonChunks.add(type);
-      if (type === 'PLTE') sawPlte = true;
+      if (type === 'PLTE') paletteEntries = data.length / 3;
     }
 
     if (sawIdat && type !== 'IDAT') singletonChunks.add('IDAT_ENDED');
@@ -770,16 +807,22 @@ function validatePngStructure(bytes, signature) {
   invalid();
 }
 
-function validateSafePngAncillaryChunk(type, data, colorType, invalid) {
+function validateSafePngAncillaryChunk(type, data, header, paletteEntries, invalid) {
+  const { bitDepth, colorType } = header;
   if (type === 'PLTE'
     && (data.length === 0
       || data.length > 768
       || data.length % 3 !== 0
-      || [0, 4].includes(colorType))) {
+      || [0, 4].includes(colorType)
+      || colorType === 3 && data.length / 3 > 2 ** bitDepth)) {
     invalid();
   }
   if (type === 'tRNS'
-    && (data.length === 0 || data.length > 256 || [4, 6].includes(colorType))) {
+    && (data.length === 0
+      || [4, 6].includes(colorType)
+      || colorType === 0 && data.length !== 2
+      || colorType === 2 && data.length !== 6
+      || colorType === 3 && (paletteEntries === null || data.length > paletteEntries))) {
     invalid();
   }
   if (type === 'cHRM' && data.length !== 32) invalid();
@@ -787,7 +830,88 @@ function validateSafePngAncillaryChunk(type, data, colorType, invalid) {
   if (type === 'sRGB' && (data.length !== 1 || data[0] > 3)) invalid();
   if (type === 'pHYs' && (data.length !== 9 || data[8] > 1)) invalid();
   const backgroundLengths = { 0: 2, 2: 6, 3: 1, 4: 2, 6: 6 };
-  if (type === 'bKGD' && data.length !== backgroundLengths[colorType]) invalid();
+  if (type === 'bKGD'
+    && (data.length !== backgroundLengths[colorType]
+      || colorType === 3 && (paletteEntries === null || data[0] >= paletteEntries))) {
+    invalid();
+  }
+}
+
+function validatePngPixelStream(compressed, header, paletteEntries, invalid) {
+  let inflated;
+  try {
+    const result = inflateSync(compressed, {
+      info: true,
+      maxOutputLength: header.pixelStreamBytes + 1,
+    });
+    if (result.engine.bytesWritten !== compressed.length) invalid();
+    inflated = result.buffer;
+  } catch {
+    invalid();
+  }
+  if (inflated.length !== header.pixelStreamBytes) invalid();
+
+  let offset = 0;
+  let previousRow = Buffer.alloc(header.rowBytes);
+  for (let rowIndex = 0; rowIndex < header.height; rowIndex += 1) {
+    const filter = inflated[offset];
+    if (filter > 4) invalid();
+    const filteredRow = inflated.subarray(offset + 1, offset + 1 + header.rowBytes);
+    if (filteredRow.length !== header.rowBytes) invalid();
+    const decodedRow = decodePngRow(
+      filter,
+      filteredRow,
+      previousRow,
+      header.bytesPerPixel,
+    );
+    if (header.colorType === 3) {
+      validatePngPaletteIndexes(decodedRow, header, paletteEntries, invalid);
+    }
+    previousRow = decodedRow;
+    offset += header.rowBytes + 1;
+  }
+  if (offset !== inflated.length) invalid();
+}
+
+function decodePngRow(filter, filteredRow, previousRow, bytesPerPixel) {
+  const decoded = Buffer.allocUnsafe(filteredRow.length);
+  for (let index = 0; index < filteredRow.length; index += 1) {
+    const left = index >= bytesPerPixel ? decoded[index - bytesPerPixel] : 0;
+    const above = previousRow[index];
+    const upperLeft = index >= bytesPerPixel ? previousRow[index - bytesPerPixel] : 0;
+    const predictor = filter === 0
+      ? 0
+      : filter === 1
+        ? left
+        : filter === 2
+          ? above
+          : filter === 3
+            ? Math.floor((left + above) / 2)
+            : paethPredictor(left, above, upperLeft);
+    decoded[index] = (filteredRow[index] + predictor) & 0xff;
+  }
+  return decoded;
+}
+
+function paethPredictor(left, above, upperLeft) {
+  const prediction = left + above - upperLeft;
+  const leftDistance = Math.abs(prediction - left);
+  const aboveDistance = Math.abs(prediction - above);
+  const upperLeftDistance = Math.abs(prediction - upperLeft);
+  if (leftDistance <= aboveDistance && leftDistance <= upperLeftDistance) return left;
+  if (aboveDistance <= upperLeftDistance) return above;
+  return upperLeft;
+}
+
+function validatePngPaletteIndexes(decodedRow, header, paletteEntries, invalid) {
+  const mask = 2 ** header.bitDepth - 1;
+  for (let pixel = 0; pixel < header.width; pixel += 1) {
+    const bitOffset = pixel * header.bitDepth;
+    const byte = decodedRow[Math.floor(bitOffset / 8)];
+    const shift = 8 - header.bitDepth - bitOffset % 8;
+    const paletteIndex = byte >> shift & mask;
+    if (paletteIndex >= paletteEntries) invalid();
+  }
 }
 
 function crc32(bytes) {
@@ -801,203 +925,12 @@ function crc32(bytes) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-function validateJpegStructure(bytes) {
-  const invalid = () => {
-    throw new Error('Invalid JPEG structure rejected');
-  };
-  const forbiddenMetadata = () => {
-    throw new Error('Forbidden JPEG metadata rejected');
-  };
-  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) invalid();
-
-  const allowedMarkers = new Set([0xe0, 0xdb, 0xc0, 0xc4, 0xdd, 0xda]);
-  let offset = 2;
-  let sawJfif = false;
-  let sawDqt = false;
-  let sawDht = false;
-  let restartInterval = 0;
-  let frameComponentIds = null;
-
-  while (offset < bytes.length) {
-    if (bytes[offset] !== 0xff) invalid();
-    while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
-    if (offset >= bytes.length) invalid();
-    const marker = bytes[offset];
-    offset += 1;
-    if (marker === 0xfe || marker >= 0xe1 && marker <= 0xef) forbiddenMetadata();
-    if (!allowedMarkers.has(marker)) invalid();
-    if (offset + 2 > bytes.length) invalid();
-    const segmentLength = bytes.readUInt16BE(offset);
-    if (segmentLength < 2 || segmentLength > bytes.length - offset) invalid();
-    const dataStart = offset + 2;
-    const segmentEnd = offset + segmentLength;
-    const data = bytes.subarray(dataStart, segmentEnd);
-
-    if (marker === 0xe0) {
-      if (sawJfif
-        || data.length !== 14
-        || !data.subarray(0, 5).equals(Buffer.from([0x4a, 0x46, 0x49, 0x46, 0x00]))
-        || data[5] !== 1
-        || data[7] > 2
-        || data.readUInt16BE(8) === 0
-        || data.readUInt16BE(10) === 0
-        || data[12] !== 0
-        || data[13] !== 0) {
-        forbiddenMetadata();
-      }
-      sawJfif = true;
-    } else if (marker === 0xdb) {
-      validateJpegQuantizationTables(data, invalid);
-      sawDqt = true;
-    } else if (marker === 0xc0) {
-      if (frameComponentIds !== null || !sawDqt) invalid();
-      frameComponentIds = validateJpegFrame(data, invalid);
-    } else if (marker === 0xc4) {
-      validateJpegHuffmanTables(data, invalid);
-      sawDht = true;
-    } else if (marker === 0xdd) {
-      if (data.length !== 2) invalid();
-      restartInterval = data.readUInt16BE(0);
-    } else if (marker === 0xda) {
-      if (frameComponentIds === null || !sawDht) invalid();
-      validateJpegScanHeader(data, frameComponentIds, invalid);
-      validateJpegEntropy(bytes, segmentEnd, restartInterval, invalid);
-      return;
-    }
-    offset = segmentEnd;
-  }
-  invalid();
-}
-
-function validateJpegQuantizationTables(data, invalid) {
-  let offset = 0;
-  let tableCount = 0;
-  while (offset < data.length) {
-    const tableInfo = data[offset];
-    offset += 1;
-    const precision = tableInfo >> 4;
-    const tableId = tableInfo & 0x0f;
-    if (precision > 1 || tableId > 3) invalid();
-    const tableBytes = precision === 0 ? 64 : 128;
-    if (tableBytes > data.length - offset) invalid();
-    offset += tableBytes;
-    tableCount += 1;
-  }
-  if (tableCount === 0 || offset !== data.length) invalid();
-}
-
-function validateJpegFrame(data, invalid) {
-  if (data.length < 9 || data[0] !== 8) invalid();
-  const height = data.readUInt16BE(1);
-  const width = data.readUInt16BE(3);
-  const componentCount = data[5];
-  if (width === 0
-    || height === 0
-    || componentCount === 0
-    || componentCount > 4
-    || data.length !== 6 + componentCount * 3) {
-    invalid();
-  }
-  const componentIds = new Set();
-  for (let index = 0; index < componentCount; index += 1) {
-    const offset = 6 + index * 3;
-    const componentId = data[offset];
-    const horizontalSampling = data[offset + 1] >> 4;
-    const verticalSampling = data[offset + 1] & 0x0f;
-    if (componentIds.has(componentId)
-      || horizontalSampling === 0
-      || horizontalSampling > 4
-      || verticalSampling === 0
-      || verticalSampling > 4
-      || data[offset + 2] > 3) {
-      invalid();
-    }
-    componentIds.add(componentId);
-  }
-  return componentIds;
-}
-
-function validateJpegHuffmanTables(data, invalid) {
-  let offset = 0;
-  let tableCount = 0;
-  while (offset < data.length) {
-    if (data.length - offset < 17) invalid();
-    const tableInfo = data[offset];
-    offset += 1;
-    if ((tableInfo >> 4) > 1 || (tableInfo & 0x0f) > 3) invalid();
-    let symbolCount = 0;
-    for (let index = 0; index < 16; index += 1) symbolCount += data[offset + index];
-    offset += 16;
-    if (symbolCount === 0 || symbolCount > 256 || symbolCount > data.length - offset) invalid();
-    offset += symbolCount;
-    tableCount += 1;
-  }
-  if (tableCount === 0 || offset !== data.length) invalid();
-}
-
-function validateJpegScanHeader(data, frameComponentIds, invalid) {
-  if (data.length < 6) invalid();
-  const componentCount = data[0];
-  if (componentCount === 0
-    || componentCount > frameComponentIds.size
-    || data.length !== 4 + componentCount * 2) {
-    invalid();
-  }
-  const scanComponentIds = new Set();
-  for (let index = 0; index < componentCount; index += 1) {
-    const offset = 1 + index * 2;
-    const componentId = data[offset];
-    const tableSelectors = data[offset + 1];
-    if (!frameComponentIds.has(componentId)
-      || scanComponentIds.has(componentId)
-      || (tableSelectors >> 4) > 3
-      || (tableSelectors & 0x0f) > 3) {
-      invalid();
-    }
-    scanComponentIds.add(componentId);
-  }
-  const spectralOffset = 1 + componentCount * 2;
-  if (data[spectralOffset] !== 0
-    || data[spectralOffset + 1] !== 63
-    || data[spectralOffset + 2] !== 0) {
-    invalid();
-  }
-}
-
-function validateJpegEntropy(bytes, startOffset, restartInterval, invalid) {
-  let offset = startOffset;
-  let sawEntropyData = false;
-  while (offset < bytes.length) {
-    if (bytes[offset] !== 0xff) {
-      sawEntropyData = true;
-      offset += 1;
-      continue;
-    }
-    const markerStart = offset;
-    while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
-    if (offset >= bytes.length) invalid();
-    const marker = bytes[offset];
-    if (marker === 0x00 && offset === markerStart + 1) {
-      sawEntropyData = true;
-      offset += 1;
-      continue;
-    }
-    if (marker >= 0xd0 && marker <= 0xd7) {
-      if (restartInterval === 0) invalid();
-      offset += 1;
-      continue;
-    }
-    if (marker === 0xd9) {
-      if (!sawEntropyData || offset !== bytes.length - 1) invalid();
-      return;
-    }
-    invalid();
-  }
-  invalid();
-}
-
 function validateImageSafetyAttestations(record, imageArtifacts, index) {
   const attestations = record.image_safety_attestations;
+  if (Array.isArray(attestations)
+    && attestations.some((attestation) => attestation?.media_type === 'image/jpeg')) {
+    throw new Error('Unsupported JPEG evidence rejected');
+  }
   if (imageArtifacts.length === 0) {
     if (attestations !== undefined && (!Array.isArray(attestations) || attestations.length !== 0)) {
       throw new Error(`Run record ${index + 1} has invalid image safety attestations`);
@@ -1021,6 +954,7 @@ function validateImageSafetyAttestations(record, imageArtifacts, index) {
     if (!isPlainObject(attestation)
       || !isDeepStrictEqual(Object.keys(attestation).sort(), expectedKeys)
       || typeof attestation.artifact_path !== 'string'
+      || attestation.media_type !== 'image/png'
       || seenPaths.has(attestation.artifact_path)) {
       throw new Error(`Run record ${index + 1} has invalid image safety attestation`);
     }
@@ -1538,7 +1472,7 @@ function buildReceipt(records) {
       traceable_results: traceableResults,
     },
     evidence_scope: {
-      image_review_trust_boundary: 'reducer verifies image format, hash, path, media type, and attestation but cannot independently inspect pixel content; visual redaction and secret review is an attested trust boundary, not automated proof',
+      image_review_trust_boundary: 'only structurally decoded PNG image evidence is supported; reducer verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof',
       repeated_fixture_runs: 'controlled software repeatability only',
       unestablished: UNESTABLISHED_EVIDENCE,
       latency_policy: 'never infer latency from zero or missing fields',
@@ -1767,7 +1701,7 @@ function buildMarkdown(receipt) {
     '',
     'Latency is never inferred from zero or missing fields.',
     '',
-    'The reducer verifies image format, hash, path, media type, and attestation but cannot independently inspect pixel content; visual redaction and secret review is an attested trust boundary, not automated proof.',
+    'Only structurally decoded PNG image evidence is supported; the reducer verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof.',
   );
 
   return `${lines.join('\n')}\n`;

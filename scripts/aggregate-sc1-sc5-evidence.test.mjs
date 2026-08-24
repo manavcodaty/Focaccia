@@ -22,7 +22,7 @@ const reducerPath = path.join(scriptsDirectory, 'aggregate-sc1-sc5-evidence.mjs'
 const CRITERIA = ['SC1', 'SC2', 'SC3', 'SC4', 'SC5'];
 const RAW_EVIDENCE_SCHEMA_VERSION = 'sc1-sc5-raw-evidence-v1';
 const VALID_PNG = createTinyPng();
-const VALID_JPEG = createTinyJpeg();
+const JPEG_SHAPED_EVIDENCE = createJpegShapedEvidence();
 const SECURITY_SCENARIOS = [
   'genuine_unused_accept',
   'replayed_or_copied',
@@ -54,16 +54,44 @@ function pngChunk(type, data = Buffer.alloc(0)) {
   return chunk;
 }
 
-function createTinyPng({ height = 1, width = 1 } = {}) {
+function createTinyPng(options = {}) {
+  const {
+    bitDepth = 8,
+    colorType = 6,
+    compressionMethod = 0,
+    filterMethod = 0,
+    height = 1,
+    idatPayload,
+    idatSplitAt,
+    interlaceMethod = 0,
+    scanlines,
+    width = 1,
+  } = options;
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
-  ihdr.set([8, 6, 0, 0, 0], 8);
-  const scanline = Buffer.alloc(1 + width * height * 4);
+  ihdr.set([bitDepth, colorType, compressionMethod, filterMethod, interlaceMethod], 8);
+
+  const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[colorType] ?? 1;
+  const rowBytes = Math.ceil(width * channels * bitDepth / 8);
+  const rawScanlines = scanlines ?? Buffer.concat(
+    Array.from({ length: height }, () => Buffer.alloc(1 + rowBytes)),
+  );
+  const compressed = idatPayload ?? deflateSync(rawScanlines);
+  const palette = Object.hasOwn(options, 'palette')
+    ? options.palette
+    : colorType === 3
+      ? Buffer.alloc(3 * 2 ** bitDepth)
+      : null;
+  const idatChunks = Number.isInteger(idatSplitAt)
+    ? [compressed.subarray(0, idatSplitAt), compressed.subarray(idatSplitAt)]
+    : [compressed];
+
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     pngChunk('IHDR', ihdr),
-    pngChunk('IDAT', deflateSync(scanline)),
+    ...(palette === null ? [] : [pngChunk('PLTE', palette)]),
+    ...idatChunks.map((data) => pngChunk('IDAT', data)),
     pngChunk('IEND'),
   ]);
 }
@@ -80,7 +108,7 @@ function jpegSegment(marker, data) {
   return segment;
 }
 
-function createTinyJpeg({ entropy = Buffer.from([0x00]), restartInterval = null } = {}) {
+function createJpegShapedEvidence() {
   const jfif = Buffer.from([
     0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01,
     0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
@@ -91,9 +119,6 @@ function createTinyJpeg({ entropy = Buffer.from([0x00]), restartInterval = null 
   const dcHuffmanTable = Buffer.from([0x00, ...huffmanCounts, 0x00]);
   const acHuffmanTable = Buffer.from([0x10, ...huffmanCounts, 0x00]);
   const startOfScan = Buffer.from([1, 1, 0x00, 0, 63, 0]);
-  const restartDefinition = restartInterval === null
-    ? []
-    : [jpegSegment(0xdd, Buffer.from([restartInterval >> 8, restartInterval & 0xff]))];
   return Buffer.concat([
     Buffer.from([0xff, 0xd8]),
     jpegSegment(0xe0, jfif),
@@ -101,9 +126,8 @@ function createTinyJpeg({ entropy = Buffer.from([0x00]), restartInterval = null 
     jpegSegment(0xc0, startOfFrame),
     jpegSegment(0xc4, dcHuffmanTable),
     jpegSegment(0xc4, acHuffmanTable),
-    ...restartDefinition,
     jpegSegment(0xda, startOfScan),
-    entropy,
+    Buffer.from([0x00]),
     Buffer.from([0xff, 0xd9]),
   ]);
 }
@@ -561,9 +585,11 @@ test('states the controlled-evidence boundary without inferring latency', () => 
     assert.match(markdown, /Latency is never inferred from zero or missing fields\./);
     assert.equal(
       receipt.evidence_scope.image_review_trust_boundary,
-      'reducer verifies image format, hash, path, media type, and attestation but cannot independently inspect pixel content; visual redaction and secret review is an attested trust boundary, not automated proof',
+      'only structurally decoded PNG image evidence is supported; reducer verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof',
     );
-    assert.match(markdown, /cannot independently inspect pixel content/i);
+    assert.match(markdown, /only structurally decoded PNG image evidence is supported/i);
+    assert.match(markdown, /exact zlib-decoded scanline structure/i);
+    assert.match(markdown, /cannot independently determine whether pixel content contains secrets/i);
     assert.match(markdown, /attested trust boundary, not automated proof/i);
   } finally {
     rmSync(fixture.root, { force: true, recursive: true });
@@ -1680,31 +1706,47 @@ test('rejects secret-bearing artifacts without printing secret values', async (t
   }
 });
 
-test('accepts checksum-bound PNG and JPEG evidence with substantive safety attestations', async (t) => {
+test('accepts checksum-bound fully decoded PNG evidence with substantive safety attestations', async (t) => {
   const cases = [
-    ['PNG', 'artifacts/gate-capture.png', VALID_PNG, 'image/png'],
-    ['JPEG', 'artifacts/gate-capture.jpeg', VALID_JPEG, 'image/jpeg'],
+    ['RGBA scanline', 'artifacts/gate-capture.png', VALID_PNG],
     [
-      'JPEG stuffed entropy byte',
-      'artifacts/gate-capture-stuffed.jpg',
-      createTinyJpeg({ entropy: Buffer.from([0xff, 0x00]) }),
-      'image/jpeg',
+      'split IDAT chunks and filters 0 through 4',
+      'artifacts/filtered-capture.png',
+      createTinyPng({
+        height: 5,
+        idatSplitAt: 3,
+        scanlines: Buffer.concat(
+          Array.from({ length: 5 }, (_, filter) => Buffer.from([filter, 0, 0, 0, 0])),
+        ),
+      }),
     ],
     [
-      'JPEG restart marker',
-      'artifacts/gate-capture-restart.jpg',
-      createTinyJpeg({
-        entropy: Buffer.from([0x00, 0xff, 0xd0, 0x00]),
-        restartInterval: 1,
+      'packed indexed pixels with a complete palette',
+      'artifacts/indexed-capture.png',
+      createTinyPng({
+        bitDepth: 2,
+        colorType: 3,
+        palette: Buffer.from([
+          0x00, 0x00, 0x00,
+          0x55, 0x55, 0x55,
+          0xaa, 0xaa, 0xaa,
+          0xff, 0xff, 0xff,
+        ]),
+        scanlines: Buffer.from([0, 0x1b]),
+        width: 4,
       }),
-      'image/jpeg',
+    ],
+    [
+      '16-bit grayscale scanline',
+      'artifacts/grayscale-capture.png',
+      createTinyPng({ bitDepth: 16, colorType: 0, scanlines: Buffer.from([0, 0, 0]) }),
     ],
   ];
 
-  for (const [name, artifactPath, bytes, mediaType] of cases) {
+  for (const [name, artifactPath, bytes] of cases) {
     await t.test(name, () => {
       const record = passRecord();
-      addImageEvidence(record, artifactPath, bytes, mediaType);
+      addImageEvidence(record, artifactPath, bytes, 'image/png');
       const fixture = makeFixture([record]);
       writeFixtureArtifact(fixture, artifactPath, bytes);
 
@@ -1716,6 +1758,110 @@ test('accepts checksum-bound PNG and JPEG evidence with substantive safety attes
           'utf8',
         ));
         assert.ok(receipt.criteria.SC1.results[0].artifact_paths.includes(artifactPath));
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects CRC-correct PNGs with invalid decoded pixel streams', async (t) => {
+  const trailingStreamSentinel = 'PNG_IDAT_TRAILING_SENTINEL_4m7q';
+  const cases = [
+    ['invalid zlib payload', createTinyPng({ idatPayload: Buffer.from([0x78, 0x9c, 0x00]) }), null],
+    ['truncated decompressed data', createTinyPng({ scanlines: Buffer.alloc(4) }), null],
+    ['extra decompressed data', createTinyPng({ scanlines: Buffer.alloc(6) }), null],
+    [
+      'dimension and row mismatch',
+      createTinyPng({ scanlines: Buffer.alloc(5), width: 2 }),
+      null,
+    ],
+    ['illegal row filter byte', createTinyPng({ scanlines: Buffer.from([5, 0, 0, 0, 0]) }), null],
+    [
+      'trailing data inside the IDAT zlib stream',
+      createTinyPng({
+        idatPayload: Buffer.concat([
+          deflateSync(Buffer.alloc(5)),
+          Buffer.from(trailingStreamSentinel),
+        ]),
+      }),
+      trailingStreamSentinel,
+    ],
+  ];
+
+  for (const [name, bytes, sentinel] of cases) {
+    await t.test(name, () => {
+      const artifactPath = 'artifacts/pixel-stream.png';
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, 'image/png');
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /invalid PNG pixel stream/i);
+        if (sentinel !== null) {
+          assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
+        }
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects unsupported PNG headers and invalid indexed palettes', async (t) => {
+  const cases = [
+    ['Adam7 interlace', createTinyPng({ interlaceMethod: 1 }), /invalid PNG structure/i],
+    ['unsupported compression method', createTinyPng({ compressionMethod: 1 }), /invalid PNG structure/i],
+    ['unsupported filter method', createTinyPng({ filterMethod: 1 }), /invalid PNG structure/i],
+    [
+      'illegal color and bit-depth combination',
+      createTinyPng({ bitDepth: 4, colorType: 2 }),
+      /invalid PNG structure/i,
+    ],
+    [
+      'dimension above the decoder bound',
+      createTinyPng({ scanlines: Buffer.from([0]), width: 16_385 }),
+      /invalid PNG structure/i,
+    ],
+    [
+      'indexed color without PLTE',
+      createTinyPng({ bitDepth: 1, colorType: 3, palette: null }),
+      /invalid PNG structure/i,
+    ],
+    [
+      'indexed palette exceeds bit-depth capacity',
+      createTinyPng({ bitDepth: 1, colorType: 3, palette: Buffer.alloc(9) }),
+      /invalid PNG structure/i,
+    ],
+    [
+      'indexed pixel refers outside palette',
+      createTinyPng({
+        bitDepth: 1,
+        colorType: 3,
+        palette: Buffer.alloc(3),
+        scanlines: Buffer.from([0, 0x80]),
+      }),
+      /invalid PNG pixel stream/i,
+    ],
+  ];
+
+  for (const [name, bytes, expectedError] of cases) {
+    await t.test(name, () => {
+      const artifactPath = 'artifacts/header.png';
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, 'image/png');
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, expectedError);
+        assert.equal(existsSync(fixture.output), false);
       } finally {
         rmSync(fixture.root, { force: true, recursive: true });
       }
@@ -1818,103 +1964,35 @@ test('rejects PNG trailing bytes and appended polyglot secrets without echoing t
   }
 });
 
-test('rejects malformed JPEG structure despite a matching image attestation', async (t) => {
-  const badLength = Buffer.from(VALID_JPEG);
-  badLength.writeUInt16BE(0xffff, 4);
-  const zeroDimensions = Buffer.from(VALID_JPEG);
-  const sofOffset = zeroDimensions.indexOf(Buffer.from([0xff, 0xc0]));
-  zeroDimensions.writeUInt16BE(0, sofOffset + 7);
-  const missingSof = Buffer.from(VALID_JPEG);
-  missingSof[sofOffset + 1] = 0xdb;
-  const missingSos = Buffer.from(VALID_JPEG);
-  const sosOffset = missingSos.indexOf(Buffer.from([0xff, 0xda]));
-  missingSos[sosOffset + 1] = 0xc4;
-  const badEntropyMarker = Buffer.concat([
-    VALID_JPEG.subarray(0, -3),
-    Buffer.from([0xff, 0x01, 0xff, 0xd9]),
-  ]);
+test('rejects JPEG evidence unconditionally even when checksum-bound and attested', async (t) => {
+  const sentinel = 'JPEG_UNSUPPORTED_SENTINEL_3p8v';
   const cases = [
-    ['signature only', Buffer.from([0xff, 0xd8])],
-    ['truncated image', VALID_JPEG.subarray(0, -1)],
-    ['out-of-bounds segment length', badLength],
-    ['zero dimensions', zeroDimensions],
-    ['missing SOF', missingSof],
-    ['missing SOS', missingSos],
-    ['invalid entropy marker', badEntropyMarker],
-  ];
-
-  for (const [name, bytes] of cases) {
-    await t.test(name, () => {
-      const artifactPath = 'artifacts/structural.jpeg';
-      const record = passRecord();
-      addImageEvidence(record, artifactPath, bytes, 'image/jpeg');
-      const fixture = makeFixture([record]);
-      writeFixtureArtifact(fixture, artifactPath, bytes);
-
-      try {
-        const result = runReducer(fixture.input, fixture.output);
-        assert.notEqual(result.status, 0);
-        assert.match(result.stderr, /invalid JPEG structure/i);
-        assert.equal(existsSync(fixture.output), false);
-      } finally {
-        rmSync(fixture.root, { force: true, recursive: true });
-      }
-    });
-  }
-});
-
-test('rejects JPEG comment and APP metadata without echoing payloads', async (t) => {
-  for (const [name, marker] of [['COM', 0xfe], ['APP0 arbitrary', 0xe0], ['APP1', 0xe1]]) {
-    await t.test(name, () => {
-      const sentinel = `JPEG_METADATA_SECRET_SENTINEL_${name}`;
-      const bytes = Buffer.concat([
-        VALID_JPEG.subarray(0, 2),
-        jpegSegment(marker, Buffer.from(sentinel)),
-        VALID_JPEG.subarray(2),
-      ]);
-      const artifactPath = 'artifacts/metadata.jpeg';
-      const record = passRecord();
-      addImageEvidence(record, artifactPath, bytes, 'image/jpeg');
-      const fixture = makeFixture([record]);
-      writeFixtureArtifact(fixture, artifactPath, bytes);
-
-      try {
-        const result = runReducer(fixture.input, fixture.output);
-        assert.notEqual(result.status, 0);
-        assert.match(result.stderr, /forbidden JPEG metadata/i);
-        assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
-        assert.equal(existsSync(fixture.output), false);
-      } finally {
-        rmSync(fixture.root, { force: true, recursive: true });
-      }
-    });
-  }
-});
-
-test('rejects JPEG trailing bytes and appended polyglot secrets without echoing them', async (t) => {
-  const cases = [
-    ['trailing byte', Buffer.concat([VALID_JPEG, Buffer.from([0x00])]), null],
+    ['JPG extension', 'artifacts/capture.jpg', JPEG_SHAPED_EVIDENCE, 'image/jpeg', null],
+    ['JPEG extension', 'artifacts/capture.jpeg', JPEG_SHAPED_EVIDENCE, 'image/jpeg', null],
     [
-      'polyglot secret',
-      Buffer.concat([VALID_JPEG, Buffer.from('JPEG_POLYGLOT_SECRET_SENTINEL_3p8v')]),
-      'JPEG_POLYGLOT_SECRET_SENTINEL_3p8v',
+      'JPEG with appended secret',
+      'artifacts/appended.jpeg',
+      Buffer.concat([JPEG_SHAPED_EVIDENCE, Buffer.from(sentinel)]),
+      'image/jpeg',
+      sentinel,
     ],
+    ['JPEG magic under PNG extension', 'artifacts/mislabeled.png', JPEG_SHAPED_EVIDENCE, 'image/jpeg', null],
+    ['image/jpeg attestation on PNG', 'artifacts/capture.png', VALID_PNG, 'image/jpeg', null],
   ];
 
-  for (const [name, bytes, sentinel] of cases) {
+  for (const [name, artifactPath, bytes, mediaType, secretSentinel] of cases) {
     await t.test(name, () => {
-      const artifactPath = 'artifacts/trailing.jpeg';
       const record = passRecord();
-      addImageEvidence(record, artifactPath, bytes, 'image/jpeg');
+      addImageEvidence(record, artifactPath, bytes, mediaType);
       const fixture = makeFixture([record]);
       writeFixtureArtifact(fixture, artifactPath, bytes);
 
       try {
         const result = runReducer(fixture.input, fixture.output);
         assert.notEqual(result.status, 0);
-        assert.match(result.stderr, /invalid JPEG structure/i);
-        if (sentinel !== null) {
-          assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
+        assert.match(result.stderr, /unsupported JPEG evidence/i);
+        if (secretSentinel !== null) {
+          assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(secretSentinel));
         }
         assert.equal(existsSync(fixture.output), false);
       } finally {
@@ -1924,9 +2002,8 @@ test('rejects JPEG trailing bytes and appended polyglot secrets without echoing 
   }
 });
 
-test('rejects image extension or magic-byte mismatches', async (t) => {
+test('rejects PNG extension or magic-byte mismatches', async (t) => {
   const cases = [
-    ['PNG bytes with JPEG extension', 'artifacts/capture.jpg', VALID_PNG, 'image/jpeg'],
     ['text with PNG extension', 'artifacts/capture.png', Buffer.from('not an image'), 'image/png'],
   ];
 

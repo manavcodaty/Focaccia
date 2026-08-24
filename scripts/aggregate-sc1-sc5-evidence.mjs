@@ -8,11 +8,30 @@ import {
   realpathSync,
   writeFileSync,
 } from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { TextDecoder } from 'node:util';
+import { isDeepStrictEqual, TextDecoder } from 'node:util';
 
 const CRITERIA = ['SC1', 'SC2', 'SC3', 'SC4', 'SC5'];
 const REQUIRED_RUNS = 10;
+const RAW_EVIDENCE_SCHEMA_VERSION = 'sc1-sc5-raw-evidence-v1';
+const IMAGE_REVIEW_METHODS = new Set([
+  'MANUAL_VISUAL_SECRET_REVIEW',
+  'MANUAL_VISUAL_SECRET_REVIEW_AND_REDACTION',
+  'AUTOMATED_OCR_AND_MANUAL_VISUAL_SECRET_REVIEW',
+]);
+const FAILURE_DIAGNOSTIC_KEYS = new Set([
+  'assertion',
+  'attempt_count',
+  'criterion',
+  'diagnostic_codes',
+  'expected',
+  'expected_count',
+  'observed',
+  'observed_count',
+  'phase',
+  'retry_count',
+]);
 const ALLOWED_STATUSES = ['PASS', 'PARTIAL', 'FAIL', 'NOT_TESTED', 'BLOCKED'];
 const ISOLATION_IDENTITY_FIELDS = [
   'event_id',
@@ -123,7 +142,7 @@ function readRecords(inputDirectory) {
   if (recordNames.length === 0) {
     throw new Error('No target or control records found in the input directory');
   }
-  scanInputDirectoryForSecrets(inputDirectory);
+  const discoveredImagePaths = scanInputDirectoryForSecrets(inputDirectory);
 
   const records = recordNames
     .map((name) => {
@@ -144,6 +163,10 @@ function readRecords(inputDirectory) {
     runIds.add(record.run_id);
   }
   validateBatchIsolation(records);
+  const artifactManifest = new Set(records.flatMap((record) => record.artifact_paths));
+  if (discoveredImagePaths.some((artifactPath) => !artifactManifest.has(artifactPath))) {
+    throw new Error('Missing image safety attestation for unreferenced image evidence');
+  }
 
   return records.sort((left, right) => {
     if (left.run_id < right.run_id) return -1;
@@ -196,7 +219,8 @@ function validateRequiredFields(record, index, inputDirectory) {
 
   for (const field of REQUIRED_RECORD_FIELDS) {
     const nullIsAllowed = (isBlockedControl && controlNullableFields.has(field))
-      || (isPreCreationFailure && ISOLATION_IDENTITY_FIELDS.includes(field))
+      || (isPreCreationFailure
+        && (ISOLATION_IDENTITY_FIELDS.includes(field) || field === 'fixture_sha256'))
       || field === 'failure';
     if (!Object.hasOwn(record, field)
       || record[field] === undefined
@@ -223,8 +247,9 @@ function validateRequiredFields(record, index, inputDirectory) {
 
   const identifierFields = ['run_id', 'event_id', 'ticket_id'];
   for (const field of identifierFields) {
-    const nullIsAllowed = (isBlockedControl || isPreCreationFailure)
-      && ISOLATION_IDENTITY_FIELDS.includes(field);
+    const nullIsAllowed = isBlockedControl
+      || (isPreCreationFailure
+        && (ISOLATION_IDENTITY_FIELDS.includes(field) || field === 'fixture_sha256'));
     if (record[field] === null && nullIsAllowed) continue;
     if (!isSafeIdentifier(record[field])) {
       throw new Error(`Run record ${index + 1} has invalid ${field}`);
@@ -236,8 +261,9 @@ function validateRequiredFields(record, index, inputDirectory) {
     'gate_key_fingerprint',
     'fixture_sha256',
   ]) {
-    const nullIsAllowed = (isBlockedControl || isPreCreationFailure)
-      && ISOLATION_IDENTITY_FIELDS.includes(field);
+    const nullIsAllowed = isBlockedControl
+      || (isPreCreationFailure
+        && (ISOLATION_IDENTITY_FIELDS.includes(field) || field === 'fixture_sha256'));
     if (record[field] === null && nullIsAllowed) continue;
     if (!isBlockedControl && !isSha256(record[field])) {
       throw new Error(`Run record ${index + 1} has invalid ${field}`);
@@ -324,6 +350,7 @@ function validateRequiredFields(record, index, inputDirectory) {
   if (record.status === 'PASS' && !passRecordIsConsistent) {
     throw new Error(`Run record ${index + 1} is an internally inconsistent PASS record`);
   }
+  validateTargetRecordStatus(record, index, isPreCreationFailure);
   const artifactManifest = new Set(record.artifact_paths);
   for (const criterion of CRITERIA) {
     if (record.checks[criterion].artifact_paths.some((entry) => !artifactManifest.has(entry))) {
@@ -339,12 +366,10 @@ function validateRequiredFields(record, index, inputDirectory) {
       );
     }
   }
-  validateArtifactFiles(record.artifact_paths, inputDirectory, index);
-  validateAuthoritativeArtifactCounts(record, inputDirectory, index);
+  validateArtifactFiles(record, inputDirectory, index);
+  validateRawPassEvidence(record, inputDirectory, index);
 
-  if (record.status !== 'PASS' && !hasExplicitFailure(record.failure)) {
-    throw new Error(`Run record ${index + 1} is non-PASS but has no explicit failure`);
-  }
+  if (record.status !== 'PASS') validateFailureSchema(record.failure, index);
 
   return record;
 }
@@ -353,9 +378,58 @@ function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function hasExplicitFailure(value) {
-  if (typeof value === 'string') return value.trim().length > 0;
-  return isPlainObject(value) && Object.keys(value).length > 0;
+function validateFailureSchema(failure, index) {
+  if (failure === null || failure === undefined
+    || (isPlainObject(failure) && Object.keys(failure).length === 0)) {
+    throw new Error(`Run record ${index + 1} is non-PASS but has no explicit failure`);
+  }
+  const invalid = () => {
+    throw new Error(`Run record ${index + 1} has invalid failure schema`);
+  };
+  if (!isPlainObject(failure)) invalid();
+  const allowedKeys = new Set(['category', 'diagnostics', 'reason_code', 'stage']);
+  if (Object.keys(failure).some((key) => !allowedKeys.has(key))
+    || !isFailureIdentifier(failure.category)
+    || !isFailureIdentifier(failure.reason_code)) {
+    invalid();
+  }
+  if (failure.stage !== undefined && !['PRE_CREATION', 'POST_CREATION'].includes(failure.stage)) {
+    invalid();
+  }
+  if (failure.diagnostics !== undefined) {
+    if (!isPlainObject(failure.diagnostics)
+      || Object.keys(failure.diagnostics).some((key) => !FAILURE_DIAGNOSTIC_KEYS.has(key))
+      || Object.values(failure.diagnostics).some((value) => !isSafeDiagnosticValue(value))) {
+      invalid();
+    }
+  }
+}
+
+function isFailureIdentifier(value) {
+  return typeof value === 'string'
+    && /^[A-Z][A-Z0-9_]{1,63}$/.test(value);
+}
+
+function isSafeDiagnosticValue(value) {
+  if (value === null || typeof value === 'boolean' || Number.isInteger(value)) return true;
+  if (Array.isArray(value)) {
+    return value.length <= 32 && value.every(isSafeDiagnosticValue);
+  }
+  if (typeof value !== 'string' || value.length > 64 || !isSafeIdentifier(value)) return false;
+  if (/(?:password|passwd|passphrase|token|payload|private[_-]?key|service[_-]?role)/i.test(value)) {
+    return false;
+  }
+  if (value.length >= 32 && stringEntropy(value) >= 4.2) return false;
+  return true;
+}
+
+function stringEntropy(value) {
+  const counts = new Map();
+  for (const character of value) counts.set(character, (counts.get(character) ?? 0) + 1);
+  return [...counts.values()].reduce((entropy, count) => {
+    const probability = count / value.length;
+    return entropy - probability * Math.log2(probability);
+  }, 0);
 }
 
 function isTargetPreCreationFailure(record) {
@@ -364,6 +438,33 @@ function isTargetPreCreationFailure(record) {
     && isPlainObject(record?.failure)
     && typeof record.failure.stage === 'string'
     && record.failure.stage.replace(/[^A-Za-z0-9]+/g, '_').toUpperCase() === 'PRE_CREATION';
+}
+
+function validateTargetRecordStatus(record, index, isPreCreationFailure) {
+  if (record.counts_toward_target === false) return;
+  const evidenceStatuses = [
+    ...CRITERIA.map((criterion) => record.checks[criterion].status),
+    record.security_matrix.status,
+    record.privacy_audit.status,
+    record.authoritative_backend.status,
+  ];
+  const expectedStatus = evidenceStatuses.includes('FAIL')
+    ? 'FAIL'
+    : evidenceStatuses.includes('BLOCKED')
+      ? 'BLOCKED'
+      : evidenceStatuses.every((status) => status === 'PASS')
+        ? 'PASS'
+        : evidenceStatuses.every((status) => status === 'NOT_TESTED')
+          ? 'NOT_TESTED'
+          : 'PARTIAL';
+  const allowedPreCreationStatus = isPreCreationFailure
+    && ['FAIL', 'BLOCKED'].includes(record.status)
+    && evidenceStatuses.every((status) => ['BLOCKED', 'NOT_TESTED'].includes(status));
+  if (record.status !== expectedStatus && !allowedPreCreationStatus) {
+    throw new Error(
+      `Run record ${index + 1} has inconsistent top-level status; expected ${expectedStatus}`,
+    );
+  }
 }
 
 function isHistoricalBaselineRecord(record) {
@@ -469,10 +570,11 @@ function validateArtifactPathList(value, field, index) {
   }
 }
 
-function validateArtifactFiles(artifactPaths, inputDirectory, index) {
+function validateArtifactFiles(record, inputDirectory, index) {
   const inputRoot = realpathSync(inputDirectory);
+  const imageArtifacts = [];
 
-  for (const artifactPath of artifactPaths) {
+  for (const artifactPath of record.artifact_paths) {
     const isNormalizedRelativePath = !path.isAbsolute(artifactPath)
       && !artifactPath.includes('\\')
       && artifactPath.length <= 1024
@@ -483,26 +585,29 @@ function validateArtifactFiles(artifactPaths, inputDirectory, index) {
       throw new Error(`Run record ${index + 1} has invalid artifact_paths reference`);
     }
 
+    const candidate = path.resolve(inputRoot, artifactPath);
     try {
-      const candidate = path.resolve(inputRoot, artifactPath);
       const candidateRealPath = realpathSync(candidate);
       const staysInsideInput = candidateRealPath.startsWith(`${inputRoot}${path.sep}`);
       const stats = lstatSync(candidate);
       if (!staysInsideInput || stats.isSymbolicLink() || !stats.isFile()) {
         throw new Error('unsafe artifact');
       }
-      assertArtifactHasNoSecrets(candidate);
     } catch (error) {
-      if (error instanceof Error && error.message.startsWith('Secret-bearing input rejected')) {
-        throw error;
-      }
       throw new Error(`Run record ${index + 1} has invalid artifact_paths reference`);
     }
+
+    const mediaType = assertArtifactHasNoSecrets(candidate);
+    if (mediaType !== null) imageArtifacts.push({ artifactPath, candidate, mediaType });
   }
+
+  validateImageSafetyAttestations(record, imageArtifacts, index);
 }
 
 function assertArtifactHasNoSecrets(artifactPath) {
   const bytes = readFileSync(artifactPath);
+  const imageMediaType = classifyImageEvidence(artifactPath, bytes);
+  if (imageMediaType !== null) return imageMediaType;
   if (bytes.includes(0)) {
     throw new Error('Unsupported NUL-bearing binary evidence rejected');
   }
@@ -524,7 +629,7 @@ function assertArtifactHasNoSecrets(artifactPath) {
 
   if (isJson) {
     assertNoSecrets(parsed);
-    return;
+    return null;
   }
 
   assertNoSecrets(text);
@@ -538,9 +643,90 @@ function assertArtifactHasNoSecrets(artifactPath) {
   for (const [category, pattern] of assignmentRules) {
     if (pattern.test(text)) throwSecretError(category);
   }
+  return null;
 }
 
-function scanInputDirectoryForSecrets(directory) {
+function classifyImageEvidence(artifactPath, bytes) {
+  const extension = path.extname(artifactPath).toLowerCase();
+  const extensionMediaType = extension === '.png'
+    ? 'image/png'
+    : extension === '.jpg' || extension === '.jpeg'
+      ? 'image/jpeg'
+      : null;
+  const hasPngMagic = bytes.length >= 8
+    && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  const hasJpegMagic = bytes.length >= 5
+    && bytes[0] === 0xff
+    && bytes[1] === 0xd8
+    && bytes[2] === 0xff
+    && bytes[bytes.length - 2] === 0xff
+    && bytes[bytes.length - 1] === 0xd9;
+  const magicMediaType = hasPngMagic ? 'image/png' : hasJpegMagic ? 'image/jpeg' : null;
+
+  if (extensionMediaType === null && magicMediaType === null) return null;
+  if (extensionMediaType !== magicMediaType) {
+    throw new Error('Image extension and magic bytes do not match');
+  }
+  return extensionMediaType;
+}
+
+function validateImageSafetyAttestations(record, imageArtifacts, index) {
+  const attestations = record.image_safety_attestations;
+  if (imageArtifacts.length === 0) {
+    if (attestations !== undefined && (!Array.isArray(attestations) || attestations.length !== 0)) {
+      throw new Error(`Run record ${index + 1} has invalid image safety attestations`);
+    }
+    return;
+  }
+  if (!Array.isArray(attestations) || attestations.length === 0) {
+    throw new Error(`Run record ${index + 1} is missing image safety attestation`);
+  }
+
+  const expectedKeys = [
+    'artifact_path',
+    'media_type',
+    'redaction_status',
+    'review_method',
+    'sha256',
+    'visual_secret_review_status',
+  ];
+  const seenPaths = new Set();
+  for (const attestation of attestations) {
+    if (!isPlainObject(attestation)
+      || !isDeepStrictEqual(Object.keys(attestation).sort(), expectedKeys)
+      || typeof attestation.artifact_path !== 'string'
+      || seenPaths.has(attestation.artifact_path)) {
+      throw new Error(`Run record ${index + 1} has invalid image safety attestation`);
+    }
+    seenPaths.add(attestation.artifact_path);
+  }
+
+  for (const { artifactPath, candidate, mediaType } of imageArtifacts) {
+    const attestation = attestations.find((entry) => entry.artifact_path === artifactPath);
+    if (attestation === undefined) {
+      throw new Error(`Run record ${index + 1} is missing image safety attestation`);
+    }
+    if (attestation.media_type !== mediaType) {
+      throw new Error(`Run record ${index + 1} has an image safety attestation media type mismatch`);
+    }
+    if (attestation.redaction_status !== 'PASS'
+      || attestation.visual_secret_review_status !== 'PASS') {
+      throw new Error(`Run record ${index + 1} image safety attestation reviews must be PASS`);
+    }
+    if (!IMAGE_REVIEW_METHODS.has(attestation.review_method)) {
+      throw new Error(`Run record ${index + 1} has a non-substantive image safety review method`);
+    }
+    const digest = createHash('sha256').update(readFileSync(candidate)).digest('hex');
+    if (!isSha256(attestation.sha256) || attestation.sha256 !== digest) {
+      throw new Error(`Run record ${index + 1} image safety attestation sha256 mismatch`);
+    }
+  }
+  if (seenPaths.size !== imageArtifacts.length) {
+    throw new Error(`Run record ${index + 1} has invalid image safety attestation references`);
+  }
+}
+
+function scanInputDirectoryForSecrets(directory, rootDirectory = directory, imagePaths = []) {
   const entries = readdirSync(directory, { withFileTypes: true })
     .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
 
@@ -550,11 +736,14 @@ function scanInputDirectoryForSecrets(directory) {
       throw new Error('Input directory contains an unsafe symbolic link');
     }
     if (entry.isDirectory()) {
-      scanInputDirectoryForSecrets(candidate);
+      scanInputDirectoryForSecrets(candidate, rootDirectory, imagePaths);
     } else if (entry.isFile()) {
-      assertArtifactHasNoSecrets(candidate);
+      if (assertArtifactHasNoSecrets(candidate) !== null) {
+        imagePaths.push(path.relative(rootDirectory, candidate).split(path.sep).join('/'));
+      }
     }
   }
+  return imagePaths;
 }
 
 function validateAuthoritativeCounts(authoritativeBackend, index) {
@@ -579,43 +768,104 @@ function validateAuthoritativeCounts(authoritativeBackend, index) {
   }
 }
 
-function validateAuthoritativeArtifactCounts(record, inputDirectory, index) {
-  if (record.authoritative_backend.status !== 'PASS') return;
+function validateRawPassEvidence(record, inputDirectory, index) {
+  for (const criterion of ['SC1', 'SC2', 'SC5']) {
+    if (record.checks[criterion].status === 'PASS') {
+      validateRawBinding(
+        record,
+        record.checks[criterion].artifact_paths,
+        inputDirectory,
+        index,
+        criterion,
+        record.checks[criterion],
+        (rawRun) => rawRun?.checks?.[criterion],
+      );
+    }
+  }
 
-  const expected = record.authoritative_backend.observed_counts;
-  const metricNames = Object.keys(expected).sort();
-  let foundCountArtifact = false;
+  if (record.privacy_audit.status === 'PASS') {
+    validateRawBinding(
+      record,
+      record.privacy_audit.artifact_paths,
+      inputDirectory,
+      index,
+      'privacy_audit',
+      record.privacy_audit,
+      (rawRun) => rawRun?.privacy_audit,
+    );
+  }
+  if (record.checks.SC3.status === 'PASS') {
+    validateRawBinding(
+      record,
+      record.checks.SC3.artifact_paths,
+      inputDirectory,
+      index,
+      'privacy_audit',
+      record.privacy_audit,
+      (rawRun) => rawRun?.privacy_audit,
+    );
+  }
 
-  for (const artifactPath of record.authoritative_backend.artifact_paths) {
+  if (record.security_matrix.status === 'PASS') {
+    validateRawBinding(
+      record,
+      record.security_matrix.artifact_paths,
+      inputDirectory,
+      index,
+      'security_matrix',
+      record.security_matrix,
+      (rawRun) => rawRun?.security_matrix,
+    );
+  }
+  if (record.checks.SC4.status === 'PASS') {
+    validateRawBinding(
+      record,
+      record.checks.SC4.artifact_paths,
+      inputDirectory,
+      index,
+      'security_matrix',
+      record.security_matrix,
+      (rawRun) => rawRun?.security_matrix,
+    );
+  }
+
+  if (record.authoritative_backend.status === 'PASS') {
+    validateRawBinding(
+      record,
+      record.authoritative_backend.artifact_paths,
+      inputDirectory,
+      index,
+      'authoritative_backend',
+      record.authoritative_backend,
+      (rawRun) => rawRun?.authoritative_backend,
+    );
+  }
+}
+
+function validateRawBinding(
+  record,
+  artifactPaths,
+  inputDirectory,
+  index,
+  claimName,
+  expected,
+  selectCandidate,
+) {
+  for (const artifactPath of artifactPaths) {
     let parsed;
     try {
       parsed = JSON.parse(readFileSync(path.resolve(inputDirectory, artifactPath), 'utf8'));
     } catch {
       continue;
     }
-    const candidate = isPlainObject(parsed?.observed_counts)
-      ? parsed.observed_counts
-      : isPlainObject(parsed?.counts)
-        ? parsed.counts
-        : parsed;
-    if (!isPlainObject(candidate)
-      || !metricNames.every((metric) => Object.hasOwn(candidate, metric))) {
-      continue;
-    }
-
-    foundCountArtifact = true;
-    if (metricNames.some((metric) => candidate[metric] !== expected[metric])) {
-      throw new Error(
-        `Run record ${index + 1} has an authoritative backend artifact count mismatch`,
-      );
-    }
+    if (parsed?.schema_version !== RAW_EVIDENCE_SCHEMA_VERSION) continue;
+    const candidate = selectCandidate(parsed?.runs?.[record.run_id]);
+    if (isDeepStrictEqual(candidate, expected)) return;
   }
 
-  if (!foundCountArtifact) {
-    throw new Error(
-      `Run record ${index + 1} is missing authoritative backend artifact counts`,
-    );
-  }
+  throw new Error(
+    `Run record ${index + 1} has a raw evidence mismatch for ${claimName}`,
+  );
 }
 
 function validateSuccessfulBackendClaims(record, index) {
@@ -875,12 +1125,16 @@ function buildReceipt(records) {
   const status = targetRecords.some((record) => record.status === 'FAIL')
     || CRITERIA.some((criterion) => criteria[criterion].status === 'FAIL')
     ? 'FAIL'
-    : targetRecords.length > 0 && targetRecords.every((record) => record.status === 'BLOCKED')
+    : targetRecords.some((record) => record.status === 'BLOCKED')
       ? 'BLOCKED'
+    : targetRecords.length > 0
+      && targetRecords.every((record) => record.status === 'NOT_TESTED')
+      ? 'NOT_TESTED'
     : targetObservations.length === 0
       && controlRecords.some((record) => record.status === 'BLOCKED')
       ? 'BLOCKED'
     : CRITERIA.every((criterion) => criteria[criterion].status === 'PASS')
+      && targetRecords.every((record) => record.status === 'PASS')
       ? 'PASS'
       : 'PARTIAL';
 
@@ -1035,40 +1289,24 @@ function getFailureCategory(failure) {
 
 function buildFailureRecord(record) {
   const failure = record.failure;
-  const reason = typeof failure === 'string'
-    ? sanitizeReceiptText(failure)
-    : typeof failure?.reason === 'string'
-      ? sanitizeReceiptText(failure.reason)
-      : null;
-  const diagnostics = isPlainObject(failure) && Object.hasOwn(failure, 'diagnostics')
-    ? sanitizeReceiptValue(failure.diagnostics)
+  const diagnostics = Object.hasOwn(failure, 'diagnostics')
+    ? Object.fromEntries(Object.keys(failure.diagnostics).sort().map(
+      (key) => [key, copySafeDiagnosticValue(failure.diagnostics[key])],
+    ))
     : null;
 
   return {
     artifact_paths: [...record.artifact_paths].sort(),
     category: getFailureCategory(failure),
     diagnostics,
-    reason,
+    reason_code: failure.reason_code,
     run_id: record.run_id,
     workflow_run_url: record.workflow_run_url,
   };
 }
 
-function sanitizeReceiptValue(value) {
-  if (typeof value === 'string') return sanitizeReceiptText(value);
-  if (value === null || typeof value === 'boolean') return value;
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  if (Array.isArray(value)) return value.map(sanitizeReceiptValue);
-  if (isPlainObject(value)) {
-    return Object.fromEntries(Object.keys(value).sort().map(
-      (key) => [key, sanitizeReceiptValue(value[key])],
-    ));
-  }
-  return null;
-}
-
-function sanitizeReceiptText(value) {
-  return value.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
+function copySafeDiagnosticValue(value) {
+  return Array.isArray(value) ? value.map(copySafeDiagnosticValue) : value;
 }
 
 function escapeMarkdownCell(value) {
@@ -1137,7 +1375,7 @@ function buildMarkdown(receipt) {
     lines.push('None.');
   } else {
     lines.push(
-      '| Run | Category | Reason | Diagnostics | Workflow | Raw artifacts |',
+      '| Run | Category | Reason code | Diagnostics | Workflow | Raw artifacts |',
       '| --- | --- | --- | --- | --- | --- |',
       ...receipt.failure_records.map((failure) => {
         const workflow = failure.workflow_run_url
@@ -1146,11 +1384,10 @@ function buildMarkdown(receipt) {
         const artifacts = failure.artifact_paths
           .map((artifactPath) => `\`${artifactPath}\``)
           .join(', ');
-        const reason = failure.reason === null ? 'not provided' : escapeMarkdownCell(failure.reason);
         const diagnostics = failure.diagnostics === null
           ? 'not provided'
           : escapeMarkdownCell(JSON.stringify(failure.diagnostics));
-        return `| \`${failure.run_id}\` | \`${failure.category}\` | ${reason} | ${diagnostics} | ${workflow} | ${artifacts} |`;
+        return `| \`${failure.run_id}\` | \`${failure.category}\` | \`${failure.reason_code}\` | ${diagnostics} | ${workflow} | ${artifacts} |`;
       }),
     );
   }

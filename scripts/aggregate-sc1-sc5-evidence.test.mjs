@@ -6,6 +6,7 @@ import {
   readFileSync,
   renameSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -18,6 +19,16 @@ import { fileURLToPath } from 'node:url';
 const scriptsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const reducerPath = path.join(scriptsDirectory, 'aggregate-sc1-sc5-evidence.mjs');
 const CRITERIA = ['SC1', 'SC2', 'SC3', 'SC4', 'SC5'];
+const RAW_EVIDENCE_SCHEMA_VERSION = 'sc1-sc5-raw-evidence-v1';
+const VALID_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
+const VALID_JPEG = Buffer.from([
+  0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46,
+  0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
+  0x00, 0x01, 0x00, 0x00, 0xff, 0xd9,
+]);
 const SECURITY_SCENARIOS = [
   'genuine_unused_accept',
   'replayed_or_copied',
@@ -90,11 +101,11 @@ function passRecord(overrides = {}) {
         status: 'PASS',
       },
       SC3: {
-        artifact_paths: ['artifacts/journey.json'],
+        artifact_paths: ['artifacts/privacy.json'],
         status: 'PASS',
       },
       SC4: {
-        artifact_paths: ['artifacts/journey.json'],
+        artifact_paths: ['artifacts/security.json'],
         status: 'PASS',
       },
       SC5: {
@@ -190,7 +201,7 @@ function blockedControlRecord(overrides = {}) {
     event_id: null,
     failure: {
       category: 'REMOTE_DISPATCH_PROHIBITED',
-      reason: 'The zero-cost security preflight prohibited remote dispatch.',
+      reason_code: 'ZERO_COST_SECURITY_GATE_BLOCKED_DISPATCH',
     },
     fixture_sha256: null,
     gate_key_fingerprint: null,
@@ -229,17 +240,35 @@ function makeFixture(records) {
   const artifacts = path.join(input, 'artifacts');
   mkdirSync(artifacts, { recursive: true });
 
-  writeFileSync(
-    path.join(artifacts, 'backend-counts.json'),
-    `${JSON.stringify({
-      accepted_check_ins: 1,
-      checked_in_tickets: 1,
-      synchronized_check_ins: 1,
-    })}\n`,
-  );
-  writeFileSync(path.join(artifacts, 'journey.json'), '{"journey":"complete"}\n');
-  writeFileSync(path.join(artifacts, 'privacy.json'), '{"central_biometric_rows":0}\n');
-  writeFileSync(path.join(artifacts, 'security.json'), '{"replay":"rejected"}\n');
+  const rawRuns = Object.fromEntries(records.map((record) => [record.run_id, {
+    authoritative_backend: record.authoritative_backend,
+    checks: {
+      SC1: record.checks.SC1,
+      SC2: record.checks.SC2,
+      SC5: record.checks.SC5,
+    },
+    privacy_audit: record.privacy_audit,
+    security_matrix: record.security_matrix,
+  }]));
+  const writeRawArtifact = (name, selectRunEvidence) => {
+    const runs = Object.fromEntries(Object.entries(rawRuns).map(
+      ([runId, evidence]) => [runId, selectRunEvidence(evidence)],
+    ));
+    writeFileSync(
+      path.join(artifacts, name),
+      `${JSON.stringify({ schema_version: RAW_EVIDENCE_SCHEMA_VERSION, runs }, null, 2)}\n`,
+    );
+  };
+  writeRawArtifact('backend-counts.json', (evidence) => ({
+    authoritative_backend: evidence.authoritative_backend,
+  }));
+  writeRawArtifact('journey.json', (evidence) => ({ checks: evidence.checks }));
+  writeRawArtifact('privacy.json', (evidence) => ({
+    privacy_audit: evidence.privacy_audit,
+  }));
+  writeRawArtifact('security.json', (evidence) => ({
+    security_matrix: evidence.security_matrix,
+  }));
 
   records.forEach((record, index) => {
     writeFileSync(
@@ -258,10 +287,42 @@ function runReducer(input, output) {
 }
 
 function writeBackendCounts(fixture, counts) {
+  const artifactPath = path.join(fixture.input, 'artifacts/backend-counts.json');
+  const artifact = JSON.parse(readFileSync(artifactPath, 'utf8'));
+  const [runId] = Object.keys(artifact.runs);
+  artifact.runs[runId].authoritative_backend.claimed_counts = counts;
+  artifact.runs[runId].authoritative_backend.observed_counts = counts;
   writeFileSync(
-    path.join(fixture.input, 'artifacts/backend-counts.json'),
-    `${JSON.stringify(counts)}\n`,
+    artifactPath,
+    `${JSON.stringify(artifact, null, 2)}\n`,
   );
+}
+
+function mutateRawRunSection(fixture, artifactName, runId, mutate) {
+  const artifactPath = path.join(fixture.input, 'artifacts', artifactName);
+  const artifact = JSON.parse(readFileSync(artifactPath, 'utf8'));
+  mutate(artifact.runs[runId]);
+  writeFileSync(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`);
+}
+
+function addImageEvidence(record, artifactPath, bytes, mediaType, attestationOverrides = {}) {
+  record.artifact_paths = [...record.artifact_paths, artifactPath];
+  record.checks.SC1.artifact_paths = [...record.checks.SC1.artifact_paths, artifactPath];
+  record.image_safety_attestations = [{
+    artifact_path: artifactPath,
+    media_type: mediaType,
+    redaction_status: 'PASS',
+    review_method: 'MANUAL_VISUAL_SECRET_REVIEW_AND_REDACTION',
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+    visual_secret_review_status: 'PASS',
+    ...attestationOverrides,
+  }];
+}
+
+function writeFixtureArtifact(fixture, artifactPath, bytes) {
+  const destination = path.join(fixture.input, artifactPath);
+  mkdirSync(path.dirname(destination), { recursive: true });
+  writeFileSync(destination, bytes);
 }
 
 test('accepts one complete PASS run as one of ten required observations', () => {
@@ -296,6 +357,69 @@ test('accepts one complete PASS run as one of ten required observations', () => 
     }
   } finally {
     rmSync(fixture.root, { force: true, recursive: true });
+  }
+});
+
+test('rejects each PASS section when its raw machine-readable evidence diverges', async (t) => {
+  const cases = [
+    ['SC1', 'journey.json', (raw) => { raw.checks.SC1.assertions.dashboard_updated = false; }],
+    ['SC2', 'journey.json', (raw) => {
+      raw.checks.SC2.assertions.offline_evidence_present = false;
+    }],
+    ['SC5', 'journey.json', (raw) => {
+      raw.checks.SC5.assertions.after_restart_pending_queue_count = 0;
+    }],
+    ['privacy_audit', 'privacy.json', (raw) => { raw.privacy_audit.source_only = true; }],
+    ['security_matrix', 'security.json', (raw) => {
+      raw.security_matrix.scenarios[0].observed = 'REJECT';
+    }],
+    ['authoritative_backend', 'backend-counts.json', (raw) => {
+      raw.authoritative_backend.observed_counts.accepted_check_ins = 0;
+    }],
+  ];
+
+  for (const [claim, artifactName, mutate] of cases) {
+    await t.test(claim, () => {
+      const fixture = makeFixture([passRecord()]);
+      mutateRawRunSection(fixture, artifactName, 'run-001', mutate);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, new RegExp(`raw evidence.*${claim}`, 'i'));
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects placeholder JSON instead of treating filenames as substantive evidence', async (t) => {
+  const cases = [
+    ['journey.json', { journey: 'complete' }],
+    ['privacy.json', { central_biometric_rows: 0 }],
+    ['security.json', { replay: 'rejected' }],
+    ['backend-counts.json', { accepted_check_ins: 1 }],
+  ];
+
+  for (const [artifactName, placeholder] of cases) {
+    await t.test(artifactName, () => {
+      const fixture = makeFixture([passRecord()]);
+      writeFileSync(
+        path.join(fixture.input, 'artifacts', artifactName),
+        `${JSON.stringify(placeholder)}\n`,
+      );
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /raw evidence/i);
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
   }
 });
 
@@ -460,7 +584,7 @@ test('requires an explicit failure field that is null only for PASS records', as
     const fixture = makeFixture([passRecord({
       failure: {
         category: 'SHOULD_NOT_EXIST',
-        reason: 'A PASS record cannot retain a failure.',
+        reason_code: 'PASS_FAILURE_SHOULD_NOT_EXIST',
       },
     })]);
 
@@ -474,16 +598,17 @@ test('requires an explicit failure field that is null only for PASS records', as
   });
 });
 
-test('permits a pre-creation target failure with nullable isolation identities without counting it', () => {
+test('permits a pre-creation target failure with nullable identities and fixture hash without counting it', () => {
   const record = passRecord({
     attendee_id_hash: null,
     event_id: null,
     failure: {
       category: 'PRE_CREATION_SETUP',
       diagnostics: { phase: 'fixture_setup' },
-      reason: 'Fixture creation failed before target identities existed.',
+      reason_code: 'FIXTURE_CREATION_FAILED',
       stage: 'PRE_CREATION',
     },
+    fixture_sha256: null,
     gate_key_fingerprint: null,
     mutable_state_isolated: false,
     organizer_id_hash: null,
@@ -525,7 +650,7 @@ test('rejects nullable target identities outside a structured pre-creation failu
       event_id: null,
       failure: {
         category: 'POST_CREATION_FAILURE',
-        reason: 'The event identity should already exist.',
+        reason_code: 'EVENT_ID_MISSING_AFTER_CREATION',
         stage: 'POST_CREATION',
       },
       status: 'FAIL',
@@ -884,10 +1009,11 @@ test('accepts a deliberately failed fixture and aggregates its failure category'
       category: 'QUEUE_PERSISTENCE',
       diagnostics: {
         assertion: 'pending_queue_after_restart',
+        diagnostic_codes: ['QUEUE_EMPTY_AFTER_RESTART'],
         expected: 1,
         observed: 0,
       },
-      reason: 'The controlled queue persistence assertion failed.',
+      reason_code: 'PENDING_QUEUE_NOT_PERSISTED',
     },
     run_id: 'run-failed-001',
     status: 'FAIL',
@@ -920,10 +1046,11 @@ test('accepts a deliberately failed fixture and aggregates its failure category'
       category: 'QUEUE_PERSISTENCE',
       diagnostics: {
         assertion: 'pending_queue_after_restart',
+        diagnostic_codes: ['QUEUE_EMPTY_AFTER_RESTART'],
         expected: 1,
         observed: 0,
       },
-      reason: 'The controlled queue persistence assertion failed.',
+      reason_code: 'PENDING_QUEUE_NOT_PERSISTED',
       run_id: 'run-failed-001',
       workflow_run_url: 'https://github.com/example/Focaccia/actions/runs/1003',
     }]);
@@ -933,7 +1060,8 @@ test('accepts a deliberately failed fixture and aggregates its failure category'
       'utf8',
     )}`;
     assert.match(serializedOutput, /QUEUE_PERSISTENCE/);
-    assert.match(serializedOutput, /controlled queue persistence assertion failed/i);
+    assert.match(serializedOutput, /PENDING_QUEUE_NOT_PERSISTED/);
+    assert.match(serializedOutput, /QUEUE_EMPTY_AFTER_RESTART/);
     assert.match(serializedOutput, /pending_queue_after_restart/);
     assert.match(serializedOutput, /artifacts\/journey\.json/);
     assert.match(serializedOutput, /actions\/runs\/1003/);
@@ -942,11 +1070,64 @@ test('accepts a deliberately failed fixture and aggregates its failure category'
   }
 });
 
-test('derives overall FAIL when any target criterion fails despite a PARTIAL record status', () => {
+test('rejects unsafe free-form failure details without echoing their values', async (t) => {
+  const cases = [
+    ['reason', 'OPAQUE_PASSWORD_SENTINEL_8c3n', {
+      reason: 'OPAQUE_PASSWORD_SENTINEL_8c3n',
+    }],
+    ['message', 'PROVISIONING_SENTINEL_7m2q', {
+      message: 'PROVISIONING_SENTINEL_7m2q',
+    }],
+    ['details', 'OPAQUE_TOKEN_SENTINEL_9v4p', {
+      details: 'OPAQUE_TOKEN_SENTINEL_9v4p',
+    }],
+    ['credential URL', 'https://user:credential@example.invalid/failure', {
+      diagnostics: { assertion: 'https://user:credential@example.invalid/failure' },
+    }],
+    ['query-secret URL', 'https://example.invalid/failure?token=query-secret', {
+      diagnostics: { assertion: 'https://example.invalid/failure?token=query-secret' },
+    }],
+    ['email', 'private.operator@example.invalid', {
+      diagnostics: { assertion: 'private.operator@example.invalid' },
+    }],
+    ['high-entropy opaque value', 'aB3dE5fG7hJ9kL2mN4pQ6rS8tU1vW3xY5zA7cD9e', {
+      diagnostics: { assertion: 'aB3dE5fG7hJ9kL2mN4pQ6rS8tU1vW3xY5zA7cD9e' },
+    }],
+  ];
+
+  for (const [name, sentinel, unsafeFields] of cases) {
+    await t.test(name, () => {
+      const record = passRecord({
+        failure: {
+          category: 'SAFE_FAILURE_CATEGORY',
+          reason_code: 'SAFE_FAILURE_REASON',
+          ...unsafeFields,
+        },
+        status: 'PARTIAL',
+      });
+      record.checks.SC3.status = 'NOT_TESTED';
+      record.privacy_audit.status = 'NOT_TESTED';
+      const fixture = makeFixture([record]);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /invalid failure schema/i);
+        assert.doesNotMatch(result.stderr, new RegExp(sentinel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+        assert.doesNotMatch(result.stdout, new RegExp(sentinel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects a PARTIAL target record whose criterion evidence requires FAIL', () => {
   const record = passRecord({
     failure: {
       category: 'SECURITY_SCENARIO_FAILURE',
-      reason: 'A required security scenario did not match its expected decision.',
+      reason_code: 'SECURITY_SCENARIO_DECISION_MISMATCH',
     },
     run_id: 'run-criterion-fail',
     status: 'PARTIAL',
@@ -958,31 +1139,19 @@ test('derives overall FAIL when any target criterion fails despite a PARTIAL rec
 
   try {
     const result = runReducer(fixture.input, fixture.output);
-    assert.equal(result.status, 0, result.stderr);
-    const receipt = JSON.parse(
-      readFileSync(path.join(fixture.output, 'sc1-sc5-evidence-receipt.json'), 'utf8'),
-    );
-    assert.equal(receipt.status, 'FAIL');
-    assert.equal(receipt.criteria.SC4.status, 'FAIL');
-    assert.equal(receipt.criteria.SC4.numerator, 0);
-    assert.equal(receipt.criteria.SC4.observed_denominator, 1);
-
-    const markdown = readFileSync(
-      path.join(fixture.output, 'sc1-sc5-evidence-receipt.md'),
-      'utf8',
-    );
-    assert.match(markdown, /Overall status: `FAIL`/);
-    assert.match(markdown, /\| SC4 \| 0 \| 1 \| 10 \| `FAIL` \|/);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /top-level status.*expected FAIL/i);
+    assert.equal(existsSync(fixture.output), false);
   } finally {
     rmSync(fixture.root, { force: true, recursive: true });
   }
 });
 
-test('derives criterion and overall FAIL from a failed supporting evidence section', () => {
+test('rejects a PARTIAL target record whose supporting section requires FAIL', () => {
   const record = passRecord({
     failure: {
       category: 'PRIVACY_AUDIT_FAILURE',
-      reason: 'The retained-evidence audit section failed.',
+      reason_code: 'RETAINED_EVIDENCE_AUDIT_FAILED',
     },
     run_id: 'run-section-fail',
     status: 'PARTIAL',
@@ -994,13 +1163,118 @@ test('derives criterion and overall FAIL from a failed supporting evidence secti
 
   try {
     const result = runReducer(fixture.input, fixture.output);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /top-level status.*expected FAIL/i);
+    assert.equal(existsSync(fixture.output), false);
+  } finally {
+    rmSync(fixture.root, { force: true, recursive: true });
+  }
+});
+
+test('rejects PARTIAL or NOT_TESTED target status when every evidence status is PASS', async (t) => {
+  for (const status of ['PARTIAL', 'NOT_TESTED']) {
+    await t.test(status, () => {
+      const fixture = makeFixture([passRecord({
+        failure: {
+          category: 'INCONSISTENT_STATUS',
+          reason_code: 'TOP_LEVEL_STATUS_MISMATCH',
+        },
+        status,
+      })]);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /top-level status.*expected PASS/i);
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects ten all-PASS evidence records mislabeled PARTIAL before aggregation', () => {
+  const records = Array.from({ length: 10 }, (_, index) => passRecord({
+    failure: {
+      category: 'INCONSISTENT_STATUS',
+      reason_code: 'TOP_LEVEL_STATUS_MISMATCH',
+    },
+    run_id: `run-inconsistent-${String(index + 1).padStart(2, '0')}`,
+    status: 'PARTIAL',
+    workflow_run_url: `https://github.com/example/Focaccia/actions/runs/${1501 + index}`,
+  }));
+  const fixture = makeFixture(records);
+
+  try {
+    const result = runReducer(fixture.input, fixture.output);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /top-level status.*expected PASS/i);
+    assert.equal(existsSync(fixture.output), false);
+  } finally {
+    rmSync(fixture.root, { force: true, recursive: true });
+  }
+});
+
+test('emits NOT_TESTED when every target criterion and section is NOT_TESTED', () => {
+  const record = passRecord({
+    failure: {
+      category: 'EVALUATION_NOT_RUN',
+      reason_code: 'NO_CRITERION_EVALUATED',
+    },
+    run_id: 'run-not-tested',
+    status: 'NOT_TESTED',
+    workflow_run_url: 'https://github.com/example/Focaccia/actions/runs/1515',
+  });
+  for (const criterion of CRITERIA) record.checks[criterion].status = 'NOT_TESTED';
+  for (const section of ['authoritative_backend', 'privacy_audit', 'security_matrix']) {
+    record[section].status = 'NOT_TESTED';
+  }
+  const fixture = makeFixture([record]);
+
+  try {
+    const result = runReducer(fixture.input, fixture.output);
     assert.equal(result.status, 0, result.stderr);
     const receipt = JSON.parse(
       readFileSync(path.join(fixture.output, 'sc1-sc5-evidence-receipt.json'), 'utf8'),
     );
-    assert.equal(receipt.criteria.SC3.status, 'FAIL');
-    assert.equal(receipt.criteria.SC3.results[0].status, 'FAIL');
-    assert.equal(receipt.status, 'FAIL');
+    assert.equal(receipt.status, 'NOT_TESTED');
+    for (const criterion of CRITERIA) {
+      assert.equal(receipt.criteria[criterion].status, 'NOT_TESTED');
+    }
+  } finally {
+    rmSync(fixture.root, { force: true, recursive: true });
+  }
+});
+
+test('does not aggregate PASS when a target record is BLOCKED', () => {
+  const records = Array.from({ length: 10 }, (_, index) => passRecord({
+    run_id: `run-complete-${String(index + 1).padStart(2, '0')}`,
+    workflow_run_url: `https://github.com/example/Focaccia/actions/runs/${1521 + index}`,
+  }));
+  const blocked = passRecord({
+    failure: {
+      category: 'TARGET_BLOCKED',
+      reason_code: 'TARGET_DID_NOT_COMPLETE',
+    },
+    run_id: 'run-blocked-after-completions',
+    status: 'BLOCKED',
+    workflow_run_url: 'https://github.com/example/Focaccia/actions/runs/1531',
+  });
+  for (const criterion of CRITERIA) blocked.checks[criterion].status = 'BLOCKED';
+  for (const section of ['authoritative_backend', 'privacy_audit', 'security_matrix']) {
+    blocked[section].status = 'BLOCKED';
+  }
+  const fixture = makeFixture([...records, blocked]);
+
+  try {
+    const result = runReducer(fixture.input, fixture.output);
+    assert.equal(result.status, 0, result.stderr);
+    const receipt = JSON.parse(
+      readFileSync(path.join(fixture.output, 'sc1-sc5-evidence-receipt.json'), 'utf8'),
+    );
+    assert.equal(receipt.status, 'BLOCKED');
+    assert.notEqual(receipt.status, 'PASS');
   } finally {
     rmSync(fixture.root, { force: true, recursive: true });
   }
@@ -1100,7 +1374,7 @@ test('reports target criteria that were explicitly not tested', () => {
   const record = passRecord({
     failure: {
       category: 'PRIVACY_AUDIT_NOT_RUN',
-      reason: 'The privacy audit was not run for this target observation.',
+      reason_code: 'PRIVACY_AUDIT_NOT_EVALUATED',
     },
     run_id: 'run-partial-001',
     status: 'PARTIAL',
@@ -1120,7 +1394,7 @@ test('reports target criteria that were explicitly not tested', () => {
     assert.equal(receipt.criteria.SC3.observed_denominator, 0);
     assert.equal(receipt.criteria.SC3.numerator, 0);
     assert.deepEqual(receipt.not_tested_scenarios, [{
-      artifact_paths: ['artifacts/journey.json'],
+      artifact_paths: ['artifacts/privacy.json'],
       criteria: ['SC3'],
       counts_toward_target: true,
       run_id: 'run-partial-001',
@@ -1223,6 +1497,133 @@ test('rejects secret-bearing artifacts without printing secret values', async (t
       }
     });
   }
+});
+
+test('accepts checksum-bound PNG and JPEG evidence with substantive safety attestations', async (t) => {
+  const cases = [
+    ['PNG', 'artifacts/gate-capture.png', VALID_PNG, 'image/png'],
+    ['JPEG', 'artifacts/gate-capture.jpeg', VALID_JPEG, 'image/jpeg'],
+  ];
+
+  for (const [name, artifactPath, bytes, mediaType] of cases) {
+    await t.test(name, () => {
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, mediaType);
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.equal(result.status, 0, result.stderr);
+        const receipt = JSON.parse(readFileSync(
+          path.join(fixture.output, 'sc1-sc5-evidence-receipt.json'),
+          'utf8',
+        ));
+        assert.ok(receipt.criteria.SC1.results[0].artifact_paths.includes(artifactPath));
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects image extension or magic-byte mismatches', async (t) => {
+  const cases = [
+    ['PNG bytes with JPEG extension', 'artifacts/capture.jpg', VALID_PNG, 'image/jpeg'],
+    ['text with PNG extension', 'artifacts/capture.png', Buffer.from('not an image'), 'image/png'],
+  ];
+
+  for (const [name, artifactPath, bytes, mediaType] of cases) {
+    await t.test(name, () => {
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, mediaType);
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /image.*(?:extension|magic)|magic.*image/i);
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects missing, mismatched, or non-PASS image safety attestations', async (t) => {
+  const cases = [
+    ['missing audit', undefined, /missing image safety attestation/i],
+    ['hash mismatch', { sha256: '0'.repeat(64) }, /image safety attestation.*sha256/i],
+    [
+      'redaction audit failed',
+      { redaction_status: 'FAIL' },
+      /image safety attestation.*PASS/i,
+    ],
+    [
+      'visual secret review failed',
+      { visual_secret_review_status: 'FAIL' },
+      /image safety attestation.*PASS/i,
+    ],
+  ];
+
+  for (const [name, attestationOverrides, expectedError] of cases) {
+    await t.test(name, () => {
+      const record = passRecord();
+      addImageEvidence(record, 'artifacts/capture.png', VALID_PNG, 'image/png', {
+        ...attestationOverrides,
+      });
+      if (attestationOverrides === undefined) delete record.image_safety_attestations;
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, 'artifacts/capture.png', VALID_PNG);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, expectedError);
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects arbitrary binary and symbolic-link evidence', async (t) => {
+  await t.test('arbitrary binary', () => {
+    const record = passRecord();
+    const artifactPath = 'artifacts/capture.bin';
+    record.artifact_paths.push(artifactPath);
+    const fixture = makeFixture([record]);
+    writeFixtureArtifact(fixture, artifactPath, Buffer.from([0x00, 0xff, 0x01, 0xfe]));
+
+    try {
+      const result = runReducer(fixture.input, fixture.output);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /unsupported.*binary|NUL-bearing/i);
+      assert.equal(existsSync(fixture.output), false);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('symbolic link', () => {
+    const record = passRecord();
+    const artifactPath = 'artifacts/capture.png';
+    addImageEvidence(record, artifactPath, VALID_PNG, 'image/png');
+    const fixture = makeFixture([record]);
+    symlinkSync(path.join(fixture.input, 'artifacts/journey.json'), path.join(fixture.input, artifactPath));
+
+    try {
+      const result = runReducer(fixture.input, fixture.output);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /symbolic link|invalid artifact_paths reference/i);
+      assert.equal(existsSync(fixture.output), false);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
 });
 
 test('rejects NUL-bearing artifacts without scanning around or echoing their contents', () => {
@@ -1625,7 +2026,7 @@ test('requires exactly one synchronized and accepted backend effect for SC5 PASS
       const record = passRecord({
         failure: {
           category: 'SC1_NOT_EVALUATED',
-          reason: 'SC1 is excluded to isolate SC5 backend validation.',
+          reason_code: 'SC1_EXCLUDED_FOR_SC5_VALIDATION',
         },
         status: 'PARTIAL',
       });
@@ -1650,7 +2051,7 @@ test('reports a blocked target run separately from a blocked preflight control',
   const record = passRecord({
     failure: {
       category: 'RUNNER_CAPACITY',
-      reason: 'The target workflow was blocked after dispatch.',
+      reason_code: 'TARGET_WORKFLOW_BLOCKED_AFTER_DISPATCH',
     },
     run_id: 'run-blocked-001',
     status: 'BLOCKED',
@@ -1710,12 +2111,13 @@ test('links successful criterion results to their supporting audit artifacts', (
       'artifacts/backend-counts.json',
       'artifacts/journey.json',
     ]);
-    assert.deepEqual(receipt.criteria.SC3.results[0].artifact_paths, [
+    assert.deepEqual(receipt.criteria.SC2.results[0].artifact_paths, [
       'artifacts/journey.json',
+    ]);
+    assert.deepEqual(receipt.criteria.SC3.results[0].artifact_paths, [
       'artifacts/privacy.json',
     ]);
     assert.deepEqual(receipt.criteria.SC4.results[0].artifact_paths, [
-      'artifacts/journey.json',
       'artifacts/security.json',
     ]);
     assert.deepEqual(receipt.criteria.SC5.results[0].artifact_paths, [
@@ -1741,7 +2143,7 @@ test('rejects authoritative counts that disagree with the raw backend artifact',
   try {
     const result = runReducer(fixture.input, fixture.output);
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /authoritative backend artifact count mismatch/i);
+    assert.match(result.stderr, /raw evidence.*authoritative_backend/i);
     assert.equal(existsSync(fixture.output), false);
   } finally {
     rmSync(fixture.root, { force: true, recursive: true });

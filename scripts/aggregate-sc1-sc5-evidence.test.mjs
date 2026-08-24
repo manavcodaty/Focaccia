@@ -1300,6 +1300,45 @@ test('enforces finite reducer resource budgets with lower test limits', async (t
   });
 });
 
+test('bounds directory entries globally before top-level or recursive materialization', async (t) => {
+  await t.test('top-level record enumeration counts empty directories', () => {
+    const root = realpathSync(mkdtempSync(path.join(tmpdir(), 'sc1-sc5-entry-budget-')));
+    const input = path.join(root, 'input');
+    const output = path.join(root, 'output');
+    mkdirSync(input);
+    mkdirSync(path.join(input, 'empty-a'));
+    mkdirSync(path.join(input, 'empty-b'));
+
+    try {
+      const result = runReducer(input, output, {
+        SC1_SC5_TEST_MAX_INPUT_ENTRIES: '1',
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /input entry count.*budget/i);
+      assert.equal(existsSync(output), false);
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
+  });
+
+  await t.test('recursive scanning uses the same budget for empty directories', () => {
+    const fixture = makeFixture([passRecord()]);
+    mkdirSync(path.join(fixture.input, 'artifacts/empty-a'));
+    mkdirSync(path.join(fixture.input, 'artifacts/empty-b'));
+
+    try {
+      const result = runReducer(fixture.input, fixture.output, {
+        SC1_SC5_TEST_MAX_INPUT_ENTRIES: '7',
+      });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /input entry count.*budget/i);
+      assert.equal(existsSync(fixture.output), false);
+    } finally {
+      rmSync(fixture.root, { force: true, recursive: true });
+    }
+  });
+});
+
 test('rejects unsafe or missing artifact references', async (t) => {
   const cases = [
     ['parent traversal', '../outside.log'],

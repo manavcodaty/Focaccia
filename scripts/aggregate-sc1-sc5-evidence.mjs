@@ -8,8 +8,8 @@ import {
   lstatSync,
   mkdirSync,
   openSync,
+  opendirSync,
   readFileSync,
-  readdirSync,
   realpathSync,
   renameSync,
   unlinkSync,
@@ -24,6 +24,7 @@ const CRITERIA = ['SC1', 'SC2', 'SC3', 'SC4', 'SC5'];
 const REQUIRED_RUNS = 10;
 const RAW_EVIDENCE_SCHEMA_VERSION = 'sc1-sc5-raw-evidence-v1';
 const MAX_RECORDS = lowerTestBudget('MAX_RECORDS', 100);
+const MAX_INPUT_ENTRIES = lowerTestBudget('MAX_INPUT_ENTRIES', 2_000);
 const MAX_RECURSIVE_FILES = lowerTestBudget('MAX_RECURSIVE_FILES', 1_000);
 const MAX_RECURSION_DEPTH = lowerTestBudget('MAX_RECURSION_DEPTH', 8);
 const MAX_FILE_BYTES = lowerTestBudget('MAX_FILE_BYTES', 16 * 1024 * 1024);
@@ -248,7 +249,9 @@ function assertPathHasNoSymlinks(candidate, label) {
 }
 
 function readRecords(inputDirectory) {
-  const recordNames = readdirSync(inputDirectory, { withFileTypes: true })
+  const context = createValidationContext(inputDirectory);
+  const rootEntries = readBoundedDirectoryEntries(inputDirectory, context);
+  const recordNames = rootEntries
     .filter((entry) => entry.name.endsWith('.json'))
     .map((entry) => entry.name)
     .sort(compareLexically);
@@ -268,8 +271,7 @@ function readRecords(inputDirectory) {
     }
   }
 
-  const context = createValidationContext(inputDirectory);
-  scanInputDirectoryForSecrets(inputDirectory, context);
+  scanInputDirectoryForSecrets(inputDirectory, context, 0, rootEntries);
   const discoveredImagePaths = context.imagePaths;
 
   const records = recordNames
@@ -304,6 +306,7 @@ function readRecords(inputDirectory) {
 
 function createValidationContext(inputDirectory) {
   return {
+    entryCount: 0,
     fileCount: 0,
     filesByPath: new Map(),
     filesByRealPath: new Map(),
@@ -312,6 +315,25 @@ function createValidationContext(inputDirectory) {
     totalBytes: 0,
     validatedArtifacts: new Map(),
   };
+}
+
+function readBoundedDirectoryEntries(directory, context) {
+  const entries = [];
+  const directoryHandle = opendirSync(directory);
+  try {
+    while (true) {
+      const entry = directoryHandle.readSync();
+      if (entry === null) break;
+      context.entryCount += 1;
+      if (context.entryCount > MAX_INPUT_ENTRIES) {
+        throw new Error('Input entry count exceeds resource budget');
+      }
+      entries.push(entry);
+    }
+  } finally {
+    directoryHandle.closeSync();
+  }
+  return entries.sort((left, right) => compareLexically(left.name, right.name));
 }
 
 function compareLexically(left, right) {
@@ -1087,12 +1109,11 @@ function validateImageSafetyAttestations(record, imageArtifacts, index) {
   }
 }
 
-function scanInputDirectoryForSecrets(directory, context, depth = 0) {
+function scanInputDirectoryForSecrets(directory, context, depth = 0, knownEntries = null) {
   if (depth > MAX_RECURSION_DEPTH) {
     throw new Error('Input recursion depth exceeds resource budget');
   }
-  const entries = readdirSync(directory, { withFileTypes: true })
-    .sort((left, right) => compareLexically(left.name, right.name));
+  const entries = knownEntries ?? readBoundedDirectoryEntries(directory, context);
 
   for (const entry of entries) {
     const candidate = path.join(directory, entry.name);

@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { deflateSync } from 'node:zlib';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -20,15 +21,8 @@ const scriptsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const reducerPath = path.join(scriptsDirectory, 'aggregate-sc1-sc5-evidence.mjs');
 const CRITERIA = ['SC1', 'SC2', 'SC3', 'SC4', 'SC5'];
 const RAW_EVIDENCE_SCHEMA_VERSION = 'sc1-sc5-raw-evidence-v1';
-const VALID_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-  'base64',
-);
-const VALID_JPEG = Buffer.from([
-  0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46,
-  0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
-  0x00, 0x01, 0x00, 0x00, 0xff, 0xd9,
-]);
+const VALID_PNG = createTinyPng();
+const VALID_JPEG = createTinyJpeg();
 const SECURITY_SCENARIOS = [
   'genuine_unused_accept',
   'replayed_or_copied',
@@ -38,6 +32,81 @@ const SECURITY_SCENARIOS = [
   'cancelled_or_revoked_after_refresh',
   'duplicate_synchronisation',
 ];
+
+function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type, data = Buffer.alloc(0)) {
+  const typeBytes = Buffer.from(type, 'ascii');
+  const chunk = Buffer.alloc(12 + data.length);
+  chunk.writeUInt32BE(data.length, 0);
+  typeBytes.copy(chunk, 4);
+  data.copy(chunk, 8);
+  chunk.writeUInt32BE(crc32(Buffer.concat([typeBytes, data])), 8 + data.length);
+  return chunk;
+}
+
+function createTinyPng({ height = 1, width = 1 } = {}) {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr.set([8, 6, 0, 0, 0], 8);
+  const scanline = Buffer.alloc(1 + width * height * 4);
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', deflateSync(scanline)),
+    pngChunk('IEND'),
+  ]);
+}
+
+function insertBeforePngIend(png, chunk) {
+  return Buffer.concat([png.subarray(0, png.length - 12), chunk, png.subarray(png.length - 12)]);
+}
+
+function jpegSegment(marker, data) {
+  const segment = Buffer.alloc(4 + data.length);
+  segment.set([0xff, marker], 0);
+  segment.writeUInt16BE(data.length + 2, 2);
+  data.copy(segment, 4);
+  return segment;
+}
+
+function createTinyJpeg({ entropy = Buffer.from([0x00]), restartInterval = null } = {}) {
+  const jfif = Buffer.from([
+    0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01,
+    0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+  ]);
+  const quantizationTable = Buffer.from([0x00, ...Array(64).fill(1)]);
+  const startOfFrame = Buffer.from([8, 0, 1, 0, 1, 1, 1, 0x11, 0]);
+  const huffmanCounts = [1, ...Array(15).fill(0)];
+  const dcHuffmanTable = Buffer.from([0x00, ...huffmanCounts, 0x00]);
+  const acHuffmanTable = Buffer.from([0x10, ...huffmanCounts, 0x00]);
+  const startOfScan = Buffer.from([1, 1, 0x00, 0, 63, 0]);
+  const restartDefinition = restartInterval === null
+    ? []
+    : [jpegSegment(0xdd, Buffer.from([restartInterval >> 8, restartInterval & 0xff]))];
+  return Buffer.concat([
+    Buffer.from([0xff, 0xd8]),
+    jpegSegment(0xe0, jfif),
+    jpegSegment(0xdb, quantizationTable),
+    jpegSegment(0xc0, startOfFrame),
+    jpegSegment(0xc4, dcHuffmanTable),
+    jpegSegment(0xc4, acHuffmanTable),
+    ...restartDefinition,
+    jpegSegment(0xda, startOfScan),
+    entropy,
+    Buffer.from([0xff, 0xd9]),
+  ]);
+}
 
 function hashIdentity(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -201,7 +270,16 @@ function blockedControlRecord(overrides = {}) {
     event_id: null,
     failure: {
       category: 'REMOTE_DISPATCH_PROHIBITED',
-      reason_code: 'ZERO_COST_SECURITY_GATE_BLOCKED_DISPATCH',
+      diagnostics: {
+        diagnostic_codes: [
+          'MISSING_USER_PLAN_SCOPE',
+          'MISSING_READ_PACKAGES_SCOPE',
+          'NOT_AUTHORIZED_TO_DISPATCH',
+          'NOT_AUTHORIZED_TO_PUSH',
+          'NO_TARGET_OBSERVATIONS',
+        ],
+      },
+      reason_code: 'ZERO_COST_UNVERIFIED',
     },
     fixture_sha256: null,
     gate_key_fingerprint: null,
@@ -459,6 +537,10 @@ test('states the controlled-evidence boundary without inferring latency', () => 
       path.join(fixture.output, 'sc1-sc5-evidence-receipt.md'),
       'utf8',
     );
+    const receipt = JSON.parse(readFileSync(
+      path.join(fixture.output, 'sc1-sc5-evidence-receipt.json'),
+      'utf8',
+    ));
 
     assert.match(
       markdown,
@@ -477,6 +559,12 @@ test('states the controlled-evidence boundary without inferring latency', () => 
       assert.match(markdown, new RegExp(`${unestablished.replaceAll('/', '\\/')} remains unestablished`));
     }
     assert.match(markdown, /Latency is never inferred from zero or missing fields\./);
+    assert.equal(
+      receipt.evidence_scope.image_review_trust_boundary,
+      'reducer verifies image format, hash, path, media type, and attestation but cannot independently inspect pixel content; visual redaction and secret review is an attested trust boundary, not automated proof',
+    );
+    assert.match(markdown, /cannot independently inspect pixel content/i);
+    assert.match(markdown, /attested trust boundary, not automated proof/i);
   } finally {
     rmSync(fixture.root, { force: true, recursive: true });
   }
@@ -583,8 +671,8 @@ test('requires an explicit failure field that is null only for PASS records', as
   await t.test('PASS with a failure', () => {
     const fixture = makeFixture([passRecord({
       failure: {
-        category: 'SHOULD_NOT_EXIST',
-        reason_code: 'PASS_FAILURE_SHOULD_NOT_EXIST',
+        category: 'VALIDATION_FAILURE',
+        reason_code: 'UNSAFE_PUBLISHED_ARTIFACTS',
       },
     })]);
 
@@ -603,9 +691,9 @@ test('permits a pre-creation target failure with nullable identities and fixture
     attendee_id_hash: null,
     event_id: null,
     failure: {
-      category: 'PRE_CREATION_SETUP',
-      diagnostics: { phase: 'fixture_setup' },
-      reason_code: 'FIXTURE_CREATION_FAILED',
+      category: 'WORKFLOW_FAILURE',
+      diagnostics: { diagnostic_codes: ['NO_TARGET_OBSERVATIONS'] },
+      reason_code: 'PRE_CREATION_FAILURE',
       stage: 'PRE_CREATION',
     },
     fixture_sha256: null,
@@ -643,14 +731,56 @@ test('permits a pre-creation target failure with nullable identities and fixture
   }
 });
 
+test('never counts a PRE_CREATION failure with populated identities as an observation', () => {
+  const record = passRecord({
+    failure: {
+      category: 'WORKFLOW_FAILURE',
+      diagnostics: { diagnostic_codes: ['NO_TARGET_OBSERVATIONS'] },
+      reason_code: 'PRE_CREATION_FAILURE',
+      stage: 'PRE_CREATION',
+    },
+    run_id: 'run-pre-creation-populated-identities',
+    status: 'FAIL',
+    workflow_run_url: 'https://github.com/example/Focaccia/actions/runs/1121',
+  });
+  for (const criterion of CRITERIA) record.checks[criterion].status = 'NOT_TESTED';
+  for (const section of ['authoritative_backend', 'privacy_audit', 'security_matrix']) {
+    record[section].status = 'NOT_TESTED';
+  }
+  const fixture = makeFixture([record]);
+
+  try {
+    const result = runReducer(fixture.input, fixture.output);
+    assert.equal(result.status, 0, result.stderr);
+    const receipt = JSON.parse(readFileSync(
+      path.join(fixture.output, 'sc1-sc5-evidence-receipt.json'),
+      'utf8',
+    ));
+    assert.equal(receipt.target.observed_target_runs, 0);
+    assert.equal(receipt.target.remaining_required_runs, 10);
+    assert.equal(receipt.evidence_completeness.complete, false);
+    assert.equal(receipt.evidence_completeness.target_observations_missing, 10);
+    for (const criterion of CRITERIA) {
+      assert.equal(receipt.criteria[criterion].observed_denominator, 0);
+      assert.equal(receipt.criteria[criterion].results[0].counts_as_observation, false);
+    }
+    assert.deepEqual(receipt.failure_records[0].diagnostics, {
+      diagnostic_codes: ['NO_TARGET_OBSERVATIONS'],
+    });
+    assert.equal(receipt.failure_records[0].reason_code, 'PRE_CREATION_FAILURE');
+  } finally {
+    rmSync(fixture.root, { force: true, recursive: true });
+  }
+});
+
 test('rejects nullable target identities outside a structured pre-creation failure', async (t) => {
   const cases = [
     ['PASS record', passRecord({ event_id: null })],
     ['post-creation failure', passRecord({
       event_id: null,
       failure: {
-        category: 'POST_CREATION_FAILURE',
-        reason_code: 'EVENT_ID_MISSING_AFTER_CREATION',
+        category: 'WORKFLOW_FAILURE',
+        reason_code: 'CRITERION_EVIDENCE_INCOMPLETE',
         stage: 'POST_CREATION',
       },
       status: 'FAIL',
@@ -1006,14 +1136,13 @@ test('rejects internally inconsistent PASS records', async (t) => {
 test('accepts a deliberately failed fixture and aggregates its failure category', () => {
   const record = passRecord({
     failure: {
-      category: 'QUEUE_PERSISTENCE',
+      category: 'RECONNECT_TIMEOUT',
       diagnostics: {
-        assertion: 'pending_queue_after_restart',
-        diagnostic_codes: ['QUEUE_EMPTY_AFTER_RESTART'],
-        expected: 1,
-        observed: 0,
+        expected_count: 1,
+        observed_count: 0,
+        reconnect_completed: false,
       },
-      reason_code: 'PENDING_QUEUE_NOT_PERSISTED',
+      reason_code: 'RECONNECT_DID_NOT_COMPLETE',
     },
     run_id: 'run-failed-001',
     status: 'FAIL',
@@ -1032,7 +1161,7 @@ test('accepts a deliberately failed fixture and aggregates its failure category'
     assert.equal(receipt.criteria.SC5.numerator, 0);
     assert.equal(receipt.criteria.SC5.observed_denominator, 1);
     assert.deepEqual(receipt.failure_categories, [{
-      category: 'QUEUE_PERSISTENCE',
+      category: 'RECONNECT_TIMEOUT',
       count: 1,
       run_ids: ['run-failed-001'],
     }]);
@@ -1043,14 +1172,13 @@ test('accepts a deliberately failed fixture and aggregates its failure category'
         'artifacts/privacy.json',
         'artifacts/security.json',
       ],
-      category: 'QUEUE_PERSISTENCE',
+      category: 'RECONNECT_TIMEOUT',
       diagnostics: {
-        assertion: 'pending_queue_after_restart',
-        diagnostic_codes: ['QUEUE_EMPTY_AFTER_RESTART'],
-        expected: 1,
-        observed: 0,
+        expected_count: 1,
+        observed_count: 0,
+        reconnect_completed: false,
       },
-      reason_code: 'PENDING_QUEUE_NOT_PERSISTED',
+      reason_code: 'RECONNECT_DID_NOT_COMPLETE',
       run_id: 'run-failed-001',
       workflow_run_url: 'https://github.com/example/Focaccia/actions/runs/1003',
     }]);
@@ -1059,10 +1187,10 @@ test('accepts a deliberately failed fixture and aggregates its failure category'
       path.join(fixture.output, 'sc1-sc5-evidence-receipt.md'),
       'utf8',
     )}`;
-    assert.match(serializedOutput, /QUEUE_PERSISTENCE/);
-    assert.match(serializedOutput, /PENDING_QUEUE_NOT_PERSISTED/);
-    assert.match(serializedOutput, /QUEUE_EMPTY_AFTER_RESTART/);
-    assert.match(serializedOutput, /pending_queue_after_restart/);
+    assert.match(serializedOutput, /RECONNECT_TIMEOUT/);
+    assert.match(serializedOutput, /RECONNECT_DID_NOT_COMPLETE/);
+    assert.match(serializedOutput, /reconnect_completed/);
+    assert.match(serializedOutput, /expected_count/);
     assert.match(serializedOutput, /artifacts\/journey\.json/);
     assert.match(serializedOutput, /actions\/runs\/1003/);
   } finally {
@@ -1099,8 +1227,8 @@ test('rejects unsafe free-form failure details without echoing their values', as
     await t.test(name, () => {
       const record = passRecord({
         failure: {
-          category: 'SAFE_FAILURE_CATEGORY',
-          reason_code: 'SAFE_FAILURE_REASON',
+          category: 'VALIDATION_FAILURE',
+          reason_code: 'UNSAFE_PUBLISHED_ARTIFACTS',
           ...unsafeFields,
         },
         status: 'PARTIAL',
@@ -1123,11 +1251,64 @@ test('rejects unsafe free-form failure details without echoing their values', as
   }
 });
 
+test('rejects failure values outside the finite evaluator code sets without echoing them', async (t) => {
+  const cases = [
+    ['unknown category', 'UNKNOWN_CATEGORY_SENTINEL', (failure) => {
+      failure.category = 'UNKNOWN_CATEGORY_SENTINEL';
+    }],
+    ['unknown reason code', 'UNKNOWN_REASON_SENTINEL', (failure) => {
+      failure.reason_code = 'UNKNOWN_REASON_SENTINEL';
+    }],
+    ['unknown diagnostic code', 'UNKNOWN_DIAGNOSTIC_CODE_SENTINEL', (failure) => {
+      failure.diagnostics = { diagnostic_codes: ['UNKNOWN_DIAGNOSTIC_CODE_SENTINEL'] };
+    }],
+    ['short password-like value', 'hunter2', (failure) => {
+      failure.diagnostics = { expected_count: 'hunter2' };
+    }],
+    ['short secret-like value', 'SECRET_123', (failure) => {
+      failure.diagnostics = { observed_count: 'SECRET_123' };
+    }],
+    ['short payload-like value', 'qrBlob', (failure) => {
+      failure.diagnostics = { retry_count: 'qrBlob' };
+    }],
+    ['negative count', null, (failure) => {
+      failure.diagnostics = { observed_count: -1 };
+    }],
+  ];
+
+  for (const [name, sentinel, mutate] of cases) {
+    await t.test(name, () => {
+      const failure = {
+        category: 'VALIDATION_FAILURE',
+        reason_code: 'UNSAFE_PUBLISHED_ARTIFACTS',
+      };
+      mutate(failure);
+      const record = passRecord({ failure, status: 'PARTIAL' });
+      record.checks.SC3.status = 'NOT_TESTED';
+      record.privacy_audit.status = 'NOT_TESTED';
+      const fixture = makeFixture([record]);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /invalid failure schema/i);
+        if (sentinel !== null) {
+          const escapedSentinel = sentinel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(escapedSentinel));
+        }
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
 test('rejects a PARTIAL target record whose criterion evidence requires FAIL', () => {
   const record = passRecord({
     failure: {
-      category: 'SECURITY_SCENARIO_FAILURE',
-      reason_code: 'SECURITY_SCENARIO_DECISION_MISMATCH',
+      category: 'CRITERION_FAILURE',
+      reason_code: 'REQUIRED_SCENARIO_NOT_TESTED',
     },
     run_id: 'run-criterion-fail',
     status: 'PARTIAL',
@@ -1150,8 +1331,8 @@ test('rejects a PARTIAL target record whose criterion evidence requires FAIL', (
 test('rejects a PARTIAL target record whose supporting section requires FAIL', () => {
   const record = passRecord({
     failure: {
-      category: 'PRIVACY_AUDIT_FAILURE',
-      reason_code: 'RETAINED_EVIDENCE_AUDIT_FAILED',
+      category: 'CRITERION_FAILURE',
+      reason_code: 'CRITERION_EVIDENCE_INCOMPLETE',
     },
     run_id: 'run-section-fail',
     status: 'PARTIAL',
@@ -1176,8 +1357,8 @@ test('rejects PARTIAL or NOT_TESTED target status when every evidence status is 
     await t.test(status, () => {
       const fixture = makeFixture([passRecord({
         failure: {
-          category: 'INCONSISTENT_STATUS',
-          reason_code: 'TOP_LEVEL_STATUS_MISMATCH',
+          category: 'VALIDATION_FAILURE',
+          reason_code: 'UNSAFE_PUBLISHED_ARTIFACTS',
         },
         status,
       })]);
@@ -1197,8 +1378,8 @@ test('rejects PARTIAL or NOT_TESTED target status when every evidence status is 
 test('rejects ten all-PASS evidence records mislabeled PARTIAL before aggregation', () => {
   const records = Array.from({ length: 10 }, (_, index) => passRecord({
     failure: {
-      category: 'INCONSISTENT_STATUS',
-      reason_code: 'TOP_LEVEL_STATUS_MISMATCH',
+      category: 'VALIDATION_FAILURE',
+      reason_code: 'UNSAFE_PUBLISHED_ARTIFACTS',
     },
     run_id: `run-inconsistent-${String(index + 1).padStart(2, '0')}`,
     status: 'PARTIAL',
@@ -1219,8 +1400,8 @@ test('rejects ten all-PASS evidence records mislabeled PARTIAL before aggregatio
 test('emits NOT_TESTED when every target criterion and section is NOT_TESTED', () => {
   const record = passRecord({
     failure: {
-      category: 'EVALUATION_NOT_RUN',
-      reason_code: 'NO_CRITERION_EVALUATED',
+      category: 'CRITERION_FAILURE',
+      reason_code: 'REQUIRED_SCENARIO_NOT_TESTED',
     },
     run_id: 'run-not-tested',
     status: 'NOT_TESTED',
@@ -1254,8 +1435,8 @@ test('does not aggregate PASS when a target record is BLOCKED', () => {
   }));
   const blocked = passRecord({
     failure: {
-      category: 'TARGET_BLOCKED',
-      reason_code: 'TARGET_DID_NOT_COMPLETE',
+      category: 'WORKFLOW_FAILURE',
+      reason_code: 'WORKFLOW_TIMEOUT',
     },
     run_id: 'run-blocked-after-completions',
     status: 'BLOCKED',
@@ -1373,8 +1554,8 @@ test('emits a truthful BLOCKED receipt for a zero-target preflight control', () 
 test('reports target criteria that were explicitly not tested', () => {
   const record = passRecord({
     failure: {
-      category: 'PRIVACY_AUDIT_NOT_RUN',
-      reason_code: 'PRIVACY_AUDIT_NOT_EVALUATED',
+      category: 'CRITERION_FAILURE',
+      reason_code: 'REQUIRED_SCENARIO_NOT_TESTED',
     },
     run_id: 'run-partial-001',
     status: 'PARTIAL',
@@ -1503,6 +1684,21 @@ test('accepts checksum-bound PNG and JPEG evidence with substantive safety attes
   const cases = [
     ['PNG', 'artifacts/gate-capture.png', VALID_PNG, 'image/png'],
     ['JPEG', 'artifacts/gate-capture.jpeg', VALID_JPEG, 'image/jpeg'],
+    [
+      'JPEG stuffed entropy byte',
+      'artifacts/gate-capture-stuffed.jpg',
+      createTinyJpeg({ entropy: Buffer.from([0xff, 0x00]) }),
+      'image/jpeg',
+    ],
+    [
+      'JPEG restart marker',
+      'artifacts/gate-capture-restart.jpg',
+      createTinyJpeg({
+        entropy: Buffer.from([0x00, 0xff, 0xd0, 0x00]),
+        restartInterval: 1,
+      }),
+      'image/jpeg',
+    ],
   ];
 
   for (const [name, artifactPath, bytes, mediaType] of cases) {
@@ -1520,6 +1716,207 @@ test('accepts checksum-bound PNG and JPEG evidence with substantive safety attes
           'utf8',
         ));
         assert.ok(receipt.criteria.SC1.results[0].artifact_paths.includes(artifactPath));
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects malformed PNG structure despite a matching image attestation', async (t) => {
+  const badCrc = Buffer.from(VALID_PNG);
+  badCrc[32] ^= 0xff;
+  const badLength = Buffer.from(VALID_PNG);
+  badLength.writeUInt32BE(0xffffffff, 8);
+  const missingIdat = Buffer.concat([
+    VALID_PNG.subarray(0, 33),
+    pngChunk('IEND'),
+  ]);
+  const cases = [
+    ['signature only', VALID_PNG.subarray(0, 8)],
+    ['truncated chunk', VALID_PNG.subarray(0, -4)],
+    ['bad CRC', badCrc],
+    ['out-of-bounds chunk length', badLength],
+    ['zero dimensions', createTinyPng({ width: 0 })],
+    ['missing IDAT', missingIdat],
+  ];
+
+  for (const [name, bytes] of cases) {
+    await t.test(name, () => {
+      const artifactPath = 'artifacts/structural.png';
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, 'image/png');
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /invalid PNG structure/i);
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects PNG text and comment metadata without echoing payloads', async (t) => {
+  for (const chunkType of ['tEXt', 'zTXt', 'iTXt', 'cOMM']) {
+    await t.test(chunkType, () => {
+      const sentinel = `PNG_METADATA_SENTINEL_${chunkType}`;
+      const bytes = insertBeforePngIend(VALID_PNG, pngChunk(chunkType, Buffer.from(sentinel)));
+      const artifactPath = 'artifacts/metadata.png';
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, 'image/png');
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /forbidden PNG metadata/i);
+        assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects PNG trailing bytes and appended polyglot secrets without echoing them', async (t) => {
+  const cases = [
+    ['trailing byte', Buffer.concat([VALID_PNG, Buffer.from([0x00])]), null],
+    [
+      'polyglot secret',
+      Buffer.concat([VALID_PNG, Buffer.from('PNG_POLYGLOT_SECRET_SENTINEL_6j4q')]),
+      'PNG_POLYGLOT_SECRET_SENTINEL_6j4q',
+    ],
+  ];
+
+  for (const [name, bytes, sentinel] of cases) {
+    await t.test(name, () => {
+      const artifactPath = 'artifacts/trailing.png';
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, 'image/png');
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /invalid PNG structure/i);
+        if (sentinel !== null) {
+          assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
+        }
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects malformed JPEG structure despite a matching image attestation', async (t) => {
+  const badLength = Buffer.from(VALID_JPEG);
+  badLength.writeUInt16BE(0xffff, 4);
+  const zeroDimensions = Buffer.from(VALID_JPEG);
+  const sofOffset = zeroDimensions.indexOf(Buffer.from([0xff, 0xc0]));
+  zeroDimensions.writeUInt16BE(0, sofOffset + 7);
+  const missingSof = Buffer.from(VALID_JPEG);
+  missingSof[sofOffset + 1] = 0xdb;
+  const missingSos = Buffer.from(VALID_JPEG);
+  const sosOffset = missingSos.indexOf(Buffer.from([0xff, 0xda]));
+  missingSos[sosOffset + 1] = 0xc4;
+  const badEntropyMarker = Buffer.concat([
+    VALID_JPEG.subarray(0, -3),
+    Buffer.from([0xff, 0x01, 0xff, 0xd9]),
+  ]);
+  const cases = [
+    ['signature only', Buffer.from([0xff, 0xd8])],
+    ['truncated image', VALID_JPEG.subarray(0, -1)],
+    ['out-of-bounds segment length', badLength],
+    ['zero dimensions', zeroDimensions],
+    ['missing SOF', missingSof],
+    ['missing SOS', missingSos],
+    ['invalid entropy marker', badEntropyMarker],
+  ];
+
+  for (const [name, bytes] of cases) {
+    await t.test(name, () => {
+      const artifactPath = 'artifacts/structural.jpeg';
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, 'image/jpeg');
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /invalid JPEG structure/i);
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects JPEG comment and APP metadata without echoing payloads', async (t) => {
+  for (const [name, marker] of [['COM', 0xfe], ['APP0 arbitrary', 0xe0], ['APP1', 0xe1]]) {
+    await t.test(name, () => {
+      const sentinel = `JPEG_METADATA_SECRET_SENTINEL_${name}`;
+      const bytes = Buffer.concat([
+        VALID_JPEG.subarray(0, 2),
+        jpegSegment(marker, Buffer.from(sentinel)),
+        VALID_JPEG.subarray(2),
+      ]);
+      const artifactPath = 'artifacts/metadata.jpeg';
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, 'image/jpeg');
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /forbidden JPEG metadata/i);
+        assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
+        assert.equal(existsSync(fixture.output), false);
+      } finally {
+        rmSync(fixture.root, { force: true, recursive: true });
+      }
+    });
+  }
+});
+
+test('rejects JPEG trailing bytes and appended polyglot secrets without echoing them', async (t) => {
+  const cases = [
+    ['trailing byte', Buffer.concat([VALID_JPEG, Buffer.from([0x00])]), null],
+    [
+      'polyglot secret',
+      Buffer.concat([VALID_JPEG, Buffer.from('JPEG_POLYGLOT_SECRET_SENTINEL_3p8v')]),
+      'JPEG_POLYGLOT_SECRET_SENTINEL_3p8v',
+    ],
+  ];
+
+  for (const [name, bytes, sentinel] of cases) {
+    await t.test(name, () => {
+      const artifactPath = 'artifacts/trailing.jpeg';
+      const record = passRecord();
+      addImageEvidence(record, artifactPath, bytes, 'image/jpeg');
+      const fixture = makeFixture([record]);
+      writeFixtureArtifact(fixture, artifactPath, bytes);
+
+      try {
+        const result = runReducer(fixture.input, fixture.output);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /invalid JPEG structure/i);
+        if (sentinel !== null) {
+          assert.doesNotMatch(`${result.stderr}${result.stdout}`, new RegExp(sentinel));
+        }
+        assert.equal(existsSync(fixture.output), false);
       } finally {
         rmSync(fixture.root, { force: true, recursive: true });
       }
@@ -2025,8 +2422,8 @@ test('requires exactly one synchronized and accepted backend effect for SC5 PASS
     await t.test(metric, () => {
       const record = passRecord({
         failure: {
-          category: 'SC1_NOT_EVALUATED',
-          reason_code: 'SC1_EXCLUDED_FOR_SC5_VALIDATION',
+          category: 'CRITERION_FAILURE',
+          reason_code: 'REQUIRED_SCENARIO_NOT_TESTED',
         },
         status: 'PARTIAL',
       });
@@ -2050,8 +2447,8 @@ test('requires exactly one synchronized and accepted backend effect for SC5 PASS
 test('reports a blocked target run separately from a blocked preflight control', () => {
   const record = passRecord({
     failure: {
-      category: 'RUNNER_CAPACITY',
-      reason_code: 'TARGET_WORKFLOW_BLOCKED_AFTER_DISPATCH',
+      category: 'WORKFLOW_FAILURE',
+      reason_code: 'WORKFLOW_TIMEOUT',
     },
     run_id: 'run-blocked-001',
     status: 'BLOCKED',
@@ -2069,7 +2466,7 @@ test('reports a blocked target run separately from a blocked preflight control',
     assert.equal(receipt.status, 'BLOCKED');
     assert.deepEqual(receipt.blocked_scenarios, [{
       artifact_paths: ['artifacts/journey.json'],
-      category: 'RUNNER_CAPACITY',
+      category: 'WORKFLOW_FAILURE',
       counts_toward_target: true,
       criteria: ['SC2'],
       run_id: 'run-blocked-001',

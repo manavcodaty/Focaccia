@@ -20,18 +20,34 @@ const IMAGE_REVIEW_METHODS = new Set([
   'MANUAL_VISUAL_SECRET_REVIEW_AND_REDACTION',
   'AUTOMATED_OCR_AND_MANUAL_VISUAL_SECRET_REVIEW',
 ]);
-const FAILURE_DIAGNOSTIC_KEYS = new Set([
-  'assertion',
-  'attempt_count',
-  'criterion',
-  'diagnostic_codes',
-  'expected',
-  'expected_count',
-  'observed',
-  'observed_count',
-  'phase',
-  'retry_count',
+const FAILURE_CATEGORIES = new Set([
+  'REMOTE_DISPATCH_PROHIBITED',
+  'WORKFLOW_FAILURE',
+  'RECONNECT_TIMEOUT',
+  'CRITERION_FAILURE',
+  'VALIDATION_FAILURE',
 ]);
+const FAILURE_REASON_CODES = new Set([
+  'ZERO_COST_UNVERIFIED',
+  'UNSAFE_PUBLISHED_ARTIFACTS',
+  'PRE_CREATION_FAILURE',
+  'WORKFLOW_TIMEOUT',
+  'RECONNECT_DID_NOT_COMPLETE',
+  'CRITERION_EVIDENCE_INCOMPLETE',
+  'REQUIRED_SCENARIO_NOT_TESTED',
+]);
+const FAILURE_DIAGNOSTIC_CODES = new Set([
+  'MISSING_USER_PLAN_SCOPE',
+  'MISSING_READ_PACKAGES_SCOPE',
+  'NOT_AUTHORIZED_TO_DISPATCH',
+  'NOT_AUTHORIZED_TO_PUSH',
+  'NO_TARGET_OBSERVATIONS',
+]);
+const FAILURE_COUNT_DIAGNOSTICS = new Set([
+  'expected_count',
+  'observed_count',
+]);
+const FAILURE_BOOLEAN_DIAGNOSTICS = new Set(['reconnect_completed']);
 const ALLOWED_STATUSES = ['PASS', 'PARTIAL', 'FAIL', 'NOT_TESTED', 'BLOCKED'];
 const ISOLATION_IDENTITY_FIELDS = [
   'event_id',
@@ -389,8 +405,8 @@ function validateFailureSchema(failure, index) {
   if (!isPlainObject(failure)) invalid();
   const allowedKeys = new Set(['category', 'diagnostics', 'reason_code', 'stage']);
   if (Object.keys(failure).some((key) => !allowedKeys.has(key))
-    || !isFailureIdentifier(failure.category)
-    || !isFailureIdentifier(failure.reason_code)) {
+    || !FAILURE_CATEGORIES.has(failure.category)
+    || !FAILURE_REASON_CODES.has(failure.reason_code)) {
     invalid();
   }
   if (failure.stage !== undefined && !['PRE_CREATION', 'POST_CREATION'].includes(failure.stage)) {
@@ -398,46 +414,36 @@ function validateFailureSchema(failure, index) {
   }
   if (failure.diagnostics !== undefined) {
     if (!isPlainObject(failure.diagnostics)
-      || Object.keys(failure.diagnostics).some((key) => !FAILURE_DIAGNOSTIC_KEYS.has(key))
-      || Object.values(failure.diagnostics).some((value) => !isSafeDiagnosticValue(value))) {
+      || Object.entries(failure.diagnostics).some(
+        ([key, value]) => !isValidFailureDiagnostic(key, value),
+      )) {
       invalid();
     }
   }
 }
 
-function isFailureIdentifier(value) {
-  return typeof value === 'string'
-    && /^[A-Z][A-Z0-9_]{1,63}$/.test(value);
-}
-
-function isSafeDiagnosticValue(value) {
-  if (value === null || typeof value === 'boolean' || Number.isInteger(value)) return true;
-  if (Array.isArray(value)) {
-    return value.length <= 32 && value.every(isSafeDiagnosticValue);
+function isValidFailureDiagnostic(key, value) {
+  if (value === null) {
+    return FAILURE_COUNT_DIAGNOSTICS.has(key)
+      || FAILURE_BOOLEAN_DIAGNOSTICS.has(key)
+      || key === 'diagnostic_codes';
   }
-  if (typeof value !== 'string' || value.length > 64 || !isSafeIdentifier(value)) return false;
-  if (/(?:password|passwd|passphrase|token|payload|private[_-]?key|service[_-]?role)/i.test(value)) {
-    return false;
+  if (FAILURE_COUNT_DIAGNOSTICS.has(key)) {
+    return Number.isInteger(value) && value >= 0;
   }
-  if (value.length >= 32 && stringEntropy(value) >= 4.2) return false;
-  return true;
-}
-
-function stringEntropy(value) {
-  const counts = new Map();
-  for (const character of value) counts.set(character, (counts.get(character) ?? 0) + 1);
-  return [...counts.values()].reduce((entropy, count) => {
-    const probability = count / value.length;
-    return entropy - probability * Math.log2(probability);
-  }, 0);
+  if (FAILURE_BOOLEAN_DIAGNOSTICS.has(key)) return typeof value === 'boolean';
+  return key === 'diagnostic_codes'
+    && Array.isArray(value)
+    && value.length > 0
+    && value.length <= 32
+    && value.every((code) => FAILURE_DIAGNOSTIC_CODES.has(code));
 }
 
 function isTargetPreCreationFailure(record) {
   return record?.counts_toward_target !== false
     && ['FAIL', 'BLOCKED'].includes(record?.status)
     && isPlainObject(record?.failure)
-    && typeof record.failure.stage === 'string'
-    && record.failure.stage.replace(/[^A-Za-z0-9]+/g, '_').toUpperCase() === 'PRE_CREATION';
+    && record.failure.stage === 'PRE_CREATION';
 }
 
 function validateTargetRecordStatus(record, index, isPreCreationFailure) {
@@ -653,21 +659,341 @@ function classifyImageEvidence(artifactPath, bytes) {
     : extension === '.jpg' || extension === '.jpeg'
       ? 'image/jpeg'
       : null;
-  const hasPngMagic = bytes.length >= 8
-    && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
-  const hasJpegMagic = bytes.length >= 5
+  const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const hasPngMagic = bytes.length >= pngSignature.length
+    && bytes.subarray(0, pngSignature.length).equals(pngSignature);
+  const hasJpegMagic = bytes.length >= 2
     && bytes[0] === 0xff
-    && bytes[1] === 0xd8
-    && bytes[2] === 0xff
-    && bytes[bytes.length - 2] === 0xff
-    && bytes[bytes.length - 1] === 0xd9;
+    && bytes[1] === 0xd8;
   const magicMediaType = hasPngMagic ? 'image/png' : hasJpegMagic ? 'image/jpeg' : null;
 
   if (extensionMediaType === null && magicMediaType === null) return null;
   if (extensionMediaType !== magicMediaType) {
     throw new Error('Image extension and magic bytes do not match');
   }
+  if (magicMediaType === 'image/png') validatePngStructure(bytes, pngSignature);
+  if (magicMediaType === 'image/jpeg') validateJpegStructure(bytes);
   return extensionMediaType;
+}
+
+function validatePngStructure(bytes, signature) {
+  const invalid = () => {
+    throw new Error('Invalid PNG structure rejected');
+  };
+  const forbiddenMetadata = () => {
+    throw new Error('Forbidden PNG metadata rejected');
+  };
+  const safeAncillaryChunks = new Set([
+    'PLTE',
+    'tRNS',
+    'cHRM',
+    'gAMA',
+    'sRGB',
+    'pHYs',
+    'bKGD',
+  ]);
+  const forbiddenChunks = new Set(['tEXt', 'zTXt', 'iTXt', 'eXIf', 'iCCP']);
+  const singletonChunks = new Set();
+  let offset = signature.length;
+  let chunkIndex = 0;
+  let colorType = null;
+  let sawIdat = false;
+  let idatBytes = 0;
+  let sawPlte = false;
+
+  while (offset < bytes.length) {
+    if (bytes.length - offset < 12) invalid();
+    const length = bytes.readUInt32BE(offset);
+    if (length > bytes.length - offset - 12) invalid();
+    const typeBytes = bytes.subarray(offset + 4, offset + 8);
+    const type = typeBytes.toString('ascii');
+    if (!/^[A-Za-z]{4}$/.test(type)) invalid();
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    const chunkEnd = dataEnd + 4;
+    const expectedCrc = bytes.readUInt32BE(dataEnd);
+    if (crc32(bytes.subarray(offset + 4, dataEnd)) !== expectedCrc) invalid();
+    const data = bytes.subarray(dataStart, dataEnd);
+
+    if (chunkIndex === 0 && type !== 'IHDR') invalid();
+    if (type === 'IHDR') {
+      if (chunkIndex !== 0 || singletonChunks.has(type) || length !== 13) invalid();
+      const width = data.readUInt32BE(0);
+      const height = data.readUInt32BE(4);
+      const bitDepth = data[8];
+      colorType = data[9];
+      const validBitDepths = {
+        0: [1, 2, 4, 8, 16],
+        2: [8, 16],
+        3: [1, 2, 4, 8],
+        4: [8, 16],
+        6: [8, 16],
+      };
+      if (width === 0
+        || height === 0
+        || !validBitDepths[colorType]?.includes(bitDepth)
+        || data[10] !== 0
+        || data[11] !== 0
+        || ![0, 1].includes(data[12])) {
+        invalid();
+      }
+      singletonChunks.add(type);
+    } else if (type === 'IDAT') {
+      if (!singletonChunks.has('IHDR') || sawIdat && singletonChunks.has('IDAT_ENDED')) {
+        invalid();
+      }
+      sawIdat = true;
+      idatBytes += length;
+    } else if (type === 'IEND') {
+      if (length !== 0
+        || !sawIdat
+        || idatBytes === 0
+        || singletonChunks.has(type)
+        || chunkEnd !== bytes.length
+        || colorType === 3 && !sawPlte) {
+        invalid();
+      }
+      singletonChunks.add(type);
+      return;
+    } else {
+      if (forbiddenChunks.has(type) || !safeAncillaryChunks.has(type)) forbiddenMetadata();
+      if (!singletonChunks.has('IHDR') || sawIdat || singletonChunks.has(type)) invalid();
+      validateSafePngAncillaryChunk(type, data, colorType, invalid);
+      singletonChunks.add(type);
+      if (type === 'PLTE') sawPlte = true;
+    }
+
+    if (sawIdat && type !== 'IDAT') singletonChunks.add('IDAT_ENDED');
+    offset = chunkEnd;
+    chunkIndex += 1;
+  }
+  invalid();
+}
+
+function validateSafePngAncillaryChunk(type, data, colorType, invalid) {
+  if (type === 'PLTE'
+    && (data.length === 0
+      || data.length > 768
+      || data.length % 3 !== 0
+      || [0, 4].includes(colorType))) {
+    invalid();
+  }
+  if (type === 'tRNS'
+    && (data.length === 0 || data.length > 256 || [4, 6].includes(colorType))) {
+    invalid();
+  }
+  if (type === 'cHRM' && data.length !== 32) invalid();
+  if (type === 'gAMA' && (data.length !== 4 || data.readUInt32BE(0) === 0)) invalid();
+  if (type === 'sRGB' && (data.length !== 1 || data[0] > 3)) invalid();
+  if (type === 'pHYs' && (data.length !== 9 || data[8] > 1)) invalid();
+  const backgroundLengths = { 0: 2, 2: 6, 3: 1, 4: 2, 6: 6 };
+  if (type === 'bKGD' && data.length !== backgroundLengths[colorType]) invalid();
+}
+
+function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function validateJpegStructure(bytes) {
+  const invalid = () => {
+    throw new Error('Invalid JPEG structure rejected');
+  };
+  const forbiddenMetadata = () => {
+    throw new Error('Forbidden JPEG metadata rejected');
+  };
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) invalid();
+
+  const allowedMarkers = new Set([0xe0, 0xdb, 0xc0, 0xc4, 0xdd, 0xda]);
+  let offset = 2;
+  let sawJfif = false;
+  let sawDqt = false;
+  let sawDht = false;
+  let restartInterval = 0;
+  let frameComponentIds = null;
+
+  while (offset < bytes.length) {
+    if (bytes[offset] !== 0xff) invalid();
+    while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
+    if (offset >= bytes.length) invalid();
+    const marker = bytes[offset];
+    offset += 1;
+    if (marker === 0xfe || marker >= 0xe1 && marker <= 0xef) forbiddenMetadata();
+    if (!allowedMarkers.has(marker)) invalid();
+    if (offset + 2 > bytes.length) invalid();
+    const segmentLength = bytes.readUInt16BE(offset);
+    if (segmentLength < 2 || segmentLength > bytes.length - offset) invalid();
+    const dataStart = offset + 2;
+    const segmentEnd = offset + segmentLength;
+    const data = bytes.subarray(dataStart, segmentEnd);
+
+    if (marker === 0xe0) {
+      if (sawJfif
+        || data.length !== 14
+        || !data.subarray(0, 5).equals(Buffer.from([0x4a, 0x46, 0x49, 0x46, 0x00]))
+        || data[5] !== 1
+        || data[7] > 2
+        || data.readUInt16BE(8) === 0
+        || data.readUInt16BE(10) === 0
+        || data[12] !== 0
+        || data[13] !== 0) {
+        forbiddenMetadata();
+      }
+      sawJfif = true;
+    } else if (marker === 0xdb) {
+      validateJpegQuantizationTables(data, invalid);
+      sawDqt = true;
+    } else if (marker === 0xc0) {
+      if (frameComponentIds !== null || !sawDqt) invalid();
+      frameComponentIds = validateJpegFrame(data, invalid);
+    } else if (marker === 0xc4) {
+      validateJpegHuffmanTables(data, invalid);
+      sawDht = true;
+    } else if (marker === 0xdd) {
+      if (data.length !== 2) invalid();
+      restartInterval = data.readUInt16BE(0);
+    } else if (marker === 0xda) {
+      if (frameComponentIds === null || !sawDht) invalid();
+      validateJpegScanHeader(data, frameComponentIds, invalid);
+      validateJpegEntropy(bytes, segmentEnd, restartInterval, invalid);
+      return;
+    }
+    offset = segmentEnd;
+  }
+  invalid();
+}
+
+function validateJpegQuantizationTables(data, invalid) {
+  let offset = 0;
+  let tableCount = 0;
+  while (offset < data.length) {
+    const tableInfo = data[offset];
+    offset += 1;
+    const precision = tableInfo >> 4;
+    const tableId = tableInfo & 0x0f;
+    if (precision > 1 || tableId > 3) invalid();
+    const tableBytes = precision === 0 ? 64 : 128;
+    if (tableBytes > data.length - offset) invalid();
+    offset += tableBytes;
+    tableCount += 1;
+  }
+  if (tableCount === 0 || offset !== data.length) invalid();
+}
+
+function validateJpegFrame(data, invalid) {
+  if (data.length < 9 || data[0] !== 8) invalid();
+  const height = data.readUInt16BE(1);
+  const width = data.readUInt16BE(3);
+  const componentCount = data[5];
+  if (width === 0
+    || height === 0
+    || componentCount === 0
+    || componentCount > 4
+    || data.length !== 6 + componentCount * 3) {
+    invalid();
+  }
+  const componentIds = new Set();
+  for (let index = 0; index < componentCount; index += 1) {
+    const offset = 6 + index * 3;
+    const componentId = data[offset];
+    const horizontalSampling = data[offset + 1] >> 4;
+    const verticalSampling = data[offset + 1] & 0x0f;
+    if (componentIds.has(componentId)
+      || horizontalSampling === 0
+      || horizontalSampling > 4
+      || verticalSampling === 0
+      || verticalSampling > 4
+      || data[offset + 2] > 3) {
+      invalid();
+    }
+    componentIds.add(componentId);
+  }
+  return componentIds;
+}
+
+function validateJpegHuffmanTables(data, invalid) {
+  let offset = 0;
+  let tableCount = 0;
+  while (offset < data.length) {
+    if (data.length - offset < 17) invalid();
+    const tableInfo = data[offset];
+    offset += 1;
+    if ((tableInfo >> 4) > 1 || (tableInfo & 0x0f) > 3) invalid();
+    let symbolCount = 0;
+    for (let index = 0; index < 16; index += 1) symbolCount += data[offset + index];
+    offset += 16;
+    if (symbolCount === 0 || symbolCount > 256 || symbolCount > data.length - offset) invalid();
+    offset += symbolCount;
+    tableCount += 1;
+  }
+  if (tableCount === 0 || offset !== data.length) invalid();
+}
+
+function validateJpegScanHeader(data, frameComponentIds, invalid) {
+  if (data.length < 6) invalid();
+  const componentCount = data[0];
+  if (componentCount === 0
+    || componentCount > frameComponentIds.size
+    || data.length !== 4 + componentCount * 2) {
+    invalid();
+  }
+  const scanComponentIds = new Set();
+  for (let index = 0; index < componentCount; index += 1) {
+    const offset = 1 + index * 2;
+    const componentId = data[offset];
+    const tableSelectors = data[offset + 1];
+    if (!frameComponentIds.has(componentId)
+      || scanComponentIds.has(componentId)
+      || (tableSelectors >> 4) > 3
+      || (tableSelectors & 0x0f) > 3) {
+      invalid();
+    }
+    scanComponentIds.add(componentId);
+  }
+  const spectralOffset = 1 + componentCount * 2;
+  if (data[spectralOffset] !== 0
+    || data[spectralOffset + 1] !== 63
+    || data[spectralOffset + 2] !== 0) {
+    invalid();
+  }
+}
+
+function validateJpegEntropy(bytes, startOffset, restartInterval, invalid) {
+  let offset = startOffset;
+  let sawEntropyData = false;
+  while (offset < bytes.length) {
+    if (bytes[offset] !== 0xff) {
+      sawEntropyData = true;
+      offset += 1;
+      continue;
+    }
+    const markerStart = offset;
+    while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
+    if (offset >= bytes.length) invalid();
+    const marker = bytes[offset];
+    if (marker === 0x00 && offset === markerStart + 1) {
+      sawEntropyData = true;
+      offset += 1;
+      continue;
+    }
+    if (marker >= 0xd0 && marker <= 0xd7) {
+      if (restartInterval === 0) invalid();
+      offset += 1;
+      continue;
+    }
+    if (marker === 0xd9) {
+      if (!sawEntropyData || offset !== bytes.length - 1) invalid();
+      return;
+    }
+    invalid();
+  }
+  invalid();
 }
 
 function validateImageSafetyAttestations(record, imageArtifacts, index) {
@@ -1212,6 +1538,7 @@ function buildReceipt(records) {
       traceable_results: traceableResults,
     },
     evidence_scope: {
+      image_review_trust_boundary: 'reducer verifies image format, hash, path, media type, and attestation but cannot independently inspect pixel content; visual redaction and secret review is an attested trust boundary, not automated proof',
       repeated_fixture_runs: 'controlled software repeatability only',
       unestablished: UNESTABLISHED_EVIDENCE,
       latency_policy: 'never infer latency from zero or missing fields',
@@ -1230,6 +1557,7 @@ function buildReceipt(records) {
 
 function isTargetObservation(record) {
   return record.counts_toward_target !== false
+    && !isTargetPreCreationFailure(record)
     && record.mutable_state_isolated === true
     && ISOLATION_IDENTITY_FIELDS.every((field) => record[field] !== null);
 }
@@ -1281,7 +1609,7 @@ function getCriterionArtifactPaths(record, criterion) {
 }
 
 function getFailureCategory(failure) {
-  if (isPlainObject(failure) && isSafeIdentifier(failure.category)) {
+  if (isPlainObject(failure) && FAILURE_CATEGORIES.has(failure.category)) {
     return failure.category;
   }
   return 'UNCLASSIFIED_FAILURE';
@@ -1438,6 +1766,8 @@ function buildMarkdown(receipt) {
     '- public deployment remains unestablished',
     '',
     'Latency is never inferred from zero or missing fields.',
+    '',
+    'The reducer verifies image format, hash, path, media type, and attestation but cannot independently inspect pixel content; visual redaction and secret review is an attested trust boundary, not automated proof.',
   );
 
   return `${lines.join('\n')}\n`;

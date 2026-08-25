@@ -217,7 +217,12 @@ async function fillInputExactly(matcher, value) {
         const node = findNode(await describeUi(simulatorUdid), matcher);
         if (typeof node?.value === 'string') {
           observedLength = node.value.length;
-          if (node.value === value) return;
+          const secureField = /SecureTextField/i.test(String(node.subrole ?? node.role ?? ''));
+          // iOS exposes only a bullet string for secure fields. Compare its
+          // length without ever requiring the plaintext token to appear in
+          // the accessibility tree; the subsequent verification action still
+          // proves that the submitted token itself was correct.
+          if (node.value === value || (secureField && node.value.length === value.length)) return;
         }
       } catch {
         // Keep polling while the hosted accessibility tree settles after paste.

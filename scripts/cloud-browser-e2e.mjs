@@ -295,7 +295,7 @@ try {
   assert.equal(foreignClaimLookupStatus, 404, 'A foreign attendee must not resolve another attendee claim code.');
   checks.foreign_claim_ownership_rejected = true;
   await foreignPage.goto(`${ticketsUrl}/confirmation/${ticketId}`, { waitUntil: 'domcontentloaded' });
-  await waitForVisible(foreignPage.getByRole('heading', { name: 'Ticket unavailable', exact: true }), 'foreign ticket rejection');
+  await waitForVisible(foreignPage.getByRole('heading', { name: 'This ticket was not found', exact: true }), 'foreign ticket rejection');
   await waitForVisible(foreignPage.getByText('It may belong to a different attendee account.', { exact: true }), 'foreign ticket ownership message');
   checks.foreign_ticket_ownership_rejected = true;
 

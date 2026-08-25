@@ -40,6 +40,7 @@ export default function PassScreen() {
   const [isPreparing, setIsPreparing] = useState(false);
   const pass = state.pass;
   const ticket = state.selectedTicket;
+  const cloudEvidenceSafe = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_EVIDENCE_SAFE === '1';
 
   if (!pass) {
     return (
@@ -81,7 +82,11 @@ export default function PassScreen() {
       <SectionCard eyebrow="Event pass" title={pass.ticketTypeName} tone="credential">
         <Text style={styles.generation}>Generation {pass.generation} of 3</Text>
         <View style={styles.qrWrap}>
-          <QRCode backgroundColor={palette.canvas} color={palette.ink} quietZone={16} size={260} value={pass.token} />
+          {cloudEvidenceSafe ? (
+            <Text style={styles.redactedCredential}>QR redacted in cloud evidence mode</Text>
+          ) : (
+            <QRCode backgroundColor={palette.canvas} color={palette.ink} quietZone={16} size={260} value={pass.token} />
+          )}
         </View>
         {pass.queueCode ? <Text style={styles.queueCode}>{pass.queueCode}</Text> : null}
         <Text style={styles.validUntil}>Valid until {new Date(pass.event.ends_at).toLocaleString()}</Text>
@@ -91,7 +96,9 @@ export default function PassScreen() {
 
       <SectionCard eyebrow="Scanner recovery" title="Manual fallback" tone="subtle">
         <Text style={styles.body}>If QR scanning fails, gate staff can paste the full signed token into the same offline verification pipeline.</Text>
-        <Text style={styles.snippet}>{pass.tokenSnippet}</Text>
+        <Text style={styles.snippet}>
+          {cloudEvidenceSafe ? '[PASS TOKEN REDACTED FOR EVIDENCE]' : pass.tokenSnippet}
+        </Text>
         <PrimaryButton
           label="Copy full signed token"
           onPress={() => {
@@ -135,6 +142,7 @@ const styles = StyleSheet.create({
   queueCode: { ...typography.title, color: palette.ink, fontSize: 20, letterSpacing: 2, textAlign: 'center' },
   readyHeader: { alignItems: 'center', backgroundColor: palette.surfaceClay, borderRadius: radii.credential, gap: 6, padding: 24 },
   readyLabel: { ...typography.bodyStrong, color: palette.success, fontSize: 14 },
+  redactedCredential: { ...typography.bodyStrong, color: palette.mutedStone, fontSize: 15, padding: 96, textAlign: 'center' },
   screen: { gap: 18 },
   snippet: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   validUntil: { ...typography.body, color: palette.mutedStone, fontSize: 13, textAlign: 'center' },

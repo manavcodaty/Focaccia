@@ -1,0 +1,85 @@
+{
+  "artifact_paths": [
+    "artifacts/preflight-control-evidence.json"
+  ],
+  "attendee_id_hash": null,
+  "authoritative_backend": {
+    "artifact_paths": [
+      "artifacts/preflight-control-evidence.json"
+    ],
+    "claimed_counts": {
+      "accepted_check_ins": 0,
+      "checked_in_tickets": 0,
+      "synchronized_check_ins": 0
+    },
+    "observed_counts": {
+      "accepted_check_ins": 0,
+      "checked_in_tickets": 0,
+      "synchronized_check_ins": 0
+    },
+    "status": "BLOCKED"
+  },
+  "checks": {
+    "SC1": {
+      "artifact_paths": ["artifacts/preflight-control-evidence.json"],
+      "status": "BLOCKED"
+    },
+    "SC2": {
+      "artifact_paths": ["artifacts/preflight-control-evidence.json"],
+      "status": "BLOCKED"
+    },
+    "SC3": {
+      "artifact_paths": ["artifacts/preflight-control-evidence.json"],
+      "status": "BLOCKED"
+    },
+    "SC4": {
+      "artifact_paths": ["artifacts/preflight-control-evidence.json"],
+      "status": "BLOCKED"
+    },
+    "SC5": {
+      "artifact_paths": ["artifacts/preflight-control-evidence.json"],
+      "status": "BLOCKED"
+    }
+  },
+  "commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
+  "counts_toward_target": false,
+  "event_id": null,
+  "failure": {
+    "category": "REMOTE_DISPATCH_PROHIBITED",
+    "diagnostics": {
+      "diagnostic_codes": [
+        "NOT_AUTHORIZED_TO_DISPATCH",
+        "NOT_AUTHORIZED_TO_PUSH",
+        "NO_TARGET_OBSERVATIONS"
+      ]
+    },
+    "reason_code": "UNSAFE_PUBLISHED_ARTIFACTS",
+    "stage": "PRE_CREATION"
+  },
+  "fixture_sha256": null,
+  "gate_key_fingerprint": null,
+  "mutable_state_isolated": false,
+  "network_loss_method": "NOT_TESTED",
+  "organizer_id_hash": null,
+  "privacy_audit": {
+    "artifact_paths": [
+      "artifacts/preflight-control-evidence.json"
+    ],
+    "status": "NOT_TESTED"
+  },
+  "provisioning_mode": "NOT_TESTED",
+  "provisioning_qr_camera_scan": false,
+  "record_type": "blocked_preflight_control",
+  "run_id": "blocked-preflight-001",
+  "runner_os": "NOT_DISPATCHED",
+  "security_matrix": {
+    "artifact_paths": [
+      "artifacts/preflight-control-evidence.json"
+    ],
+    "status": "BLOCKED"
+  },
+  "started_at": "2026-08-25T07:19:46Z",
+  "status": "BLOCKED",
+  "ticket_id": null,
+  "workflow_run_url": null
+}

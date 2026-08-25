@@ -18,6 +18,7 @@ export default function FallbackScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [token, setToken] = useState('');
+  const cloudEvidenceSafe = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_EVIDENCE_SAFE === '1';
 
   async function handleSubmit() {
     setError(null);
@@ -57,6 +58,7 @@ export default function FallbackScreen() {
           onChangeText={setToken}
           placeholder="eyJ2IjoxLCJldmVudF9pZCI6Ii4uLiJ9.signature"
           placeholderTextColor={palette.mutedStone}
+          secureTextEntry={cloudEvidenceSafe}
           style={[
             styles.tokenInput,
             {

@@ -1,0 +1,14 @@
+{
+  "schema_version": "sc1-sc5-preflight-control-v1",
+  "workflow_definition_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
+  "resolved_target_ref": "refs/heads/codex/ios-simulator-verification-next",
+  "resolved_target_commit": "d3bf4eeda9f2db139804495afb24c008c1a40445",
+  "zero_cost_verdict": "CONFIRMED",
+  "published_workflow_evidence_boundary": "UNSAFE_FOR_UPLOAD_OF_MUTABLE_FIXTURE_CONTEXT",
+  "hardened_commit_remote_accessible": false,
+  "temporary_branch_push_authorized": false,
+  "workflow_dispatch_performed": false,
+  "target_observations_completed": 0,
+  "blocker": "NOT_AUTHORIZED_TO_PUSH_TEMPORARY_BRANCH",
+  "control_decision": "BLOCKED_BEFORE_REMOTE_DISPATCH"
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": "sc1-sc5-optimization-v1",
+  "status": "LOCAL_ONLY_UNVALIDATED",
+  "decision": "USE_EXISTING_PUBLISHED_WORKFLOW_FOR_EVIDENCE_ONLY_AFTER_SAFETY_REVIEW",
+  "outcome": "NO_MEANINGFUL_GAIN_NOT_ESTABLISHED",
+  "baseline_run_id": 32640901882,
+  "baseline_workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
+  "baseline_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32640901882",
+  "candidate_checkout": {
+    "path": "/private/tmp/Focaccia-sc1-sc5-live",
+    "branch": "codex/sc1-sc5-cloud-evidence-safe",
+    "head_sha_before_local_commit": "a2619007cc2a05870b6837f3e615ff12abce0b65",
+    "remote_accessible": false,
+    "temporary_branch_push_authorized": false
+  },
+  "bounded_changes": [
+    "Free runner-local X25519 envelope handoff for credentials and network context; private recipient key is never uploaded.",
+    "Redacted cloud evidence mode for QR, pass-token, credentials, DOM text, and failure diagnostics.",
+    "Per-run nested artifact manifest layout compatible with the deterministic ten-run reducer.",
+    "Privacy six-surface safe-projection audit explicitly marked source-only and safe offline security scenario matrix.",
+    "One commit-pinned native build remains the only native build in each cloud workflow run; no local Xcode build was performed."
+  ],
+  "validation_commands": [
+    "node --check scripts/cloud-browser-e2e.mjs",
+    "node --check scripts/cloud-ios-e2e.mjs",
+    "node --test scripts/cloud-evidence-contract.e2e.test.mjs",
+    "node --test scripts/cloud-workflow-safety.test.mjs",
+    "ruby -e \"require 'yaml'; YAML.load_file('.github/workflows/cloud-ios-full-flow.yml')\""
+  ],
+  "remote_validation": {
+    "performed": false,
+    "workflow_url": null,
+    "reason": "The local hardening requires an accessible remote commit, and the plan requires explicit approval before pushing a temporary branch. The published workflow still uploads unsafe plaintext context and was not dispatched."
+  },
+  "cost_and_scope": {
+    "zero_cost_verdict": "CONFIRMED",
+    "paid_resources_created": false,
+    "persistent_secrets_created": false,
+    "production_data_mutated": false,
+    "optimization_adds_runner_minute_quota": "NOT_MEASURED_BECAUSE_REMOTE_VALIDATION_BLOCKED"
+  },
+  "claim_boundary": "This is a local-only optimization proposal and validation record, not cloud evidence. No wall-clock or quota improvement is claimed without a remote run."
+}

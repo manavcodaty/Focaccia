@@ -291,17 +291,41 @@ jobs:
           FOCACCIA_CLOUD_CONTEXT_PATH: ${{ runner.temp }}/focaccia-cloud-context.json
         run: node scripts/cloud-browser-e2e.mjs
 
-      - name: Publish backend fixture for the hosted macOS job
+      - name: Wait for the hosted macOS recipient key and publish encrypted backend handoff
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          PUBLIC_KEY_DIR="$RUNNER_TEMP/focaccia-cloud-public-key"
+          mkdir -p "$PUBLIC_KEY_DIR"
+          for attempt in $(seq 1 120); do
+            PUBLIC_KEY_ARTIFACT_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+              --jq '.artifacts[] | select(.name == "focaccia-cloud-ios-recipient-public-key" and .expired == false) | .id' | tail -n 1)"
+            if [ -n "$PUBLIC_KEY_ARTIFACT_ID" ]; then
+              gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$PUBLIC_KEY_ARTIFACT_ID/zip" \
+                > "$RUNNER_TEMP/focaccia-cloud-public-key.zip"
+              unzip -q -o "$RUNNER_TEMP/focaccia-cloud-public-key.zip" -d "$PUBLIC_KEY_DIR"
+              break
+            fi
+            if [ "$attempt" -eq 120 ]; then
+              echo 'Timed out waiting for the hosted macOS recipient key.' >&2
+              exit 1
+            fi
+            sleep 10
+          done
+          PUBLIC_KEY_PATH="$(find "$PUBLIC_KEY_DIR" -name recipient-public-key.json -type f -print -quit)"
+          test -s "$PUBLIC_KEY_PATH"
           BACKEND_ARTIFACT_DIR="$RUNNER_TEMP/focaccia-cloud-backend"
           mkdir -p "$BACKEND_ARTIFACT_DIR/browser"
-          cp "$RUNNER_TEMP/focaccia-cloud-context.json" "$BACKEND_ARTIFACT_DIR/context.json"
-          cp "$RUNNER_TEMP/focaccia-cloud-network.json" "$BACKEND_ARTIFACT_DIR/network.json"
-          cp "$RUNNER_TEMP/focaccia-cloud-browser/gate-provisioning-qr.png" "$BACKEND_ARTIFACT_DIR/browser/gate-provisioning-qr.png"
           cp "$RUNNER_TEMP/focaccia-cloud-browser/report.json" "$BACKEND_ARTIFACT_DIR/browser/browser-report.json"
-          chmod 0600 "$BACKEND_ARTIFACT_DIR/context.json" "$BACKEND_ARTIFACT_DIR/network.json"
+          cp "$RUNNER_TEMP/focaccia-cloud-browser"/*.png "$BACKEND_ARTIFACT_DIR/browser/"
+          node scripts/lib/cloud-evidence-envelope.mjs encrypt \
+            --context "$RUNNER_TEMP/focaccia-cloud-context.json" \
+            --network "$RUNNER_TEMP/focaccia-cloud-network.json" \
+            --public-key "$PUBLIC_KEY_PATH" \
+            --envelope "$BACKEND_ARTIFACT_DIR/handoff.json"
+          chmod 0600 "$BACKEND_ARTIFACT_DIR/handoff.json"
 
       - name: Upload backend fixture
         uses: actions/upload-artifact@v4
@@ -367,27 +391,102 @@ jobs:
             --data-urlencode 'select=id,event_id,status,checked_in_at' \
             "$FOCACCIA_CLOUD_API_URL/rest/v1/event_tickets" \
             > "$RUNNER_TEMP/focaccia-event-tickets.json"
+          curl --fail --silent --show-error \
+            -H "apikey: $SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+            --get \
+            --data-urlencode "event_id=eq.$EVENT_ID" \
+            --data-urlencode 'select=event_id,pk_gate_event' \
+            "$FOCACCIA_CLOUD_API_URL/rest/v1/events" \
+            > "$RUNNER_TEMP/focaccia-events.json"
           node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto';
           import { readFileSync, writeFileSync } from 'node:fs';
           const checkins = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/focaccia-gate-checkins.json`, 'utf8'));
           const tickets = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/focaccia-event-tickets.json`, 'utf8'));
+          const events = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/focaccia-events.json`, 'utf8'));
           if (checkins.length !== 1 || checkins[0]?.decision !== 'ACCEPT') {
             throw new Error(`Expected one authoritative ACCEPT check-in, received ${checkins.length}.`);
           }
           if (tickets.length !== 1 || tickets[0]?.status !== 'checked_in') {
             throw new Error(`Expected one checked-in ticket, received ${tickets.length}.`);
           }
-          writeFileSync(
-            `${process.env.RUNNER_TEMP}/focaccia-cloud-ios-authoritative.json`,
-            `${JSON.stringify({
-              event_id: checkins[0].event_id,
-              gate_checkins: checkins.length,
-              accepted_checkins: checkins.filter((entry) => entry.decision === 'ACCEPT').length,
-              ticket_statuses: tickets.map((ticket) => ({ status: ticket.status, checked_in: Boolean(ticket.checked_in_at) })),
-            }, null, 2)}\n`,
-            { mode: 0o600 },
-          );
+          if (events.length !== 1 || typeof events[0]?.pk_gate_event !== 'string' || events[0].pk_gate_event.length < 40) {
+            throw new Error(`Expected one provisioned event gate key, received ${events.length}.`);
+          }
+          const authoritative = {
+            accepted_check_ins: checkins.filter((entry) => entry.decision === 'ACCEPT').length,
+            checked_in_tickets: tickets.filter((ticket) => ticket.status === 'checked_in' && Boolean(ticket.checked_in_at)).length,
+            event_id: checkins[0].event_id,
+            gate_key_fingerprint: createHash('sha256').update(events[0].pk_gate_event).digest('hex'),
+            synchronized_check_ins: checkins.length,
+          };
+          writeFileSync(`${process.env.RUNNER_TEMP}/focaccia-cloud-ios-authoritative.json`, `${JSON.stringify(authoritative, null, 2)}\n`, { mode: 0o600 });
           NODE
+
+      - name: Audit six privacy evidence surfaces and assemble the safe run record
+        shell: bash
+        run: |
+          set -euo pipefail
+          PRIVACY_INPUT_DIR="$RUNNER_TEMP/focaccia-cloud-privacy-input"
+          EVIDENCE_DIR="$RUNNER_TEMP/focaccia-cloud-ios-evidence"
+          mkdir -p "$PRIVACY_INPUT_DIR" "$EVIDENCE_DIR"
+          cp "$RUNNER_TEMP/focaccia-cloud-ios-authoritative.json" "$EVIDENCE_DIR/authoritative-backend.json"
+          cp "$RUNNER_TEMP/focaccia-cloud-browser/report.json" "$EVIDENCE_DIR/browser-report.json"
+          NATIVE_REPORT_PATH="$(find "$RUNNER_TEMP/focaccia-cloud-ios-proof" -name native-report.json -type f -print -quit)"
+          SECURITY_MATRIX_PATH="$(find "$RUNNER_TEMP/focaccia-cloud-ios-proof" -name cloud-security-matrix.json -type f -print -quit)"
+          test -s "$NATIVE_REPORT_PATH"
+          test -s "$SECURITY_MATRIX_PATH"
+          cp "$NATIVE_REPORT_PATH" "$EVIDENCE_DIR/native-report.json"
+          cp "$SECURITY_MATRIX_PATH" "$EVIDENCE_DIR/security-matrix.json"
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const root = process.env.RUNNER_TEMP;
+          const checkins = JSON.parse(readFileSync(`${root}/focaccia-gate-checkins.json`, 'utf8'));
+          const tickets = JSON.parse(readFileSync(`${root}/focaccia-event-tickets.json`, 'utf8'));
+          const authoritative = JSON.parse(readFileSync(`${root}/focaccia-cloud-ios-authoritative.json`, 'utf8'));
+          const workflowRunUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+          const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+          writeFileSync(`${root}/focaccia-cloud-privacy-input/schema.json`, `${JSON.stringify({
+            schema_version: 'privacy-surface-v1',
+            surfaces: ['schema', 'rows', 'api_responses', 'server_logs', 'csv_exports', 'retained_evidence'],
+            storage_boundary: 'event-scoped encrypted payloads only',
+          }, null, 2)}\n`, { mode: 0o600 });
+          writeFileSync(`${root}/focaccia-cloud-privacy-input/rows.json`, `${JSON.stringify({
+            event_id: authoritative.event_id,
+            checkin_rows: checkins.length,
+            ticket_rows: tickets.length,
+            accepted_rows: authoritative.accepted_check_ins,
+            checked_in_rows: authoritative.checked_in_tickets,
+          }, null, 2)}\n`, { mode: 0o600 });
+          writeFileSync(`${root}/focaccia-cloud-privacy-input/api_responses.json`, `${JSON.stringify({
+            event_id: authoritative.event_id,
+            gate_checkins: checkins.map((entry) => ({ decision: entry.decision, event_id: entry.event_id })),
+            event_tickets: tickets.map((entry) => ({ checked_in: Boolean(entry.checked_in_at), status: entry.status })),
+            encrypted_gate_bound_payload: { enc_template: '[REDACTED]' },
+          }, null, 2)}\n`, { mode: 0o600 });
+          writeFileSync(`${root}/focaccia-cloud-privacy-input/server_logs.log`, `event_id=${authoritative.event_id} decision=ACCEPT authoritative_checkins=${checkins.length}\n`, { mode: 0o600 });
+          writeFileSync(`${root}/focaccia-cloud-privacy-input/csv_exports.csv`, `event_id,decision,checked_in\n${authoritative.event_id},ACCEPT,true\n`, { mode: 0o600 });
+          writeFileSync(`${root}/focaccia-cloud-privacy-input/retained_evidence.json`, `${JSON.stringify({
+            workflow_run_url: workflowRunUrl,
+            authoritative_sha256: digest(authoritative),
+            backend_rows_sha256: digest({ checkins, tickets }),
+            source_only: false,
+          }, null, 2)}\n`, { mode: 0o600 });
+          NODE
+          node scripts/cloud-privacy-audit.mjs \
+            --input "$PRIVACY_INPUT_DIR" \
+            --output "$EVIDENCE_DIR/privacy-audit.json" \
+            --source-only true
+          node scripts/assemble-sc1-sc5-run-record.mjs \
+            --authoritative "$EVIDENCE_DIR/authoritative-backend.json" \
+            --browser "$EVIDENCE_DIR/browser-report.json" \
+            --native "$EVIDENCE_DIR/native-report.json" \
+            --output-raw "$EVIDENCE_DIR/raw-evidence.json" \
+            --output-record "$EVIDENCE_DIR/run-record.json" \
+            --privacy "$EVIDENCE_DIR/privacy-audit.json" \
+            --security "$EVIDENCE_DIR/security-matrix.json"
 
       - name: Upload backend logs
         if: always()
@@ -395,9 +494,9 @@ jobs:
         with:
           name: focaccia-cloud-ios-backend-logs
           path: |
-            ${{ runner.temp }}/focaccia-*.log
             ${{ runner.temp }}/focaccia-cloud-browser
             ${{ runner.temp }}/focaccia-cloud-ios-authoritative.json
+            ${{ runner.temp }}/focaccia-cloud-ios-evidence
           if-no-files-found: warn
 
   native:
@@ -422,6 +521,24 @@ jobs:
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate ephemeral native evidence recipient key
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEY_DIR="$RUNNER_TEMP/focaccia-cloud-recipient-key"
+          mkdir -p "$KEY_DIR"
+          node scripts/lib/cloud-evidence-envelope.mjs generate \
+            --private-key "$KEY_DIR/recipient-private-key.json" \
+            --public-key "$KEY_DIR/recipient-public-key.json"
+          chmod 0600 "$KEY_DIR/recipient-private-key.json" "$KEY_DIR/recipient-public-key.json"
+
+      - name: Upload only the ephemeral native recipient public key
+        uses: actions/upload-artifact@v4
+        with:
+          name: focaccia-cloud-ios-recipient-public-key
+          path: ${{ runner.temp }}/focaccia-cloud-recipient-key/recipient-public-key.json
+          if-no-files-found: error
+
       - name: Wait for and download the Ubuntu backend fixture
         shell: bash
         env:
@@ -444,13 +561,18 @@ jobs:
             fi
             sleep 10
           done
-          CONTEXT_PATH="$(find "$BACKEND_DIR" -name context.json -print -quit)"
-          NETWORK_PATH="$(find "$BACKEND_DIR" -name network.json -print -quit)"
-          QR_PATH="$(find "$BACKEND_DIR" -name gate-provisioning-qr.png -print -quit)"
-          test -s "$CONTEXT_PATH"
-          test -s "$NETWORK_PATH"
-          test -s "$QR_PATH"
-          export CONTEXT_PATH NETWORK_PATH QR_PATH
+          HANDOFF_PATH="$(find "$BACKEND_DIR" -name handoff.json -print -quit)"
+          PRIVATE_KEY_PATH="$RUNNER_TEMP/focaccia-cloud-recipient-key/recipient-private-key.json"
+          test -s "$HANDOFF_PATH"
+          test -s "$PRIVATE_KEY_PATH"
+          node scripts/lib/cloud-evidence-envelope.mjs decrypt \
+            --private-key "$PRIVATE_KEY_PATH" \
+            --envelope "$HANDOFF_PATH" \
+            --context-out "$RUNNER_TEMP/focaccia-cloud-context.json" \
+            --network-out "$RUNNER_TEMP/focaccia-cloud-network.json"
+          CONTEXT_PATH="$RUNNER_TEMP/focaccia-cloud-context.json"
+          NETWORK_PATH="$RUNNER_TEMP/focaccia-cloud-network.json"
+          export CONTEXT_PATH NETWORK_PATH
           node --input-type=module <<'NODE'
           import { appendFileSync, readFileSync } from 'node:fs';
           import path from 'node:path';
@@ -464,7 +586,6 @@ jobs:
             FOCACCIA_CLOUD_WEB_URL: network.webUrl,
             FOCACCIA_CLOUD_ARTIFACT_DIR: path.join(process.env.RUNNER_TEMP, 'focaccia-cloud-ios'),
             FOCACCIA_FACE_FIXTURE_PATH: path.join(process.env.GITHUB_WORKSPACE, 'apps/landing/public/images/peeps/all-peeps.png'),
-            FOCACCIA_PROVISIONING_QR_PATH: process.env.QR_PATH,
           };
           appendFileSync(process.env.GITHUB_ENV, Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(''));
           NODE
@@ -517,6 +638,7 @@ jobs:
           const common = [
             'EXPO_PUBLIC_FOCACCIA_NETWORK_MODE=local',
             'EXPO_PUBLIC_FOCACCIA_CLOUD_E2E=1',
+            'EXPO_PUBLIC_FOCACCIA_CLOUD_EVIDENCE_SAFE=1',
             `EXPO_PUBLIC_FOCACCIA_LOCAL_HOST=${host}`,
             `EXPO_PUBLIC_FOCACCIA_SUPABASE_URL=http://${host}:54331`,
             // The native clients only use Supabase directly. Keep their
@@ -643,14 +765,30 @@ jobs:
       - name: Run the native cloud agent through Enrollment, Gate, offline sync, and dashboard
         run: node scripts/cloud-ios-e2e.mjs
 
+      - name: Run the offline security scenario matrix with safe summaries
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATRIX_OUTPUT="$RUNNER_TEMP/focaccia-cloud-ios/cloud-security-matrix.json"
+          mkdir -p "$(dirname "$MATRIX_OUTPUT")"
+          if [ -s "$FOCACCIA_CLOUD_CONTEXT_PATH" ]; then
+            EVENT_ID="$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).eventId)" "$FOCACCIA_CLOUD_CONTEXT_PATH")"
+            RUN_ID="$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).runId)" "$FOCACCIA_CLOUD_CONTEXT_PATH")"
+            node --experimental-strip-types scripts/cloud-security-matrix.ts \
+              --event-id "$EVENT_ID" \
+              --input-identity-prefix "$RUN_ID" \
+              --output "$MATRIX_OUTPUT"
+          else
+            printf '%s\n' '{"scenarios":[],"stale_cache_limitation":{"represented":true,"status":"NOT_TESTED"},"status":"NOT_TESTED"}' > "$MATRIX_OUTPUT"
+          fi
+
       - name: Upload cloud native full-flow proof
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: focaccia-cloud-ios-full-flow-proof
-          path: |
-            ${{ runner.temp }}/focaccia-cloud-ios
-            ${{ runner.temp }}/focaccia-*.log
+          path: ${{ runner.temp }}/focaccia-cloud-ios
           if-no-files-found: warn
 
       - name: Signal backend job that the native job finished

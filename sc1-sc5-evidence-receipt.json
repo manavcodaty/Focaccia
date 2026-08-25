@@ -1,0 +1,115 @@
+{
+  "blocked_scenarios": [
+    {
+      "artifact_paths": [
+        "artifacts/preflight-control-evidence.json"
+      ],
+      "category": "REMOTE_DISPATCH_PROHIBITED",
+      "counts_toward_target": false,
+      "provenance": {
+        "commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
+        "record_type": "blocked_preflight_control",
+        "runner_os": "NOT_DISPATCHED",
+        "started_at": "2026-08-25T07:19:46Z"
+      },
+      "run_id": "blocked-preflight-001",
+      "workflow_run_url": null,
+      "workflow_state": "NOT_DISPATCHED"
+    }
+  ],
+  "criteria": {
+    "SC1": {
+      "numerator": 0,
+      "observed_denominator": 0,
+      "required_denominator": 10,
+      "results": [],
+      "status": "BLOCKED"
+    },
+    "SC2": {
+      "numerator": 0,
+      "observed_denominator": 0,
+      "required_denominator": 10,
+      "results": [],
+      "status": "BLOCKED"
+    },
+    "SC3": {
+      "numerator": 0,
+      "observed_denominator": 0,
+      "required_denominator": 10,
+      "results": [],
+      "status": "BLOCKED"
+    },
+    "SC4": {
+      "numerator": 0,
+      "observed_denominator": 0,
+      "required_denominator": 10,
+      "results": [],
+      "status": "BLOCKED"
+    },
+    "SC5": {
+      "numerator": 0,
+      "observed_denominator": 0,
+      "required_denominator": 10,
+      "results": [],
+      "status": "BLOCKED"
+    }
+  },
+  "evaluated_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
+  "evidence_completeness": {
+    "complete": false,
+    "control_records": 1,
+    "criteria_with_required_observations": 0,
+    "records_validated": 1,
+    "target_observations_missing": 10,
+    "traceable_results": 0
+  },
+  "evidence_scope": {
+    "image_review_trust_boundary": "only canonical stripped, structurally decoded PNG image evidence is supported; reducer accepts only IHDR, IDAT, and IEND chunks and verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof",
+    "repeated_fixture_runs": "controlled software repeatability only",
+    "unestablished": [
+      "real-camera capture",
+      "camera QR scanning",
+      "physical radio loss",
+      "participant FAR/FRR/EER",
+      "demographic fairness",
+      "sophisticated PAD",
+      "user acceptance",
+      "public deployment"
+    ],
+    "latency_policy": "never infer latency from zero or missing fields"
+  },
+  "failure_categories": [
+    {
+      "category": "REMOTE_DISPATCH_PROHIBITED",
+      "count": 1,
+      "run_ids": [
+        "blocked-preflight-001"
+      ]
+    }
+  ],
+  "failure_records": [
+    {
+      "artifact_paths": [
+        "artifacts/preflight-control-evidence.json"
+      ],
+      "category": "REMOTE_DISPATCH_PROHIBITED",
+      "diagnostics": {
+        "diagnostic_codes": [
+          "NOT_AUTHORIZED_TO_DISPATCH",
+          "NOT_AUTHORIZED_TO_PUSH",
+          "NO_TARGET_OBSERVATIONS"
+        ]
+      },
+      "reason_code": "UNSAFE_PUBLISHED_ARTIFACTS",
+      "run_id": "blocked-preflight-001",
+      "workflow_run_url": null
+    }
+  ],
+  "not_tested_scenarios": [],
+  "status": "BLOCKED",
+  "target": {
+    "observed_target_runs": 0,
+    "remaining_required_runs": 10,
+    "required_runs": 10
+  }
+}

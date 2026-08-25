@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { chromium } from '@playwright/test';
 
@@ -71,8 +71,47 @@ async function fillLoginCredentials(page, emailInput, passwordInput) {
   assert.equal(await passwordInput.inputValue(), organizerPassword, 'organizer password should be present before submit');
 }
 
+function hashIdentifier(value, runId) {
+  return createHash('sha256').update(`${runId}\0${value}`).digest('hex');
+}
+
+function redactText(value, sensitiveValues) {
+  return sensitiveValues
+    .filter((entry) => typeof entry === 'string' && entry.length > 0)
+    .sort((left, right) => right.length - left.length)
+    .reduce((redacted, entry) => redacted.replaceAll(entry, '[REDACTED]'), String(value));
+}
+
+async function redactPageForEvidence(page, sensitiveValues, { hideProvisioning = false } = {}) {
+  if (!page || page.isClosed()) return;
+  const values = sensitiveValues.filter((entry) => typeof entry === 'string' && entry.length > 0);
+  await page.evaluate(({ hideProvisioning, values: replacements }) => {
+    const replace = (input) => replacements
+      .sort((left, right) => right.length - left.length)
+      .reduce((output, value) => output.replaceAll(value, '[REDACTED]'), input);
+
+    for (const input of document.querySelectorAll('input, textarea')) {
+      if ('value' in input && typeof input.value === 'string') input.value = replace(input.value);
+    }
+
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    while (node) {
+      node.textContent = replace(node.textContent ?? '');
+      node = walker.nextNode();
+    }
+
+    if (hideProvisioning) {
+      const payload = document.querySelector('#qr-payload');
+      if (payload) payload.replaceChildren(document.createTextNode('[PROVISIONING PAYLOAD REDACTED]'));
+    }
+  }, { hideProvisioning, values });
+}
+
 const webUrl = requiredEnv('FOCACCIA_CLOUD_WEB_URL');
 const ticketsUrl = requiredEnv('FOCACCIA_CLOUD_TICKETS_URL');
+const publicSupabaseUrl = requiredEnv('FOCACCIA_CLOUD_SUPABASE_URL');
+const anonKey = requiredEnv('FOCACCIA_CLOUD_ANON_KEY');
 const organizerEmail = requiredEnv('FOCACCIA_CLOUD_ORGANIZER_EMAIL');
 const organizerPassword = requiredEnv('FOCACCIA_CLOUD_ORGANIZER_PASSWORD');
 const artifactDir = path.resolve(
@@ -86,6 +125,24 @@ const eventName = `Cloud E2E ${runId}`;
 const eventId = `cloud_e2e_${runId}`;
 const attendeeEmail = `attendee-${runId}@example.com`;
 const attendeePassword = `Attendee-${randomUUID()}!`;
+const foreignAttendeeEmail = `foreign-${runId}@example.com`;
+const foreignAttendeePassword = `Foreign-${randomUUID()}!`;
+const startedAt = new Date().toISOString();
+const workflowRunUrl = process.env.GITHUB_SERVER_URL
+  && process.env.GITHUB_REPOSITORY
+  && process.env.GITHUB_RUN_ID
+  ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+  : null;
+const organizerIdHash = hashIdentifier(organizerEmail, runId);
+const attendeeIdHash = hashIdentifier(attendeeEmail, runId);
+const sensitiveValues = [
+  organizerEmail,
+  organizerPassword,
+  attendeeEmail,
+  attendeePassword,
+  foreignAttendeeEmail,
+  foreignAttendeePassword,
+];
 
 await mkdir(artifactDir, { recursive: true });
 
@@ -99,8 +156,25 @@ const context = await browser.newContext({
 });
 let organizerPage;
 let attendeePage;
+let foreignContext;
+let foreignPage;
+let stage = 'browser_initialization';
+let thrownError = null;
+let ticketId = null;
+const artifactPaths = [];
+const checks = {
+  attendee_account_created: false,
+  attendee_wallet_checked: false,
+  claim_code_format_valid: false,
+  event_listed: false,
+  foreign_claim_ownership_rejected: false,
+  foreign_ticket_ownership_rejected: false,
+  gate_provisioning_payload_captured_ephemerally: false,
+  organizer_event_created: false,
+};
 
 try {
+  stage = 'organizer_login';
   organizerPage = await context.newPage();
   await organizerPage.goto(`${webUrl}/login`, { waitUntil: 'domcontentloaded' });
   await organizerPage.locator('form button[type="submit"]').waitFor({ state: 'visible' });
@@ -114,6 +188,7 @@ try {
   });
   await waitForVisible(organizerPage.getByRole('heading', { name: 'Events', exact: true }), 'organizer dashboard');
 
+  stage = 'organizer_event_creation';
   await organizerPage.goto(`${webUrl}/events/new`, { waitUntil: 'domcontentloaded' });
   await fillStable(organizerPage, organizerPage.getByLabel('Event name', { exact: true }), eventName, 'event name');
   await fillStable(organizerPage, organizerPage.getByLabel('Event ID', { exact: true }), eventId, 'event ID');
@@ -139,8 +214,12 @@ try {
     .getByRole('link', { name: 'Open event workspace', exact: true })
     .getAttribute('href');
   assert.equal(eventWorkspaceHref, `/events/${eventId}`);
+  checks.organizer_event_created = true;
+  await redactPageForEvidence(organizerPage, sensitiveValues);
   await organizerPage.screenshot({ path: path.join(artifactDir, 'organizer-event-created.png'), fullPage: true });
+  artifactPaths.push('organizer-event-created.png');
 
+  stage = 'attendee_signup_and_ticket_claim';
   attendeePage = await context.newPage();
   await attendeePage.goto(`${ticketsUrl}/signup`, { waitUntil: 'domcontentloaded' });
   await attendeePage.locator('form button[type="submit"]').waitFor({ state: 'visible' });
@@ -152,10 +231,12 @@ try {
     timeout: 45_000,
     waitUntil: 'domcontentloaded',
   });
+  checks.attendee_account_created = true;
 
   await attendeePage.goto(`${ticketsUrl}/`, { waitUntil: 'domcontentloaded' });
   const eventLink = attendeePage.getByRole('link', { name: `View ${eventName}`, exact: true });
   await waitForVisible(eventLink, 'listed event');
+  checks.event_listed = true;
   await eventLink.click();
   await attendeePage.waitForURL(new RegExp(`/events/${eventId}$`), { waitUntil: 'domcontentloaded' });
   await waitForVisible(attendeePage.getByRole('heading', { name: eventName, exact: true }), 'event detail');
@@ -164,12 +245,61 @@ try {
   await waitForVisible(attendeePage.getByText('Your place is saved', { exact: true }), 'ticket confirmation');
   const claimCode = (await attendeePage.locator('.claim-code-panel strong').textContent())?.trim() ?? '';
   assert.match(claimCode, /^[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){2}$/);
+  checks.claim_code_format_valid = true;
+  ticketId = decodeURIComponent(new URL(attendeePage.url()).pathname.split('/').filter(Boolean).at(-1) ?? '');
+  assert.match(ticketId, /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  sensitiveValues.push(claimCode);
+  await redactPageForEvidence(attendeePage, sensitiveValues);
   await attendeePage.screenshot({ path: path.join(artifactDir, 'attendee-ticket-confirmed.png'), fullPage: true });
+  artifactPaths.push('attendee-ticket-confirmed.png');
 
+  stage = 'attendee_wallet';
   await attendeePage.goto(`${ticketsUrl}/tickets`, { waitUntil: 'domcontentloaded' });
   await waitForVisible(attendeePage.getByRole('heading', { name: 'My tickets', exact: true }), 'attendee wallet');
   await waitForVisible(attendeePage.getByText(eventName, { exact: true }), 'claimed ticket in attendee wallet');
+  checks.attendee_wallet_checked = true;
 
+  stage = 'foreign_ownership_rejection';
+  // The foreign attendee must not share the primary attendee's cookies or
+  // Supabase localStorage; a second browser context makes the ownership
+  // negative checks exercise a genuinely distinct authenticated identity.
+  foreignContext = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+  });
+  foreignPage = await foreignContext.newPage();
+  await foreignPage.goto(`${ticketsUrl}/signup`, { waitUntil: 'domcontentloaded' });
+  await foreignPage.locator('form button[type="submit"]').waitFor({ state: 'visible' });
+  await fillStable(foreignPage, foreignPage.locator('#full-name'), 'Cloud Foreign Attendee', 'foreign attendee name');
+  await fillStable(foreignPage, foreignPage.locator('input[type="email"]'), foreignAttendeeEmail, 'foreign attendee email');
+  await fillStable(foreignPage, foreignPage.locator('input[type="password"]'), foreignAttendeePassword, 'foreign attendee password');
+  await foreignPage.locator('form button[type="submit"]').click();
+  await foreignPage.waitForURL(/\/tickets(?:\?.*)?$/, { timeout: 45_000, waitUntil: 'domcontentloaded' });
+  const foreignClaimLookupStatus = await foreignPage.evaluate(async ({ anonKey: key, claimCode, publicSupabaseUrl: supabaseUrl }) => {
+    const session = Object.values(localStorage)
+      .map((value) => {
+        try { return JSON.parse(value); } catch { return null; }
+      })
+      .find((candidate) => typeof candidate?.access_token === 'string');
+    if (!session?.access_token) return 0;
+    const response = await fetch(`${supabaseUrl}/functions/v1/get-enrollment-bundle`, {
+      body: JSON.stringify({ claim_code: claimCode }),
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    });
+    return response.status;
+  }, { anonKey, claimCode, publicSupabaseUrl });
+  assert.equal(foreignClaimLookupStatus, 404, 'A foreign attendee must not resolve another attendee claim code.');
+  checks.foreign_claim_ownership_rejected = true;
+  await foreignPage.goto(`${ticketsUrl}/confirmation/${ticketId}`, { waitUntil: 'domcontentloaded' });
+  await waitForVisible(foreignPage.getByRole('heading', { name: 'Ticket unavailable', exact: true }), 'foreign ticket rejection');
+  await waitForVisible(foreignPage.getByText('It may belong to a different attendee account.', { exact: true }), 'foreign ticket ownership message');
+  checks.foreign_ticket_ownership_rejected = true;
+
+  stage = 'gate_provisioning_capture';
   await organizerPage.goto(`${webUrl}/events/${eventId}/provisioning`, { waitUntil: 'domcontentloaded' });
   await waitForVisible(
     organizerPage.getByText('Gate transfer payload', { exact: true }),
@@ -179,47 +309,92 @@ try {
   const provisioningPayloadText = await organizerPage.locator('#qr-payload pre').textContent();
   assert.ok(provisioningPayloadText, 'The provisioning payload preview should be present.');
   const provisioningPayload = JSON.parse(provisioningPayloadText);
-  await organizerPage.locator('#qr-payload').getByRole('img').screenshot({
-    path: path.join(artifactDir, 'gate-provisioning-qr.png'),
-  });
+  sensitiveValues.push(provisioningPayloadText, JSON.stringify(provisioningPayload), encodeURIComponent(JSON.stringify(provisioningPayload)));
+  checks.gate_provisioning_payload_captured_ephemerally = true;
+  await redactPageForEvidence(organizerPage, sensitiveValues, { hideProvisioning: true });
   await organizerPage.screenshot({ path: path.join(artifactDir, 'organizer-provisioning.png'), fullPage: true });
+  artifactPaths.push('organizer-provisioning.png');
 
+  stage = 'ephemeral_handoff_write';
   await writeFile(
     contextPath,
     `${JSON.stringify({
       attendeeEmail,
       attendeePassword,
+      attendeeIdHash,
       eventId,
       eventName,
       organizerEmail,
       organizerPassword,
       provisioningPayload,
       runId,
+      startedAt,
+      ticketId,
+      workflowRunUrl,
     }, null, 2)}\n`,
     { mode: 0o600 },
   );
   await chmod(contextPath, 0o600);
 
+  stage = 'browser_report_write';
   const report = {
-    attendee_account_created: true,
-    attendee_wallet_checked: true,
-    claim_code_format_valid: true,
+    artifact_paths: artifactPaths,
+    attendee_id_hash: attendeeIdHash,
+    checks,
+    commit_sha: process.env.GITHUB_SHA ?? null,
     event_id: eventId,
-    event_listed: true,
-    gate_provisioning_payload_captured: true,
-    gate_provisioning_qr_screenshot_captured: true,
-    organizer_event_created: true,
+    failure: null,
+    isolated_backend_instance: true,
+    mutable_state_isolated: true,
+    organizer_id_hash: organizerIdHash,
     run_id: runId,
+    runner_os: process.env.RUNNER_OS ?? process.platform,
+    started_at: startedAt,
+    status: 'PASS',
+    ticket_id: ticketId,
+    workflow_run_url: workflowRunUrl,
   };
   await writeFile(path.join(artifactDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   console.log(JSON.stringify(report));
 } catch (error) {
+  thrownError = error;
+  const failureMessage = redactText(error instanceof Error ? error.message : String(error), sensitiveValues);
   await Promise.all([
-    organizerPage?.screenshot({ path: path.join(artifactDir, 'organizer-failure.png'), fullPage: true }).catch(() => {}),
-    attendeePage?.screenshot({ path: path.join(artifactDir, 'attendee-failure.png'), fullPage: true }).catch(() => {}),
+    organizerPage && redactPageForEvidence(organizerPage, sensitiveValues, { hideProvisioning: true })
+      .then(() => organizerPage.screenshot({ path: path.join(artifactDir, 'organizer-failure.png'), fullPage: true }))
+      .then(() => artifactPaths.push('organizer-failure.png'))
+      .catch(() => {}),
+    attendeePage && redactPageForEvidence(attendeePage, sensitiveValues)
+      .then(() => attendeePage.screenshot({ path: path.join(artifactDir, 'attendee-failure.png'), fullPage: true }))
+      .then(() => artifactPaths.push('attendee-failure.png'))
+      .catch(() => {}),
+    foreignPage && redactPageForEvidence(foreignPage, sensitiveValues)
+      .then(() => foreignPage.screenshot({ path: path.join(artifactDir, 'foreign-failure.png'), fullPage: true }))
+      .then(() => artifactPaths.push('foreign-failure.png'))
+      .catch(() => {}),
   ]);
-  throw error;
+  const report = {
+    artifact_paths: artifactPaths,
+    attendee_id_hash: attendeeIdHash,
+    checks,
+    commit_sha: process.env.GITHUB_SHA ?? null,
+    event_id: eventId,
+    failure: { message: failureMessage, stage },
+    isolated_backend_instance: true,
+    mutable_state_isolated: true,
+    organizer_id_hash: organizerIdHash,
+    run_id: runId,
+    runner_os: process.env.RUNNER_OS ?? process.platform,
+    started_at: startedAt,
+    status: 'FAIL',
+    ticket_id: ticketId,
+    workflow_run_url: workflowRunUrl,
+  };
+  await writeFile(path.join(artifactDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
 } finally {
   await context.close();
+  await foreignContext?.close();
   await browser.close();
 }
+
+if (thrownError) throw thrownError;

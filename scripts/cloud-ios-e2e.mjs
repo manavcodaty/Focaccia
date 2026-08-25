@@ -46,6 +46,21 @@ const gateBundleId = 'com.facepass.gate';
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const context = JSON.parse(await readFile(contextPath, 'utf8'));
 await mkdir(artifactDir, { recursive: true });
+let passToken = null;
+
+function redactEvidenceText(value) {
+  const sensitiveValues = [
+    context.organizerEmail,
+    context.organizerPassword,
+    context.attendeeEmail,
+    context.attendeePassword,
+    passToken,
+  ].filter((entry) => typeof entry === 'string' && entry.length > 0);
+  return sensitiveValues
+    .sort((left, right) => right.length - left.length)
+    .reduce((redacted, entry) => redacted.replaceAll(entry, '[REDACTED]'), String(value))
+    .replace(/\b[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/g, '[REDACTED_SIGNED_TOKEN]');
+}
 
 function artifact(name) {
   return path.join(artifactDir, name);
@@ -148,9 +163,9 @@ async function launchGate() {
 async function captureCommandArtifact(name, command, args) {
   try {
     const result = await runCommand(command, args);
-    await writeFile(artifact(name), `${result.stdout ?? ''}${result.stderr ?? ''}`);
+    await writeFile(artifact(name), redactEvidenceText(`${result.stdout ?? ''}${result.stderr ?? ''}`));
   } catch (error) {
-    await writeFile(artifact(name), `${error instanceof Error ? error.message : String(error)}\n`);
+    await writeFile(artifact(name), `${redactEvidenceText(error instanceof Error ? error.message : String(error))}\n`);
   }
 }
 
@@ -415,7 +430,7 @@ async function main() {
 
     await tapAction('Copy full signed token');
     await waitForNode(simulatorUdid, /Full signed token copied briefly/);
-    const passToken = await readSimulatorClipboard(simulatorUdid);
+    passToken = await readSimulatorClipboard(simulatorUdid);
     assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
 
     await launchGate();
@@ -501,9 +516,12 @@ async function main() {
       await browser.close();
     }
   } catch (error) {
-    failure = error instanceof Error ? error.message : String(error);
+    failure = redactEvidenceText(error instanceof Error ? error.message : String(error));
     throw error;
   } finally {
+    if (!failure && !Object.values(checks).every(Boolean)) {
+      failure = 'The native cloud flow did not complete every acceptance stage.';
+    }
     const artifacts = [
         'gate-provisioned.png',
         'enrollment-pass.png',
@@ -519,7 +537,7 @@ async function main() {
         takeSimulatorScreenshot(simulatorUdid, artifact('native-failure.png')),
         describeUi(simulatorUdid).then((tree) => writeFile(
           artifact('native-failure-ui.json'),
-          `${JSON.stringify(tree, null, 2)}\n`,
+          `${redactEvidenceText(JSON.stringify(tree, null, 2))}\n`,
         )),
         captureSimulatorDiagnostics(),
       ]);
@@ -531,16 +549,24 @@ async function main() {
       );
     }
     const evidence = {
+      artifact_paths: artifacts,
       checks,
       commit_sha: process.env.GITHUB_SHA ?? null,
       event_id: context.eventId,
       face_fixture_sha256: faceFixtureSha256,
       failure,
+      gate_device_identity_hash: createHash('sha256').update(`${context.runId}:${simulatorUdid}`).digest('hex'),
       network_loss_method: 'stopped_macOS_relay',
       provisioning_mode: 'e2e_payload_injection',
       provisioning_qr_camera_scan: false,
       run_id: context.runId,
       runner_os: process.env.RUNNER_OS ?? null,
+      status: failure ? 'FAIL' : 'PASS',
+      workflow_run_url: process.env.GITHUB_SERVER_URL
+        && process.env.GITHUB_REPOSITORY
+        && process.env.GITHUB_RUN_ID
+        ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+        : null,
     };
     await Promise.all([
       writeFile(artifact('native-report.json'), `${JSON.stringify(evidence, null, 2)}\n`),

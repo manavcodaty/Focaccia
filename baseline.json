@@ -1,0 +1,61 @@
+{
+  "schema_version": "sc1-sc5-baseline-v1",
+  "status": "BASELINE_ONLY",
+  "repository": "manavcodaty/Focaccia",
+  "workflow": ".github/workflows/cloud-ios-full-flow.yml",
+  "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
+  "baseline_run": {
+    "run_id": 32640901882,
+    "url": "https://github.com/manavcodaty/Focaccia/actions/runs/32640901882",
+    "timing_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32640901882/timing",
+    "head_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
+    "conclusion": "success",
+    "started_at": "2026-08-23T12:57:49Z",
+    "completed_at": "2026-08-23T14:08:49Z",
+    "run_duration_ms": 4263000,
+    "jobs": {
+      "ubuntu_backend": {
+        "job_id": 97197722611,
+        "started_at": "2026-08-23T12:57:50Z",
+        "completed_at": "2026-08-23T14:08:32Z",
+        "wall_clock_ms": 4242000,
+        "runner_label": "ubuntu-latest"
+      },
+      "macos_native": {
+        "job_id": 97197722716,
+        "started_at": "2026-08-23T12:57:49Z",
+        "completed_at": "2026-08-23T14:08:48Z",
+        "wall_clock_ms": 4259000,
+        "runner_label": "macos-26"
+      }
+    }
+  },
+  "quota_evidence": {
+    "provider_timing_billable_ms": {
+      "ubuntu": 0,
+      "macos": 0
+    },
+    "provider_timing_source": "https://api.github.com/repos/manavcodaty/Focaccia/actions/runs/32640901882/timing",
+    "measured_parallel_wall_clock_runner_minutes": 71.05,
+    "measured_sum_of_job_wall_clock_runner_minutes": 141.68,
+    "account_actions_minutes_used_at_preflight": 0,
+    "account_actions_minutes_included_at_preflight": 3000,
+    "interpretation": "GitHub timing reported zero billable milliseconds for both standard jobs; wall-clock durations are retained separately and are not treated as billable quota consumption."
+  },
+  "artifact_evidence": {
+    "bundle_bytes": 4389715,
+    "artifact_retention_days_observed": 90,
+    "artifacts": [
+      {"name": "focaccia-cloud-ios-backend-logs", "bytes": 535211},
+      {"name": "focaccia-cloud-ios-complete", "bytes": 159},
+      {"name": "focaccia-cloud-ios-full-flow-proof", "bytes": 3839300},
+      {"name": "focaccia-cloud-ios-backend", "bytes": 15045}
+    ]
+  },
+  "claim_boundary": "This successful prior run is a timing and workflow baseline only. It is not one of the ten target observations and does not establish physical camera operation, physical radio loss, participant biometric error rates, fairness, presentation-attack resistance, user acceptance, or production readiness.",
+  "source_commands": [
+    "gh run view 32640901882 --repo manavcodaty/Focaccia --json databaseId,headSha,status,conclusion,workflowName,url,createdAt,updatedAt,jobs",
+    "gh api repos/manavcodaty/Focaccia/actions/runs/32640901882/timing",
+    "gh api repos/manavcodaty/Focaccia/actions/runs/32640901882/artifacts --paginate"
+  ]
+}

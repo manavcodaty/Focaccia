@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-25T07:19:46Z",
+  "status": "READY_FOR_AUTHORIZED_REMOTE_VALIDATION",
+  "zero_cost_verdict": "CONFIRMED",
+  "target": {
+    "repository": "manavcodaty/Focaccia",
+    "repository_url": "https://github.com/manavcodaty/Focaccia",
+    "visibility": "PUBLIC",
+    "viewer_permission": "ADMIN",
+    "remote_ref": "refs/heads/codex/ios-simulator-verification-next",
+    "remote_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
+    "remote_commit_sha_verified_at": "2026-08-25T07:19:46Z",
+    "dedicated_checkout_head_sha": "a2619007cc2a05870b6837f3e615ff12abce0b65",
+    "dedicated_checkout_head_is_at_or_after_expected_baseline": true,
+    "cloud_workflow_present": true
+  },
+  "checkout": {
+    "path": "/private/tmp/Focaccia-sc1-sc5-live",
+    "branch": "codex/sc1-sc5-cloud-evidence-safe",
+    "dedicated_worktree": true,
+    "detached": false,
+    "local_xcode_builds_performed": false,
+    "workflow_files_byte_identical_to_remote_baseline_before_local_hardening": true
+  },
+  "workflow": {
+    "id": 336067227,
+    "path": ".github/workflows/cloud-ios-full-flow.yml",
+    "url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
+    "evaluated_invocation_event": "workflow_dispatch",
+    "configured_triggers": [
+      "workflow_dispatch",
+      "push:codex/ios-simulator-verification"
+    ],
+    "permissions": {
+      "actions": "read",
+      "contents": "read"
+    },
+    "runner_labels": [
+      "ubuntu-latest",
+      "macos-26"
+    ],
+    "runner_class": "standard GitHub-hosted runners"
+  },
+  "execution_mode": {
+    "selected": "existing-workflow",
+    "bounded_optimization": "NO_MEANINGFUL_GAIN",
+    "temporary_branch_push_authorized": false,
+    "authorization_verdict": "NOT_AUTHORIZED_TO_PUSH_TEMPORARY_BRANCH",
+    "production_changes_authorized": false,
+    "notion_edits_authorized": false,
+    "persistent_secret_creation_authorized": false,
+    "remote_workflow_dispatched_before_preflight": false,
+    "remote_workflow_dispatched_after_preflight": false
+  },
+  "cost_gate": {
+    "verdict": "CONFIRMED",
+    "verified_at": "2026-08-25T07:19:46Z",
+    "account_billing_ui": {
+      "billing_period": "2026-08-01 through 2026-08-30",
+      "current_metered_or_gross_usd": 590.52,
+      "included_usage_discount_usd": 590.52,
+      "next_payment_due": null,
+      "github_pro_subscription_usd_per_month": 0,
+      "education_discount_observed": true,
+      "source_url": "https://github.com/settings/billing"
+    },
+    "actions": {
+      "billable_usd": 0,
+      "consumed_usd": 589.74,
+      "included_usage_discount_usd": 589.74,
+      "included_minutes_used": 0,
+      "included_minutes_total": 3000,
+      "actions_storage_used_gb": 0,
+      "actions_storage_included_gb": 2,
+      "budget_usd": 0,
+      "budget_spend_usd": 0,
+      "stop_usage_at_budget": true,
+      "source_url": "https://github.com/settings/billing"
+    },
+    "packages": {
+      "billable_usd": 0,
+      "data_transfer_used_gb": 0,
+      "data_transfer_included_gb": 10,
+      "storage_used_gb": 0,
+      "storage_included_gb": 2,
+      "source_url": "https://github.com/settings/billing"
+    },
+    "budgets": {
+      "actions_budget_usd": 0,
+      "actions_spend_usd": 0,
+      "actions_stop_usage": true,
+      "packages_budget_usd": 0,
+      "packages_spend_usd": 0,
+      "packages_stop_usage": true,
+      "source_url": "https://github.com/settings/billing/budgets"
+    },
+    "billing_api_scope_limitation": "The authenticated CLI billing endpoints return 404 because the current token lacks user plan scope; the account-level billing UI was read directly and is the controlling evidence.",
+    "artifacts": {
+      "active_count": 390,
+      "active_bytes": 215824995,
+      "baseline_bundle_bytes": 4389715,
+      "projected_ten_additional_baseline_sized_bundles_bytes": 43897150,
+      "projected_total_bytes": 259722145,
+      "within_actions_storage_allowance": true
+    },
+    "cache": {
+      "active_count": 2,
+      "active_bytes": 1818295620,
+      "documented_included_bytes": 10000000000,
+      "within_included_allowance": true,
+      "workflow_adds_explicit_cache_entries": false
+    },
+    "baseline_run": {
+      "run_id": 32640901882,
+      "timing_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32640901882/timing",
+      "ubuntu_billable_ms": 0,
+      "macos_billable_ms": 0
+    },
+    "service_path": {
+      "supabase": "isolated runner-local Docker stack; no hosted Supabase project",
+      "tunnel": "anonymous temporary TryCloudflare quick tunnels; no account, token, DNS record, or persistent resource",
+      "simulator_control": "runner-local Homebrew Baguette server on 127.0.0.1",
+      "paid_third_party_service": false,
+      "billable_api": false,
+      "source_url": "https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/"
+    },
+    "official_policy_sources": [
+      "https://docs.github.com/en/billing/concepts/product-billing/github-actions",
+      "https://docs.github.com/en/billing/reference/product-usage-included",
+      "https://docs.github.com/en/billing/concepts/product-billing/github-packages",
+      "https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job?apiVersion=2022-11-28"
+    ]
+  },
+  "authority_and_scope": {
+    "plan_read_completely": true,
+    "agents_read": true,
+    "canonical_report_edited": false,
+    "log_book_edited": false,
+    "epq_title_edited": false,
+    "criteria": [
+      "SC1 complete authorised event journey",
+      "SC2 offline gate decision",
+      "SC3 central biometric minimisation",
+      "SC4 invalid-pass and replay controls",
+      "SC5 offline recovery and synchronisation"
+    ]
+  },
+  "production_isolation": {
+    "isolated_backend_per_workflow_run": true,
+    "fresh_mutable_simulator_state_per_run": true,
+    "production_backend_used": false,
+    "production_data_mutated": false,
+    "repository_secrets_required": false,
+    "ephemeral_runner_local_keys_only": true,
+    "persistent_provider_resources_created": false,
+    "persistent_provider_secrets_created": false
+  },
+  "dispatch_gate": {
+    "cost_gate_open": true,
+    "local_security_evidence_gate_open": true,
+    "remote_accessible_hardened_commit": false,
+    "push_gate_open": false,
+    "dispatch_gate_open": false,
+    "reason": "Local hardening and validation are complete, but the hardened workflow is not on an accessible remote commit. The plan explicitly requires approval before pushing a temporary branch; no such explicit push approval has been granted. The unsafe published baseline is not dispatched."
+  },
+  "subagents": {
+    "requested": true,
+    "attempted": true,
+    "available_worker_result": "Worker reached its usage limit; no subagent implementation or review was relied upon for completion.",
+    "direct_execution_used": true
+  },
+  "limitations": [
+    "No remote workflow run or ten-run batch has been dispatched from the hardened commit.",
+    "The local browser flow now exercises foreign-claim and foreign-ticket ownership rejection; this has not yet been run in the cloud because the hardened workflow is not on an authorized remote commit.",
+    "The workflow privacy step currently audits a safe projection of six named surfaces with source_only=true; it must not be reported as a central production-data audit until the actual runner-local database/API/log/export surfaces are supplied.",
+    "The workflow uses simulator payload injection and stopped-relay network loss; it does not establish physical camera QR scanning or physical radio loss.",
+    "The current evidence cannot establish participant FAR/FRR/EER, demographic fairness, sophisticated presentation-attack resistance, user acceptance, or production readiness.",
+    "The current token lacks billing API user scope; direct authenticated billing UI evidence and documented allowances were used instead."
+  ]
+}

@@ -372,19 +372,9 @@ async function main() {
     // enabled first field before injecting the credentials, then wait for the
     // button to become enabled as a postcondition of the two credential inputs.
     await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
-    // Enter the email through the simulator keyboard, then explicitly dismiss
-    // the keyboard before targeting the second field. Hosted iOS simulators
-    // can otherwise deliver the second field tap to the first TextInput while
-    // the keyboard is still settling, inserting the password into the email.
     await fillInputExactly('Organizer email', context.organizerEmail);
-    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await fillInputExactly('Organizer password', context.organizerPassword);
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
-    // A software keyboard can still own the lower part of the screen after
-    // the short Baguette typing session closes. Escape it before tapping the
-    // submit button, then retry if the hosted HID tap was consumed by the
-    // keyboard transition instead of the React Native button.
-    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await tapNode(simulatorUdid, 'Sign in organizer', {
       retryIfStillVisible: true,
       retryCount: 5,
@@ -405,9 +395,7 @@ async function main() {
     await launchEnrollment();
 
     await fillInputExactly('Email', context.attendeeEmail);
-    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await fillInputExactly('Password', context.attendeePassword);
-    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await tapNode(simulatorUdid, 'Sign in', {
       retryIfStillVisible: true,
       retryCount: 5,
@@ -479,7 +467,6 @@ async function main() {
     await tapAction('Open scanner');
     await tapAction('Manual fallback', { timeoutMs: 90_000 });
     await fillInputExactly(/^Full pass token\b/, passToken);
-    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
     await tapAction('Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /^Entry rejected\b/, { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /REPLAY_USED/, { timeoutMs: 30_000 });

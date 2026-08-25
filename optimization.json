@@ -1,8 +1,8 @@
 {
   "schema_version": "sc1-sc5-optimization-v1",
-  "status": "LOCAL_ONLY_UNVALIDATED",
-  "decision": "USE_EXISTING_PUBLISHED_WORKFLOW_FOR_EVIDENCE_ONLY_AFTER_SAFETY_REVIEW",
-  "outcome": "NO_MEANINGFUL_GAIN_NOT_ESTABLISHED",
+  "status": "REMOTE_VALIDATION_PENDING",
+  "decision": "VALIDATE_HARDENED_WORKFLOW_ON_APPROVED_TEMPORARY_BRANCH",
+  "outcome": "PENDING_ONE_REMOTE_VALIDATION_RUN",
   "baseline_run_id": 32640901882,
   "baseline_workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
   "baseline_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32640901882",
@@ -10,8 +10,10 @@
     "path": "/private/tmp/Focaccia-sc1-sc5-live",
     "branch": "codex/sc1-sc5-cloud-evidence-safe",
     "head_sha_before_local_commit": "a2619007cc2a05870b6837f3e615ff12abce0b65",
-    "remote_accessible": false,
-    "temporary_branch_push_authorized": false
+    "remote_accessible": true,
+    "temporary_branch_push_authorized": true,
+    "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
+    "remote_commit_sha": "011e904d1b41139473236848ccca3bce06259aa9"
   },
   "bounded_changes": [
     "Free runner-local X25519 envelope handoff for credentials and network context; private recipient key is never uploaded.",
@@ -30,7 +32,7 @@
   "remote_validation": {
     "performed": false,
     "workflow_url": null,
-    "reason": "The local hardening requires an accessible remote commit, and the plan requires explicit approval before pushing a temporary branch. The published workflow still uploads unsafe plaintext context and was not dispatched."
+    "reason": "The user has approved the temporary branch push and the hardened commit is accessible; the one-run remote validation is pending."
   },
   "cost_and_scope": {
     "zero_cost_verdict": "CONFIRMED",

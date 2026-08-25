@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_at": "2026-08-25T07:19:46Z",
-  "status": "READY_FOR_AUTHORIZED_REMOTE_VALIDATION",
+  "status": "READY_FOR_DISPATCH",
   "zero_cost_verdict": "CONFIRMED",
   "target": {
     "repository": "manavcodaty/Focaccia",
@@ -13,7 +13,10 @@
     "remote_commit_sha_verified_at": "2026-08-25T07:19:46Z",
     "dedicated_checkout_head_sha": "a2619007cc2a05870b6837f3e615ff12abce0b65",
     "dedicated_checkout_head_is_at_or_after_expected_baseline": true,
-    "cloud_workflow_present": true
+    "cloud_workflow_present": true,
+    "hardened_remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
+    "hardened_remote_commit_sha": "011e904d1b41139473236848ccca3bce06259aa9",
+    "hardened_remote_commit_is_at_or_after_expected_baseline": true
   },
   "checkout": {
     "path": "/private/tmp/Focaccia-sc1-sc5-live",
@@ -43,10 +46,10 @@
     "runner_class": "standard GitHub-hosted runners"
   },
   "execution_mode": {
-    "selected": "existing-workflow",
-    "bounded_optimization": "NO_MEANINGFUL_GAIN",
-    "temporary_branch_push_authorized": false,
-    "authorization_verdict": "NOT_AUTHORIZED_TO_PUSH_TEMPORARY_BRANCH",
+    "selected": "optimised-workflow",
+    "bounded_optimization": "PENDING_REMOTE_VALIDATION",
+    "temporary_branch_push_authorized": true,
+    "authorization_verdict": "APPROVED_TEMPORARY_BRANCH_PUSH",
     "production_changes_authorized": false,
     "notion_edits_authorized": false,
     "persistent_secret_creation_authorized": false,
@@ -159,10 +162,10 @@
   "dispatch_gate": {
     "cost_gate_open": true,
     "local_security_evidence_gate_open": true,
-    "remote_accessible_hardened_commit": false,
-    "push_gate_open": false,
+    "remote_accessible_hardened_commit": true,
+    "push_gate_open": true,
     "dispatch_gate_open": false,
-    "reason": "Local hardening and validation are complete, but the hardened workflow is not on an accessible remote commit. The plan explicitly requires approval before pushing a temporary branch; no such explicit push approval has been granted. The unsafe published baseline is not dispatched."
+    "reason": "Zero-cost and local security gates are open, and the user approved the temporary branch push. One remote validation run is still required before the ten-run batch."
   },
   "subagents": {
     "requested": true,
@@ -171,7 +174,7 @@
     "direct_execution_used": true
   },
   "limitations": [
-    "No remote workflow run or ten-run batch has been dispatched from the hardened commit.",
+    "No remote workflow run or ten-run batch has been dispatched from the hardened commit yet; the approved branch is now accessible at 011e904d1b41139473236848ccca3bce06259aa9.",
     "The local browser flow now exercises foreign-claim and foreign-ticket ownership rejection; this has not yet been run in the cloud because the hardened workflow is not on an authorized remote commit.",
     "The workflow privacy step currently audits a safe projection of six named surfaces with source_only=true; it must not be reported as a central production-data audit until the actual runner-local database/API/log/export surfaces are supplied.",
     "The workflow uses simulator payload injection and stopped-relay network loss; it does not establish physical camera QR scanning or physical radio loss.",

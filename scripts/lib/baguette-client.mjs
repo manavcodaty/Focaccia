@@ -308,26 +308,22 @@ export async function tapNode(udid, matcher, options = {}) {
 
     // React Native ScrollViews report content coordinates in the
     // accessibility tree. A control can therefore be enabled and match the
-    // requested label while still being below the simulator viewport. Use a
-    // one-shot swipe so the cloud flow does not need a long-lived HID session.
+    // requested label while still being below the simulator viewport. Use
+    // Baguette's target-agnostic scroll envelope so the accessibility tree's
+    // content offset moves without guessing which view owns the gesture.
     for (let scrollAttempt = 0; scrollAttempt < 10; scrollAttempt += 1) {
       const frameCenterY = frame.y + frame.height / 2;
       const visible = frameCenterY > 0 && frameCenterY < root.height;
       if (visible) break;
       const direction = frameCenterY >= root.height ? -1 : 1;
-      const startY = direction < 0 ? root.height * 0.78 : root.height * 0.25;
-      const endY = direction < 0 ? root.height * 0.25 : root.height * 0.78;
-      await runCommand('baguette', [
-        'swipe',
-        '--udid', udid,
-        '--start-x', String(root.width / 2),
-        '--start-y', String(startY),
-        '--end-x', String(root.width / 2),
-        '--end-y', String(endY),
-        '--width', String(root.width),
-        '--height', String(root.height),
-        '--duration', '0.25',
-      ]);
+      const distanceFromViewportCenter = Math.abs(frameCenterY - root.height / 2);
+      const deltaY = direction * Math.max(
+        160,
+        Math.min(root.height * 0.72, distanceFromViewportCenter),
+      );
+      await runWithShortInputSession(udid, async (session) => {
+        await session.dispatch({ type: 'scroll', deltaX: 0, deltaY });
+      });
       await sleep(350);
       node = await waitForNode(udid, matcher, { ...waitOptions, timeoutMs: Math.min(waitOptions.timeoutMs ?? 60_000, 5_000) });
       lastNode = node;

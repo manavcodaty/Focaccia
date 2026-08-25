@@ -451,6 +451,10 @@ async function main() {
 
     await stopLocalProxy();
     await tapAction('Capture and verify attendee', { timeoutMs: 120_000 });
+    // A semantic tap can acknowledge before React Native has committed the
+    // processing state. Require an observable state transition so a missed
+    // off-screen actuation cannot be misreported as a liveness timeout.
+    await waitForNode(simulatorUdid, /Verifying match\.\.\.|^Entry (?:accepted|rejected)\b/, { timeoutMs: 30_000 });
     await waitForNode(simulatorUdid, /^Entry accepted\b/, { timeoutMs: 180_000 });
     checks.gate_liveness_capture_accepted = true;
     checks.offline_acceptance = true;

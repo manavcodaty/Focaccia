@@ -1,21 +1,21 @@
 {
   "schema_version": "sc1-sc5-optimization-v1",
-  "status": "BLOCKED",
-  "decision": "NO_MEANINGFUL_GAIN_HOSTED_VALIDATION_BLOCKED",
-  "outcome": "KEYBOARD_DISMISSAL_BEFORE_AUTH_NAVIGATION",
+  "status": "PENDING_VALIDATION",
+  "decision": "DIAGNOSIS_LED_CLOUD_E2E_KEYBOARD_SUPPRESSION_PENDING_VALIDATION",
+  "outcome": "CLOUD_E2E_ONLY_SOFT_KEYBOARD_SUPPRESSION",
   "baseline_run_id": 32640901882,
   "baseline_workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
   "baseline_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32640901882",
   "candidate_checkout": {
     "path": "/private/tmp/Focaccia-sc1-sc5-live",
     "branch": "codex/sc1-sc5-cloud-evidence-safe",
-    "head_sha_before_local_commit": "a2619007cc2a05870b6837f3e615ff12abce0b65",
+    "head_sha_before_local_commit": "c67973e3019cd23db55c776a8625f04002f878e7",
     "remote_accessible": true,
     "temporary_branch_push_authorized": true,
     "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "remote_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
-    "evaluated_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
-    "receipt_metadata_commit_sha": "acc3e9f3608c8b337cb9ef2f71bb827d87875c6b"
+    "remote_commit_sha": "4c56be9e8475f7983d080f5bf20940ab992f4667",
+    "evaluated_commit_sha": "4c56be9e8475f7983d080f5bf20940ab992f4667",
+    "receipt_metadata_commit_sha": "c67973e3019cd23db55c776a8625f04002f878e7"
   },
   "bounded_changes": [
     "Free runner-local X25519 envelope handoff for credentials and network context; private recipient key is never uploaded.",
@@ -26,7 +26,8 @@
     "Baguette uses the official scroll envelope for off-screen controls and the harness does not send hardware Escape events.",
     "The native flow validates the signed token by reading the clipboard rather than depending on a transient accessibility acknowledgement.",
     "One narrow recovery helper retries the external simulator screen transition once after the provisioning control is unavailable.",
-    "Native gate and enrollment auth dismiss the focused keyboard and allow its transition to settle before auth navigation."
+    "Native gate and enrollment auth dismiss the focused keyboard and allow its transition to settle before auth navigation.",
+    "Cloud-E2E gate and enrollment auth fields suppress the iOS soft keyboard while remaining focusable for Baguette input; production fields retain native keyboard behavior."
   ],
   "validation_commands": [
     "node --check scripts/cloud-browser-e2e.mjs",
@@ -62,10 +63,10 @@
     "failure": "The one bounded native-auth keyboard dismissal change did not overcome the repeated hosted backboardd respawn and RunningBoard termination before Provision this gate."
   },
   "pending_fix_validation": {
-    "candidate_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
+    "candidate_commit_sha": "4c56be9e8475f7983d080f5bf20940ab992f4667",
     "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
-    "status": "FAILED_VALIDATION",
-    "scope": "The one bounded keyboard dismissal lifecycle validation failed; the ten-run batch gate remains closed."
+    "status": "READY_TO_DISPATCH_AFTER_PRECHECK",
+    "scope": "Run one cloud validation of the diagnosis-led cloud-E2E soft-keyboard suppression fix; keep the ten-run batch gate closed until the native flow completes."
   },
   "validation_runs": [
     {
@@ -136,5 +137,5 @@
     }
   },
   "existing_workflow_decision": "The published baseline is excluded from target evidence because its uploaded context.json contained ephemeral credentials and provisioning material. No further baseline dispatch was made.",
-  "claim_boundary": "The one bounded safe optimization candidate was remotely validated at 45821a329317b9c662a69395d6e32f3e0653783f and hit the same hosted simulator lifecycle blocker before gate provisioning. It produced no valid target observation and no ten-run batch. The published baseline remains excluded from the evidence receipt because its artifact contract is not privacy-safe."
+  "claim_boundary": "The prior bounded candidate at 45821a329317b9c662a69395d6e32f3e0653783f hit the hosted simulator lifecycle blocker before gate provisioning. A diagnosis-led cloud-E2E keyboard-suppression fix is recorded at 4c56be9e8475f7983d080f5bf20940ab992f4667 and awaits one remote validation. No valid target observation or ten-run batch exists; the published baseline remains excluded because its artifact contract is not privacy-safe."
 }

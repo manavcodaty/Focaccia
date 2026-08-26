@@ -78,6 +78,7 @@ function useProvisionController(isCloudE2E: boolean) {
   const [isBusy, setIsBusy] = useState(false);
   const emailInputRef = useRef<TextInput | null>(null);
   const passwordInputRef = useRef<TextInput | null>(null);
+  const signInInFlightRef = useRef(false);
   const scanLockRef = useRef(false);
   useEffect(() => {
     if (!isCloudE2E) {
@@ -99,21 +100,30 @@ function useProvisionController(isCloudE2E: boolean) {
     }
   }, []);
   async function handleSignIn() {
+    if (signInInFlightRef.current) {
+      return;
+    }
+
+    signInInFlightRef.current = true;
     setError(null);
     setFeedback(null);
-    setIsBusy(true);
     if (isCloudE2E) {
       emailInputRef.current?.blur();
       passwordInputRef.current?.blur();
-      // Let the cloud-only static credential labels replace the native text
-      // fields before the keyboard service is dismissed.
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      Keyboard.dismiss();
+      // Hosted iOS 26.5 can respawn backboardd when auth changes the screen
+      // while a remote text-input session is still settling.
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    } else {
+      setIsBusy(true);
+      // Dismiss the focused native text field before auth changes the screen.
+      Keyboard.dismiss();
+      await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    // Dismiss the focused native text field before auth changes the screen.
-    // Hosted iOS 26.5 can respawn backboardd when the auth response unmounts
-    // an active keyboard session during navigation.
-    Keyboard.dismiss();
-    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    if (isCloudE2E) {
+      setIsBusy(true);
+    }
 
     try {
       await signIn(email, password);
@@ -122,6 +132,7 @@ function useProvisionController(isCloudE2E: boolean) {
       setError(signInError instanceof Error ? signInError.message : 'Sign-in failed.');
     } finally {
       setIsBusy(false);
+      signInInFlightRef.current = false;
     }
   }
 
@@ -248,7 +259,6 @@ function ProvisionScreenBody({
               accessibilityLabel="Organizer email"
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!isBusy}
               onChangeText={setEmail}
               placeholder="Organizer email"
               placeholderTextColor={palette.mutedStone}
@@ -269,7 +279,6 @@ function ProvisionScreenBody({
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete={isCloudE2E ? 'off' : 'current-password'}
-              editable={!isBusy}
               onChangeText={setPassword}
               placeholder="Password"
               placeholderTextColor={palette.mutedStone}

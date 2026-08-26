@@ -2,19 +2,19 @@
   "blocked_scenarios": [
     {
       "artifact_paths": [
-        "artifacts/preflight-control-evidence.json"
+        "artifacts/validation-gate-blocked.json"
       ],
-      "category": "REMOTE_DISPATCH_PROHIBITED",
-      "counts_toward_target": false,
-      "provenance": {
-        "commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
-        "record_type": "blocked_preflight_control",
-        "runner_os": "NOT_DISPATCHED",
-        "started_at": "2026-08-25T07:19:46Z"
-      },
-      "run_id": "blocked-preflight-001",
-      "workflow_run_url": null,
-      "workflow_state": "NOT_DISPATCHED"
+      "category": "WORKFLOW_FAILURE",
+      "counts_toward_target": true,
+      "criteria": [
+        "SC1",
+        "SC2",
+        "SC3",
+        "SC4",
+        "SC5"
+      ],
+      "run_id": "validation-gate-32925825401",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
     }
   ],
   "criteria": {
@@ -22,46 +22,96 @@
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
-      "results": [],
+      "results": [
+        {
+          "artifact_paths": [
+            "artifacts/validation-gate-blocked.json"
+          ],
+          "counts_as_observation": false,
+          "run_id": "validation-gate-32925825401",
+          "status": "BLOCKED",
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+        }
+      ],
       "status": "BLOCKED"
     },
     "SC2": {
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
-      "results": [],
+      "results": [
+        {
+          "artifact_paths": [
+            "artifacts/validation-gate-blocked.json"
+          ],
+          "counts_as_observation": false,
+          "run_id": "validation-gate-32925825401",
+          "status": "BLOCKED",
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+        }
+      ],
       "status": "BLOCKED"
     },
     "SC3": {
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
-      "results": [],
+      "results": [
+        {
+          "artifact_paths": [
+            "artifacts/validation-gate-blocked.json"
+          ],
+          "counts_as_observation": false,
+          "run_id": "validation-gate-32925825401",
+          "status": "BLOCKED",
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+        }
+      ],
       "status": "BLOCKED"
     },
     "SC4": {
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
-      "results": [],
+      "results": [
+        {
+          "artifact_paths": [
+            "artifacts/validation-gate-blocked.json"
+          ],
+          "counts_as_observation": false,
+          "run_id": "validation-gate-32925825401",
+          "status": "BLOCKED",
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+        }
+      ],
       "status": "BLOCKED"
     },
     "SC5": {
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
-      "results": [],
+      "results": [
+        {
+          "artifact_paths": [
+            "artifacts/validation-gate-blocked.json"
+          ],
+          "counts_as_observation": false,
+          "run_id": "validation-gate-32925825401",
+          "status": "BLOCKED",
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+        }
+      ],
       "status": "BLOCKED"
     }
   },
-  "evaluated_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
+  "evaluated_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
   "evidence_completeness": {
     "complete": false,
-    "control_records": 1,
+    "control_records": 0,
     "criteria_with_required_observations": 0,
     "records_validated": 1,
     "target_observations_missing": 10,
-    "traceable_results": 0
+    "traceable_results": 5
   },
   "evidence_scope": {
     "image_review_trust_boundary": "only canonical stripped, structurally decoded PNG image evidence is supported; reducer accepts only IHDR, IDAT, and IEND chunks and verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof",
@@ -80,29 +130,27 @@
   },
   "failure_categories": [
     {
-      "category": "REMOTE_DISPATCH_PROHIBITED",
+      "category": "WORKFLOW_FAILURE",
       "count": 1,
       "run_ids": [
-        "blocked-preflight-001"
+        "validation-gate-32925825401"
       ]
     }
   ],
   "failure_records": [
     {
       "artifact_paths": [
-        "artifacts/preflight-control-evidence.json"
+        "artifacts/validation-gate-blocked.json"
       ],
-      "category": "REMOTE_DISPATCH_PROHIBITED",
+      "category": "WORKFLOW_FAILURE",
       "diagnostics": {
         "diagnostic_codes": [
-          "NOT_AUTHORIZED_TO_DISPATCH",
-          "NOT_AUTHORIZED_TO_PUSH",
           "NO_TARGET_OBSERVATIONS"
         ]
       },
-      "reason_code": "UNSAFE_PUBLISHED_ARTIFACTS",
-      "run_id": "blocked-preflight-001",
-      "workflow_run_url": null
+      "reason_code": "PRE_CREATION_FAILURE",
+      "run_id": "validation-gate-32925825401",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
     }
   ],
   "not_tested_scenarios": [],

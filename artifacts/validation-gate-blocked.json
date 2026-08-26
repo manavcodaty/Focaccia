@@ -1,0 +1,45 @@
+{
+  "schema_version": "sc1-sc5-validation-gate-evidence-v1",
+  "status": "BLOCKED",
+  "evaluated_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
+  "failure_boundary": "The safe hardened workflow was dispatched for bounded validation, but the hosted iOS simulator lost its backboard connection and RunningBoard terminated FacePassGate before the Provision this gate control became available. No target observation was counted and no batch was opened.",
+  "validation_attempts": [
+    {
+      "workflow_run_id": 32905208006,
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32905208006",
+      "commit_sha": "3c7b3913d937236e1aeac01baf29b85f038ddee4",
+      "duration_ms": 4207000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32905208006",
+      "result": "FAILURE_BEFORE_GATE_PROVISIONING",
+      "diagnostic": "backboardd respawn and RunningBoard termination; SpringBoard Home was preserved; no app crash stack was observed"
+    },
+    {
+      "workflow_run_id": 32918631772,
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32918631772",
+      "commit_sha": "d07c89ba6c8b3ef748d24c2a551175669e986305",
+      "duration_ms": 3507000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32918631772",
+      "result": "FAILURE_BEFORE_GATE_PROVISIONING",
+      "diagnostic": "backboardd respawn and RunningBoard termination; the safe handoff was retained; no target observation was counted"
+    },
+    {
+      "workflow_run_id": 32925825401,
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401",
+      "commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
+      "duration_ms": 3723000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32925825401",
+      "result": "FAILURE_BEFORE_GATE_PROVISIONING",
+      "diagnostic": "backboardd respawn and RunningBoard termination repeated after the one narrow recovery helper; no target observation was counted"
+    }
+  ],
+  "raw_artifact_policy": "The three raw safe-validation directories are preserved outside the repository and remain traceable through their workflow URLs. No secret-bearing baseline context artifact is copied into this receipt.",
+  "cost_evidence": {
+    "zero_cost_verdict": "CONFIRMED",
+    "all_validation_runs_billable_ms": {"ubuntu": 0, "macos": 0},
+    "paid_resources_created": false,
+    "persistent_secrets_created": false
+  }
+}

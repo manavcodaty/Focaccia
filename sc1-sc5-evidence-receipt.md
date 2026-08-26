@@ -2,7 +2,7 @@
 
 Overall status: `BLOCKED`
 
-Evaluated commit: `d3bf4eeda9f2db139804495afb24c008c1a40445`
+Evaluated commit: `2bc12adc21a7e5103557278c82f3eae1b7b40c89`
 
 Evidence completeness: 0 of 10 target observations
 
@@ -20,24 +20,29 @@ Evidence completeness: 0 of 10 target observations
 
 | Criterion | Run | Status | Workflow | Raw artifacts |
 | --- | --- | --- | --- | --- |
+| SC1 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
+| SC2 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
+| SC3 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
+| SC4 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
+| SC5 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
 
 ## Failure categories
 
 | Category | Count | Runs |
 | --- | ---: | --- |
-| `REMOTE_DISPATCH_PROHIBITED` | 1 | `blocked-preflight-001` |
+| `WORKFLOW_FAILURE` | 1 | `validation-gate-32925825401` |
 
 ## Failure details
 
 | Run | Category | Reason code | Diagnostics | Workflow | Raw artifacts |
 | --- | --- | --- | --- | --- | --- |
-| `blocked-preflight-001` | `REMOTE_DISPATCH_PROHIBITED` | `UNSAFE_PUBLISHED_ARTIFACTS` | {"diagnostic_codes":["NOT_AUTHORIZED_TO_DISPATCH","NOT_AUTHORIZED_TO_PUSH","NO_TARGET_OBSERVATIONS"]} | not dispatched | `artifacts/preflight-control-evidence.json` |
+| `validation-gate-32925825401` | `WORKFLOW_FAILURE` | `PRE_CREATION_FAILURE` | {"diagnostic_codes":["NO_TARGET_OBSERVATIONS"]} | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
 
 ## Blocked/not-tested scenarios
 
 | Status | Record | Criteria | Counts toward target | Workflow | Raw artifacts |
 | --- | --- | --- | --- | --- | --- |
-| `BLOCKED` | `blocked-preflight-001` | preflight control | no | not dispatched | `artifacts/preflight-control-evidence.json` |
+| `BLOCKED` | `validation-gate-32925825401` | `SC1`, `SC2`, `SC3`, `SC4`, `SC5` | yes | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
 
 Zero target observations were recorded; this is a truthful `BLOCKED` receipt, not an empty success.
 

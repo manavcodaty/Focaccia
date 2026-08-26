@@ -1,8 +1,8 @@
 {
   "schema_version": "sc1-sc5-optimization-v1",
-  "status": "REMOTE_VALIDATION_PENDING",
-  "decision": "VALIDATE_SAFE_HARDENED_WORKFLOW_AFTER_NARROW_E2E_FIX",
-  "outcome": "PENDING_ONE_REMOTE_VALIDATION_RUN",
+  "status": "BLOCKED",
+  "decision": "NO_MEANINGFUL_GAIN_EXISTING_WORKFLOW_EXCLUDED",
+  "outcome": "BLOCKED_REPEATED_HOSTED_SIMULATOR_LIFECYCLE",
   "baseline_run_id": 32640901882,
   "baseline_workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
   "baseline_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32640901882",
@@ -13,7 +13,7 @@
     "remote_accessible": true,
     "temporary_branch_push_authorized": true,
     "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "remote_commit_sha": "d07c89ba6c8b3ef748d24c2a551175669e986305"
+    "remote_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89"
   },
   "bounded_changes": [
     "Free runner-local X25519 envelope handoff for credentials and network context; private recipient key is never uploaded.",
@@ -22,7 +22,8 @@
     "Privacy six-surface safe-projection audit explicitly marked source-only and safe offline security scenario matrix.",
     "One commit-pinned native build remains the only native build in each cloud workflow run; no local Xcode build was performed.",
     "Baguette uses the official scroll envelope for off-screen controls and the harness does not send hardware Escape events.",
-    "The native flow validates the signed token by reading the clipboard rather than depending on a transient accessibility acknowledgement."
+    "The native flow validates the signed token by reading the clipboard rather than depending on a transient accessibility acknowledgement.",
+    "One narrow recovery helper retries the external simulator screen transition once after the provisioning control is unavailable."
   ],
   "validation_commands": [
     "node --check scripts/cloud-browser-e2e.mjs",
@@ -45,10 +46,59 @@
     "failure": "Hosted iOS backboardd respawn interrupted the accessibility/input connection and RunningBoard terminated FacePassGate while waiting for Provision this gate; the native report preserved SpringBoard Home and no app crash stack."
   },
   "remote_validation": {
-    "performed": false,
-    "workflow_url": null,
-    "candidate_commit_sha": "d07c89ba6c8b3ef748d24c2a551175669e986305",
-    "reason": "A narrow clipboard assertion fix was pushed after the prior validation failure. The published baseline is not a safe fallback because its uploaded context.json contains ephemeral credentials and provisioning material."
+    "performed": true,
+    "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401",
+    "candidate_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
+    "run_id": 32925825401,
+    "conclusion": "failure",
+    "run_duration_ms": 3723000,
+    "billable_ms": {
+      "ubuntu": 0,
+      "macos": 0
+    },
+    "failure": "The one narrow recovery helper did not overcome the repeated hosted backboardd respawn and RunningBoard termination before Provision this gate."
+  },
+  "validation_runs": [
+    {
+      "run_id": 32905208006,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32905208006",
+      "commit_sha": "3c7b3913d937236e1aeac01baf29b85f038ddee4",
+      "conclusion": "failure",
+      "run_duration_ms": 4207000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning"
+    },
+    {
+      "run_id": 32918631772,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32918631772",
+      "commit_sha": "d07c89ba6c8b3ef748d24c2a551175669e986305",
+      "conclusion": "failure",
+      "run_duration_ms": 3507000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning"
+    },
+    {
+      "run_id": 32925825401,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401",
+      "commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
+      "conclusion": "failure",
+      "run_duration_ms": 3723000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning"
+    }
+  ],
+  "measurement": {
+    "baseline_wall_clock_ms": 4263000,
+    "candidate_wall_clock_ms": 3723000,
+    "candidate_wall_clock_comparison_valid": false,
+    "meaningful_wall_clock_gain": "NO_MEANINGFUL_GAIN_NOT_ESTABLISHED",
+    "reason": "The candidate runs failed before completing the native workflow, so shorter elapsed time is not a valid speed comparison.",
+    "total_billable_runner_ms": {
+      "baseline": {"ubuntu": 0, "macos": 0},
+      "validation_runs": {"ubuntu": 0, "macos": 0}
+    },
+    "quota_increase_observed": false,
+    "flakiness_or_lifecycle_regression": "REPEATED_HOSTED_SIMULATOR_LIFECYCLE_FAILURE"
   },
   "cost_and_scope": {
     "zero_cost_verdict": "CONFIRMED",
@@ -57,7 +107,7 @@
     "production_data_mutated": false,
     "optimization_adds_runner_minute_quota": "NO_EVIDENCE_OF_ADDITIONAL_BILLABLE_QUOTA",
     "baseline_run_duration_ms": 4263000,
-    "candidate_run_duration_ms": 4207000,
+    "candidate_run_duration_ms": 3723000,
     "baseline_billable_ms": {
       "ubuntu": 0,
       "macos": 0
@@ -67,5 +117,6 @@
       "macos": 0
     }
   },
-  "claim_boundary": "The prior candidate validation failed before native provisioning because of hosted simulator lifecycle instability. The new candidate retains the safe encrypted handoff and adds a clipboard-based signed-token assertion; it must complete one remote validation before any target batch. The published baseline is excluded from evidence because its artifact contract is not privacy-safe."
+  "existing_workflow_decision": "The published baseline is excluded from target evidence because its uploaded context.json contained ephemeral credentials and provisioning material. No further baseline dispatch was made.",
+  "claim_boundary": "The bounded safe optimization was validated remotely three times and hit the same hosted simulator lifecycle blocker before gate provisioning. It produced no valid target observation and no ten-run batch. The published baseline remains excluded from the evidence receipt because its artifact contract is not privacy-safe."
 }

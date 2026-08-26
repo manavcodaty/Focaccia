@@ -59,6 +59,13 @@ test('iOS networking is local-only and tunnel profiles remain HTTPS-selected', (
   assert.equal(eas.build['production-tunnel']?.env.EXPO_PUBLIC_FOCACCIA_NETWORK_MODE, 'tunnel');
 });
 
+test('native auth dismisses the keyboard before replacing the form', () => {
+  const authScreen = source('apps/enrollment/app/index.tsx');
+
+  assert.match(authScreen, /Keyboard\.dismiss\(\)/);
+  assert.match(authScreen, /setTimeout\(resolve, 250\)/);
+});
+
 test('enrollment production sources do not log sensitive values', () => {
   for (const file of [
     'apps/enrollment/src/lib/api.ts',

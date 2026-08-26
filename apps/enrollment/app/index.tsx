@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   Pressable,
   StyleSheet,
   Text,
@@ -32,6 +33,11 @@ export default function AuthScreen() {
   }, [router, session]);
 
   async function handleSubmit() {
+    // Let the native keyboard finish resigning before the auth state replaces
+    // this form. Hosted iOS 26.5 can otherwise respawn backboardd while the
+    // focused text field is being unmounted.
+    Keyboard.dismiss();
+    await new Promise((resolve) => setTimeout(resolve, 250));
     try {
       await signInOrUp({
         email,

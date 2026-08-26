@@ -20,6 +20,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /accessibilityLabel="Organizer email"/);
   assert.match(provision, /accessibilityLabel="Organizer password"/);
   assert.match(provision, /accessibilityLabel="Gate device name"/);
+  assert.match(provision, /Keyboard\.dismiss\(\)/);
+  assert.match(provision, /setTimeout\(resolve, 250\)/);
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
 });
 

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
+  Keyboard,
   Linking,
   StyleSheet,
   Text,
@@ -99,6 +100,11 @@ function useProvisionController(isCloudE2E: boolean) {
     setError(null);
     setFeedback(null);
     setIsBusy(true);
+    // Dismiss the focused native text field before auth changes the screen.
+    // Hosted iOS 26.5 can respawn backboardd when the auth response unmounts
+    // an active keyboard session during navigation.
+    Keyboard.dismiss();
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
     try {
       await signIn(email, password);

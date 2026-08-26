@@ -235,6 +235,7 @@ function ProvisionScreenBody({
               onChangeText={setEmail}
               placeholder="Organizer email"
               placeholderTextColor={palette.mutedStone}
+              showSoftInputOnFocus={!isCloudE2E}
               style={[
                 styles.input,
                 {
@@ -253,6 +254,7 @@ function ProvisionScreenBody({
               onChangeText={setPassword}
               placeholder="Password"
               placeholderTextColor={palette.mutedStone}
+              showSoftInputOnFocus={!isCloudE2E}
               secureTextEntry={!isCloudE2E}
               style={[
                 styles.input,

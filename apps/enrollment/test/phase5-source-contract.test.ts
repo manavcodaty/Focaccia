@@ -64,6 +64,7 @@ test('native auth dismisses the keyboard before replacing the form', () => {
 
   assert.match(authScreen, /Keyboard\.dismiss\(\)/);
   assert.match(authScreen, /setTimeout\(resolve, 250\)/);
+  assert.equal((authScreen.match(/showSoftInputOnFocus=\{!isCloudE2E\}/g) ?? []).length, 2);
 });
 
 test('enrollment production sources do not log sensitive values', () => {

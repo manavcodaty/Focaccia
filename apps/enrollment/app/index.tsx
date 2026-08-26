@@ -103,6 +103,7 @@ export default function AuthScreen() {
             placeholder="you@example.com"
             placeholderTextColor={palette.hintOfGrey}
             returnKeyType="next"
+            showSoftInputOnFocus={!isCloudE2E}
             style={styles.input}
             textContentType="emailAddress"
             value={email}
@@ -121,6 +122,7 @@ export default function AuthScreen() {
             placeholderTextColor={palette.hintOfGrey}
             returnKeyType="done"
             secureTextEntry={!isCloudE2E}
+            showSoftInputOnFocus={!isCloudE2E}
             style={styles.input}
             textContentType={isCloudE2E ? 'none' : mode === 'sign-in' ? 'password' : 'newPassword'}
             value={password}

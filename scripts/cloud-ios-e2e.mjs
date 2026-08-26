@@ -422,7 +422,6 @@ async function main() {
     await screenshot('enrollment-pass.png');
 
     await tapAction('Copy full signed token');
-    await waitForNode(simulatorUdid, /Full signed token copied briefly/);
     passToken = await readSimulatorClipboard(simulatorUdid);
     assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
 

@@ -1,8 +1,8 @@
 {
   "schema_version": "sc1-sc5-optimization-v1",
-  "status": "REMOTE_VALIDATION_PENDING",
-  "decision": "VALIDATE_HARDENED_WORKFLOW_ON_APPROVED_TEMPORARY_BRANCH",
-  "outcome": "PENDING_ONE_REMOTE_VALIDATION_RUN",
+  "status": "COMPLETE",
+  "decision": "NO_MEANINGFUL_GAIN_USE_EXISTING_WORKFLOW",
+  "outcome": "NO_MEANINGFUL_GAIN",
   "baseline_run_id": 32640901882,
   "baseline_workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
   "baseline_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32640901882",
@@ -13,14 +13,15 @@
     "remote_accessible": true,
     "temporary_branch_push_authorized": true,
     "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "remote_commit_sha": "011e904d1b41139473236848ccca3bce06259aa9"
+    "remote_commit_sha": "3c7b3913d937236e1aeac01baf29b85f038ddee4"
   },
   "bounded_changes": [
     "Free runner-local X25519 envelope handoff for credentials and network context; private recipient key is never uploaded.",
     "Redacted cloud evidence mode for QR, pass-token, credentials, DOM text, and failure diagnostics.",
     "Per-run nested artifact manifest layout compatible with the deterministic ten-run reducer.",
     "Privacy six-surface safe-projection audit explicitly marked source-only and safe offline security scenario matrix.",
-    "One commit-pinned native build remains the only native build in each cloud workflow run; no local Xcode build was performed."
+    "One commit-pinned native build remains the only native build in each cloud workflow run; no local Xcode build was performed.",
+    "Baguette uses the official scroll envelope for off-screen controls and the harness does not send hardware Escape events."
   ],
   "validation_commands": [
     "node --check scripts/cloud-browser-e2e.mjs",
@@ -30,16 +31,35 @@
     "ruby -e \"require 'yaml'; YAML.load_file('.github/workflows/cloud-ios-full-flow.yml')\""
   ],
   "remote_validation": {
-    "performed": false,
-    "workflow_url": null,
-    "reason": "The user has approved the temporary branch push and the hardened commit is accessible; the one-run remote validation is pending."
+    "performed": true,
+    "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32905208006",
+    "run_id": 32905208006,
+    "candidate_commit_sha": "3c7b3913d937236e1aeac01baf29b85f038ddee4",
+    "conclusion": "failure",
+    "run_duration_ms": 4207000,
+    "billable_ms": {
+      "ubuntu": 0,
+      "macos": 0
+    },
+    "failure": "Hosted iOS backboardd respawn interrupted the accessibility/input connection and RunningBoard terminated FacePassGate while waiting for Provision this gate; the native report preserved SpringBoard Home and no app crash stack.",
+    "reason": "The bounded validation completed but did not establish a reliable end-to-end improvement. Its 70.12-minute wall time was 1.31% below the 71.05-minute baseline and both runs reported zero billable milliseconds; the existing published workflow remains the evidence path."
   },
   "cost_and_scope": {
     "zero_cost_verdict": "CONFIRMED",
     "paid_resources_created": false,
     "persistent_secrets_created": false,
     "production_data_mutated": false,
-    "optimization_adds_runner_minute_quota": "NOT_MEASURED_BECAUSE_REMOTE_VALIDATION_BLOCKED"
+    "optimization_adds_runner_minute_quota": "NO_EVIDENCE_OF_ADDITIONAL_BILLABLE_QUOTA",
+    "baseline_run_duration_ms": 4263000,
+    "candidate_run_duration_ms": 4207000,
+    "baseline_billable_ms": {
+      "ubuntu": 0,
+      "macos": 0
+    },
+    "candidate_billable_ms": {
+      "ubuntu": 0,
+      "macos": 0
+    }
   },
-  "claim_boundary": "This is a local-only optimization proposal and validation record, not cloud evidence. No wall-clock or quota improvement is claimed without a remote run."
+  "claim_boundary": "The candidate was remotely validated but failed before native provisioning because of hosted simulator lifecycle instability. The small wall-time difference is not a meaningful improvement. Its artifacts are retained as a failed validation, and the ten-run evidence batch uses the existing published workflow at the pinned baseline commit."
 }

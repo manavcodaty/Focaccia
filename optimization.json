@@ -13,7 +13,7 @@
     "remote_accessible": true,
     "temporary_branch_push_authorized": true,
     "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "remote_commit_sha": "1d14bbf3a98ad413fc78124df31047a0f8868bbf"
+    "remote_commit_sha": "d07c89ba6c8b3ef748d24c2a551175669e986305"
   },
   "bounded_changes": [
     "Free runner-local X25519 envelope handoff for credentials and network context; private recipient key is never uploaded.",
@@ -47,7 +47,7 @@
   "remote_validation": {
     "performed": false,
     "workflow_url": null,
-    "candidate_commit_sha": "1d14bbf3a98ad413fc78124df31047a0f8868bbf",
+    "candidate_commit_sha": "d07c89ba6c8b3ef748d24c2a551175669e986305",
     "reason": "A narrow clipboard assertion fix was pushed after the prior validation failure. The published baseline is not a safe fallback because its uploaded context.json contains ephemeral credentials and provisioning material."
   },
   "cost_and_scope": {

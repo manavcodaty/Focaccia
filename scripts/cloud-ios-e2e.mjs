@@ -160,6 +160,33 @@ async function launchGate() {
   });
 }
 
+async function recoverGateProvisioningScreen() {
+  // iOS simulator 26.5 can restart backboardd while UIKit is dismissing the
+  // organizer keyboard. The app is then terminated by RunningBoard even
+  // though the auth request succeeded. Recover once from that external
+  // lifecycle event; do not infer provisioning from a missing accessibility
+  // tree and do not retry the complete evaluation loop.
+  await launchGate();
+  const setupNode = findNode(await describeUi(simulatorUdid), 'Set up gate');
+  if (setupNode) {
+    await tapNode(simulatorUdid, 'Set up gate', {
+      retryIfStillVisible: true,
+      retryCount: 5,
+      retryDelayMs: 400,
+    });
+  }
+  await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
+  await fillInputExactly('Organizer email', context.organizerEmail);
+  await fillInputExactly('Organizer password', context.organizerPassword);
+  await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
+  await tapNode(simulatorUdid, 'Sign in organizer', {
+    retryIfStillVisible: true,
+    retryCount: 5,
+    retryDelayMs: 500,
+  });
+  await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
+}
+
 async function captureCommandArtifact(name, command, args) {
   try {
     const result = await runCommand(command, args);
@@ -380,7 +407,16 @@ async function main() {
       retryCount: 5,
       retryDelayMs: 500,
     });
-    await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
+    try {
+      await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
+    } catch (provisioningWaitError) {
+      await recoverGateProvisioningScreen().catch((recoveryError) => {
+        throw new Error(
+          `${provisioningWaitError instanceof Error ? provisioningWaitError.message : String(provisioningWaitError)}; one external simulator recovery also failed: ${recoveryError instanceof Error ? recoveryError.message : String(recoveryError)}`,
+          { cause: recoveryError },
+        );
+      });
+    }
     await tapNode(simulatorUdid, 'Provision this gate', {
       retryIfStillVisible: true,
       retryCount: 8,

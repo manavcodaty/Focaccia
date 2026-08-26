@@ -11,11 +11,11 @@
     "remote_ref": "refs/heads/codex/ios-simulator-verification-next",
     "remote_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
     "remote_commit_sha_verified_at": "2026-08-25T07:19:46Z",
-    "dedicated_checkout_head_sha": "1d14bbf3a98ad413fc78124df31047a0f8868bbf",
+    "dedicated_checkout_head_sha": "d07c89ba6c8b3ef748d24c2a551175669e986305",
     "dedicated_checkout_head_is_at_or_after_expected_baseline": true,
     "cloud_workflow_present": true,
     "hardened_remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "hardened_remote_commit_sha": "1d14bbf3a98ad413fc78124df31047a0f8868bbf",
+    "hardened_remote_commit_sha": "d07c89ba6c8b3ef748d24c2a551175669e986305",
     "hardened_remote_commit_is_at_or_after_expected_baseline": true
   },
   "checkout": {

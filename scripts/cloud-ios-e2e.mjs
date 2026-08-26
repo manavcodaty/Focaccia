@@ -394,6 +394,7 @@ async function main() {
       retryCount: 5,
       retryDelayMs: 400,
     });
+    await waitForNode(simulatorUdid, 'Cloud E2E payload injection', { timeoutMs: 90_000 });
     // The submit button is intentionally disabled until both fields contain
     // credentials, and waitForNode ignores disabled controls. Wait for the
     // enabled first field before injecting the credentials, then wait for the

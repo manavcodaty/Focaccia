@@ -13,8 +13,8 @@
     "remote_accessible": true,
     "temporary_branch_push_authorized": true,
     "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "remote_commit_sha": "4c56be9e8475f7983d080f5bf20940ab992f4667",
-    "evaluated_commit_sha": "4c56be9e8475f7983d080f5bf20940ab992f4667",
+    "remote_commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
+    "evaluated_commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
     "receipt_metadata_commit_sha": "c67973e3019cd23db55c776a8625f04002f878e7"
   },
   "bounded_changes": [
@@ -29,6 +29,11 @@
     "Native gate and enrollment auth dismiss the focused keyboard and allow its transition to settle before auth navigation.",
     "Cloud-E2E gate and enrollment auth fields suppress the iOS soft keyboard while remaining focusable for Baguette input; production fields retain native keyboard behavior."
   ],
+  "post_validation_fix": {
+    "commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
+    "scope": "Cloud-E2E-only suppression on the remaining Gate device-name TextInput that can receive focus when organizer auth replaces the credential form.",
+    "reason": "The one bounded optimization validation at run 32964250760 returned HTTP 200 from organizer auth but then showed the unguarded device-name input becoming first responder before hosted iOS backboardd respawn termination. This is a targeted correctness fix, not a second optimization pass."
+  },
   "validation_commands": [
     "node --check scripts/cloud-browser-e2e.mjs",
     "node --check scripts/cloud-ios-e2e.mjs",
@@ -51,22 +56,22 @@
   },
   "remote_validation": {
     "performed": true,
-    "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379",
-    "candidate_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
-    "run_id": 32942505379,
+    "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32964250760",
+    "candidate_commit_sha": "9a0a80fdb69b9d2a13d72154708f9dc29418f197",
+    "run_id": 32964250760,
     "conclusion": "failure",
-    "run_duration_ms": 4700000,
+    "run_duration_ms": 5321000,
     "billable_ms": {
       "ubuntu": 0,
       "macos": 0
     },
-    "failure": "The one bounded native-auth keyboard dismissal change did not overcome the repeated hosted backboardd respawn and RunningBoard termination before Provision this gate."
+    "failure": "The organizer auth request returned HTTP 200, but the remaining Gate device-name input became first responder during the auth transition; hosted iOS then respawned backboardd and RunningBoard terminated FacePassGate before Provision this gate."
   },
   "pending_fix_validation": {
-    "candidate_commit_sha": "4c56be9e8475f7983d080f5bf20940ab992f4667",
+    "candidate_commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
     "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
     "status": "READY_TO_DISPATCH_AFTER_PRECHECK",
-    "scope": "Run one cloud validation of the diagnosis-led cloud-E2E soft-keyboard suppression fix; keep the ten-run batch gate closed until the native flow completes."
+    "scope": "Run one cloud validation of the narrower cloud-E2E suppression on the remaining Gate device-name input; keep the ten-run batch gate closed until the native flow completes."
   },
   "validation_runs": [
     {
@@ -104,6 +109,16 @@
       "run_duration_ms": 4700000,
       "billable_ms": {"ubuntu": 0, "macos": 0},
       "failure_stage": "before_gate_provisioning"
+    },
+    {
+      "run_id": 32964250760,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32964250760",
+      "commit_sha": "9a0a80fdb69b9d2a13d72154708f9dc29418f197",
+      "conclusion": "failure",
+      "run_duration_ms": 5321000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning",
+      "notes": "The organizer auth request returned HTTP 200, then the unguarded Gate device-name input became first responder before hosted iOS backboardd respawn termination. Raw artifacts are retained at the workflow URL."
     }
   ],
   "measurement": {
@@ -137,5 +152,5 @@
     }
   },
   "existing_workflow_decision": "The published baseline is excluded from target evidence because its uploaded context.json contained ephemeral credentials and provisioning material. No further baseline dispatch was made.",
-  "claim_boundary": "The prior bounded candidate at 45821a329317b9c662a69395d6e32f3e0653783f hit the hosted simulator lifecycle blocker before gate provisioning. A diagnosis-led cloud-E2E keyboard-suppression fix is recorded at 4c56be9e8475f7983d080f5bf20940ab992f4667 and awaits one remote validation. No valid target observation or ten-run batch exists; the published baseline remains excluded because its artifact contract is not privacy-safe."
+  "claim_boundary": "The prior bounded candidate at 9a0a80fdb69b9d2a13d72154708f9dc29418f197 failed validation at run 32964250760 after organizer auth returned HTTP 200 and the unguarded Gate device-name input became first responder during the transition. The narrower device-name suppression fix is included in pending validation commit 4e4940620e05ba64058b8c81b83decbae3ed813a. No valid target observation or ten-run batch exists; the published baseline remains excluded because its artifact contract is not privacy-safe."
 }

@@ -11,6 +11,8 @@
     "remote_ref": "refs/heads/codex/ios-simulator-verification-next",
     "remote_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
     "remote_commit_sha_verified_at": "2026-08-25T07:19:46Z",
+    "evaluated_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
+    "receipt_metadata_commit_sha": "acc3e9f3608c8b337cb9ef2f71bb827d87875c6b",
     "dedicated_checkout_head_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
     "dedicated_checkout_head_is_at_or_after_expected_baseline": true,
     "cloud_workflow_present": true,

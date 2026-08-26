@@ -13,7 +13,9 @@
     "remote_accessible": true,
     "temporary_branch_push_authorized": true,
     "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "remote_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89"
+    "remote_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
+    "evaluated_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
+    "receipt_metadata_commit_sha": "acc3e9f3608c8b337cb9ef2f71bb827d87875c6b"
   },
   "bounded_changes": [
     "Free runner-local X25519 envelope handoff for credentials and network context; private recipient key is never uploaded.",

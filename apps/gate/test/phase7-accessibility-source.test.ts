@@ -27,9 +27,9 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /accessibilityValue=\{\{ text: deviceName \}\}/);
   assert.match(provision, /emailInputRef\.current\?\.blur\(\)/);
   assert.match(provision, /passwordInputRef\.current\?\.blur\(\)/);
-  assert.match(provision, /isCloudE2E && isBusy/);
-  assert.match(provision, /Organizer email submitted/);
-  assert.match(provision, /Organizer password submitted/);
+  assert.equal((provision.match(/editable=\{!isBusy\}/g) ?? []).length, 2);
+  assert.doesNotMatch(provision, /Organizer email submitted/);
+  assert.doesNotMatch(provision, /Organizer password submitted/);
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
 });
 

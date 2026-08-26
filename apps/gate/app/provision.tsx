@@ -243,79 +243,48 @@ function ProvisionScreenBody({
           />
         ) : (
           <>
-            {isCloudE2E && isBusy ? (
-              <>
-                <Text
-                  accessibilityLabel="Organizer email"
-                  style={[
-                    styles.input,
-                    {
-                      borderRadius: radii.field,
-                      fontSize: scaleFont(layout, 16),
-                      minHeight: layout.isTablet ? 60 : 56,
-                    },
-                  ]}
-                >
-                  Organizer email submitted
-                </Text>
-                <Text
-                  accessibilityLabel="Organizer password"
-                  style={[
-                    styles.input,
-                    {
-                      borderRadius: radii.field,
-                      fontSize: scaleFont(layout, 16),
-                      minHeight: layout.isTablet ? 60 : 56,
-                    },
-                  ]}
-                >
-                  Organizer password submitted
-                </Text>
-              </>
-            ) : (
-              <>
-                <TextInput
-                  ref={emailInputRef}
-                  accessibilityLabel="Organizer email"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  onChangeText={setEmail}
-                  placeholder="Organizer email"
-                  placeholderTextColor={palette.mutedStone}
-                  showSoftInputOnFocus={!isCloudE2E}
-                  style={[
-                    styles.input,
-                    {
-                      borderRadius: radii.field,
-                      fontSize: scaleFont(layout, 16),
-                      minHeight: layout.isTablet ? 60 : 56,
-                    },
-                  ]}
-                  value={email}
-                />
-                <TextInput
-                  ref={passwordInputRef}
-                  accessibilityLabel="Organizer password"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoComplete={isCloudE2E ? 'off' : 'current-password'}
-                  onChangeText={setPassword}
-                  placeholder="Password"
-                  placeholderTextColor={palette.mutedStone}
-                  showSoftInputOnFocus={!isCloudE2E}
-                  secureTextEntry={!isCloudE2E}
-                  style={[
-                    styles.input,
-                    {
-                      borderRadius: radii.field,
-                      fontSize: scaleFont(layout, 16),
-                      minHeight: layout.isTablet ? 60 : 56,
-                    },
-                  ]}
-                  value={password}
-                />
-              </>
-            )}
+            <TextInput
+              ref={emailInputRef}
+              accessibilityLabel="Organizer email"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isBusy}
+              onChangeText={setEmail}
+              placeholder="Organizer email"
+              placeholderTextColor={palette.mutedStone}
+              showSoftInputOnFocus={!isCloudE2E}
+              style={[
+                styles.input,
+                {
+                  borderRadius: radii.field,
+                  fontSize: scaleFont(layout, 16),
+                  minHeight: layout.isTablet ? 60 : 56,
+                },
+              ]}
+              value={email}
+            />
+            <TextInput
+              ref={passwordInputRef}
+              accessibilityLabel="Organizer password"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete={isCloudE2E ? 'off' : 'current-password'}
+              editable={!isBusy}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor={palette.mutedStone}
+              showSoftInputOnFocus={!isCloudE2E}
+              secureTextEntry={!isCloudE2E}
+              style={[
+                styles.input,
+                {
+                  borderRadius: radii.field,
+                  fontSize: scaleFont(layout, 16),
+                  minHeight: layout.isTablet ? 60 : 56,
+                },
+              ]}
+              value={password}
+            />
             <PrimaryButton
               disabled={!email.trim() || !password || isBusy}
               label={isBusy ? 'Signing in...' : 'Sign in organizer'}

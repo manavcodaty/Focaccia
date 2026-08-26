@@ -76,9 +76,11 @@ function useProvisionController(isCloudE2E: boolean) {
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const emailInputRef = useRef<TextInput | null>(null);
+  const passwordInputRef = useRef<TextInput | null>(null);
   const scanLockRef = useRef(false);
   useEffect(() => {
-    if (process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E !== '1') {
+    if (!isCloudE2E) {
       return;
     }
 
@@ -100,6 +102,13 @@ function useProvisionController(isCloudE2E: boolean) {
     setError(null);
     setFeedback(null);
     setIsBusy(true);
+    if (isCloudE2E) {
+      emailInputRef.current?.blur();
+      passwordInputRef.current?.blur();
+      // Let the cloud-only static credential labels replace the native text
+      // fields before the keyboard service is dismissed.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
     // Dismiss the focused native text field before auth changes the screen.
     // Hosted iOS 26.5 can respawn backboardd when the auth response unmounts
     // an active keyboard session during navigation.
@@ -145,6 +154,7 @@ function useProvisionController(isCloudE2E: boolean) {
     auth,
     deviceName,
     draft,
+    emailInputRef,
     email,
     error,
     feedback,
@@ -154,6 +164,7 @@ function useProvisionController(isCloudE2E: boolean) {
     isBusy,
     layout,
     password,
+    passwordInputRef,
     resetDraft,
     router,
     scanLockRef,
@@ -176,6 +187,7 @@ function ProvisionScreenBody({
   cameraContent,
   deviceName,
   draft,
+  emailInputRef,
   email,
   error,
   feedback,
@@ -186,6 +198,7 @@ function ProvisionScreenBody({
   isBusy,
   layout,
   password,
+  passwordInputRef,
   resetDraft,
   router,
   setDeviceName,
@@ -230,44 +243,79 @@ function ProvisionScreenBody({
           />
         ) : (
           <>
-            <TextInput
-              accessibilityLabel="Organizer email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={setEmail}
-              placeholder="Organizer email"
-              placeholderTextColor={palette.mutedStone}
-              showSoftInputOnFocus={!isCloudE2E}
-              style={[
-                styles.input,
-                {
-                  borderRadius: radii.field,
-                  fontSize: scaleFont(layout, 16),
-                  minHeight: layout.isTablet ? 60 : 56,
-                },
-              ]}
-              value={email}
-            />
-            <TextInput
-              accessibilityLabel="Organizer password"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete={isCloudE2E ? 'off' : 'current-password'}
-              onChangeText={setPassword}
-              placeholder="Password"
-              placeholderTextColor={palette.mutedStone}
-              showSoftInputOnFocus={!isCloudE2E}
-              secureTextEntry={!isCloudE2E}
-              style={[
-                styles.input,
-                {
-                  borderRadius: radii.field,
-                  fontSize: scaleFont(layout, 16),
-                  minHeight: layout.isTablet ? 60 : 56,
-                },
-              ]}
-              value={password}
-            />
+            {isCloudE2E && isBusy ? (
+              <>
+                <Text
+                  accessibilityLabel="Organizer email"
+                  style={[
+                    styles.input,
+                    {
+                      borderRadius: radii.field,
+                      fontSize: scaleFont(layout, 16),
+                      minHeight: layout.isTablet ? 60 : 56,
+                    },
+                  ]}
+                >
+                  Organizer email submitted
+                </Text>
+                <Text
+                  accessibilityLabel="Organizer password"
+                  style={[
+                    styles.input,
+                    {
+                      borderRadius: radii.field,
+                      fontSize: scaleFont(layout, 16),
+                      minHeight: layout.isTablet ? 60 : 56,
+                    },
+                  ]}
+                >
+                  Organizer password submitted
+                </Text>
+              </>
+            ) : (
+              <>
+                <TextInput
+                  ref={emailInputRef}
+                  accessibilityLabel="Organizer email"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onChangeText={setEmail}
+                  placeholder="Organizer email"
+                  placeholderTextColor={palette.mutedStone}
+                  showSoftInputOnFocus={!isCloudE2E}
+                  style={[
+                    styles.input,
+                    {
+                      borderRadius: radii.field,
+                      fontSize: scaleFont(layout, 16),
+                      minHeight: layout.isTablet ? 60 : 56,
+                    },
+                  ]}
+                  value={email}
+                />
+                <TextInput
+                  ref={passwordInputRef}
+                  accessibilityLabel="Organizer password"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete={isCloudE2E ? 'off' : 'current-password'}
+                  onChangeText={setPassword}
+                  placeholder="Password"
+                  placeholderTextColor={palette.mutedStone}
+                  showSoftInputOnFocus={!isCloudE2E}
+                  secureTextEntry={!isCloudE2E}
+                  style={[
+                    styles.input,
+                    {
+                      borderRadius: radii.field,
+                      fontSize: scaleFont(layout, 16),
+                      minHeight: layout.isTablet ? 60 : 56,
+                    },
+                  ]}
+                  value={password}
+                />
+              </>
+            )}
             <PrimaryButton
               disabled={!email.trim() || !password || isBusy}
               label={isBusy ? 'Signing in...' : 'Sign in organizer'}

@@ -25,6 +25,11 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.equal((provision.match(/showSoftInputOnFocus=\{!isCloudE2E\}/g) ?? []).length, 3);
   assert.match(provision, /isCloudE2E \? \(/);
   assert.match(provision, /accessibilityValue=\{\{ text: deviceName \}\}/);
+  assert.match(provision, /emailInputRef\.current\?\.blur\(\)/);
+  assert.match(provision, /passwordInputRef\.current\?\.blur\(\)/);
+  assert.match(provision, /isCloudE2E && isBusy/);
+  assert.match(provision, /Organizer email submitted/);
+  assert.match(provision, /Organizer password submitted/);
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
 });
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-26T13:19:19Z",
-  "status": "READY_FOR_VALIDATION_GATE",
+  "generated_at": "2026-08-26T14:23:01Z",
+  "status": "BLOCKED_AFTER_VALIDATION_FAILURES",
   "zero_cost_verdict": "CONFIRMED",
   "target": {
     "repository": "manavcodaty/Focaccia",
@@ -11,13 +11,13 @@
     "remote_ref": "refs/heads/codex/ios-simulator-verification-next",
     "remote_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
     "remote_commit_sha_verified_at": "2026-08-25T07:19:46Z",
-    "evaluated_commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
+    "evaluated_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
     "receipt_metadata_commit_sha": "c67973e3019cd23db55c776a8625f04002f878e7",
-    "dedicated_checkout_head_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
+    "dedicated_checkout_head_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
     "dedicated_checkout_head_is_at_or_after_expected_baseline": true,
     "cloud_workflow_present": true,
     "hardened_remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "hardened_remote_commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
+    "hardened_remote_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
     "hardened_remote_commit_is_at_or_after_expected_baseline": true
   },
   "checkout": {
@@ -57,18 +57,29 @@
     "persistent_secret_creation_authorized": false,
     "remote_workflow_dispatched_before_preflight": false,
     "remote_workflow_dispatched_after_preflight": true,
-    "optimization_validation_run_id": null,
-    "optimization_validation_conclusion": "PENDING",
-    "validation_gate": "READY_FOR_VALIDATION_GATE",
+    "optimization_validation_run_id": 32964250760,
+    "optimization_validation_conclusion": "FAIL",
+    "validation_gate": "BLOCKED_AFTER_REPEATED_NATIVE_LIFECYCLE_FAILURES",
+    "latest_validation_run_id": 33000283974,
+    "latest_validation_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
+    "latest_validation_conclusion": "FAIL",
+    "next_validation_commit_sha": null,
     "validation_runs": [
       32905208006,
       32918631772,
       32925825401,
       32942505379,
-      32964250760
+      32964250760,
+      32973925793,
+      32980236575,
+      32986280450,
+      32993239100,
+      33000283974
     ],
     "batch_ref": null,
-    "batch_commit_sha": null
+    "batch_commit_sha": null,
+    "batch_status": "CLOSED_VALIDATION_GATE_FAILED",
+    "batch_observed_target_runs": 0
   },
   "cost_gate": {
     "verdict": "CONFIRMED",
@@ -178,8 +189,8 @@
     "local_security_evidence_gate_open": true,
     "remote_accessible_hardened_commit": true,
     "push_gate_open": true,
-    "dispatch_gate_open": true,
-    "reason": "Zero-cost, authority, production-isolation, and local evidence gates are confirmed. The prior diagnosis-led cloud-E2E keyboard-suppression candidate failed validation at run 32964250760; a narrower fix for the remaining Gate device-name input is included in remote commit 4e4940620e05ba64058b8c81b83decbae3ed813a and is ready for one remote validation. The ten-run batch remains closed until that validation passes."
+    "dispatch_gate_open": false,
+    "reason": "Zero-cost, authority, production-isolation, and local evidence gates are confirmed, but the validation gate is closed after the same hosted iOS credential text-input responder/backboardd respawn failure reproduced in runs 32986280450, 32993239100, and 33000283974 after three scoped fixes. Each failed before Gate provisioning and the authoritative backend check. No further validation dispatch or ten-run batch is justified; the batch observed zero target runs."
   },
   "subagents": {
     "requested": true,
@@ -190,7 +201,7 @@
   "limitations": [
     "The bounded safe-workflow validation runs 32905208006, 32918631772, and 32925825401 failed before native gate provisioning with the same hosted backboardd respawn and RunningBoard termination; raw artifacts are retained separately at their workflow URLs and local evidence directories.",
     "The baseline batch wave was stopped after run 32911010571 exposed secret-bearing context.json in the published artifact; run 32911015750 was cancelled before completion and its partial artifacts are retained. No further baseline runs will be dispatched.",
-    "The prior safe hardened candidate 45821a329317b9c662a69395d6e32f3e0653783f failed after the native-auth keyboard dismissal change (source fix commit 0132eea66db51f7a778e66e11436ce871bfe419e). The follow-up diagnosis-led candidate 9a0a80fdb69b9d2a13d72154708f9dc29418f197 also failed validation at run 32964250760: the Gate organizer request returned HTTP 200, then the remaining device-name input received focus and hosted iOS terminated the app after a backboardd respawn. The narrower device-name keyboard suppression fix is now in remote commit 4e4940620e05ba64058b8c81b83decbae3ed813a and awaits one remote validation.",
+    "The prior safe hardened candidate 45821a329317b9c662a69395d6e32f3e0653783f failed after the native-auth keyboard dismissal change (source fix commit 0132eea66db51f7a778e66e11436ce871bfe419e). Follow-up candidates 9a0a80fdb69b9d2a13d72154708f9dc29418f197 (run 32964250760), 1c0217b70a0027c3d85f6ae87e0be0cc4ad88856 (run 32973925793), 8a90f1a94145d4358667dbc93fe72e2d2482a115 (run 32980236575), 85dfd4730ded8fc3b2c8c19c0a46a4821b5e5d53 (run 32986280450), ab4e44b749c9a0775907b36530c4419b4d946479 (run 32993239100), and a082c488eb8aa07be5d8748e393704ddc27acb4b (run 33000283974) all failed before Gate provisioning after organizer auth HTTP 200 and hosted iOS backboardd respawn/RunningBoard termination. Raw artifacts are retained. No valid target observation exists and the validation gate is closed.",
     "The local browser flow exercises foreign-claim and foreign-ticket ownership rejection, but no cloud target observation was counted because the validation gate failed before native provisioning.",
     "The workflow privacy step currently audits a safe projection of six named surfaces with source_only=true; it must not be reported as a central production-data audit until the actual runner-local database/API/log/export surfaces are supplied.",
     "The workflow uses simulator payload injection and stopped-relay network loss; it does not establish physical camera QR scanning or physical radio loss.",

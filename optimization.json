@@ -1,7 +1,7 @@
 {
   "schema_version": "sc1-sc5-optimization-v1",
-  "status": "PENDING_VALIDATION",
-  "decision": "DIAGNOSIS_LED_CLOUD_E2E_KEYBOARD_SUPPRESSION_PENDING_VALIDATION",
+  "status": "VALIDATED_WITH_NO_MEANINGFUL_GAIN",
+  "decision": "NO_MEANINGFUL_GAIN",
   "outcome": "CLOUD_E2E_ONLY_SOFT_KEYBOARD_SUPPRESSION",
   "baseline_run_id": 32640901882,
   "baseline_workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
@@ -13,8 +13,8 @@
     "remote_accessible": true,
     "temporary_branch_push_authorized": true,
     "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "remote_commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
-    "evaluated_commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
+    "remote_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
+    "evaluated_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
     "receipt_metadata_commit_sha": "c67973e3019cd23db55c776a8625f04002f878e7"
   },
   "bounded_changes": [
@@ -27,12 +27,20 @@
     "The native flow validates the signed token by reading the clipboard rather than depending on a transient accessibility acknowledgement.",
     "One narrow recovery helper retries the external simulator screen transition once after the provisioning control is unavailable.",
     "Native gate and enrollment auth dismiss the focused keyboard and allow its transition to settle before auth navigation.",
-    "Cloud-E2E gate and enrollment auth fields suppress the iOS soft keyboard while remaining focusable for Baguette input; production fields retain native keyboard behavior."
+    "Cloud-E2E gate and enrollment auth fields suppress the iOS soft keyboard while remaining focusable for Baguette input; production fields retain native keyboard behavior.",
+    "Cloud-E2E Gate renders the default device name as a static accessible value so auth-screen teardown cannot hand first-responder focus to another native text input; production device-name editing remains unchanged."
+    ,"Cloud-E2E Gate blurs credential inputs and dismisses the keyboard before auth navigation, while keeping the credential inputs mounted; production auth behavior remains unchanged."
   ],
-  "post_validation_fix": {
+  "prior_post_validation_fix": {
     "commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
-    "scope": "Cloud-E2E-only suppression on the remaining Gate device-name TextInput that can receive focus when organizer auth replaces the credential form.",
-    "reason": "The one bounded optimization validation at run 32964250760 returned HTTP 200 from organizer auth but then showed the unguarded device-name input becoming first responder before hosted iOS backboardd respawn termination. This is a targeted correctness fix, not a second optimization pass."
+    "scope": "Cloud-E2E-only suppression on the remaining Gate device-name TextInput that could receive focus when organizer auth replaced the credential form.",
+    "validation_run_id": 32973925793,
+    "validation_conclusion": "failure"
+  },
+  "post_validation_fix": {
+    "commit_sha": "8a90f1a94145d4358667dbc93fe72e2d2482a115",
+    "scope": "Cloud-E2E-only static rendering of the default Gate device name to eliminate the remaining native text-input responder handoff during organizer auth navigation.",
+    "reason": "Run 32973925793 showed the device-name input had responderRequiresKeyboard 0 but still became first responder during auth teardown; organizer auth returned HTTP 200 and hosted iOS then respawned backboardd and terminated FacePassGate. This is a targeted correctness fix, not a second optimization pass."
   },
   "validation_commands": [
     "node --check scripts/cloud-browser-e2e.mjs",
@@ -68,10 +76,25 @@
     "failure": "The organizer auth request returned HTTP 200, but the remaining Gate device-name input became first responder during the auth transition; hosted iOS then respawned backboardd and RunningBoard terminated FacePassGate before Provision this gate."
   },
   "pending_fix_validation": {
-    "candidate_commit_sha": "4e4940620e05ba64058b8c81b83decbae3ed813a",
+    "candidate_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
     "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
-    "status": "READY_TO_DISPATCH_AFTER_PRECHECK",
-    "scope": "Run one cloud validation of the narrower cloud-E2E suppression on the remaining Gate device-name input; keep the ten-run batch gate closed until the native flow completes."
+    "status": "CLOSED_AFTER_REPEATED_FAILURE",
+    "scope": "The one authorized follow-up validation path was exercised through the static device-name, mounted credential-input, and credential-blur lifecycle fixes; the validation gate remains closed after the same hosted iOS failure reproduced."
+  },
+  "latest_remote_validation": {
+    "performed": true,
+    "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+    "run_id": 33000283974,
+    "candidate_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
+    "conclusion": "failure",
+    "run_duration_ms": 5202000,
+    "billable_ms": {
+      "ubuntu": 0,
+      "macos": 0
+    },
+    "failure_stage": "before_gate_provisioning",
+    "failure_stage": "before_gate_provisioning",
+    "failure": "Organizer auth returned HTTP 200, then the credential text-input lifecycle produced a responder/session error; hosted iOS backboardd respawned and RunningBoard terminated FacePassGate before Provision this gate."
   },
   "validation_runs": [
     {
@@ -118,15 +141,62 @@
       "run_duration_ms": 5321000,
       "billable_ms": {"ubuntu": 0, "macos": 0},
       "failure_stage": "before_gate_provisioning",
-      "notes": "The organizer auth request returned HTTP 200, then the unguarded Gate device-name input became first responder before hosted iOS backboardd respawn termination. Raw artifacts are retained at the workflow URL."
+      "notes": "The organizer auth request returned HTTP 200, then the Gate device-name input became a first responder despite responderRequiresKeyboard 0 before hosted iOS backboardd respawn termination. Raw artifacts are retained at the workflow URL."
+    },
+    {
+      "run_id": 32973925793,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32973925793",
+      "commit_sha": "1c0217b70a0027c3d85f6ae87e0be0cc4ad88856",
+      "conclusion": "failure",
+      "run_duration_ms": 3219000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning",
+      "notes": "The device-name keyboard-suppression fix still allowed a native first-responder handoff after organizer auth HTTP 200; hosted iOS backboardd respawn terminated FacePassGate. Raw artifacts are retained at the workflow URL."
+    },
+    {
+      "run_id": 32980236575,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32980236575",
+      "commit_sha": "8a90f1a94145d4358667dbc93fe72e2d2482a115",
+      "conclusion": "failure",
+      "run_duration_ms": 4700000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning"
+    },
+    {
+      "run_id": 32986280450,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32986280450",
+      "commit_sha": "85dfd4730ded8fc3b2c8c19c0a46a4821b5e5d53",
+      "conclusion": "failure",
+      "run_duration_ms": 4781000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning"
+    },
+    {
+      "run_id": 32993239100,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32993239100",
+      "commit_sha": "ab4e44b749c9a0775907b36530c4419b4d946479",
+      "conclusion": "failure",
+      "run_duration_ms": 4317000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning"
+    },
+    {
+      "run_id": 33000283974,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
+      "conclusion": "failure",
+      "run_duration_ms": 5202000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning",
+      "notes": "Three scoped lifecycle fixes were exercised across the latest validation chain; the same responder/session error and backboardd respawn occurred after organizer auth HTTP 200. Raw artifacts are retained at the workflow URL."
     }
   ],
   "measurement": {
     "baseline_wall_clock_ms": 4263000,
-    "candidate_wall_clock_ms": 4700000,
+    "candidate_wall_clock_ms": 5202000,
     "candidate_wall_clock_comparison_valid": false,
     "meaningful_wall_clock_gain": "NO_MEANINGFUL_GAIN",
-    "reason": "The bounded candidate validation failed before completing the native workflow, so elapsed time is not a valid speed comparison and the repeated hosted simulator lifecycle failure is not an improvement.",
+    "reason": "The validation candidate and follow-up lifecycle fixes all failed before completing the native workflow, so elapsed time is not a valid speed comparison and no meaningful free optimisation gain was established.",
     "total_billable_runner_ms": {
       "baseline": {"ubuntu": 0, "macos": 0},
       "validation_runs": {"ubuntu": 0, "macos": 0}
@@ -152,5 +222,5 @@
     }
   },
   "existing_workflow_decision": "The published baseline is excluded from target evidence because its uploaded context.json contained ephemeral credentials and provisioning material. No further baseline dispatch was made.",
-  "claim_boundary": "The prior bounded candidate at 9a0a80fdb69b9d2a13d72154708f9dc29418f197 failed validation at run 32964250760 after organizer auth returned HTTP 200 and the unguarded Gate device-name input became first responder during the transition. The narrower device-name suppression fix is included in pending validation commit 4e4940620e05ba64058b8c81b83decbae3ed813a. No valid target observation or ten-run batch exists; the published baseline remains excluded because its artifact contract is not privacy-safe."
+  "claim_boundary": "The bounded optimisation candidate and three subsequent cloud-only lifecycle fixes were remotely validated in runs 32964250760, 32973925793, 32980236575, 32986280450, 32993239100, and 33000283974; each failed before Gate provisioning after organizer auth HTTP 200 and hosted iOS backboardd respawn/RunningBoard termination. No meaningful wall-clock gain was established, no valid target observation or ten-run batch exists, and the published baseline remains excluded because its artifact contract is not privacy-safe."
 }

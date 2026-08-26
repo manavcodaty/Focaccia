@@ -1,163 +1,712 @@
 {
-  "blocked_scenarios": [
-    {
-      "artifact_paths": [
-        "artifacts/validation-gate-blocked.json"
-      ],
-      "category": "WORKFLOW_FAILURE",
-      "counts_toward_target": true,
-      "criteria": [
-        "SC1",
-        "SC2",
-        "SC3",
-        "SC4",
-        "SC5"
-      ],
-      "run_id": "validation-gate-32942505379",
-      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
-    }
-  ],
+  "schema_version": "sc1-sc5-evidence-receipt-v1",
+  "generated_at": "2026-08-26T20:17:09Z",
+  "status": "BLOCKED",
+  "evaluated_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
+  "target": {
+    "required_runs": 10,
+    "observed_target_runs": 0,
+    "remaining_required_runs": 10,
+    "counts_toward_target": 0,
+    "reason": "The validation gate never passed: the hosted iOS native agent failed before Gate provisioning in every latest post-fix validation. No validation attempt is a target observation."
+  },
+  "workflow": {
+    "repository": "manavcodaty/Focaccia",
+    "workflow_path": ".github/workflows/cloud-ios-full-flow.yml",
+    "workflow_id": 336067227,
+    "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
+    "target_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
+    "target_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
+    "baseline_ref": "refs/heads/codex/ios-simulator-verification-next",
+    "baseline_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
+    "dedicated_checkout": "/private/tmp/Focaccia-sc1-sc5-live",
+    "local_xcode_builds_performed": false,
+    "batch_dispatched": false,
+    "batch_workflow_urls": []
+  },
+  "validation_gate": {
+    "status": "BLOCKED",
+    "denominator": 6,
+    "numerator": 0,
+    "latest_workflow_run_id": 33000283974,
+    "latest_workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+    "failure_stage": "before_gate_provisioning",
+    "failure_reason": "After organizer auth returned HTTP 200, the hosted iOS credential text-input lifecycle produced a responder/session error, backboardd respawned, and RunningBoard terminated FacePassGate before Provision this gate.",
+    "closure_reason": "The same failure reproduced across runs 32986280450, 32993239100, and 33000283974 after three scoped lifecycle fixes. Further dispatches would be speculative and would not satisfy the plan's validation gate."
+  },
   "criteria": {
     "SC1": {
+      "status": "BLOCKED",
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
       "results": [
         {
-          "artifact_paths": [
-            "artifacts/validation-gate-blocked.json"
-          ],
-          "counts_as_observation": false,
-          "run_id": "validation-gate-32942505379",
+          "run_id": "validation-gate-32986280450",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-report.json",
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-backend/browser/browser-report.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32986280450",
+          "authoritative_backend_evidence": {
+            "status": "FAIL",
+            "denominator": 0,
+            "reason": "Native flow stopped before Gate provisioning and the authoritative synchronized check-in step failed."
+          }
+        },
+        {
+          "run_id": "validation-gate-32993239100",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-report.json",
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-backend/browser/browser-report.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32993239100",
+          "authoritative_backend_evidence": {
+            "status": "FAIL",
+            "denominator": 0,
+            "reason": "Native flow stopped before Gate provisioning and the authoritative synchronized check-in step failed."
+          }
+        },
+        {
+          "run_id": "validation-gate-33000283974",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json",
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-backend/browser/browser-report.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+          "authoritative_backend_evidence": {
+            "status": "FAIL",
+            "denominator": 0,
+            "reason": "Native flow stopped before Gate provisioning and the authoritative synchronized check-in step failed."
+          }
         }
-      ],
-      "status": "BLOCKED"
+      ]
     },
     "SC2": {
+      "status": "BLOCKED",
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
       "results": [
         {
-          "artifact_paths": [
-            "artifacts/validation-gate-blocked.json"
-          ],
-          "counts_as_observation": false,
-          "run_id": "validation-gate-32942505379",
+          "run_id": "validation-gate-32986280450",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "network_loss_method": "stopped_macOS_relay",
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-report.json",
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-failure.png"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32986280450",
+          "authoritative_backend_evidence": {
+            "status": "NOT_TESTED",
+            "denominator": 0,
+            "reason": "The native flow did not reach a valid offline gate decision."
+          }
+        },
+        {
+          "run_id": "validation-gate-32993239100",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "network_loss_method": "stopped_macOS_relay",
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-report.json",
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-failure.png"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32993239100",
+          "authoritative_backend_evidence": {
+            "status": "NOT_TESTED",
+            "denominator": 0,
+            "reason": "The native flow did not reach a valid offline gate decision."
+          }
+        },
+        {
+          "run_id": "validation-gate-33000283974",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "network_loss_method": "stopped_macOS_relay",
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json",
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-failure.png"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+          "authoritative_backend_evidence": {
+            "status": "NOT_TESTED",
+            "denominator": 0,
+            "reason": "The native flow did not reach a valid offline gate decision."
+          }
         }
-      ],
-      "status": "BLOCKED"
+      ]
     },
     "SC3": {
+      "status": "BLOCKED",
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
       "results": [
         {
-          "artifact_paths": [
-            "artifacts/validation-gate-blocked.json"
-          ],
-          "counts_as_observation": false,
-          "run_id": "validation-gate-32942505379",
+          "run_id": "validation-gate-32986280450",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-report.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32986280450",
+          "authoritative_backend_evidence": {
+            "status": "NOT_TESTED",
+            "denominator": 0,
+            "reason": "The runner skipped the privacy audit after native completion was not signalled; the retained manifest is not a central schema/row/API/log/export audit."
+          }
+        },
+        {
+          "run_id": "validation-gate-32993239100",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-report.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32993239100",
+          "authoritative_backend_evidence": {
+            "status": "NOT_TESTED",
+            "denominator": 0,
+            "reason": "The runner skipped the privacy audit after native completion was not signalled; the retained manifest is not a central schema/row/API/log/export audit."
+          }
+        },
+        {
+          "run_id": "validation-gate-33000283974",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+          "authoritative_backend_evidence": {
+            "status": "NOT_TESTED",
+            "denominator": 0,
+            "reason": "The runner skipped the privacy audit after native completion was not signalled; the retained manifest is not a central schema/row/API/log/export audit."
+          }
         }
-      ],
-      "status": "BLOCKED"
+      ]
     },
     "SC4": {
+      "status": "BLOCKED",
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
       "results": [
         {
-          "artifact_paths": [
-            "artifacts/validation-gate-blocked.json"
-          ],
-          "counts_as_observation": false,
-          "run_id": "validation-gate-32942505379",
+          "run_id": "validation-gate-32986280450",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json",
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-report.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32986280450",
+          "authoritative_backend_evidence": {
+            "status": "NOT_TESTED",
+            "denominator": 0,
+            "reason": "The six passing offline-harness rows are supporting validation evidence with no backend write; duplicate synchronisation and the complete per-run matrix were not reached."
+          }
+        },
+        {
+          "run_id": "validation-gate-32993239100",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json",
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-report.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32993239100",
+          "authoritative_backend_evidence": {
+            "status": "NOT_TESTED",
+            "denominator": 0,
+            "reason": "The six passing offline-harness rows are supporting validation evidence with no backend write; duplicate synchronisation and the complete per-run matrix were not reached."
+          }
+        },
+        {
+          "run_id": "validation-gate-33000283974",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json",
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+          "authoritative_backend_evidence": {
+            "status": "NOT_TESTED",
+            "denominator": 0,
+            "reason": "The six passing offline-harness rows are supporting validation evidence with no backend write; duplicate synchronisation and the complete per-run matrix were not reached."
+          }
         }
-      ],
-      "status": "BLOCKED"
+      ]
     },
     "SC5": {
+      "status": "BLOCKED",
       "numerator": 0,
       "observed_denominator": 0,
       "required_denominator": 10,
       "results": [
         {
-          "artifact_paths": [
-            "artifacts/validation-gate-blocked.json"
-          ],
-          "counts_as_observation": false,
-          "run_id": "validation-gate-32942505379",
+          "run_id": "validation-gate-32986280450",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-report.json",
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+            "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32986280450",
+          "authoritative_backend_evidence": {
+            "status": "FAIL",
+            "denominator": 0,
+            "reason": "The native flow did not create an offline queue or reach reconnect synchronisation; backend authority failed."
+          }
+        },
+        {
+          "run_id": "validation-gate-32993239100",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-report.json",
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+            "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32993239100",
+          "authoritative_backend_evidence": {
+            "status": "FAIL",
+            "denominator": 0,
+            "reason": "The native flow did not create an offline queue or reach reconnect synchronisation; backend authority failed."
+          }
+        },
+        {
+          "run_id": "validation-gate-33000283974",
+          "status": "BLOCKED",
+          "denominator": 0,
+          "counts_as_target_observation": false,
+          "raw_artifact_paths": [
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json",
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+            "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json"
+          ],
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+          "authoritative_backend_evidence": {
+            "status": "FAIL",
+            "denominator": 0,
+            "reason": "The native flow did not create an offline queue or reach reconnect synchronisation; backend authority failed."
+          }
         }
-      ],
-      "status": "BLOCKED"
+      ]
     }
   },
-  "evaluated_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
+  "validation_attempts": [
+    {
+      "workflow_run_id": 32964250760,
+      "native_run_id": "1e5846705a38",
+      "event_id": "cloud_e2e_1e5846705a38",
+      "status": "FAIL",
+      "counts_toward_target": false,
+      "commit_sha": "9a0a80fdb69b9d2a13d72154708f9dc29418f197",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32964250760",
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32964250760",
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-32964250760/focaccia-cloud-ios-full-flow-proof/native-report.json",
+        "/private/tmp/sc1-sc5-validation-32964250760/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+        "/private/tmp/sc1-sc5-validation-32964250760/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+        "/private/tmp/sc1-sc5-validation-32964250760/focaccia-cloud-ios-full-flow-proof/native-failure.png",
+        "/private/tmp/sc1-sc5-validation-32964250760/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json"
+      ],
+      "failure_stage": "before_gate_provisioning",
+      "failure_category": "HOSTED_IOS_BACKBOARD_RESPAWN",
+      "failure": "Organizer auth returned HTTP 200, then hosted iOS backboardd respawned and RunningBoard terminated FacePassGate before Gate provisioning.",
+      "wall_clock_ms": 5321000,
+      "billable_runner_ms": {"ubuntu": 0, "macos": 0},
+      "authoritative_backend": {"status": "FAIL", "denominator": 0}
+    },
+    {
+      "workflow_run_id": 32973925793,
+      "native_run_id": "33964c55b103",
+      "event_id": "cloud_e2e_33964c55b103",
+      "status": "FAIL",
+      "counts_toward_target": false,
+      "commit_sha": "1c0217b70a0027c3d85f6ae87e0be0cc4ad88856",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32973925793",
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32973925793",
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-32973925793/focaccia-cloud-ios-full-flow-proof/native-report.json",
+        "/private/tmp/sc1-sc5-validation-32973925793/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+        "/private/tmp/sc1-sc5-validation-32973925793/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+        "/private/tmp/sc1-sc5-validation-32973925793/focaccia-cloud-ios-full-flow-proof/native-failure.png",
+        "/private/tmp/sc1-sc5-validation-32973925793/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json"
+      ],
+      "failure_stage": "before_gate_provisioning",
+      "failure_category": "HOSTED_IOS_BACKBOARD_RESPAWN",
+      "failure": "Organizer auth returned HTTP 200, then the device-name input remained a first responder despite keyboard suppression; hosted iOS backboardd respawned and RunningBoard terminated FacePassGate.",
+      "wall_clock_ms": 3219000,
+      "billable_runner_ms": {"ubuntu": 0, "macos": 0},
+      "authoritative_backend": {"status": "FAIL", "denominator": 0}
+    },
+    {
+      "workflow_run_id": 32980236575,
+      "native_run_id": "dc9b1b2ab524",
+      "event_id": "cloud_e2e_dc9b1b2ab524",
+      "status": "FAIL",
+      "counts_toward_target": false,
+      "commit_sha": "8a90f1a94145d4358667dbc93fe72e2d2482a115",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32980236575",
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32980236575",
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-32980236575/focaccia-cloud-ios-full-flow-proof/native-report.json",
+        "/private/tmp/sc1-sc5-validation-32980236575/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+        "/private/tmp/sc1-sc5-validation-32980236575/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+        "/private/tmp/sc1-sc5-validation-32980236575/focaccia-cloud-ios-full-flow-proof/native-failure.png",
+        "/private/tmp/sc1-sc5-validation-32980236575/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json"
+      ],
+      "failure_stage": "before_gate_provisioning",
+      "failure_category": "HOSTED_IOS_BACKBOARD_RESPAWN",
+      "failure": "The static device-name rendering candidate still failed before Gate provisioning; hosted iOS backboardd respawned and RunningBoard terminated FacePassGate.",
+      "wall_clock_ms": 4700000,
+      "billable_runner_ms": {"ubuntu": 0, "macos": 0},
+      "authoritative_backend": {"status": "FAIL", "denominator": 0}
+    },
+    {
+      "workflow_run_id": 32986280450,
+      "native_run_id": "6b32e60bc425",
+      "event_id": "cloud_e2e_6b32e60bc425",
+      "status": "FAIL",
+      "counts_toward_target": false,
+      "commit_sha": "85dfd4730ded8fc3b2c8c19c0a46a4821b5e5d53",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32986280450",
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32986280450",
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-report.json",
+        "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+        "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+        "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/native-failure.png",
+        "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json"
+      ],
+      "failure_stage": "before_gate_provisioning",
+      "failure_category": "HOSTED_IOS_BACKBOARD_RESPAWN",
+      "failure": "The static device-name candidate failed before Gate provisioning; credential text-input teardown was followed by hosted iOS backboardd respawn and RunningBoard termination.",
+      "wall_clock_ms": 4781000,
+      "billable_runner_ms": {"ubuntu": 0, "macos": 0},
+      "authoritative_backend": {"status": "FAIL", "denominator": 0}
+    },
+    {
+      "workflow_run_id": 32993239100,
+      "native_run_id": "65fe82077ffa",
+      "event_id": "cloud_e2e_65fe82077ffa",
+      "status": "FAIL",
+      "counts_toward_target": false,
+      "commit_sha": "ab4e44b749c9a0775907b36530c4419b4d946479",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32993239100",
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32993239100",
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-report.json",
+        "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+        "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+        "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/native-failure.png",
+        "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json"
+      ],
+      "failure_stage": "before_gate_provisioning",
+      "failure_category": "HOSTED_IOS_BACKBOARD_RESPAWN",
+      "failure": "Keeping the credential inputs mounted did not prevent the responder/session failure; hosted iOS backboardd respawned and RunningBoard terminated FacePassGate before Gate provisioning.",
+      "wall_clock_ms": 4317000,
+      "billable_runner_ms": {"ubuntu": 0, "macos": 0},
+      "authoritative_backend": {"status": "FAIL", "denominator": 0}
+    },
+    {
+      "workflow_run_id": 33000283974,
+      "native_run_id": "ca0a5126f304",
+      "event_id": "cloud_e2e_ca0a5126f304",
+      "status": "FAIL",
+      "counts_toward_target": false,
+      "commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-33000283974",
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-simulator-log.txt",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-failure.png",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-failure-ui.json",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-backend/browser/browser-report.json"
+      ],
+      "failure_stage": "before_gate_provisioning",
+      "failure_category": "HOSTED_IOS_BACKBOARD_RESPAWN",
+      "failure": "Credential text-input teardown produced an RCTTextInputComponentView responder/session error; organizer auth had started and was cancelled, then hosted iOS backboardd respawned and RunningBoard terminated FacePassGate before Provision this gate.",
+      "wall_clock_ms": 5202000,
+      "billable_runner_ms": {"ubuntu": 0, "macos": 0},
+      "authoritative_backend": {"status": "FAIL", "denominator": 0}
+    }
+  ],
+  "retained_historical_attempts": [
+    {"workflow_run_id": 32853012600, "status": "PARTIAL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32853012600", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32853012600"},
+    {"workflow_run_id": 32853795043, "status": "FAIL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32853795043", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32853795043"},
+    {"workflow_run_id": 32866348052, "status": "FAIL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32866348052", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32866348052"},
+    {"workflow_run_id": 32878045957, "status": "FAIL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32878045957", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32878045957"},
+    {"workflow_run_id": 32885916087, "status": "FAIL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32885916087", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32885916087"},
+    {"workflow_run_id": 32896362450, "status": "FAIL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32896362450", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32896362450"},
+    {"workflow_run_id": 32905208006, "status": "FAIL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32905208006", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32905208006"},
+    {"workflow_run_id": 32918631772, "status": "FAIL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32918631772", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32918631772"},
+    {"workflow_run_id": 32925825401, "status": "FAIL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32925825401"},
+    {"workflow_run_id": 32942505379, "status": "FAIL", "counts_toward_target": false, "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379", "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32942505379"}
+  ],
+  "failure_categories": [
+    {
+      "category": "HOSTED_IOS_BACKBOARD_RESPAWN",
+      "count": 6,
+      "run_ids": [32964250760, 32973925793, 32980236575, 32986280450, 32993239100, 33000283974],
+      "failure_stage": "before_gate_provisioning"
+    },
+    {
+      "category": "PRIOR_VALIDATION_FAILURE_OR_PARTIAL",
+      "count": 10,
+      "run_ids": [32853012600, 32853795043, 32866348052, 32878045957, 32885916087, 32896362450, 32905208006, 32918631772, 32925825401, 32942505379]
+    }
+  ],
+  "supporting_evidence": {
+    "browser_backend_fixture": {
+      "status": "PASS",
+      "numerator": 1,
+      "denominator": 1,
+      "counts_as_target_observation": false,
+      "run_id": "ca0a5126f304",
+      "event_id": "cloud_e2e_ca0a5126f304",
+      "organizer_id_hash": "9249402542dcbfd6f05ec0db427fbdb8208f18a4d8a276a7d825dec3e4d4d774",
+      "attendee_id_hash": "8911daa44150891bfe4d6fdb057f47f9075fd5f550edf60c77092658dc97d526",
+      "ticket_id": "6641169e-5ca9-48c1-8639-fa68947b4743",
+      "mutable_state_isolated": true,
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-backend/browser/browser-report.json",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-backend/browser/organizer-event-created.png",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-backend/browser/attendee-ticket-confirmed.png",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-backend/browser/organizer-provisioning.png"
+      ],
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "claim_boundary": "This proves one isolated browser/backend fixture journey and ownership rejection checks only; it does not prove native Gate completion, authoritative check-in synchronisation, or any target observation."
+    },
+    "offline_security_harness": {
+      "status": "PARTIAL",
+      "numerator": 6,
+      "denominator": 6,
+      "rows": [
+        {"scenario": "genuine_unused_accept", "status": "PASS", "expected": "ACCEPT", "observed": "ACCEPT", "reason_code": "ACCEPT"},
+        {"scenario": "replayed_or_copied", "status": "PASS", "expected": "REJECT", "observed": "REJECT", "reason_code": "REPLAY_USED"},
+        {"scenario": "modified_or_tampered", "status": "PASS", "expected": "REJECT", "observed": "REJECT", "reason_code": "BAD_SIGNATURE"},
+        {"scenario": "wrong_event", "status": "PASS", "expected": "REJECT", "observed": "REJECT", "reason_code": "WRONG_EVENT"},
+        {"scenario": "expired_or_out_of_window", "status": "PASS", "expected": "REJECT", "observed": "REJECT", "reason_code": "EXPIRED"},
+        {"scenario": "cancelled_or_revoked_after_refresh", "status": "PASS", "expected": "REJECT", "observed": "REJECT", "reason_code": "REVOKED"}
+      ],
+      "stale_revocation_cache": {"status": "NOT_TESTED", "denominator": 0},
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json"
+      ],
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "claim_boundary": "The rows are an isolated offline harness with no backend write; they are supporting evidence only and do not close SC4's complete per-run and duplicate-synchronisation requirement."
+    },
+    "authoritative_backend": {
+      "status": "FAIL",
+      "numerator": 0,
+      "denominator": 0,
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json"
+      ],
+      "reason": "The synchronized backend check could not run because the native completion signal was not produced. No exact-one check-in claim is made."
+    },
+    "privacy_audit": {
+      "status": "NOT_TESTED",
+      "numerator": 0,
+      "denominator": 0,
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/evidence-manifest.json"
+      ],
+      "reason": "The workflow privacy-audit step was skipped after native completion failed; the manifest is not a central schema/row/API/log/export audit."
+    }
+  },
   "evidence_completeness": {
     "complete": false,
     "control_records": 0,
+    "records_validated": 0,
     "criteria_with_required_observations": 0,
-    "records_validated": 1,
+    "traceable_criterion_results": 15,
+    "validation_attempts_retained": 16,
     "target_observations_missing": 10,
-    "traceable_results": 5
+    "reason": "Validation failures and partial supporting artifacts are retained, but no run satisfied the complete native/backend evidence contract."
   },
-  "evidence_scope": {
-    "image_review_trust_boundary": "only canonical stripped, structurally decoded PNG image evidence is supported; reducer accepts only IHDR, IDAT, and IEND chunks and verifies PNG chunk framing, CRCs, exact zlib-decoded scanline structure, hash, path, media type, and attestation, but cannot independently determine whether pixel content contains secrets; visual redaction and secret review is an attested trust boundary, not automated proof",
-    "repeated_fixture_runs": "controlled software repeatability only",
-    "unestablished": [
-      "real-camera capture",
-      "camera QR scanning",
-      "physical radio loss",
-      "participant FAR/FRR/EER",
-      "demographic fairness",
-      "sophisticated PAD",
-      "user acceptance",
-      "public deployment"
+  "cost_evidence": {
+    "zero_cost_verdict": "CONFIRMED",
+    "account_billing_ui_url": "https://github.com/settings/billing",
+    "billing_api_scope_limitation": "The authenticated CLI billing endpoint returned 404 because the token lacks user plan scope; the account billing UI was the controlling evidence.",
+    "runner_class": "standard GitHub-hosted runners",
+    "billing_period": "2026-08-01 through 2026-08-30",
+    "github_pro_subscription_usd_per_month": 0,
+    "actions_billable_usd": 0,
+    "included_minutes_total": 3000,
+    "included_minutes_used_at_preflight": 0,
+    "actions_storage_used_gb": 0,
+    "actions_storage_included_gb": 2,
+    "measured_validation_wall_clock_ms": 27540000,
+    "measured_validation_wall_clock_minutes": 459,
+    "measured_billable_runner_ms": {"ubuntu": 0, "macos": 0},
+    "timing_api_urls": [
+      "https://github.com/manavcodaty/Focaccia/actions/runs/32964250760/timing",
+      "https://github.com/manavcodaty/Focaccia/actions/runs/32973925793/timing",
+      "https://github.com/manavcodaty/Focaccia/actions/runs/32980236575/timing",
+      "https://github.com/manavcodaty/Focaccia/actions/runs/32986280450/timing",
+      "https://github.com/manavcodaty/Focaccia/actions/runs/32993239100/timing",
+      "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974/timing"
     ],
-    "latency_policy": "never infer latency from zero or missing fields"
+    "paid_resources_created": false,
+    "persistent_secrets_created": false,
+    "production_data_mutated": false,
+    "service_path": "isolated runner-local Docker Supabase, anonymous temporary TryCloudflare quick tunnels, and runner-local Baguette; no hosted paid service or billable API"
   },
-  "failure_categories": [
-    {
-      "category": "WORKFLOW_FAILURE",
-      "count": 1,
-      "run_ids": [
-        "validation-gate-32942505379"
+  "isolation_evidence": {
+    "browser_backend_isolated": true,
+    "browser_backend_denominator": 1,
+    "native_manifest_isolated_fields_present": false,
+    "native_manifest_missing_fields": ["organizer_id_hash", "attendee_id_hash", "ticket_id", "mutable_state_isolated", "gate_key_fingerprint", "started_at", "fixture_sha256"],
+    "fresh_native_mutable_state_proven_for_target": false,
+    "reason": "The native run stopped before the workflow could emit its complete run record. No shared mutable state is used as evidence."
+  },
+  "security_boundary": {
+    "status": "PASS_WITH_LIMITATIONS",
+    "persistent_repository_or_provider_secrets_created": false,
+    "ephemeral_runner_local_keys_uploaded": false,
+    "private_recipient_key_opened_or_uploaded": false,
+    "encrypted_handoff_opened": false,
+    "production_data_accessed_or_mutated": false,
+    "retained_evidence_scope": "Safe native reports, manifests, logs, screenshots, browser report, and security matrix were retained; encrypted handoff.json was not opened or printed.",
+    "secret_scan": {
+      "status": "PASS_WITH_TEST_FIXTURE_MATCHES",
+      "scope": "source, workflow, receipts, and safe text evidence files; encrypted handoff excluded",
+      "scanned_files": 204,
+      "non_fixture_high_risk_hits": 0,
+      "fixture_matches": 5,
+      "fixture_match_scope": "Synthetic JWT/secret-like values occur only in aggregate/assembly security test fixtures; no fixture values were copied into the receipt or uploaded evidence.",
+      "raw_artifact_paths": [
+        "/private/tmp/sc1-sc5-validation-32986280450/focaccia-cloud-ios-full-flow-proof",
+        "/private/tmp/sc1-sc5-validation-32993239100/focaccia-cloud-ios-full-flow-proof",
+        "/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof"
       ]
     }
-  ],
-  "failure_records": [
+  },
+  "not_tested_scenarios": [
     {
-      "artifact_paths": [
-        "artifacts/validation-gate-blocked.json"
-      ],
-      "category": "WORKFLOW_FAILURE",
-      "diagnostics": {
-        "diagnostic_codes": [
-          "NO_TARGET_OBSERVATIONS"
-        ]
-      },
-      "reason_code": "PRE_CREATION_FAILURE",
-      "run_id": "validation-gate-32942505379",
-      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
+      "scenario": "physical_camera_capture_and_camera_qr_scan",
+      "criteria": ["SC1", "SC2"],
+      "status": "NOT_TESTED",
+      "numerator": 0,
+      "denominator": 0,
+      "counts_toward_target": false,
+      "raw_artifact_paths": ["/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json"],
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "reason": "The workflow uses e2e_payload_injection and provisioning_qr_camera_scan=false."
+    },
+    {
+      "scenario": "physical_radio_loss",
+      "criteria": ["SC2", "SC5"],
+      "status": "NOT_TESTED",
+      "numerator": 0,
+      "denominator": 0,
+      "counts_toward_target": false,
+      "raw_artifact_paths": ["/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json"],
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "reason": "The workflow's stopped_macOS_relay method is simulator/relay evidence, not physical radio isolation."
+    },
+    {
+      "scenario": "participant_biometric_performance_and_demographic_fairness",
+      "criteria": ["SC3"],
+      "status": "NOT_TESTED",
+      "numerator": 0,
+      "denominator": 0,
+      "counts_toward_target": false,
+      "raw_artifact_paths": ["/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json"],
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "reason": "Fixture-driven simulator attempts do not measure FAR, FRR, EER, fairness, or human face diversity."
+    },
+    {
+      "scenario": "sophisticated_presentation_attack_resistance_and_user_acceptance",
+      "criteria": ["SC4"],
+      "status": "NOT_TESTED",
+      "numerator": 0,
+      "denominator": 0,
+      "counts_toward_target": false,
+      "raw_artifact_paths": ["/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/cloud-security-matrix.json"],
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "reason": "The six-row offline harness is not a human presentation-attack or acceptance study."
+    },
+    {
+      "scenario": "production_readiness_or_public_deployment",
+      "criteria": ["SC1", "SC2", "SC3", "SC4", "SC5"],
+      "status": "NOT_TESTED",
+      "numerator": 0,
+      "denominator": 0,
+      "counts_toward_target": false,
+      "raw_artifact_paths": ["/private/tmp/sc1-sc5-validation-33000283974/focaccia-cloud-ios-full-flow-proof/native-report.json"],
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/33000283974",
+      "reason": "The controlled cloud workflow is not production deployment evidence."
     }
   ],
-  "not_tested_scenarios": [],
-  "status": "BLOCKED",
-  "target": {
-    "observed_target_runs": 0,
-    "remaining_required_runs": 10,
-    "required_runs": 10
+  "claim_boundaries": [
+    "The receipt describes controlled cloud software validation only.",
+    "The browser fixture passed one isolated browser/backend setup journey, but it is not a complete SC1 target observation because native Gate completion and authoritative synchronisation failed.",
+    "The six security-matrix rows are supporting offline-harness evidence with no backend write; SC4 remains BLOCKED and duplicate synchronisation is not tested.",
+    "The validation runs use repeated fixtures and do not represent ten people, ten unique faces, FAR, FRR, EER, demographic fairness, sophisticated presentation-attack resistance, user acceptance, physical camera operation, physical radio loss, or production readiness.",
+    "The workflow's privacy audit was skipped on the latest failures; no central biometric-minimisation PASS is claimed.",
+    "The optimization was free and remotely tested, but failures prevent a valid speed comparison; decision is NO_MEANINGFUL_GAIN."
+  ],
+  "batch": {
+    "status": "NOT_DISPATCHED_VALIDATION_GATE_FAILED",
+    "required_observations": 10,
+    "observed_observations": 0,
+    "workflow_urls": [],
+    "reason": "The plan permits the ten-run batch only after one complete optimized validation passes. That gate failed repeatedly, so no batch run was opened."
+  },
+  "scope_controls": {
+    "notion_report_edited": false,
+    "log_book_edited": false,
+    "epq_title_edited": false,
+    "production_data_altered": false,
+    "failed_evidence_deleted": false,
+    "persistent_secrets_created": false,
+    "local_xcode_builds_performed": false
   }
 }

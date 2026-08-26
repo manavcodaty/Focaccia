@@ -1,6 +1,7 @@
 {
   "schema_version": "sc1-sc5-baseline-v1",
-  "status": "BASELINE_ONLY",
+  "status": "EXCLUDED_UNSAFE_BASELINE",
+  "evaluated_commit_sha": "a082c488eb8aa07be5d8748e393704ddc27acb4b",
   "repository": "manavcodaty/Focaccia",
   "workflow": ".github/workflows/cloud-ios-full-flow.yml",
   "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
@@ -52,7 +53,12 @@
       {"name": "focaccia-cloud-ios-backend", "bytes": 15045}
     ]
   },
-  "claim_boundary": "This successful prior run is a timing and workflow baseline only. It is not one of the ten target observations and does not establish physical camera operation, physical radio loss, participant biometric error rates, fairness, presentation-attack resistance, user acceptance, or production readiness.",
+  "artifact_contract": {
+    "status": "EXCLUDED_UNSAFE",
+    "usable_as_target_evidence": false,
+    "reason": "The published baseline uploaded context.json containing ephemeral credentials and provisioning material. It is retained as historical run evidence but is excluded from the final receipt."
+  },
+  "claim_boundary": "This successful prior run is a timing and workflow baseline only. It is not one of the ten target observations and does not establish physical camera operation, physical radio loss, participant biometric error rates, fairness, presentation-attack resistance, user acceptance, or production readiness. Its artifact contract is not privacy-safe, so it is excluded from target evidence.",
   "source_commands": [
     "gh run view 32640901882 --repo manavcodaty/Focaccia --json databaseId,headSha,status,conclusion,workflowName,url,createdAt,updatedAt,jobs",
     "gh api repos/manavcodaty/Focaccia/actions/runs/32640901882/timing",

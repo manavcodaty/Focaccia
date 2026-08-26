@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-25T23:28:18Z",
-  "status": "READY_FOR_BATCH",
+  "generated_at": "2026-08-26T01:05:00Z",
+  "status": "READY_FOR_OPTIMIZED_VALIDATION",
   "zero_cost_verdict": "CONFIRMED",
   "target": {
     "repository": "manavcodaty/Focaccia",
@@ -11,11 +11,11 @@
     "remote_ref": "refs/heads/codex/ios-simulator-verification-next",
     "remote_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
     "remote_commit_sha_verified_at": "2026-08-25T07:19:46Z",
-    "dedicated_checkout_head_sha": "3c7b3913d937236e1aeac01baf29b85f038ddee4",
+    "dedicated_checkout_head_sha": "1d14bbf3a98ad413fc78124df31047a0f8868bbf",
     "dedicated_checkout_head_is_at_or_after_expected_baseline": true,
     "cloud_workflow_present": true,
     "hardened_remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "hardened_remote_commit_sha": "3c7b3913d937236e1aeac01baf29b85f038ddee4",
+    "hardened_remote_commit_sha": "1d14bbf3a98ad413fc78124df31047a0f8868bbf",
     "hardened_remote_commit_is_at_or_after_expected_baseline": true
   },
   "checkout": {
@@ -46,8 +46,8 @@
     "runner_class": "standard GitHub-hosted runners"
   },
   "execution_mode": {
-    "selected": "existing-workflow",
-    "bounded_optimization": "NO_MEANINGFUL_GAIN",
+    "selected": "optimised-workflow",
+    "bounded_optimization": "SAFE_HANDOFF_AND_HARNESS_RELIABILITY",
     "temporary_branch_push_authorized": true,
     "authorization_verdict": "APPROVED_TEMPORARY_BRANCH_PUSH",
     "production_changes_authorized": false,
@@ -57,8 +57,8 @@
     "remote_workflow_dispatched_after_preflight": true,
     "optimization_validation_run_id": 32905208006,
     "optimization_validation_conclusion": "failure",
-    "batch_ref": "refs/heads/codex/ios-simulator-verification-next",
-    "batch_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445"
+    "batch_ref": null,
+    "batch_commit_sha": null
   },
   "cost_gate": {
     "verdict": "CONFIRMED",
@@ -168,8 +168,8 @@
     "local_security_evidence_gate_open": true,
     "remote_accessible_hardened_commit": true,
     "push_gate_open": true,
-    "dispatch_gate_open": true,
-    "reason": "Zero-cost, authority, production-isolation, and local security gates are open. The approved hardened validation was completed and failed on hosted backboardd lifecycle instability without a meaningful wall-time or quota gain, so the previously validated published workflow is the evidence path for the batch."
+    "dispatch_gate_open": false,
+    "reason": "The published baseline was found to upload context.json containing ephemeral credentials and provisioning material, violating the evidence privacy contract. The safe hardened branch received one narrow clipboard-assertion fix and requires one complete remote validation before any further batch dispatch."
   },
   "subagents": {
     "requested": true,
@@ -179,7 +179,8 @@
   },
   "limitations": [
     "The approved hardened validation run 32905208006 on commit 3c7b3913d937236e1aeac01baf29b85f038ddee4 failed before native provisioning when hosted backboardd respawn terminated the app; its raw artifacts are retained separately.",
-    "The ten-run batch has not yet been dispatched; it will use the existing published workflow at d3bf4eeda9f2db139804495afb24c008c1a40445 after the successful baseline run 32640901882.",
+    "The baseline batch wave was stopped after run 32911010571 exposed secret-bearing context.json in the published artifact; run 32911015750 was cancelled before completion and its partial artifacts are retained. No further baseline runs will be dispatched.",
+    "The safe hardened branch now points to 1d14bbf3a98ad413fc78124df31047a0f8868bbf and requires a complete validation before any target batch.",
     "The local browser flow now exercises foreign-claim and foreign-ticket ownership rejection; this has not yet been run in the cloud because the hardened workflow is not on an authorized remote commit.",
     "The workflow privacy step currently audits a safe projection of six named surfaces with source_only=true; it must not be reported as a central production-data audit until the actual runner-local database/API/log/export surfaces are supplied.",
     "The workflow uses simulator payload injection and stopped-relay network loss; it does not establish physical camera QR scanning or physical radio loss.",

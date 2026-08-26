@@ -1,8 +1,8 @@
 {
   "schema_version": "sc1-sc5-optimization-v1",
-  "status": "COMPLETE",
-  "decision": "NO_MEANINGFUL_GAIN_USE_EXISTING_WORKFLOW",
-  "outcome": "NO_MEANINGFUL_GAIN",
+  "status": "REMOTE_VALIDATION_PENDING",
+  "decision": "VALIDATE_SAFE_HARDENED_WORKFLOW_AFTER_NARROW_E2E_FIX",
+  "outcome": "PENDING_ONE_REMOTE_VALIDATION_RUN",
   "baseline_run_id": 32640901882,
   "baseline_workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
   "baseline_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32640901882",
@@ -13,7 +13,7 @@
     "remote_accessible": true,
     "temporary_branch_push_authorized": true,
     "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "remote_commit_sha": "3c7b3913d937236e1aeac01baf29b85f038ddee4"
+    "remote_commit_sha": "1d14bbf3a98ad413fc78124df31047a0f8868bbf"
   },
   "bounded_changes": [
     "Free runner-local X25519 envelope handoff for credentials and network context; private recipient key is never uploaded.",
@@ -21,7 +21,8 @@
     "Per-run nested artifact manifest layout compatible with the deterministic ten-run reducer.",
     "Privacy six-surface safe-projection audit explicitly marked source-only and safe offline security scenario matrix.",
     "One commit-pinned native build remains the only native build in each cloud workflow run; no local Xcode build was performed.",
-    "Baguette uses the official scroll envelope for off-screen controls and the harness does not send hardware Escape events."
+    "Baguette uses the official scroll envelope for off-screen controls and the harness does not send hardware Escape events.",
+    "The native flow validates the signed token by reading the clipboard rather than depending on a transient accessibility acknowledgement."
   ],
   "validation_commands": [
     "node --check scripts/cloud-browser-e2e.mjs",
@@ -30,7 +31,7 @@
     "node --test scripts/cloud-workflow-safety.test.mjs",
     "ruby -e \"require 'yaml'; YAML.load_file('.github/workflows/cloud-ios-full-flow.yml')\""
   ],
-  "remote_validation": {
+  "prior_remote_validation": {
     "performed": true,
     "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32905208006",
     "run_id": 32905208006,
@@ -41,8 +42,13 @@
       "ubuntu": 0,
       "macos": 0
     },
-    "failure": "Hosted iOS backboardd respawn interrupted the accessibility/input connection and RunningBoard terminated FacePassGate while waiting for Provision this gate; the native report preserved SpringBoard Home and no app crash stack.",
-    "reason": "The bounded validation completed but did not establish a reliable end-to-end improvement. Its 70.12-minute wall time was 1.31% below the 71.05-minute baseline and both runs reported zero billable milliseconds; the existing published workflow remains the evidence path."
+    "failure": "Hosted iOS backboardd respawn interrupted the accessibility/input connection and RunningBoard terminated FacePassGate while waiting for Provision this gate; the native report preserved SpringBoard Home and no app crash stack."
+  },
+  "remote_validation": {
+    "performed": false,
+    "workflow_url": null,
+    "candidate_commit_sha": "1d14bbf3a98ad413fc78124df31047a0f8868bbf",
+    "reason": "A narrow clipboard assertion fix was pushed after the prior validation failure. The published baseline is not a safe fallback because its uploaded context.json contains ephemeral credentials and provisioning material."
   },
   "cost_and_scope": {
     "zero_cost_verdict": "CONFIRMED",
@@ -61,5 +67,5 @@
       "macos": 0
     }
   },
-  "claim_boundary": "The candidate was remotely validated but failed before native provisioning because of hosted simulator lifecycle instability. The small wall-time difference is not a meaningful improvement. Its artifacts are retained as a failed validation, and the ten-run evidence batch uses the existing published workflow at the pinned baseline commit."
+  "claim_boundary": "The prior candidate validation failed before native provisioning because of hosted simulator lifecycle instability. The new candidate retains the safe encrypted handoff and adds a clipboard-based signed-token assertion; it must complete one remote validation before any target batch. The published baseline is excluded from evidence because its artifact contract is not privacy-safe."
 }

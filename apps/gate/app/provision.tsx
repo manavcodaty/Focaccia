@@ -168,6 +168,7 @@ function useProvisionController(isCloudE2E: boolean) {
 
 type ProvisionScreenBodyProps = ReturnType<typeof useProvisionController> & {
   cameraContent: ReactNode;
+  isCloudE2E: boolean;
 };
 
 function ProvisionScreenBody({
@@ -181,6 +182,7 @@ function ProvisionScreenBody({
   gate,
   handleProvision,
   handleSignIn,
+  isCloudE2E,
   isBusy,
   layout,
   password,
@@ -301,23 +303,40 @@ function ProvisionScreenBody({
                 tone="warning"
               />
             ) : null}
-            <TextInput
-              accessibilityLabel="Gate device name"
-              autoCapitalize="words"
-              onChangeText={setDeviceName}
-              placeholder="Device name"
-              placeholderTextColor={palette.mutedStone}
-              showSoftInputOnFocus={!isCloudE2E}
-              style={[
-                styles.input,
-                {
-                  borderRadius: radii.field,
-                  fontSize: scaleFont(layout, 16),
-                  minHeight: layout.isTablet ? 60 : 56,
-                },
-              ]}
-              value={deviceName}
-            />
+            {isCloudE2E ? (
+              <Text
+                accessibilityLabel="Gate device name"
+                accessibilityValue={{ text: deviceName }}
+                style={[
+                  styles.input,
+                  {
+                    borderRadius: radii.field,
+                    fontSize: scaleFont(layout, 16),
+                    minHeight: layout.isTablet ? 60 : 56,
+                  },
+                ]}
+              >
+                {deviceName}
+              </Text>
+            ) : (
+              <TextInput
+                accessibilityLabel="Gate device name"
+                autoCapitalize="words"
+                onChangeText={setDeviceName}
+                placeholder="Device name"
+                placeholderTextColor={palette.mutedStone}
+                showSoftInputOnFocus={!isCloudE2E}
+                style={[
+                  styles.input,
+                  {
+                    borderRadius: radii.field,
+                    fontSize: scaleFont(layout, 16),
+                    minHeight: layout.isTablet ? 60 : 56,
+                  },
+                ]}
+                value={deviceName}
+              />
+            )}
             <PrimaryButton
               disabled={!auth || isBusy}
               label={isBusy ? 'Provisioning gate...' : 'Provision this gate'}
@@ -340,6 +359,7 @@ function CloudE2EProvisionScreen() {
   return (
     <ProvisionScreenBody
       {...controller}
+      isCloudE2E
       cameraContent={
         <View style={[styles.camera, styles.e2ePreview]}>
           <Text style={styles.e2ePreviewLabel}>Cloud E2E payload injection</Text>
@@ -415,6 +435,7 @@ function NativeProvisionScreen() {
   return (
     <ProvisionScreenBody
       {...controller}
+      isCloudE2E={false}
       cameraContent={
         <Camera
           codeScanner={codeScanner}

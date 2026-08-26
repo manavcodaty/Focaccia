@@ -1,8 +1,8 @@
 {
   "schema_version": "sc1-sc5-validation-gate-evidence-v1",
   "status": "BLOCKED",
-  "evaluated_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
-  "failure_boundary": "The safe hardened workflow was dispatched for bounded validation, but the hosted iOS simulator lost its backboard connection and RunningBoard terminated FacePassGate before the Provision this gate control became available. No target observation was counted and no batch was opened.",
+  "evaluated_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
+  "failure_boundary": "The keyboard-dismissal candidate was dispatched for its one bounded remote validation, but the hosted iOS simulator again lost its backboard connection and RunningBoard terminated FacePassGate before the Provision this gate control became available. No target observation was counted and no batch was opened.",
   "validation_attempts": [
     {
       "workflow_run_id": 32905208006,
@@ -33,9 +33,19 @@
       "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32925825401",
       "result": "FAILURE_BEFORE_GATE_PROVISIONING",
       "diagnostic": "backboardd respawn and RunningBoard termination repeated after the one narrow recovery helper; no target observation was counted"
+    },
+    {
+      "workflow_run_id": 32942505379,
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379",
+      "commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
+      "duration_ms": 4700000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "raw_artifact_directory": "/private/tmp/sc1-sc5-validation-32942505379",
+      "result": "FAILURE_BEFORE_GATE_PROVISIONING",
+      "diagnostic": "Keyboard dismissal was present in the cloud-built apps, but the hosted iOS 26.5 simulator still respawned backboardd and RunningBoard terminated FacePassGate; SpringBoard Home and no app crash stack were preserved"
     }
   ],
-  "raw_artifact_policy": "The three raw safe-validation directories are preserved outside the repository and remain traceable through their workflow URLs. No secret-bearing baseline context artifact is copied into this receipt.",
+  "raw_artifact_policy": "The four raw safe-validation directories are preserved outside the repository and remain traceable through their workflow URLs. No secret-bearing baseline context artifact is copied into this receipt.",
   "cost_evidence": {
     "zero_cost_verdict": "CONFIRMED",
     "all_validation_runs_billable_ms": {"ubuntu": 0, "macos": 0},

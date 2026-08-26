@@ -13,8 +13,8 @@
         "SC4",
         "SC5"
       ],
-      "run_id": "validation-gate-32925825401",
-      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+      "run_id": "validation-gate-32942505379",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
     }
   ],
   "criteria": {
@@ -28,9 +28,9 @@
             "artifacts/validation-gate-blocked.json"
           ],
           "counts_as_observation": false,
-          "run_id": "validation-gate-32925825401",
+          "run_id": "validation-gate-32942505379",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
         }
       ],
       "status": "BLOCKED"
@@ -45,9 +45,9 @@
             "artifacts/validation-gate-blocked.json"
           ],
           "counts_as_observation": false,
-          "run_id": "validation-gate-32925825401",
+          "run_id": "validation-gate-32942505379",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
         }
       ],
       "status": "BLOCKED"
@@ -62,9 +62,9 @@
             "artifacts/validation-gate-blocked.json"
           ],
           "counts_as_observation": false,
-          "run_id": "validation-gate-32925825401",
+          "run_id": "validation-gate-32942505379",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
         }
       ],
       "status": "BLOCKED"
@@ -79,9 +79,9 @@
             "artifacts/validation-gate-blocked.json"
           ],
           "counts_as_observation": false,
-          "run_id": "validation-gate-32925825401",
+          "run_id": "validation-gate-32942505379",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
         }
       ],
       "status": "BLOCKED"
@@ -96,15 +96,15 @@
             "artifacts/validation-gate-blocked.json"
           ],
           "counts_as_observation": false,
-          "run_id": "validation-gate-32925825401",
+          "run_id": "validation-gate-32942505379",
           "status": "BLOCKED",
-          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+          "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
         }
       ],
       "status": "BLOCKED"
     }
   },
-  "evaluated_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
+  "evaluated_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
   "evidence_completeness": {
     "complete": false,
     "control_records": 0,
@@ -133,7 +133,7 @@
       "category": "WORKFLOW_FAILURE",
       "count": 1,
       "run_ids": [
-        "validation-gate-32925825401"
+        "validation-gate-32942505379"
       ]
     }
   ],
@@ -149,8 +149,8 @@
         ]
       },
       "reason_code": "PRE_CREATION_FAILURE",
-      "run_id": "validation-gate-32925825401",
-      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401"
+      "run_id": "validation-gate-32942505379",
+      "workflow_run_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379"
     }
   ],
   "not_tested_scenarios": [],

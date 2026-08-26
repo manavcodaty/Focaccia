@@ -1,7 +1,7 @@
 {
   "schema_version": "sc1-sc5-optimization-v1",
-  "status": "PENDING_VALIDATION",
-  "decision": "ONE_NARROW_HOSTED_LIFECYCLE_FIX_PENDING_VALIDATION",
+  "status": "BLOCKED",
+  "decision": "NO_MEANINGFUL_GAIN_HOSTED_VALIDATION_BLOCKED",
   "outcome": "KEYBOARD_DISMISSAL_BEFORE_AUTH_NAVIGATION",
   "baseline_run_id": 32640901882,
   "baseline_workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
@@ -13,8 +13,8 @@
     "remote_accessible": true,
     "temporary_branch_push_authorized": true,
     "remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "remote_commit_sha": "0132eea66db51f7a778e66e11436ce871bfe419e",
-    "evaluated_commit_sha": "0132eea66db51f7a778e66e11436ce871bfe419e",
+    "remote_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
+    "evaluated_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
     "receipt_metadata_commit_sha": "acc3e9f3608c8b337cb9ef2f71bb827d87875c6b"
   },
   "bounded_changes": [
@@ -50,22 +50,22 @@
   },
   "remote_validation": {
     "performed": true,
-    "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32925825401",
-    "candidate_commit_sha": "2bc12adc21a7e5103557278c82f3eae1b7b40c89",
-    "run_id": 32925825401,
+    "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379",
+    "candidate_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
+    "run_id": 32942505379,
     "conclusion": "failure",
-    "run_duration_ms": 3723000,
+    "run_duration_ms": 4700000,
     "billable_ms": {
       "ubuntu": 0,
       "macos": 0
     },
-    "failure": "The one narrow recovery helper did not overcome the repeated hosted backboardd respawn and RunningBoard termination before Provision this gate."
+    "failure": "The one bounded native-auth keyboard dismissal change did not overcome the repeated hosted backboardd respawn and RunningBoard termination before Provision this gate."
   },
   "pending_fix_validation": {
-    "candidate_commit_sha": "0132eea66db51f7a778e66e11436ce871bfe419e",
+    "candidate_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
     "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/workflows/cloud-ios-full-flow.yml",
-    "status": "READY_TO_DISPATCH_AFTER_ZERO_COST_GATE",
-    "scope": "Validate the keyboard dismissal lifecycle fix once before considering the ten-run batch."
+    "status": "FAILED_VALIDATION",
+    "scope": "The one bounded keyboard dismissal lifecycle validation failed; the ten-run batch gate remains closed."
   },
   "validation_runs": [
     {
@@ -94,14 +94,23 @@
       "run_duration_ms": 3723000,
       "billable_ms": {"ubuntu": 0, "macos": 0},
       "failure_stage": "before_gate_provisioning"
+    },
+    {
+      "run_id": 32942505379,
+      "workflow_url": "https://github.com/manavcodaty/Focaccia/actions/runs/32942505379",
+      "commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
+      "conclusion": "failure",
+      "run_duration_ms": 4700000,
+      "billable_ms": {"ubuntu": 0, "macos": 0},
+      "failure_stage": "before_gate_provisioning"
     }
   ],
   "measurement": {
     "baseline_wall_clock_ms": 4263000,
-    "candidate_wall_clock_ms": 3723000,
+    "candidate_wall_clock_ms": 4700000,
     "candidate_wall_clock_comparison_valid": false,
-    "meaningful_wall_clock_gain": "NO_MEANINGFUL_GAIN_NOT_ESTABLISHED",
-    "reason": "The candidate runs failed before completing the native workflow, so shorter elapsed time is not a valid speed comparison.",
+    "meaningful_wall_clock_gain": "NO_MEANINGFUL_GAIN",
+    "reason": "The bounded candidate validation failed before completing the native workflow, so elapsed time is not a valid speed comparison and the repeated hosted simulator lifecycle failure is not an improvement.",
     "total_billable_runner_ms": {
       "baseline": {"ubuntu": 0, "macos": 0},
       "validation_runs": {"ubuntu": 0, "macos": 0}
@@ -116,7 +125,7 @@
     "production_data_mutated": false,
     "optimization_adds_runner_minute_quota": "NO_EVIDENCE_OF_ADDITIONAL_BILLABLE_QUOTA",
     "baseline_run_duration_ms": 4263000,
-    "candidate_run_duration_ms": 3723000,
+    "candidate_run_duration_ms": 4700000,
     "baseline_billable_ms": {
       "ubuntu": 0,
       "macos": 0
@@ -127,5 +136,5 @@
     }
   },
   "existing_workflow_decision": "The published baseline is excluded from target evidence because its uploaded context.json contained ephemeral credentials and provisioning material. No further baseline dispatch was made.",
-  "claim_boundary": "The bounded safe optimization was validated remotely three times and hit the same hosted simulator lifecycle blocker before gate provisioning. It produced no valid target observation and no ten-run batch. The published baseline remains excluded from the evidence receipt because its artifact contract is not privacy-safe."
+  "claim_boundary": "The one bounded safe optimization candidate was remotely validated at 45821a329317b9c662a69395d6e32f3e0653783f and hit the same hosted simulator lifecycle blocker before gate provisioning. It produced no valid target observation and no ten-run batch. The published baseline remains excluded from the evidence receipt because its artifact contract is not privacy-safe."
 }

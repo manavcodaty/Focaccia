@@ -2,7 +2,7 @@
 
 Overall status: `BLOCKED`
 
-Evaluated commit: `2bc12adc21a7e5103557278c82f3eae1b7b40c89`
+Evaluated commit: `45821a329317b9c662a69395d6e32f3e0653783f`
 
 Evidence completeness: 0 of 10 target observations
 
@@ -20,29 +20,29 @@ Evidence completeness: 0 of 10 target observations
 
 | Criterion | Run | Status | Workflow | Raw artifacts |
 | --- | --- | --- | --- | --- |
-| SC1 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
-| SC2 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
-| SC3 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
-| SC4 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
-| SC5 | `validation-gate-32925825401` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
+| SC1 | `validation-gate-32942505379` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32942505379) | `artifacts/validation-gate-blocked.json` |
+| SC2 | `validation-gate-32942505379` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32942505379) | `artifacts/validation-gate-blocked.json` |
+| SC3 | `validation-gate-32942505379` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32942505379) | `artifacts/validation-gate-blocked.json` |
+| SC4 | `validation-gate-32942505379` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32942505379) | `artifacts/validation-gate-blocked.json` |
+| SC5 | `validation-gate-32942505379` | `BLOCKED` | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32942505379) | `artifacts/validation-gate-blocked.json` |
 
 ## Failure categories
 
 | Category | Count | Runs |
 | --- | ---: | --- |
-| `WORKFLOW_FAILURE` | 1 | `validation-gate-32925825401` |
+| `WORKFLOW_FAILURE` | 1 | `validation-gate-32942505379` |
 
 ## Failure details
 
 | Run | Category | Reason code | Diagnostics | Workflow | Raw artifacts |
 | --- | --- | --- | --- | --- | --- |
-| `validation-gate-32925825401` | `WORKFLOW_FAILURE` | `PRE_CREATION_FAILURE` | {"diagnostic_codes":["NO_TARGET_OBSERVATIONS"]} | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
+| `validation-gate-32942505379` | `WORKFLOW_FAILURE` | `PRE_CREATION_FAILURE` | {"diagnostic_codes":["NO_TARGET_OBSERVATIONS"]} | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32942505379) | `artifacts/validation-gate-blocked.json` |
 
 ## Blocked/not-tested scenarios
 
 | Status | Record | Criteria | Counts toward target | Workflow | Raw artifacts |
 | --- | --- | --- | --- | --- | --- |
-| `BLOCKED` | `validation-gate-32925825401` | `SC1`, `SC2`, `SC3`, `SC4`, `SC5` | yes | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32925825401) | `artifacts/validation-gate-blocked.json` |
+| `BLOCKED` | `validation-gate-32942505379` | `SC1`, `SC2`, `SC3`, `SC4`, `SC5` | yes | [workflow run](https://github.com/manavcodaty/Focaccia/actions/runs/32942505379) | `artifacts/validation-gate-blocked.json` |
 
 Zero target observations were recorded; this is a truthful `BLOCKED` receipt, not an empty success.
 

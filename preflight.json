@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-26T07:21:31Z",
-  "status": "READY_FOR_VALIDATION_GATE",
+  "generated_at": "2026-08-26T08:48:07Z",
+  "status": "BLOCKED",
   "zero_cost_verdict": "CONFIRMED",
   "target": {
     "repository": "manavcodaty/Focaccia",
@@ -11,13 +11,13 @@
     "remote_ref": "refs/heads/codex/ios-simulator-verification-next",
     "remote_commit_sha": "d3bf4eeda9f2db139804495afb24c008c1a40445",
     "remote_commit_sha_verified_at": "2026-08-25T07:19:46Z",
-    "evaluated_commit_sha": "0132eea66db51f7a778e66e11436ce871bfe419e",
+    "evaluated_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
     "receipt_metadata_commit_sha": "acc3e9f3608c8b337cb9ef2f71bb827d87875c6b",
-    "dedicated_checkout_head_sha": "0132eea66db51f7a778e66e11436ce871bfe419e",
+    "dedicated_checkout_head_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
     "dedicated_checkout_head_is_at_or_after_expected_baseline": true,
     "cloud_workflow_present": true,
     "hardened_remote_ref": "refs/heads/codex/sc1-sc5-cloud-evidence-safe",
-    "hardened_remote_commit_sha": "0132eea66db51f7a778e66e11436ce871bfe419e",
+    "hardened_remote_commit_sha": "45821a329317b9c662a69395d6e32f3e0653783f",
     "hardened_remote_commit_is_at_or_after_expected_baseline": true
   },
   "checkout": {
@@ -57,13 +57,14 @@
     "persistent_secret_creation_authorized": false,
     "remote_workflow_dispatched_before_preflight": false,
     "remote_workflow_dispatched_after_preflight": true,
-    "optimization_validation_run_id": null,
-    "optimization_validation_conclusion": "PENDING",
-    "validation_gate": "PENDING_REMOTE_VALIDATION",
+    "optimization_validation_run_id": 32942505379,
+    "optimization_validation_conclusion": "failure",
+    "validation_gate": "BLOCKED_AFTER_FAILED_VALIDATION",
     "validation_runs": [
       32905208006,
       32918631772,
-      32925825401
+      32925825401,
+      32942505379
     ],
     "batch_ref": null,
     "batch_commit_sha": null
@@ -177,7 +178,7 @@
     "remote_accessible_hardened_commit": true,
     "push_gate_open": true,
     "dispatch_gate_open": false,
-    "reason": "The published baseline was found to upload context.json containing ephemeral credentials and provisioning material, violating the evidence privacy contract. A narrow native-auth keyboard dismissal fix is recorded at the new candidate commit and requires one remote validation gate before the ten-run batch can open."
+    "reason": "The published baseline was found to upload context.json containing ephemeral credentials and provisioning material, violating the evidence privacy contract. The one bounded keyboard-dismissal candidate validation at 45821a329317b9c662a69395d6e32f3e0653783f failed with the repeated hosted backboardd respawn and RunningBoard termination before gate provisioning; the ten-run batch remains closed."
   },
   "subagents": {
     "requested": true,
@@ -188,7 +189,7 @@
   "limitations": [
     "The bounded safe-workflow validation runs 32905208006, 32918631772, and 32925825401 failed before native gate provisioning with the same hosted backboardd respawn and RunningBoard termination; raw artifacts are retained separately at their workflow URLs and local evidence directories.",
     "The baseline batch wave was stopped after run 32911010571 exposed secret-bearing context.json in the published artifact; run 32911015750 was cancelled before completion and its partial artifacts are retained. No further baseline runs will be dispatched.",
-    "The safe hardened branch was previously evaluated at remote commit 2bc12adc21a7e5103557278c82f3eae1b7b40c89 after the one narrow recovery helper. A new native-auth keyboard dismissal fix is now recorded at candidate commit 0132eea66db51f7a778e66e11436ce871bfe419e and awaits one remote validation gate.",
+    "The safe hardened branch was evaluated at remote commit 45821a329317b9c662a69395d6e32f3e0653783f after the one bounded native-auth keyboard dismissal change (source fix commit 0132eea66db51f7a778e66e11436ce871bfe419e); the validation still failed before gate provisioning.",
     "The local browser flow exercises foreign-claim and foreign-ticket ownership rejection, but no cloud target observation was counted because the validation gate failed before native provisioning.",
     "The workflow privacy step currently audits a safe projection of six named surfaces with source_only=true; it must not be reported as a central production-data audit until the actual runner-local database/API/log/export surfaces are supplied.",
     "The workflow uses simulator payload injection and stopped-relay network loss; it does not establish physical camera QR scanning or physical radio loss.",

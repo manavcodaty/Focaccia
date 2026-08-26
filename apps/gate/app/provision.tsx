@@ -307,6 +307,7 @@ function ProvisionScreenBody({
               onChangeText={setDeviceName}
               placeholder="Device name"
               placeholderTextColor={palette.mutedStone}
+              showSoftInputOnFocus={!isCloudE2E}
               style={[
                 styles.input,
                 {

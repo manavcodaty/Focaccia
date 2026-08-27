@@ -121,7 +121,9 @@ function useProvisionController(isCloudE2E: boolean) {
 
     try {
       await signIn(email, password);
-      setFeedback('Organizer session is active. Scan the dashboard provisioning QR now.');
+      if (!isCloudE2E) {
+        setFeedback('Organizer session is active. Scan the dashboard provisioning QR now.');
+      }
     } catch (signInError) {
       setError(signInError instanceof Error ? signInError.message : 'Sign-in failed.');
     } finally {
@@ -239,8 +241,11 @@ function ProvisionScreenBody({
         {error ? <StatusBanner message={error} title="Setup failed" tone="danger" /> : null}
       </SectionCard>
 
-      <SectionCard eyebrow="Organizer auth" title={auth ? auth.email : 'Sign in before sync'}>
-        {auth ? (
+      <SectionCard
+        eyebrow="Organizer auth"
+        title={isCloudE2E ? 'Sign in before sync' : auth ? auth.email : 'Sign in before sync'}
+      >
+        {auth && !isCloudE2E ? (
           <StatusBanner
             message="Organizer sign-in is active. You can scan the provisioning QR and complete the one-gate sync."
             title="Organizer authenticated"

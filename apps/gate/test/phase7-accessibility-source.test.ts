@@ -29,6 +29,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /emailInputRef\.current\?\.blur\(\)/);
   assert.match(provision, /passwordInputRef\.current\?\.blur\(\)/);
   assert.match(provision, /signInInFlightRef\.current/);
+  assert.match(provision, /if \(!isCloudE2E\) \{\s+setFeedback\('Organizer session is active/);
+  assert.match(provision, /title=\{isCloudE2E \? 'Sign in before sync' : auth \? auth\.email/);
   assert.match(provision, /auth && !isCloudE2E \? null/);
   assert.match(provision, /<View collapsable=\{false\}>/);
   assert.doesNotMatch(provision, /accessibilityElementsHidden=\{Boolean\(auth\)\}/);

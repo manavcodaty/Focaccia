@@ -45,6 +45,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /onSubmitEditing=\{isCloudE2E \?/);
   assert.match(driver, /emailNode\.focused !== true/);
   assert.match(driver, /passwordNode\.focused !== true/);
+  assert.match(driver, /Prefer the field's onSubmitEditing blur/);
+  assert.match(driver, /if \(!anchorMatcher\)/);
   assert.equal((driver.match(/settleNativeAuthResponder\(\{/g) ?? []).length, 4);
 });
 

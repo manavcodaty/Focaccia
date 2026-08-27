@@ -187,10 +187,22 @@ async function waitForAuthInputsToBlur(emailMatcher, passwordMatcher, { timeoutM
 }
 
 async function settleNativeAuthResponder({ emailMatcher, passwordMatcher, anchorMatcher }) {
-  // Baguette closes its short remote-input session immediately after paste.
-  // Give UIKit that session boundary, then send a real non-input tap and
-  // require both fields to report focus loss before submitting credentials.
+  // Baguette closes its short remote-input session immediately after the
+  // submit key. Prefer the field's onSubmitEditing blur because an extra
+  // non-input tap can race UIKit's remote keyboard teardown on hosted iOS.
   await sleep(350);
+  try {
+    await waitForAuthInputsToBlur(emailMatcher, passwordMatcher);
+    return;
+  } catch (initialBlurError) {
+    if (!anchorMatcher) {
+      throw initialBlurError;
+    }
+  }
+
+  // Keep the semantic tap as a bounded compatibility fallback for a hosted
+  // responder that did not honour submit, then require the same focus-loss
+  // postcondition before navigation.
   await tapNode(simulatorUdid, anchorMatcher, { timeoutMs: 30_000 });
   await waitForAuthInputsToBlur(emailMatcher, passwordMatcher);
 }

@@ -160,51 +160,11 @@ async function launchGate() {
   });
 }
 
-async function waitForAuthInputsToBlur(emailMatcher, passwordMatcher, { timeoutMs = 15_000 } = {}) {
-  const deadline = Date.now() + timeoutMs;
-
-  while (Date.now() < deadline) {
-    try {
-      const tree = await describeUi(simulatorUdid);
-      const emailNode = findNode(tree, emailMatcher);
-      const passwordNode = findNode(tree, passwordMatcher);
-      if (
-        emailNode
-        && passwordNode
-        && emailNode.focused !== true
-        && passwordNode.focused !== true
-      ) {
-        return;
-      }
-    } catch {
-      // Keep polling while the hosted accessibility bridge settles after the
-      // explicit non-input tap.
-    }
-    await sleep(150);
-  }
-
-  throw new Error('Timed out waiting for native auth inputs to lose focus.');
-}
-
-async function settleNativeAuthResponder({ emailMatcher, passwordMatcher, anchorMatcher }) {
-  // Baguette closes its short remote-input session immediately after the
-  // submit key. Prefer the field's onSubmitEditing blur because an extra
-  // non-input tap can race UIKit's remote keyboard teardown on hosted iOS.
+async function settleNativeAuthResponder() {
+  // Let Baguette close its short input session before the handled submit tap.
+  // Do not synthesize Enter, blur, Escape, or a non-input keyboard-dismiss tap:
+  // hosted iOS can respawn backboardd while RemoteTextInput is settling.
   await sleep(350);
-  try {
-    await waitForAuthInputsToBlur(emailMatcher, passwordMatcher);
-    return;
-  } catch (initialBlurError) {
-    if (!anchorMatcher) {
-      throw initialBlurError;
-    }
-  }
-
-  // Keep the semantic tap as a bounded compatibility fallback for a hosted
-  // responder that did not honour submit, then require the same focus-loss
-  // postcondition before navigation.
-  await tapNode(simulatorUdid, anchorMatcher, { timeoutMs: 30_000 });
-  await waitForAuthInputsToBlur(emailMatcher, passwordMatcher);
 }
 
 async function recoverGateProvisioningScreen() {
@@ -224,13 +184,9 @@ async function recoverGateProvisioningScreen() {
   }
   await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
   await fillInputExactly('Organizer email', context.organizerEmail);
-  await fillInputExactly('Organizer password', context.organizerPassword, { submit: true });
+  await fillInputExactly('Organizer password', context.organizerPassword);
   await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
-  await settleNativeAuthResponder({
-    emailMatcher: 'Organizer email',
-    passwordMatcher: 'Organizer password',
-    anchorMatcher: 'Dismiss keyboard',
-  });
+  await settleNativeAuthResponder();
   await tapNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
   await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
 }
@@ -449,13 +405,9 @@ async function main() {
     // button to become enabled as a postcondition of the two credential inputs.
     await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
     await fillInputExactly('Organizer email', context.organizerEmail);
-    await fillInputExactly('Organizer password', context.organizerPassword, { submit: true });
+    await fillInputExactly('Organizer password', context.organizerPassword);
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
-    await settleNativeAuthResponder({
-      emailMatcher: 'Organizer email',
-      passwordMatcher: 'Organizer password',
-      anchorMatcher: 'Dismiss keyboard',
-    });
+    await settleNativeAuthResponder();
     await tapNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     try {
       await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
@@ -481,12 +433,8 @@ async function main() {
     await launchEnrollment();
 
     await fillInputExactly('Email', context.attendeeEmail);
-    await fillInputExactly('Password', context.attendeePassword, { submit: true });
-    await settleNativeAuthResponder({
-      emailMatcher: 'Email',
-      passwordMatcher: 'Password',
-      anchorMatcher: 'Dismiss keyboard',
-    });
+    await fillInputExactly('Password', context.attendeePassword);
+    await settleNativeAuthResponder();
     await tapNode(simulatorUdid, 'Sign in', { timeoutMs: 30_000 });
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, new RegExp(context.eventName), {

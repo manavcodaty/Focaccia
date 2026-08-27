@@ -30,24 +30,22 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /passwordInputRef\.current\?\.blur\(\)/);
   assert.match(provision, /signInInFlightRef\.current/);
   assert.match(provision, /auth && !isCloudE2E \? null/);
-  assert.match(provision, /accessibilityElementsHidden=\{Boolean\(auth\)\}/);
-  assert.match(provision, /importantForAccessibility=\{auth \? 'no-hide-descendants' : 'auto'\}/);
-  assert.match(provision, /pointerEvents=\{auth \? 'none' : 'auto'\}/);
-  assert.match(provision, /cloudAuthFormRetained/);
+  assert.match(provision, /<View collapsable=\{false\}>/);
+  assert.doesNotMatch(provision, /accessibilityElementsHidden=\{Boolean\(auth\)\}/);
+  assert.doesNotMatch(provision, /importantForAccessibility=\{auth \? 'no-hide-descendants' : 'auto'\}/);
+  assert.doesNotMatch(provision, /pointerEvents=\{auth \? 'none' : 'auto'\}/);
+  assert.doesNotMatch(provision, /cloudAuthFormRetained/);
   assert.doesNotMatch(provision, /editable=\{!isBusy\}/);
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
-  assert.match(driver, /waitForAuthInputsToBlur/);
+  assert.match(driver, /settleNativeAuthResponder\(\)/);
   assert.match(provision, /label="Dismiss keyboard"/);
-  assert.match(driver, /anchorMatcher: 'Dismiss keyboard'/);
+  assert.doesNotMatch(driver, /anchorMatcher: 'Dismiss keyboard'/);
   assert.match(driver, /await typeIntoNode\(simulatorUdid, matcher, value, \{/);
   assert.match(driver, /replace: true/);
-  assert.match(driver, /submit: true/);
-  assert.match(provision, /onSubmitEditing=\{isCloudE2E \?/);
-  assert.match(driver, /emailNode\.focused !== true/);
-  assert.match(driver, /passwordNode\.focused !== true/);
-  assert.match(driver, /Prefer the field's onSubmitEditing blur/);
-  assert.match(driver, /if \(!anchorMatcher\)/);
-  assert.equal((driver.match(/settleNativeAuthResponder\(\{/g) ?? []).length, 4);
+  assert.doesNotMatch(driver, /submit: true/);
+  assert.doesNotMatch(provision, /onSubmitEditing=\{isCloudE2E \?/);
+  assert.match(driver, /Do not synthesize Enter, blur, Escape/);
+  assert.equal((driver.match(/settleNativeAuthResponder\(\)/g) ?? []).length, 4);
 });
 
 test('gate scanner requires a fresh revocation cache before admitting attendees', async () => {

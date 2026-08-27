@@ -108,21 +108,15 @@ function useProvisionController(isCloudE2E: boolean) {
     setError(null);
     setFeedback(null);
     if (isCloudE2E) {
-      emailInputRef.current?.blur();
-      passwordInputRef.current?.blur();
-      Keyboard.dismiss();
-      // Hosted iOS 26.5 can respawn backboardd when auth changes the screen
-      // while a remote text-input session is still settling.
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      // Keep the native fields and their responder hierarchy stable while the
+      // hosted auth request is in flight. The cloud driver submits through the
+      // handled button; synthetic keyboard dismissal can race RemoteTextInput.
+      setIsBusy(true);
     } else {
       setIsBusy(true);
       // Dismiss the focused native text field before auth changes the screen.
       Keyboard.dismiss();
       await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-
-    if (isCloudE2E) {
-      setIsBusy(true);
     }
 
     try {
@@ -254,13 +248,7 @@ function ProvisionScreenBody({
           />
         ) : null}
         {auth && !isCloudE2E ? null : (
-          <View
-            accessibilityElementsHidden={Boolean(auth)}
-            collapsable={false}
-            importantForAccessibility={auth ? 'no-hide-descendants' : 'auto'}
-            pointerEvents={auth ? 'none' : 'auto'}
-            style={auth ? styles.cloudAuthFormRetained : undefined}
-          >
+          <View collapsable={false}>
             <TextInput
               ref={emailInputRef}
               accessibilityLabel="Organizer email"
@@ -287,11 +275,6 @@ function ProvisionScreenBody({
               autoCorrect={false}
               autoComplete={isCloudE2E ? 'off' : 'current-password'}
               onChangeText={setPassword}
-              onSubmitEditing={isCloudE2E ? () => {
-                emailInputRef.current?.blur();
-                passwordInputRef.current?.blur();
-                Keyboard.dismiss();
-              } : undefined}
               placeholder="Password"
               placeholderTextColor={palette.mutedStone}
               showSoftInputOnFocus={!isCloudE2E}
@@ -516,9 +499,6 @@ const styles = StyleSheet.create({
   caption: {
     ...typography.body,
     color: palette.mutedStone,
-  },
-  cloudAuthFormRetained: {
-    opacity: 0,
   },
   input: {
     ...typography.body,

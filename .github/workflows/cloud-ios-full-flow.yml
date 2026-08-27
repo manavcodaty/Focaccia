@@ -659,29 +659,42 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          XCODE_APPS=(/Applications/Xcode_26*.app)
-          if (( ${#XCODE_APPS[@]} == 0 )); then
-            XCODE_APPS=(/Applications/Xcode.app)
-          fi
-          test "${#XCODE_APPS[@]}" -gt 0
-          XCODE_APP="${XCODE_APPS[${#XCODE_APPS[@]} - 1]}"
+          XCODE_APP='/Applications/Xcode_26.4.1.app'
+          test -d "$XCODE_APP/Contents/Developer"
           sudo xcode-select --switch "$XCODE_APP/Contents/Developer"
-          xcodebuild -version
+          XCODE_VERSION="$(xcodebuild -version | sed -n '1p')"
+          test "$XCODE_VERSION" = 'Xcode 26.4.1'
+          echo "FOCACCIA_XCODE_VERSION=$XCODE_VERSION" >> "$GITHUB_ENV"
 
       - name: Boot one iPhone simulator and install native dependencies
         shell: bash
         run: |
           set -euo pipefail
-          SIMULATOR_LINE="$(xcrun simctl list devices available | awk '
-            /^-- iOS / { in_runtime=1; next }
-            /^-- / { in_runtime=0 }
-            in_runtime && /iPhone/ { simulator=$0 }
-            END { print simulator }
+          RUNTIME_ID='com.apple.CoreSimulator.SimRuntime.iOS-26-4'
+          SIMULATOR_JSON="$(xcrun simctl list devices available --json)"
+          SIMULATOR_UDID="$(printf '%s' "$SIMULATOR_JSON" | jq -r --arg runtime "$RUNTIME_ID" '
+            .devices[$runtime] // []
+            | map(select(.name == "iPhone 17" and .isAvailable == true))
+            | if length == 1 then .[0].udid else empty end
           ')"
-          SIMULATOR_UDID="$(printf '%s\n' "$SIMULATOR_LINE" | grep -Eo '[A-F0-9]{8}(-[A-F0-9]{4}){3}-[A-F0-9]{12}')"
           test -n "$SIMULATOR_UDID"
+          SIMULATOR_MODEL="$(printf '%s' "$SIMULATOR_JSON" | jq -r --arg runtime "$RUNTIME_ID" --arg udid "$SIMULATOR_UDID" '
+            .devices[$runtime][] | select(.udid == $udid) | .name
+          ')"
+          test "$SIMULATOR_MODEL" = 'iPhone 17'
+          echo "FOCACCIA_IOS_RUNTIME_ID=$RUNTIME_ID" >> "$GITHUB_ENV"
+          echo "FOCACCIA_IOS_RUNTIME_MODEL=$SIMULATOR_MODEL" >> "$GITHUB_ENV"
           echo "FOCACCIA_IOS_SIMULATOR_UDID=$SIMULATOR_UDID" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/focaccia-cloud-ios"
+          jq -n \
+            --arg xcode "$FOCACCIA_XCODE_VERSION" \
+            --arg runtime "$RUNTIME_ID" \
+            --arg model "$SIMULATOR_MODEL" \
+            --arg udid "$SIMULATOR_UDID" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg commit_sha "$GITHUB_SHA" \
+            '{"xcode_version":$xcode,"simulator_runtime_id":$runtime,"simulator_model":$model,"simulator_udid":$udid,"workflow_run_id":$workflow_run_id,"commit_sha":$commit_sha}' \
+            > "$RUNNER_TEMP/focaccia-cloud-ios/native-runtime.json"
           xcrun simctl boot "$SIMULATOR_UDID" 2>/dev/null || true
           xcrun simctl bootstatus "$SIMULATOR_UDID" -b
           for app in enrollment gate; do

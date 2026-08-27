@@ -37,8 +37,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.doesNotMatch(provision, /editable=\{!isBusy\}/);
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
   assert.match(driver, /waitForAuthInputsToBlur/);
-  assert.match(driver, /anchorMatcher: 'Pair this device to one event'/);
-  assert.match(driver, /anchorMatcher: 'Attendee wallet'/);
+  assert.match(provision, /label="Dismiss keyboard"/);
+  assert.match(driver, /anchorMatcher: 'Dismiss keyboard'/);
   assert.match(driver, /emailNode\.focused !== true/);
   assert.match(driver, /passwordNode\.focused !== true/);
   assert.equal((driver.match(/settleNativeAuthResponder\(\{/g) ?? []).length, 4);

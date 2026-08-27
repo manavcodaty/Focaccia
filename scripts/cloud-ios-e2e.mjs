@@ -217,7 +217,7 @@ async function recoverGateProvisioningScreen() {
   await settleNativeAuthResponder({
     emailMatcher: 'Organizer email',
     passwordMatcher: 'Organizer password',
-    anchorMatcher: 'Pair this device to one event',
+    anchorMatcher: 'Dismiss keyboard',
   });
   await tapNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
   await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
@@ -442,7 +442,7 @@ async function main() {
     await settleNativeAuthResponder({
       emailMatcher: 'Organizer email',
       passwordMatcher: 'Organizer password',
-      anchorMatcher: 'Pair this device to one event',
+      anchorMatcher: 'Dismiss keyboard',
     });
     await tapNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     try {
@@ -473,7 +473,7 @@ async function main() {
     await settleNativeAuthResponder({
       emailMatcher: 'Email',
       passwordMatcher: 'Password',
-      anchorMatcher: 'Attendee wallet',
+      anchorMatcher: 'Dismiss keyboard',
     });
     await tapNode(simulatorUdid, 'Sign in', { timeoutMs: 30_000 });
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });

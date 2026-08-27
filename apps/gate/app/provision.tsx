@@ -301,6 +301,17 @@ function ProvisionScreenBody({
               ]}
               value={password}
             />
+            {isCloudE2E ? (
+              <PrimaryButton
+                label="Dismiss keyboard"
+                onPress={() => {
+                  emailInputRef.current?.blur();
+                  passwordInputRef.current?.blur();
+                  Keyboard.dismiss();
+                }}
+                tone="ghost"
+              />
+            ) : null}
             <PrimaryButton
               disabled={!email.trim() || !password || isBusy}
               label={isBusy ? 'Signing in...' : 'Sign in organizer'}

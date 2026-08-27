@@ -160,13 +160,6 @@ async function launchGate() {
   });
 }
 
-async function settleNativeAuthResponder() {
-  // Let Baguette close its short input session before the handled submit tap.
-  // Do not synthesize Enter, blur, Escape, or a non-input keyboard-dismiss tap:
-  // hosted iOS can respawn backboardd while RemoteTextInput is settling.
-  await sleep(350);
-}
-
 async function recoverGateProvisioningScreen() {
   // Hosted iOS can restart backboardd while UIKit is dismissing the organizer
   // keyboard. The app is then terminated by RunningBoard even though the auth
@@ -182,12 +175,8 @@ async function recoverGateProvisioningScreen() {
       retryDelayMs: 400,
     });
   }
-  await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
-  await fillInputExactly('Organizer email', context.organizerEmail);
-  await fillInputExactly('Organizer password', context.organizerPassword);
-  await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
-  await settleNativeAuthResponder();
-  await tapNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
+  // The cloud build signs in from runner-local environment values, so
+  // recovery must also avoid the hosted iOS native keyboard path.
   await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
 }
 
@@ -398,17 +387,9 @@ async function main() {
       retryCount: 5,
       retryDelayMs: 400,
     });
-    await waitForNode(simulatorUdid, 'Cloud E2E payload injection', { timeoutMs: 90_000 });
-    // The submit button is intentionally disabled until both fields contain
-    // credentials, and waitForNode ignores disabled controls. Wait for the
-    // enabled first field before injecting the credentials, then wait for the
-    // button to become enabled as a postcondition of the two credential inputs.
-    await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
-    await fillInputExactly('Organizer email', context.organizerEmail);
-    await fillInputExactly('Organizer password', context.organizerPassword);
-    await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
-    await settleNativeAuthResponder();
-    await tapNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
+    // Cloud E2E signs the organizer in from runner-local build environment
+    // values. Avoid the hosted iOS native keyboard entirely: its
+    // RemoteTextInput lifecycle can restart backboardd during submission.
     try {
       await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
     } catch (provisioningWaitError) {
@@ -432,10 +413,8 @@ async function main() {
 
     await launchEnrollment();
 
-    await fillInputExactly('Email', context.attendeeEmail);
-    await fillInputExactly('Password', context.attendeePassword);
-    await settleNativeAuthResponder();
-    await tapNode(simulatorUdid, 'Sign in', { timeoutMs: 30_000 });
+    // Cloud E2E signs the attendee in from runner-local build environment
+    // values, keeping the hosted iOS auth path free of native keyboard input.
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, new RegExp(context.eventName), {
       retryIfStillVisible: true,

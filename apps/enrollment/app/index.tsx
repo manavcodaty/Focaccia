@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -27,6 +27,27 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const cloudAutoLoginAttemptedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isCloudE2E || session || isLoading || cloudAutoLoginAttemptedRef.current) {
+      return;
+    }
+
+    const cloudEmail = process.env.EXPO_PUBLIC_FOCACCIA_E2E_ATTENDEE_EMAIL?.trim();
+    const cloudPassword = process.env.EXPO_PUBLIC_FOCACCIA_E2E_ATTENDEE_PASSWORD;
+    cloudAutoLoginAttemptedRef.current = true;
+    if (!cloudEmail || !cloudPassword) {
+      return;
+    }
+
+    // Keep hosted validation out of the native keyboard/responder path. These
+    // credentials exist only in the runner-local cloud build and are not part
+    // of any uploaded evidence artifact.
+    void signInOrUp({ email: cloudEmail, mode: 'sign-in', password: cloudPassword }).catch(() => {
+      // AuthProvider exposes the safe user-facing error.
+    });
+  }, [isLoading, session, signInOrUp]);
 
   useEffect(() => {
     if (session) router.replace('/tickets');

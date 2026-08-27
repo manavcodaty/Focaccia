@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Keyboard,
   Linking,
@@ -99,7 +99,7 @@ function useProvisionController(isCloudE2E: boolean) {
       setError(payloadError instanceof Error ? payloadError.message : 'Cloud E2E provisioning payload is invalid.');
     }
   }, []);
-  async function handleSignIn() {
+  const handleSignIn = useCallback(async (nextEmail = email, nextPassword = password) => {
     if (signInInFlightRef.current) {
       return;
     }
@@ -120,7 +120,7 @@ function useProvisionController(isCloudE2E: boolean) {
     }
 
     try {
-      await signIn(email, password);
+      await signIn(nextEmail, nextPassword);
       if (!isCloudE2E) {
         setFeedback('Organizer session is active. Scan the dashboard provisioning QR now.');
       }
@@ -130,7 +130,25 @@ function useProvisionController(isCloudE2E: boolean) {
       setIsBusy(false);
       signInInFlightRef.current = false;
     }
-  }
+  }, [email, isCloudE2E, password, signIn]);
+
+  useEffect(() => {
+    if (!isCloudE2E || auth || signInInFlightRef.current) {
+      return;
+    }
+
+    const cloudEmail = process.env.EXPO_PUBLIC_FOCACCIA_E2E_ORGANIZER_EMAIL?.trim();
+    const cloudPassword = process.env.EXPO_PUBLIC_FOCACCIA_E2E_ORGANIZER_PASSWORD;
+    if (!cloudEmail || !cloudPassword) {
+      setError('Cloud E2E organizer credentials are unavailable.');
+      return;
+    }
+
+    // Keep hosted validation out of the native keyboard/responder path. These
+    // credentials exist only in the runner-local cloud build and are not part
+    // of any uploaded evidence artifact.
+    void handleSignIn(cloudEmail, cloudPassword);
+  }, [auth, handleSignIn, isCloudE2E]);
 
   async function handleProvision() {
     if (!draft) {

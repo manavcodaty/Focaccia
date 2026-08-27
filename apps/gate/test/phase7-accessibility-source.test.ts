@@ -7,12 +7,14 @@ async function source(relativePath: string) {
 }
 
 test('gate feedback, controls, and credential fields are explicitly labeled', async () => {
-  const [banner, button, provision, fallback, driver] = await Promise.all([
+  const [banner, button, provision, enrollment, fallback, driver, workflow] = await Promise.all([
     source('../src/components/status-banner.tsx'),
     source('../src/components/primary-button.tsx'),
     source('../app/provision.tsx'),
+    source('../../enrollment/app/index.tsx'),
     source('../app/fallback.tsx'),
     source('../../../scripts/cloud-ios-e2e.mjs'),
+    source('../../../.github/workflows/cloud-ios-full-flow.yml'),
   ]);
 
   assert.match(banner, /accessibilityLiveRegion=/);
@@ -29,6 +31,14 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /emailInputRef\.current\?\.blur\(\)/);
   assert.match(provision, /passwordInputRef\.current\?\.blur\(\)/);
   assert.match(provision, /signInInFlightRef\.current/);
+  assert.match(provision, /EXPO_PUBLIC_FOCACCIA_E2E_ORGANIZER_EMAIL/);
+  assert.match(provision, /EXPO_PUBLIC_FOCACCIA_E2E_ORGANIZER_PASSWORD/);
+  assert.match(provision, /native keyboard\/responder path/);
+  assert.match(enrollment, /EXPO_PUBLIC_FOCACCIA_E2E_ATTENDEE_EMAIL/);
+  assert.match(enrollment, /EXPO_PUBLIC_FOCACCIA_E2E_ATTENDEE_PASSWORD/);
+  assert.match(enrollment, /native keyboard\/responder path/);
+  assert.match(workflow, /EXPO_PUBLIC_FOCACCIA_E2E_ORGANIZER_EMAIL=\$\{context\.organizerEmail\}/);
+  assert.match(workflow, /EXPO_PUBLIC_FOCACCIA_E2E_ATTENDEE_EMAIL=\$\{context\.attendeeEmail\}/);
   assert.match(provision, /if \(!isCloudE2E\) \{\s+setFeedback\('Organizer session is active/);
   assert.match(provision, /title=\{isCloudE2E \? 'Sign in before sync' : auth \? auth\.email/);
   assert.match(provision, /auth && !isCloudE2E \? null/);
@@ -39,15 +49,16 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.doesNotMatch(provision, /cloudAuthFormRetained/);
   assert.doesNotMatch(provision, /editable=\{!isBusy\}/);
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
-  assert.match(driver, /settleNativeAuthResponder\(\)/);
   assert.match(provision, /label="Dismiss keyboard"/);
   assert.doesNotMatch(driver, /anchorMatcher: 'Dismiss keyboard'/);
   assert.match(driver, /await typeIntoNode\(simulatorUdid, matcher, value, \{/);
+  assert.match(driver, /RemoteTextInput lifecycle can restart backboardd/);
+  assert.doesNotMatch(driver, /fillInputExactly\('Organizer email'/);
+  assert.doesNotMatch(driver, /fillInputExactly\('Email'/);
   assert.match(driver, /replace: true/);
   assert.doesNotMatch(driver, /submit: true/);
   assert.doesNotMatch(provision, /onSubmitEditing=\{isCloudE2E \?/);
-  assert.match(driver, /Do not synthesize Enter, blur, Escape/);
-  assert.equal((driver.match(/settleNativeAuthResponder\(\)/g) ?? []).length, 4);
+  assert.doesNotMatch(driver, /settleNativeAuthResponder/);
 });
 
 test('gate scanner requires a fresh revocation cache before admitting attendees', async () => {

@@ -635,6 +635,9 @@ jobs:
           import { readFileSync, writeFileSync } from 'node:fs';
           const context = JSON.parse(readFileSync(process.env.FOCACCIA_CLOUD_CONTEXT_PATH, 'utf8'));
           const host = process.env.FOCACCIA_CLOUD_LOCAL_HOST;
+          if (!context.organizerEmail || !context.organizerPassword || !context.attendeeEmail || !context.attendeePassword) {
+            throw new Error('Cloud E2E context is missing native test credentials.');
+          }
           const common = [
             'EXPO_PUBLIC_FOCACCIA_NETWORK_MODE=local',
             'EXPO_PUBLIC_FOCACCIA_CLOUD_E2E=1',
@@ -648,9 +651,15 @@ jobs:
             `EXPO_PUBLIC_FOCACCIA_TICKETS_URL=http://${host}:3001`,
             `EXPO_PUBLIC_SUPABASE_ANON_KEY=${process.env.FOCACCIA_CLOUD_ANON_KEY}`,
           ];
-          writeFileSync('apps/enrollment/.env.local', `${common.join('\n')}\n`, { mode: 0o600 });
+          writeFileSync('apps/enrollment/.env.local', `${[
+            ...common,
+            `EXPO_PUBLIC_FOCACCIA_E2E_ATTENDEE_EMAIL=${context.attendeeEmail}`,
+            `EXPO_PUBLIC_FOCACCIA_E2E_ATTENDEE_PASSWORD=${context.attendeePassword}`,
+          ].join('\n')}\n`, { mode: 0o600 });
           writeFileSync('apps/gate/.env.local', `${[
             ...common,
+            `EXPO_PUBLIC_FOCACCIA_E2E_ORGANIZER_EMAIL=${context.organizerEmail}`,
+            `EXPO_PUBLIC_FOCACCIA_E2E_ORGANIZER_PASSWORD=${context.organizerPassword}`,
             `EXPO_PUBLIC_FOCACCIA_E2E_PROVISIONING_PAYLOAD=${encodeURIComponent(JSON.stringify(context.provisioningPayload))}`,
           ].join('\n')}\n`, { mode: 0o600 });
           NODE

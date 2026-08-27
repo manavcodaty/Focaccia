@@ -28,6 +28,11 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /emailInputRef\.current\?\.blur\(\)/);
   assert.match(provision, /passwordInputRef\.current\?\.blur\(\)/);
   assert.match(provision, /signInInFlightRef\.current/);
+  assert.match(provision, /auth && !isCloudE2E \? null/);
+  assert.match(provision, /accessibilityElementsHidden=\{Boolean\(auth\)\}/);
+  assert.match(provision, /importantForAccessibility=\{auth \? 'no-hide-descendants' : 'auto'\}/);
+  assert.match(provision, /pointerEvents=\{auth \? 'none' : 'auto'\}/);
+  assert.match(provision, /cloudAuthFormRetained/);
   assert.doesNotMatch(provision, /editable=\{!isBusy\}/);
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
 });

@@ -252,8 +252,15 @@ function ProvisionScreenBody({
             title="Organizer authenticated"
             tone="success"
           />
-        ) : (
-          <>
+        ) : null}
+        {auth && !isCloudE2E ? null : (
+          <View
+            accessibilityElementsHidden={Boolean(auth)}
+            collapsable={false}
+            importantForAccessibility={auth ? 'no-hide-descendants' : 'auto'}
+            pointerEvents={auth ? 'none' : 'auto'}
+            style={auth ? styles.cloudAuthFormRetained : undefined}
+          >
             <TextInput
               ref={emailInputRef}
               accessibilityLabel="Organizer email"
@@ -301,7 +308,7 @@ function ProvisionScreenBody({
                 void handleSignIn();
               }}
             />
-          </>
+          </View>
         )}
       </SectionCard>
 
@@ -493,6 +500,9 @@ const styles = StyleSheet.create({
   caption: {
     ...typography.body,
     color: palette.mutedStone,
+  },
+  cloudAuthFormRetained: {
+    opacity: 0,
   },
   input: {
     ...typography.body,

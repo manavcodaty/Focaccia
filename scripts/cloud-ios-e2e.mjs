@@ -160,12 +160,47 @@ async function launchGate() {
   });
 }
 
+async function waitForAuthInputsToBlur(emailMatcher, passwordMatcher, { timeoutMs = 15_000 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    try {
+      const tree = await describeUi(simulatorUdid);
+      const emailNode = findNode(tree, emailMatcher);
+      const passwordNode = findNode(tree, passwordMatcher);
+      if (
+        emailNode
+        && passwordNode
+        && emailNode.focused !== true
+        && passwordNode.focused !== true
+      ) {
+        return;
+      }
+    } catch {
+      // Keep polling while the hosted accessibility bridge settles after the
+      // explicit non-input tap.
+    }
+    await sleep(150);
+  }
+
+  throw new Error('Timed out waiting for native auth inputs to lose focus.');
+}
+
+async function settleNativeAuthResponder({ emailMatcher, passwordMatcher, anchorMatcher }) {
+  // Baguette closes its short remote-input session immediately after paste.
+  // Give UIKit that session boundary, then send a real non-input tap and
+  // require both fields to report focus loss before submitting credentials.
+  await sleep(350);
+  await tapNode(simulatorUdid, anchorMatcher, { timeoutMs: 30_000 });
+  await waitForAuthInputsToBlur(emailMatcher, passwordMatcher);
+}
+
 async function recoverGateProvisioningScreen() {
-  // iOS simulator 26.5 can restart backboardd while UIKit is dismissing the
-  // organizer keyboard. The app is then terminated by RunningBoard even
-  // though the auth request succeeded. Recover once from that external
-  // lifecycle event; do not infer provisioning from a missing accessibility
-  // tree and do not retry the complete evaluation loop.
+  // Hosted iOS can restart backboardd while UIKit is dismissing the organizer
+  // keyboard. The app is then terminated by RunningBoard even though the auth
+  // request succeeded. Recover once from that external lifecycle event; do
+  // not infer provisioning from a missing accessibility tree and do not retry
+  // the complete evaluation loop.
   await launchGate();
   const setupNode = findNode(await describeUi(simulatorUdid), 'Set up gate');
   if (setupNode) {
@@ -179,11 +214,12 @@ async function recoverGateProvisioningScreen() {
   await fillInputExactly('Organizer email', context.organizerEmail);
   await fillInputExactly('Organizer password', context.organizerPassword);
   await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
-  await tapNode(simulatorUdid, 'Sign in organizer', {
-    retryIfStillVisible: true,
-    retryCount: 5,
-    retryDelayMs: 500,
+  await settleNativeAuthResponder({
+    emailMatcher: 'Organizer email',
+    passwordMatcher: 'Organizer password',
+    anchorMatcher: 'Pair this device to one event',
   });
+  await tapNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
   await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
 }
 
@@ -403,11 +439,12 @@ async function main() {
     await fillInputExactly('Organizer email', context.organizerEmail);
     await fillInputExactly('Organizer password', context.organizerPassword);
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
-    await tapNode(simulatorUdid, 'Sign in organizer', {
-      retryIfStillVisible: true,
-      retryCount: 5,
-      retryDelayMs: 500,
+    await settleNativeAuthResponder({
+      emailMatcher: 'Organizer email',
+      passwordMatcher: 'Organizer password',
+      anchorMatcher: 'Pair this device to one event',
     });
+    await tapNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     try {
       await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
     } catch (provisioningWaitError) {
@@ -433,11 +470,12 @@ async function main() {
 
     await fillInputExactly('Email', context.attendeeEmail);
     await fillInputExactly('Password', context.attendeePassword);
-    await tapNode(simulatorUdid, 'Sign in', {
-      retryIfStillVisible: true,
-      retryCount: 5,
-      retryDelayMs: 500,
+    await settleNativeAuthResponder({
+      emailMatcher: 'Email',
+      passwordMatcher: 'Password',
+      anchorMatcher: 'Attendee wallet',
     });
+    await tapNode(simulatorUdid, 'Sign in', { timeoutMs: 30_000 });
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
     await tapNode(simulatorUdid, new RegExp(context.eventName), {
       retryIfStillVisible: true,

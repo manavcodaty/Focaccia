@@ -7,11 +7,12 @@ async function source(relativePath: string) {
 }
 
 test('gate feedback, controls, and credential fields are explicitly labeled', async () => {
-  const [banner, button, provision, fallback] = await Promise.all([
+  const [banner, button, provision, fallback, driver] = await Promise.all([
     source('../src/components/status-banner.tsx'),
     source('../src/components/primary-button.tsx'),
     source('../app/provision.tsx'),
     source('../app/fallback.tsx'),
+    source('../../../scripts/cloud-ios-e2e.mjs'),
   ]);
 
   assert.match(banner, /accessibilityLiveRegion=/);
@@ -35,6 +36,12 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /cloudAuthFormRetained/);
   assert.doesNotMatch(provision, /editable=\{!isBusy\}/);
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
+  assert.match(driver, /waitForAuthInputsToBlur/);
+  assert.match(driver, /anchorMatcher: 'Pair this device to one event'/);
+  assert.match(driver, /anchorMatcher: 'Attendee wallet'/);
+  assert.match(driver, /emailNode\.focused !== true/);
+  assert.match(driver, /passwordNode\.focused !== true/);
+  assert.equal((driver.match(/settleNativeAuthResponder\(\{/g) ?? []).length, 4);
 });
 
 test('gate scanner requires a fresh revocation cache before admitting attendees', async () => {

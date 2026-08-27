@@ -268,8 +268,7 @@ async function fillInputExactly(matcher, value) {
   let observedLength = 0;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    await pasteIntoNode(simulatorUdid, matcher, value, {
-      press: false,
+    await typeIntoNode(simulatorUdid, matcher, value, {
       replace: true,
       timeoutMs: 90_000,
     });
@@ -288,7 +287,7 @@ async function fillInputExactly(matcher, value) {
           if (node.value === value || (secureField && node.value.length === value.length)) return;
         }
       } catch {
-        // Keep polling while the hosted accessibility tree settles after paste.
+        // Keep polling while the hosted accessibility tree settles after typing.
       }
       await sleep(150);
     }

@@ -396,9 +396,15 @@ export async function pasteIntoNode(udid, matcher, value, options = {}) {
 }
 
 export async function typeIntoNode(udid, matcher, value, options = {}) {
-  const { focusTimeoutMs = 10_000, ...tapOptions } = options;
+  const { focusTimeoutMs = 10_000, replace = false, ...tapOptions } = options;
   await runWithShortInputSession(udid, async (session) => {
     await tapAndFocusNode(udid, matcher, tapOptions, { timeoutMs: focusTimeoutMs });
+    if (replace) {
+      await session.dispatch({ type: 'key', code: 'KeyA', modifiers: ['command'] });
+      await sleep(120);
+      await session.dispatch({ type: 'key', code: 'Backspace' });
+      await sleep(120);
+    }
     // Hosted macOS simulator input can acknowledge a long `type` gesture
     // before UIKit has consumed every character. Dispatching one character at
     // a time keeps the semantic input path deterministic for credentials and

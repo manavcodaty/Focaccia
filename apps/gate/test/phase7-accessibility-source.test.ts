@@ -28,8 +28,6 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.equal((provision.match(/showSoftInputOnFocus=\{!isCloudE2E\}/g) ?? []).length, 3);
   assert.match(provision, /isCloudE2E \? \(/);
   assert.match(provision, /accessibilityValue=\{\{ text: deviceName \}\}/);
-  assert.match(provision, /emailInputRef\.current\?\.blur\(\)/);
-  assert.match(provision, /passwordInputRef\.current\?\.blur\(\)/);
   assert.match(provision, /signInInFlightRef\.current/);
   assert.match(provision, /EXPO_PUBLIC_FOCACCIA_E2E_ORGANIZER_EMAIL/);
   assert.match(provision, /EXPO_PUBLIC_FOCACCIA_E2E_ORGANIZER_PASSWORD/);
@@ -41,7 +39,7 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(workflow, /EXPO_PUBLIC_FOCACCIA_E2E_ATTENDEE_EMAIL=\$\{context\.attendeeEmail\}/);
   assert.match(provision, /if \(!isCloudE2E\) \{\s+setFeedback\('Organizer session is active/);
   assert.match(provision, /title=\{isCloudE2E \? 'Sign in before sync' : auth \? auth\.email/);
-  assert.match(provision, /auth && !isCloudE2E \? null/);
+  assert.match(provision, /\) : auth \? \(/);
   assert.match(provision, /<View collapsable=\{false\}>/);
   assert.doesNotMatch(provision, /accessibilityElementsHidden=\{Boolean\(auth\)\}/);
   assert.doesNotMatch(provision, /importantForAccessibility=\{auth \? 'no-hide-descendants' : 'auto'\}/);
@@ -49,7 +47,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.doesNotMatch(provision, /cloudAuthFormRetained/);
   assert.doesNotMatch(provision, /editable=\{!isBusy\}/);
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
-  assert.match(provision, /label="Dismiss keyboard"/);
+  assert.match(provision, /Cloud E2E organizer session is active/);
+  assert.match(provision, /require\('react-native-vision-camera'\)/);
   assert.doesNotMatch(driver, /anchorMatcher: 'Dismiss keyboard'/);
   assert.match(driver, /await typeIntoNode\(simulatorUdid, matcher, value, \{/);
   assert.match(driver, /RemoteTextInput lifecycle can restart backboardd/);

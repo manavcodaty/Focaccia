@@ -9,12 +9,6 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import {
-  Camera,
-  useCameraDevice,
-  useCameraPermission,
-  useCodeScanner,
-} from 'react-native-vision-camera';
 
 import { MetricRow } from '../src/components/metric-row';
 import { PrimaryButton } from '../src/components/primary-button';
@@ -108,9 +102,8 @@ function useProvisionController(isCloudE2E: boolean) {
     setError(null);
     setFeedback(null);
     if (isCloudE2E) {
-      // Keep the native fields and their responder hierarchy stable while the
-      // hosted auth request is in flight. The cloud driver submits through the
-      // handled button; synthetic keyboard dismissal can race RemoteTextInput.
+      // The cloud screen has no native auth fields. The runner-local build
+      // credentials keep the hosted auth request out of RemoteTextInput.
       setIsBusy(true);
     } else {
       setIsBusy(true);
@@ -263,14 +256,23 @@ function ProvisionScreenBody({
         eyebrow="Organizer auth"
         title={isCloudE2E ? 'Sign in before sync' : auth ? auth.email : 'Sign in before sync'}
       >
-        {auth && !isCloudE2E ? (
+        {isCloudE2E ? (
+          <StatusBanner
+            message={auth
+              ? 'Cloud E2E organizer session is active. The isolated provisioning payload is ready.'
+              : isBusy
+                ? 'Cloud E2E is authenticating the isolated organizer session.'
+                : 'Cloud E2E organizer session is not active.'}
+            title={auth ? 'Organizer authenticated' : 'Cloud E2E authentication'}
+            tone={auth ? 'success' : 'warning'}
+          />
+        ) : auth ? (
           <StatusBanner
             message="Organizer sign-in is active. You can scan the provisioning QR and complete the one-gate sync."
             title="Organizer authenticated"
             tone="success"
           />
-        ) : null}
-        {auth && !isCloudE2E ? null : (
+        ) : (
           <View collapsable={false}>
             <TextInput
               ref={emailInputRef}
@@ -312,17 +314,6 @@ function ProvisionScreenBody({
               ]}
               value={password}
             />
-            {isCloudE2E ? (
-              <PrimaryButton
-                label="Dismiss keyboard"
-                onPress={() => {
-                  emailInputRef.current?.blur();
-                  passwordInputRef.current?.blur();
-                  Keyboard.dismiss();
-                }}
-                tone="ghost"
-              />
-            ) : null}
             <PrimaryButton
               disabled={!email.trim() || !password || isBusy}
               label={isBusy ? 'Signing in...' : 'Sign in organizer'}
@@ -425,6 +416,15 @@ function CloudE2EProvisionScreen() {
 }
 
 function NativeProvisionScreen() {
+  // Keep VisionCamera out of the cloud payload-injection route. Hosted iOS
+  // can restart backboardd while the camera/responder stack is being mounted;
+  // native production provisioning still loads the module here as before.
+  const {
+    Camera,
+    useCameraDevice,
+    useCameraPermission,
+    useCodeScanner,
+  } = require('react-native-vision-camera') as typeof import('react-native-vision-camera');
   const controller = useProvisionController(false);
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();

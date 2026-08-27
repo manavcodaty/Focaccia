@@ -212,7 +212,7 @@ async function recoverGateProvisioningScreen() {
   }
   await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
   await fillInputExactly('Organizer email', context.organizerEmail);
-  await fillInputExactly('Organizer password', context.organizerPassword);
+  await fillInputExactly('Organizer password', context.organizerPassword, { submit: true });
   await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
   await settleNativeAuthResponder({
     emailMatcher: 'Organizer email',
@@ -264,12 +264,13 @@ async function tapAction(matcher, options = {}) {
   });
 }
 
-async function fillInputExactly(matcher, value) {
+async function fillInputExactly(matcher, value, { submit = false } = {}) {
   let observedLength = 0;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await typeIntoNode(simulatorUdid, matcher, value, {
       replace: true,
+      submit,
       timeoutMs: 90_000,
     });
 
@@ -436,7 +437,7 @@ async function main() {
     // button to become enabled as a postcondition of the two credential inputs.
     await waitForNode(simulatorUdid, 'Organizer email', { timeoutMs: 90_000 });
     await fillInputExactly('Organizer email', context.organizerEmail);
-    await fillInputExactly('Organizer password', context.organizerPassword);
+    await fillInputExactly('Organizer password', context.organizerPassword, { submit: true });
     await waitForNode(simulatorUdid, 'Sign in organizer', { timeoutMs: 30_000 });
     await settleNativeAuthResponder({
       emailMatcher: 'Organizer email',
@@ -468,7 +469,7 @@ async function main() {
     await launchEnrollment();
 
     await fillInputExactly('Email', context.attendeeEmail);
-    await fillInputExactly('Password', context.attendeePassword);
+    await fillInputExactly('Password', context.attendeePassword, { submit: true });
     await settleNativeAuthResponder({
       emailMatcher: 'Email',
       passwordMatcher: 'Password',

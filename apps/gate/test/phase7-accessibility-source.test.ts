@@ -41,6 +41,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(driver, /anchorMatcher: 'Dismiss keyboard'/);
   assert.match(driver, /await typeIntoNode\(simulatorUdid, matcher, value, \{/);
   assert.match(driver, /replace: true/);
+  assert.match(driver, /submit: true/);
+  assert.match(provision, /onSubmitEditing=\{isCloudE2E \?/);
   assert.match(driver, /emailNode\.focused !== true/);
   assert.match(driver, /passwordNode\.focused !== true/);
   assert.equal((driver.match(/settleNativeAuthResponder\(\{/g) ?? []).length, 4);

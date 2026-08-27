@@ -396,7 +396,12 @@ export async function pasteIntoNode(udid, matcher, value, options = {}) {
 }
 
 export async function typeIntoNode(udid, matcher, value, options = {}) {
-  const { focusTimeoutMs = 10_000, replace = false, ...tapOptions } = options;
+  const {
+    focusTimeoutMs = 10_000,
+    replace = false,
+    submit = false,
+    ...tapOptions
+  } = options;
   await runWithShortInputSession(udid, async (session) => {
     await tapAndFocusNode(udid, matcher, tapOptions, { timeoutMs: focusTimeoutMs });
     if (replace) {
@@ -412,6 +417,9 @@ export async function typeIntoNode(udid, matcher, value, options = {}) {
     for (const character of value) {
       await session.dispatch({ type: 'type', text: character });
       await sleep(40);
+    }
+    if (submit) {
+      await session.dispatch({ type: 'key', code: 'Enter' });
     }
   });
 }

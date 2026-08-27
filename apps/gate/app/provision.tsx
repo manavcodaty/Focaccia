@@ -287,6 +287,11 @@ function ProvisionScreenBody({
               autoCorrect={false}
               autoComplete={isCloudE2E ? 'off' : 'current-password'}
               onChangeText={setPassword}
+              onSubmitEditing={isCloudE2E ? () => {
+                emailInputRef.current?.blur();
+                passwordInputRef.current?.blur();
+                Keyboard.dismiss();
+              } : undefined}
               placeholder="Password"
               placeholderTextColor={palette.mutedStone}
               showSoftInputOnFocus={!isCloudE2E}

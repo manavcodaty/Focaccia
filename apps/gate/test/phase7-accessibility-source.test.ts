@@ -64,6 +64,7 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(driver, /await waitForNode\(simulatorUdid, 'Provision this gate'/);
   assert.doesNotMatch(driver, /tapNode\(simulatorUdid, 'Set up gate'/);
   assert.doesNotMatch(driver, /matcher: \/[^\n]*Set up gate/);
+  assert.doesNotMatch(driver, /tapNode\(simulatorUdid, appLabel/);
 });
 
 test('gate scanner requires a fresh revocation cache before admitting attendees', async () => {

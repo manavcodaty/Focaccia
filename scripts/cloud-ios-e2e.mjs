@@ -116,30 +116,11 @@ async function restartLocalProxy() {
 
 async function launchApp({ appLabel, bundleId, matcher, timeoutMs }) {
   await launchSimulatorApp(simulatorUdid, bundleId);
-
   // Hosted simulator SpringBoard can win the foreground race even after
-  // simctl reports a successful launch. Give the app a short first window,
-  // then activate its installed icon once before treating the launch as a
-  // runtime failure.
-  try {
-    return await waitForNode(simulatorUdid, matcher, { timeoutMs: 8_000 });
-  } catch (firstLaunchError) {
-    try {
-      const tree = await describeUi(simulatorUdid);
-      if (findNode(tree, appLabel)) {
-        await tapNode(simulatorUdid, appLabel, { timeoutMs: 5_000 });
-      }
-    } catch {
-      // Preserve the original wait failure if the app is not visible on
-      // SpringBoard or the accessibility bridge is transiently unavailable.
-    }
-
-    try {
-      return await waitForNode(simulatorUdid, matcher, { timeoutMs: timeoutMs - 8_000 });
-    } catch {
-      throw firstLaunchError;
-    }
-  }
+  // simctl reports a successful launch. Keep polling the app's accessibility
+  // tree without tapping its SpringBoard icon: an extra launch touch can race
+  // UIKit authentication transitions and restart backboardd.
+  return waitForNode(simulatorUdid, matcher, { timeoutMs });
 }
 
 async function launchEnrollment() {

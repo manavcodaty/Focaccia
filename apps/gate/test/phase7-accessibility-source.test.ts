@@ -7,7 +7,7 @@ async function source(relativePath: string) {
 }
 
 test('gate feedback, controls, and credential fields are explicitly labeled', async () => {
-  const [banner, button, provision, enrollment, fallback, driver, workflow] = await Promise.all([
+  const [banner, button, provision, enrollment, fallback, driver, workflow, home] = await Promise.all([
     source('../src/components/status-banner.tsx'),
     source('../src/components/primary-button.tsx'),
     source('../app/provision.tsx'),
@@ -15,6 +15,7 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
     source('../app/fallback.tsx'),
     source('../../../scripts/cloud-ios-e2e.mjs'),
     source('../../../.github/workflows/cloud-ios-full-flow.yml'),
+    source('../app/index.tsx'),
   ]);
 
   assert.match(banner, /accessibilityLiveRegion=/);
@@ -49,6 +50,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
   assert.match(provision, /Cloud E2E organizer session is active/);
   assert.match(provision, /require\('react-native-vision-camera'\)/);
+  assert.match(home, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
+  assert.match(home, /router\.replace\('\/provision'\)/);
   assert.doesNotMatch(driver, /anchorMatcher: 'Dismiss keyboard'/);
   assert.match(driver, /await typeIntoNode\(simulatorUdid, matcher, value, \{/);
   assert.match(driver, /RemoteTextInput lifecycle can restart backboardd/);

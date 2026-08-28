@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { BrandLogo } from '../src/components/brand-logo';
@@ -16,6 +17,8 @@ import { useRevocationCache } from '../src/lib/use-revocation-cache';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
+
 export default function GateHomeScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
@@ -23,6 +26,11 @@ export default function GateHomeScreen() {
   const cache = useRevocationCache(gate?.last_revocation_sync_at ?? null);
   const scannerReady = cache.state === 'fresh';
   const pendingSyncCount = stats?.pendingSyncCount ?? 0;
+  useEffect(() => {
+    if (isCloudE2E && dbReady && !gate) {
+      router.replace('/provision');
+    }
+  }, [dbReady, gate, router]);
   const readinessLabel = !gate
     ? 'Needs setup'
     : scannerReady

@@ -155,9 +155,21 @@ async function launchGate() {
   await launchApp({
     appLabel: 'Face Pass Gate',
     bundleId: gateBundleId,
-    matcher: /Prepare this gate|Open scanner|Set up gate/,
+    matcher: /Prepare this gate|Open scanner|Set up gate|Pair this device to one event|Provision this gate/,
     timeoutMs: 90_000,
   });
+}
+
+async function openGateProvisioning() {
+  const setupNode = findNode(await describeUi(simulatorUdid), 'Set up gate');
+  if (setupNode) {
+    await tapNode(simulatorUdid, 'Set up gate', {
+      retryIfStillVisible: true,
+      retryCount: 5,
+      retryDelayMs: 400,
+    });
+  }
+  await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
 }
 
 async function recoverGateProvisioningScreen() {
@@ -167,17 +179,9 @@ async function recoverGateProvisioningScreen() {
   // not infer provisioning from a missing accessibility tree and do not retry
   // the complete evaluation loop.
   await launchGate();
-  const setupNode = findNode(await describeUi(simulatorUdid), 'Set up gate');
-  if (setupNode) {
-    await tapNode(simulatorUdid, 'Set up gate', {
-      retryIfStillVisible: true,
-      retryCount: 5,
-      retryDelayMs: 400,
-    });
-  }
   // The cloud build signs in from runner-local environment values, so
   // recovery must also avoid the hosted iOS native keyboard path.
-  await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
+  await openGateProvisioning();
 }
 
 async function captureCommandArtifact(name, command, args) {
@@ -378,15 +382,7 @@ async function main() {
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
     await launchGate();
-    await tapNode(simulatorUdid, 'Set up gate', {
-      // Hosted simulators can occasionally deliver the first HID tap while
-      // the React Native ScrollView is still settling after launch. If the
-      // button remains visible, retry the same semantic tap before waiting
-      // for the credential screen.
-      retryIfStillVisible: true,
-      retryCount: 5,
-      retryDelayMs: 400,
-    });
+    await openGateProvisioning();
     // Cloud E2E signs the organizer in from runner-local build environment
     // values. Avoid the hosted iOS native keyboard entirely: its
     // RemoteTextInput lifecycle can restart backboardd during submission.

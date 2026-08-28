@@ -326,6 +326,19 @@ function ProvisionScreenBody({
       </SectionCard>
 
       <SectionCard eyebrow="QR" title={draft ? draft.name : 'Scan the provisioning QR'}>
+        {isCloudE2E && draft ? (
+          // The cloud payload-injection screen intentionally avoids a
+          // ScrollView because hosted iOS can restart its keyboard responder
+          // stack. Keep the enabled action above the viewport fold so the
+          // runner can activate it without a scroll gesture.
+          <PrimaryButton
+            disabled={!auth || isBusy}
+            label={isBusy ? 'Provisioning gate...' : 'Provision this gate'}
+            onPress={() => {
+              void handleProvision();
+            }}
+          />
+        ) : null}
         <View style={[styles.preview, previewStyle]}>
           {cameraContent}
           <View style={[styles.scanFrame, scanFrameStyle]} />
@@ -383,13 +396,15 @@ function ProvisionScreenBody({
                 value={deviceName}
               />
             )}
-            <PrimaryButton
-              disabled={!auth || isBusy}
-              label={isBusy ? 'Provisioning gate...' : 'Provision this gate'}
-              onPress={() => {
-                void handleProvision();
-              }}
-            />
+            {!isCloudE2E ? (
+              <PrimaryButton
+                disabled={!auth || isBusy}
+                label={isBusy ? 'Provisioning gate...' : 'Provision this gate'}
+                onPress={() => {
+                  void handleProvision();
+                }}
+              />
+            ) : null}
             <PrimaryButton label="Scan another QR" onPress={resetDraft} tone="ghost" />
           </>
         ) : null}

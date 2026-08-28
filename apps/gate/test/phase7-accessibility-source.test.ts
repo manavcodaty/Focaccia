@@ -51,6 +51,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(fallback, /accessibilityLabel="Full pass token"/);
   assert.match(provision, /Cloud E2E organizer session is active/);
   assert.match(provision, /require\('react-native-vision-camera'\)/);
+  assert.match(provision, /isCloudE2E && draft \? \(\s*\/\/ The cloud payload-injection screen/);
+  assert.match(provision, /!isCloudE2E \? \(\s*<PrimaryButton/);
   assert.match(home, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
   assert.match(home, /router\.replace\('\/provision'\)/);
   assert.match(shell, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);

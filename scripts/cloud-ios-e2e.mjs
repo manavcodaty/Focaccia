@@ -362,7 +362,7 @@ async function main() {
     // values. Avoid the hosted iOS native keyboard entirely: its
     // RemoteTextInput lifecycle can restart backboardd during submission.
     try {
-      await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
+      await openGateProvisioning();
     } catch (provisioningWaitError) {
       await recoverGateProvisioningScreen().catch((recoveryError) => {
         throw new Error(

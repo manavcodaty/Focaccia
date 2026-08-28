@@ -186,3 +186,10 @@ test('assembles one run and reduces it into a bounded ten-observation receipt', 
     rmSync(outputDirectory, { force: true, recursive: true });
   }
 });
+
+test('cloud browser fixture waits for the hydrated provisioning accordion', () => {
+  const source = readFileSync(path.resolve('scripts/cloud-browser-e2e.mjs'), 'utf8');
+  assert.match(source, /getByRole\('button', \{\s*name: \/Advanced cryptographic details\//);
+  assert.match(source, /locator\('\#qr-payload pre'\);[\s\S]*waitFor\(\{ state: 'visible', timeout: 15_000 \}\)/);
+  assert.match(source, /organizerPage\.reload\(\{ waitUntil: 'domcontentloaded' \}\)/);
+});

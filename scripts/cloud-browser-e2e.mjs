@@ -305,8 +305,37 @@ try {
     organizerPage.getByText('Gate transfer payload', { exact: true }),
     'gate provisioning payload',
   );
-  await organizerPage.getByText('Advanced cryptographic details', { exact: true }).click();
-  const provisioningPayloadText = await organizerPage.locator('#qr-payload pre').textContent();
+  const provisioningDetailsToggle = organizerPage.getByRole('button', {
+    name: /Advanced cryptographic details/,
+  });
+  const provisioningPayloadPreview = organizerPage.locator('#qr-payload pre');
+  let provisioningPayloadText = null;
+  let provisioningExpansionError = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await waitForVisible(provisioningDetailsToggle, 'advanced cryptographic details');
+    if (await provisioningPayloadPreview.isVisible().catch(() => false)) {
+      provisioningPayloadText = await provisioningPayloadPreview.textContent();
+      break;
+    }
+    try {
+      await provisioningDetailsToggle.click();
+      await provisioningPayloadPreview.waitFor({ state: 'visible', timeout: 15_000 });
+      provisioningPayloadText = await provisioningPayloadPreview.textContent();
+      break;
+    } catch (error) {
+      provisioningExpansionError = error;
+      if (attempt === 2) break;
+      // A tunneled Next.js page can expose the server-rendered accordion before
+      // Radix has attached its click handler. Reload once between bounded
+      // attempts so the capture cannot silently continue with a closed panel.
+      await organizerPage.reload({ waitUntil: 'domcontentloaded' });
+      await waitForVisible(
+        organizerPage.getByText('Gate transfer payload', { exact: true }),
+        'gate provisioning payload after reload',
+      );
+    }
+  }
+  if (!provisioningPayloadText && provisioningExpansionError) throw provisioningExpansionError;
   assert.ok(provisioningPayloadText, 'The provisioning payload preview should be present.');
   const provisioningPayload = JSON.parse(provisioningPayloadText);
   sensitiveValues.push(provisioningPayloadText, JSON.stringify(provisioningPayload), encodeURIComponent(JSON.stringify(provisioningPayload)));

@@ -210,55 +210,65 @@ export default function CaptureScreen() {
     }
   }
 
+  const captureContent = (
+    <>
+      <View style={styles.header}>
+        <Text style={styles.eyebrow}>{state.intent === 'regeneration' ? 'Regeneration' : 'Enrollment'}</Text>
+        <Text style={styles.title}>Create the pass on this phone.</Text>
+        <Text style={styles.subtitle}>{ticket.event.name}</Text>
+      </View>
+
+      {!hasPending ? (
+        <View style={[styles.cameraStage, isCloudE2E ? styles.cloudCameraStage : null]}>
+          {isCloudE2E ? (
+            <View style={styles.cloudE2EPreview}>
+              <Image resizeMode="contain" source={cloudE2EFixtureSource} style={styles.cloudE2EImage} />
+              <Text accessibilityLabel="Cloud E2E image source ready" style={styles.cloudE2ELabel}>
+                Cloud E2E image source ready
+              </Text>
+            </View>
+          ) : (
+            <Camera ref={camera} device={device!} isActive={true} photo style={StyleSheet.absoluteFill} />
+          )}
+          <View style={styles.cameraTint} />
+          <CameraGuide ready={modelReady && !isProcessing} />
+        </View>
+      ) : (
+        <View style={styles.resumeCard}>
+          <Text style={styles.resumeTitle}>Resume secure issuance</Text>
+          <Text style={styles.resumeBody}>The encrypted payload and idempotency key are protected on this device. Retrying sends the exact same request and does not consume another generation.</Text>
+        </View>
+      )}
+
+      <View style={styles.controls}>
+        {modelError ? <StatusBanner message={modelError} title="Model unavailable" tone="warning" /> : null}
+        {!modelReady && !hasPending ? <StatusBanner message="Loading the face model and cryptographic runtime…" title="Preparing on-device processing" tone="neutral" /> : null}
+        {captureError ? <StatusBanner message={captureError} title="Pass not issued" tone="warning" /> : null}
+        <View style={styles.progressCard}>
+          {isProcessing ? <ActivityIndicator color={palette.ink} /> : null}
+          <Text style={styles.progressTitle}>{phaseLabel(processingPhase, hasPending)}</Text>
+          <Text style={styles.progressBody}>Keep this screen open until the signed pass is saved.</Text>
+        </View>
+        <PrimaryButton
+          disabled={isProcessing || (!hasPending && !modelReady)}
+          label={isProcessing ? 'Creating secure pass...' : hasPending ? 'Retry secure issuance' : 'Capture and issue pass'}
+          onPress={() => void handleIssue()}
+        />
+        <PrimaryButton label="Back" onPress={() => router.back()} tone="ghost" />
+      </View>
+    </>
+  );
+
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
-        <ScrollView bounces={false} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <Text style={styles.eyebrow}>{state.intent === 'regeneration' ? 'Regeneration' : 'Enrollment'}</Text>
-            <Text style={styles.title}>Create the pass on this phone.</Text>
-            <Text style={styles.subtitle}>{ticket.event.name}</Text>
-          </View>
-
-          {!hasPending ? (
-            <View style={styles.cameraStage}>
-              {isCloudE2E ? (
-                <View style={styles.cloudE2EPreview}>
-                  <Image resizeMode="contain" source={cloudE2EFixtureSource} style={styles.cloudE2EImage} />
-                  <Text accessibilityLabel="Cloud E2E image source ready" style={styles.cloudE2ELabel}>
-                    Cloud E2E image source ready
-                  </Text>
-                </View>
-              ) : (
-                <Camera ref={camera} device={device!} isActive={true} photo style={StyleSheet.absoluteFill} />
-              )}
-              <View style={styles.cameraTint} />
-              <CameraGuide ready={modelReady && !isProcessing} />
-            </View>
-          ) : (
-            <View style={styles.resumeCard}>
-              <Text style={styles.resumeTitle}>Resume secure issuance</Text>
-              <Text style={styles.resumeBody}>The encrypted payload and idempotency key are protected on this device. Retrying sends the exact same request and does not consume another generation.</Text>
-            </View>
-          )}
-
-          <View style={styles.controls}>
-            {modelError ? <StatusBanner message={modelError} title="Model unavailable" tone="warning" /> : null}
-            {!modelReady && !hasPending ? <StatusBanner message="Loading the face model and cryptographic runtime…" title="Preparing on-device processing" tone="neutral" /> : null}
-            {captureError ? <StatusBanner message={captureError} title="Pass not issued" tone="warning" /> : null}
-            <View style={styles.progressCard}>
-              {isProcessing ? <ActivityIndicator color={palette.ink} /> : null}
-              <Text style={styles.progressTitle}>{phaseLabel(processingPhase, hasPending)}</Text>
-              <Text style={styles.progressBody}>Keep this screen open until the signed pass is saved.</Text>
-            </View>
-            <PrimaryButton
-              disabled={isProcessing || (!hasPending && !modelReady)}
-              label={isProcessing ? 'Creating secure pass...' : hasPending ? 'Retry secure issuance' : 'Capture and issue pass'}
-              onPress={() => void handleIssue()}
-            />
-            <PrimaryButton label="Back" onPress={() => router.back()} tone="ghost" />
-          </View>
-        </ScrollView>
+        {isCloudE2E ? (
+          <View style={styles.content}>{captureContent}</View>
+        ) : (
+          <ScrollView bounces={false} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+            {captureContent}
+          </ScrollView>
+        )}
       </SafeAreaView>
     </View>
   );
@@ -287,6 +297,7 @@ function Fallback({ body, label, onPress, secondaryLabel, secondaryPress, title 
 const styles = StyleSheet.create({
   cameraStage: { alignSelf: 'center', aspectRatio: 0.82, backgroundColor: palette.surfaceInverse, borderRadius: radii.credential, maxHeight: 500, overflow: 'hidden', width: '100%' },
   cameraTint: { ...StyleSheet.absoluteFillObject, backgroundColor: palette.overlay },
+  cloudCameraStage: { aspectRatio: 1.45, maxHeight: 240 },
   cloudE2EImage: { ...StyleSheet.absoluteFillObject, opacity: 0.45 },
   cloudE2ELabel: { backgroundColor: palette.ink, borderRadius: radii.control, color: palette.textInverse, fontSize: 13, margin: 18, paddingHorizontal: 12, paddingVertical: 8, textAlign: 'center' },
   cloudE2EPreview: { alignItems: 'center', backgroundColor: palette.surfaceInverse, flex: 1, justifyContent: 'center' },

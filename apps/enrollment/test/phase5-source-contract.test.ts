@@ -94,6 +94,16 @@ test('cloud enrollment keeps the required actions in the initial viewport', () =
   assert.match(pass, /\{!isCloudE2E \? copyTokenButton : null\}/);
 });
 
+test('cloud capture avoids the native scroll responder while production keeps scrolling', () => {
+  const capture = source('apps/enrollment/app/capture.tsx');
+
+  assert.match(capture, /const captureContent = \(/);
+  assert.match(capture, /isCloudE2E \? \(\s*<View style=\{styles\.content\}>\{captureContent\}<\/View>/s);
+  assert.match(capture, /<ScrollView[\s\S]*>\s*\{captureContent\}\s*<\/ScrollView>/);
+  assert.match(capture, /styles\.cloudCameraStage/);
+  assert.match(capture, /cloudCameraStage: \{ aspectRatio: 1\.45, maxHeight: 240 \}/);
+});
+
 test('enrollment production sources do not log sensitive values', () => {
   for (const file of [
     'apps/enrollment/src/lib/api.ts',

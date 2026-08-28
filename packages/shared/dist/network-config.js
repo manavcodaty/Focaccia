@@ -93,12 +93,18 @@ function buildBrowserOrigins(mode, webUrl, ticketsUrl) {
         ...(mode === 'local' ? localBrowserOriginAliases() : []),
     ]));
 }
-function parseSelectedNetworkConfig({ localHostValue, modeValue, supabaseUrlValue, ticketsUrlValue, valueNames, webUrlValue, }) {
+function parseSelectedNetworkConfig({ allowCloudSimulatorLoopback = false, localHostValue, modeValue, supabaseUrlValue, ticketsUrlValue, valueNames, webUrlValue, }) {
     const mode = parseMode(modeValue);
     let localHost;
     if (mode === 'local') {
         localHost = localHostValue?.trim();
-        if (!localHost || !isPrivateIpv4Host(localHost) || isLoopbackHost(localHost)) {
+        const validPhysicalHost = typeof localHost === 'string'
+            && isPrivateIpv4Host(localHost)
+            && !isLoopbackHost(localHost);
+        const validCloudSimulatorHost = typeof localHost === 'string'
+            && allowCloudSimulatorLoopback
+            && isLoopbackHost(localHost);
+        if (!validPhysicalHost && !validCloudSimulatorHost) {
             throw new NetworkConfigError('invalid_local_host', `${valueNames.localHost} must be a stable private LAN IPv4 address for physical-device local mode.`);
         }
     }
@@ -147,8 +153,10 @@ function parseRootNetworkConfig(env) {
         webUrlValue: env[`${prefix}WEB_URL`],
     });
 }
-function parsePublicNetworkConfig(env, prefix) {
+function parsePublicNetworkConfig(env, prefix, options = {}) {
+    const { allowCloudSimulatorLoopback = false } = options;
     const network = parseSelectedNetworkConfig({
+        allowCloudSimulatorLoopback,
         localHostValue: env[`${prefix}FOCACCIA_LOCAL_HOST`],
         modeValue: env[`${prefix}FOCACCIA_NETWORK_MODE`],
         supabaseUrlValue: env[`${prefix}FOCACCIA_SUPABASE_URL`],

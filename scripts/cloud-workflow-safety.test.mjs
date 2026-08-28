@@ -18,3 +18,11 @@ test('cloud workflow keeps mutable fixture and credentials out of uploaded artif
   assert.doesNotMatch(workflow, /path: \|[\s\S]{0,240}focaccia-\*\.log/);
   assert.doesNotMatch(workflow, /path: .*recipient-private-key\.json/);
 });
+
+test('cloud native relay uses simulator loopback instead of an ephemeral runner LAN address', async () => {
+  const workflow = await readFile(new URL('../.github/workflows/cloud-ios-full-flow.yml', import.meta.url), 'utf8');
+
+  assert.match(workflow, /LOCAL_HOST='127\.0\.0\.1'/);
+  assert.match(workflow, /iOS Simulator shares the macOS host loopback/);
+  assert.match(workflow, /EXPO_PUBLIC_FOCACCIA_CLOUD_E2E=1/);
+});

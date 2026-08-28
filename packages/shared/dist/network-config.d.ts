@@ -11,6 +11,9 @@ export interface NetworkConfig {
 export interface PublicNetworkConfig extends NetworkConfig {
     readonly anonKey: string;
 }
+export interface PublicNetworkConfigOptions {
+    readonly allowCloudSimulatorLoopback?: boolean;
+}
 type Environment = Readonly<Record<string, string | undefined>>;
 type PublicPrefix = 'EXPO_PUBLIC_' | 'NEXT_PUBLIC_';
 export declare class NetworkConfigError extends Error {
@@ -18,6 +21,6 @@ export declare class NetworkConfigError extends Error {
     constructor(code: string, message: string);
 }
 export declare function parseRootNetworkConfig(env: Environment): NetworkConfig;
-export declare function parsePublicNetworkConfig(env: Environment, prefix: PublicPrefix): PublicNetworkConfig;
+export declare function parsePublicNetworkConfig(env: Environment, prefix: PublicPrefix, options?: PublicNetworkConfigOptions): PublicNetworkConfig;
 export {};
 //# sourceMappingURL=network-config.d.ts.map

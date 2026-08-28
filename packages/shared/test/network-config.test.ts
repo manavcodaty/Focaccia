@@ -143,4 +143,28 @@ describe('parsePublicNetworkConfig', () => {
       }),
     ).toThrow(/constrained proxy port 54331/);
   });
+
+  test('accepts loopback only when explicitly enabled for the cloud simulator', () => {
+    expect(() => parsePublicNetworkConfig({
+      EXPO_PUBLIC_FOCACCIA_LOCAL_HOST: '127.0.0.1',
+      EXPO_PUBLIC_FOCACCIA_NETWORK_MODE: 'local',
+      EXPO_PUBLIC_FOCACCIA_SUPABASE_URL: 'http://127.0.0.1:54331',
+      EXPO_PUBLIC_FOCACCIA_TICKETS_URL: 'http://127.0.0.1:3001',
+      EXPO_PUBLIC_FOCACCIA_WEB_URL: 'http://127.0.0.1:3000',
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: 'public-anon-key',
+    }, 'EXPO_PUBLIC_')).toThrow(/stable private LAN IPv4/);
+
+    expect(parsePublicNetworkConfig({
+      EXPO_PUBLIC_FOCACCIA_LOCAL_HOST: '127.0.0.1',
+      EXPO_PUBLIC_FOCACCIA_NETWORK_MODE: 'local',
+      EXPO_PUBLIC_FOCACCIA_SUPABASE_URL: 'http://127.0.0.1:54331',
+      EXPO_PUBLIC_FOCACCIA_TICKETS_URL: 'http://127.0.0.1:3001',
+      EXPO_PUBLIC_FOCACCIA_WEB_URL: 'http://127.0.0.1:3000',
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: 'public-anon-key',
+    }, 'EXPO_PUBLIC_', { allowCloudSimulatorLoopback: true })).toMatchObject({
+      localHost: '127.0.0.1',
+      mode: 'local',
+      supabaseUrl: 'http://127.0.0.1:54331',
+    });
+  });
 });

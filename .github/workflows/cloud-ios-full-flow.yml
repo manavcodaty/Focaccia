@@ -596,12 +596,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          LOCAL_HOST="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
-          test -n "$LOCAL_HOST"
-          case "$LOCAL_HOST" in
-            10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) ;;
-            *) echo "Unexpected runner address: $LOCAL_HOST" >&2; exit 1 ;;
-          esac
+          # The iOS Simulator shares the macOS host loopback. Hosted macOS
+          # runner en0 addresses are ephemeral and are not consistently
+          # reachable from the simulator even when the runner itself can curl
+          # them, so the cloud-only relay deliberately uses loopback.
+          LOCAL_HOST='127.0.0.1'
           nohup env \
             FOCACCIA_ALLOWED_BROWSER_ORIGINS="http://$LOCAL_HOST:3000,http://$LOCAL_HOST:3001" \
             FOCACCIA_LAN_PROXY_PORT=54331 \

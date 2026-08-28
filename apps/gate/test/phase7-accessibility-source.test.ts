@@ -7,7 +7,7 @@ async function source(relativePath: string) {
 }
 
 test('gate feedback, controls, and credential fields are explicitly labeled', async () => {
-  const [banner, button, provision, enrollment, fallback, driver, workflow, home, shell] = await Promise.all([
+  const [banner, button, provision, enrollment, fallback, driver, workflow, home, shell, env] = await Promise.all([
     source('../src/components/status-banner.tsx'),
     source('../src/components/primary-button.tsx'),
     source('../app/provision.tsx'),
@@ -17,6 +17,7 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
     source('../../../.github/workflows/cloud-ios-full-flow.yml'),
     source('../app/index.tsx'),
     source('../src/components/screen-shell.tsx'),
+    source('../src/lib/env.ts'),
   ]);
 
   assert.match(banner, /accessibilityLiveRegion=/);
@@ -58,6 +59,7 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(shell, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
   assert.match(shell, /const scrollContent = isCloudE2E \? \(\s*content\s*\) : scroll \?/);
   assert.match(shell, /isCloudE2E \? \(\s*<View style=\{styles\.keyboard\}>\{scrollContent\}<\/View>/);
+  assert.match(env, /allowCloudSimulatorLoopback: isCloudSimulatorE2E/);
   assert.match(shell, /<KeyboardAvoidingView/);
   assert.doesNotMatch(driver, /anchorMatcher: 'Dismiss keyboard'/);
   assert.match(driver, /await typeIntoNode\(simulatorUdid, matcher, value, \{/);

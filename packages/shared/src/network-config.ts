@@ -14,6 +14,10 @@ export interface PublicNetworkConfig extends NetworkConfig {
   readonly anonKey: string;
 }
 
+export interface PublicNetworkConfigOptions {
+  readonly allowCloudSimulatorLoopback?: boolean;
+}
+
 type Environment = Readonly<Record<string, string | undefined>>;
 type PublicPrefix = 'EXPO_PUBLIC_' | 'NEXT_PUBLIC_';
 
@@ -152,6 +156,7 @@ function buildBrowserOrigins(mode: NetworkMode, webUrl: string, ticketsUrl: stri
 }
 
 function parseSelectedNetworkConfig({
+  allowCloudSimulatorLoopback = false,
   localHostValue,
   modeValue,
   supabaseUrlValue,
@@ -171,6 +176,7 @@ function parseSelectedNetworkConfig({
     webUrl: string;
   };
   webUrlValue: string | undefined;
+  allowCloudSimulatorLoopback?: boolean;
 }): NetworkConfig {
   const mode = parseMode(modeValue);
   let localHost: string | undefined;
@@ -178,7 +184,14 @@ function parseSelectedNetworkConfig({
   if (mode === 'local') {
     localHost = localHostValue?.trim();
 
-    if (!localHost || !isPrivateIpv4Host(localHost) || isLoopbackHost(localHost)) {
+    const validPhysicalHost = typeof localHost === 'string'
+      && isPrivateIpv4Host(localHost)
+      && !isLoopbackHost(localHost);
+    const validCloudSimulatorHost = typeof localHost === 'string'
+      && allowCloudSimulatorLoopback
+      && isLoopbackHost(localHost);
+
+    if (!validPhysicalHost && !validCloudSimulatorHost) {
       throw new NetworkConfigError(
         'invalid_local_host',
         `${valueNames.localHost} must be a stable private LAN IPv4 address for physical-device local mode.`,
@@ -263,8 +276,11 @@ export function parseRootNetworkConfig(env: Environment): NetworkConfig {
 export function parsePublicNetworkConfig(
   env: Environment,
   prefix: PublicPrefix,
+  options: PublicNetworkConfigOptions = {},
 ): PublicNetworkConfig {
+  const { allowCloudSimulatorLoopback = false } = options;
   const network = parseSelectedNetworkConfig({
+    allowCloudSimulatorLoopback,
     localHostValue: env[`${prefix}FOCACCIA_LOCAL_HOST`],
     modeValue: env[`${prefix}FOCACCIA_NETWORK_MODE`],
     supabaseUrlValue: env[`${prefix}FOCACCIA_SUPABASE_URL`],

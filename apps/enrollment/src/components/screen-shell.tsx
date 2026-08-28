@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../lib/use-responsive-layout';
 import { palette } from '../theme';
 
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
+
 export function ScreenShell({
   children,
   variant = 'default',
@@ -42,6 +44,20 @@ export function ScreenShell({
       {children}
     </View>
   );
+  const scrollContent = isCloudE2E ? (
+    content
+  ) : scroll ? (
+    <ScrollView
+      bounces={false}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      {content}
+    </ScrollView>
+  ) : (
+    content
+  );
 
   return (
     <SafeAreaView
@@ -49,23 +65,16 @@ export function ScreenShell({
       style={[styles.safeArea, { backgroundColor }]}
     >
       <StatusBar barStyle={variant === 'camera' ? 'light-content' : 'dark-content'} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboard}
-      >
-        {scroll ? (
-          <ScrollView
-            bounces={false}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {content}
-          </ScrollView>
-        ) : (
-          content
-        )}
-      </KeyboardAvoidingView>
+      {isCloudE2E ? (
+        <View style={styles.keyboard}>{scrollContent}</View>
+      ) : (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboard}
+        >
+          {scrollContent}
+        </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }

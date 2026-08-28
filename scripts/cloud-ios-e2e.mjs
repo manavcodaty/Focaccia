@@ -127,7 +127,10 @@ async function launchEnrollment() {
   await launchApp({
     appLabel: 'Face Pass Enrollment',
     bundleId: enrollmentBundleId,
-    matcher: 'Sign in',
+    // Cloud E2E signs the attendee in from runner-local build values. The
+    // hosted app can therefore already be on the ticket screen by the time
+    // simctl reports the launch complete; accept either stable boundary state.
+    matcher: /Sign in|My tickets/,
     timeoutMs: 60_000,
   });
 }

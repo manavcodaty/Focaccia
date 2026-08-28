@@ -67,6 +67,18 @@ test('native auth dismisses the keyboard before replacing the form', () => {
   assert.equal((authScreen.match(/showSoftInputOnFocus=\{!isCloudE2E\}/g) ?? []).length, 2);
 });
 
+test('cloud auth avoids hosted responder and scroll lifecycles', () => {
+  const authScreen = source('apps/enrollment/app/index.tsx');
+  const shell = source('apps/enrollment/src/components/screen-shell.tsx');
+
+  assert.match(authScreen, /const isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
+  assert.match(authScreen, /void signInOrUp\(\{ email: cloudEmail, mode: 'sign-in', password: cloudPassword \}\)/);
+  assert.match(shell, /const isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
+  assert.match(shell, /const scrollContent = isCloudE2E \? \(\s*content\s*\) : scroll \?/);
+  assert.match(shell, /isCloudE2E \? \(\s*<View style=\{styles\.keyboard\}>\{scrollContent\}<\/View>/);
+  assert.match(shell, /<KeyboardAvoidingView/);
+});
+
 test('enrollment production sources do not log sensitive values', () => {
   for (const file of [
     'apps/enrollment/src/lib/api.ts',

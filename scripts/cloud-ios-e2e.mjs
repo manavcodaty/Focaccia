@@ -155,32 +155,26 @@ async function launchGate() {
   await launchApp({
     appLabel: 'Face Pass Gate',
     bundleId: gateBundleId,
-    matcher: /Prepare this gate|Open scanner|Set up gate|Pair this device to one event|Provision this gate/,
+    matcher: /Prepare this gate|Open scanner|Pair this device to one event|Provision this gate/,
     timeoutMs: 90_000,
   });
 }
 
 async function openGateProvisioning() {
-  const setupNode = findNode(await describeUi(simulatorUdid), 'Set up gate');
-  if (setupNode) {
-    await tapNode(simulatorUdid, 'Set up gate', {
-      retryIfStillVisible: true,
-      retryCount: 5,
-      retryDelayMs: 400,
-    });
-  }
+  // Cloud E2E enables the app's runner-local direct navigation and injects the
+  // provisioning payload through the build environment. Do not fall back to
+  // tapping the home-screen setup control: on hosted iOS that extra touch can
+  // race the auth transition and restart backboardd. If direct navigation is
+  // unavailable, fail the run without mutating the app state.
   await waitForNode(simulatorUdid, 'Provision this gate', { timeoutMs: 90_000 });
 }
 
 async function recoverGateProvisioningScreen() {
-  // Hosted iOS can restart backboardd while UIKit is dismissing the organizer
-  // keyboard. The app is then terminated by RunningBoard even though the auth
-  // request succeeded. Recover once from that external lifecycle event; do
-  // not infer provisioning from a missing accessibility tree and do not retry
-  // the complete evaluation loop.
+  // Hosted iOS can restart backboardd during an external lifecycle event. The
+  // app is then terminated by RunningBoard even though the auth request may
+  // have succeeded. Recover once from that event; do not infer provisioning
+  // from a missing accessibility tree and do not retry the complete loop.
   await launchGate();
-  // The cloud build signs in from runner-local environment values, so
-  // recovery must also avoid the hosted iOS native keyboard path.
   await openGateProvisioning();
 }
 

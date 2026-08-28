@@ -7,7 +7,7 @@ async function source(relativePath: string) {
 }
 
 test('gate feedback, controls, and credential fields are explicitly labeled', async () => {
-  const [banner, button, provision, enrollment, fallback, driver, workflow, home] = await Promise.all([
+  const [banner, button, provision, enrollment, fallback, driver, workflow, home, shell] = await Promise.all([
     source('../src/components/status-banner.tsx'),
     source('../src/components/primary-button.tsx'),
     source('../app/provision.tsx'),
@@ -16,6 +16,7 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
     source('../../../scripts/cloud-ios-e2e.mjs'),
     source('../../../.github/workflows/cloud-ios-full-flow.yml'),
     source('../app/index.tsx'),
+    source('../src/components/screen-shell.tsx'),
   ]);
 
   assert.match(banner, /accessibilityLiveRegion=/);
@@ -52,6 +53,9 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /require\('react-native-vision-camera'\)/);
   assert.match(home, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
   assert.match(home, /router\.replace\('\/provision'\)/);
+  assert.match(shell, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
+  assert.match(shell, /isCloudE2E \? \(\s*<View style=\{styles\.keyboard\}>\{scrollContent\}<\/View>/);
+  assert.match(shell, /<KeyboardAvoidingView/);
   assert.doesNotMatch(driver, /anchorMatcher: 'Dismiss keyboard'/);
   assert.match(driver, /await typeIntoNode\(simulatorUdid, matcher, value, \{/);
   assert.match(driver, /RemoteTextInput lifecycle can restart backboardd/);

@@ -357,7 +357,6 @@ async function main() {
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
     await launchGate();
-    await openGateProvisioning();
     // Cloud E2E signs the organizer in from runner-local build environment
     // values. Avoid the hosted iOS native keyboard entirely: its
     // RemoteTextInput lifecycle can restart backboardd during submission.

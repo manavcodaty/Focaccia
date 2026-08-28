@@ -18,6 +18,7 @@ import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, radii, typography } from '../src/theme';
 
 const APPROVED_ROUTE = '/approved' as Href;
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
 
 export default function TicketDetailScreen() {
   const router = useRouter();
@@ -56,6 +57,10 @@ export default function TicketDetailScreen() {
     }
   }
 
+  const createPassButton = action === 'enroll' ? (
+    <PrimaryButton disabled={isLoading} label={isLoading ? 'Preparing…' : 'Create event pass'} onPress={() => void startEnrollment('initial')} />
+  ) : null;
+
   return (
     <ScreenShell style={styles.screen}>
       <View style={styles.eventHeader}>
@@ -63,6 +68,8 @@ export default function TicketDetailScreen() {
         <Text style={styles.eventMeta}>{ticket.event.location || 'Location to be confirmed'}</Text>
         <Text style={styles.eventMeta}>{new Date(ticket.event.starts_at).toLocaleString()}</Text>
       </View>
+
+      {isCloudE2E ? createPassButton : null}
 
       <SectionCard eyebrow="Credential state" title="Ticket details">
         <Detail label="Ticket type" value={ticket.ticket_type.name} />
@@ -99,9 +106,7 @@ export default function TicketDetailScreen() {
       {error ? <StatusBanner message={error} title="Could not prepare enrollment" tone="warning" /> : null}
 
       <View style={styles.actions}>
-        {action === 'enroll' ? (
-          <PrimaryButton disabled={isLoading} label={isLoading ? 'Preparing…' : 'Create event pass'} onPress={() => void startEnrollment('initial')} />
-        ) : null}
+        {!isCloudE2E ? createPassButton : null}
         {action === 'show-pass' ? (
           <>
             <PrimaryButton label="Show secure pass" onPress={() => router.push('/pass')} />

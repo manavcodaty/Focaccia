@@ -13,6 +13,7 @@ import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, radii, typography } from '../src/theme';
 
 const PASS_TOKEN_CLIPBOARD_TTL_MS = 60_000;
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
 
 async function copyPassTokenToClipboard(
   token: string,
@@ -70,6 +71,16 @@ export default function PassScreen() {
     }
   }
 
+  const copyTokenButton = (
+    <PrimaryButton
+      label="Copy full signed token"
+      onPress={() => {
+        void copyPassTokenToClipboard(pass.token, () => setMessage('Full signed token copied briefly.'));
+      }}
+      tone="ghost"
+    />
+  );
+
   return (
     <ScreenShell style={styles.screen}>
       <View style={styles.readyHeader}>
@@ -78,6 +89,8 @@ export default function PassScreen() {
         <Text style={styles.eventMeta}>{pass.event.location || 'Location to be confirmed'}</Text>
         <Text style={styles.eventMeta}>{new Date(pass.event.starts_at).toLocaleString()}</Text>
       </View>
+
+      {isCloudE2E ? copyTokenButton : null}
 
       <SectionCard eyebrow="Event pass" title={pass.ticketTypeName} tone="credential">
         <Text style={styles.generation}>Generation {pass.generation} of 3</Text>
@@ -99,13 +112,7 @@ export default function PassScreen() {
         <Text style={styles.snippet}>
           {cloudEvidenceSafe ? '[PASS TOKEN REDACTED FOR EVIDENCE]' : pass.tokenSnippet}
         </Text>
-        <PrimaryButton
-          label="Copy full signed token"
-          onPress={() => {
-            void copyPassTokenToClipboard(pass.token, () => setMessage('Full signed token copied briefly.'));
-          }}
-          tone="ghost"
-        />
+        {!isCloudE2E ? copyTokenButton : null}
       </SectionCard>
 
       {message ? <StatusBanner message={message} tone={message.includes('copied') ? 'success' : 'warning'} /> : null}

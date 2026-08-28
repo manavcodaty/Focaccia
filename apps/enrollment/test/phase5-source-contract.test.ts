@@ -67,7 +67,7 @@ test('native auth dismisses the keyboard before replacing the form', () => {
   assert.equal((authScreen.match(/showSoftInputOnFocus=\{!isCloudE2E\}/g) ?? []).length, 2);
 });
 
-test('cloud auth avoids hosted keyboard-responder lifecycle while retaining scrollable actions', () => {
+test('cloud auth avoids hosted keyboard and scroll responder lifecycles', () => {
   const authScreen = source('apps/enrollment/app/index.tsx');
   const shell = source('apps/enrollment/src/components/screen-shell.tsx');
   const env = source('apps/enrollment/src/lib/env.ts');
@@ -75,10 +75,23 @@ test('cloud auth avoids hosted keyboard-responder lifecycle while retaining scro
   assert.match(authScreen, /const isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
   assert.match(authScreen, /void signInOrUp\(\{ email: cloudEmail, mode: 'sign-in', password: cloudPassword \}\)/);
   assert.match(shell, /const isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
-  assert.match(shell, /const scrollContent = scroll \?/);
+  assert.match(shell, /const scrollContent = isCloudE2E \? \(\s*content\s*\) : scroll \?/);
   assert.match(shell, /isCloudE2E \? \(\s*<View style=\{styles\.keyboard\}>\{scrollContent\}<\/View>/);
   assert.match(env, /allowCloudSimulatorLoopback: isCloudSimulatorE2E/);
   assert.match(shell, /<KeyboardAvoidingView/);
+});
+
+test('cloud enrollment keeps the required actions in the initial viewport', () => {
+  const ticket = source('apps/enrollment/app/ticket.tsx');
+  const consent = source('apps/enrollment/app/consent.tsx');
+  const pass = source('apps/enrollment/app/pass.tsx');
+
+  assert.match(ticket, /\{isCloudE2E \? createPassButton : null\}/);
+  assert.match(ticket, /\{!isCloudE2E \? createPassButton : null\}/);
+  assert.match(consent, /\{isCloudE2E \? consentButton : null\}/);
+  assert.match(consent, /\{!isCloudE2E \? consentButton : null\}/);
+  assert.match(pass, /\{isCloudE2E \? copyTokenButton : null\}/);
+  assert.match(pass, /\{!isCloudE2E \? copyTokenButton : null\}/);
 });
 
 test('enrollment production sources do not log sensitive values', () => {

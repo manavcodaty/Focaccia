@@ -51,7 +51,9 @@ export function ScreenShell({
       {children}
     </View>
   );
-  const scrollContent = scroll ? (
+  const scrollContent = isCloudE2E ? (
+    content
+  ) : scroll ? (
     <ScrollView
       bounces={false}
       contentContainerStyle={styles.scrollContent}
@@ -60,7 +62,9 @@ export function ScreenShell({
     >
       {content}
     </ScrollView>
-  ) : content;
+  ) : (
+    content
+  );
 
   return (
     <SafeAreaView

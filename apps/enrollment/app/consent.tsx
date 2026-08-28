@@ -8,6 +8,8 @@ import { generationAllowance } from '../src/lib/ticket-state';
 import { useEnrollment } from '../src/state/enrollment-context';
 import { palette, typography } from '../src/theme';
 
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
+
 export default function ConsentScreen() {
   const router = useRouter();
   const { acceptConsent, state } = useEnrollment();
@@ -26,6 +28,15 @@ export default function ConsentScreen() {
   }
 
   const allowance = generationAllowance(ticket.generation_count);
+  const consentButton = (
+    <PrimaryButton
+      label="I consent and continue"
+      onPress={() => {
+        acceptConsent();
+        router.push('/capture');
+      }}
+    />
+  );
 
   return (
     <ScreenShell style={styles.screen}>
@@ -35,6 +46,8 @@ export default function ConsentScreen() {
         </Text>
         <Text style={styles.subtitle}>{ticket.event.name}</Text>
       </View>
+
+      {isCloudE2E ? consentButton : null}
 
       <SectionCard eyebrow="On-device processing" title="What happens on your iPhone" tone="subtle">
         <Text style={styles.body}>The app captures one face image, aligns it, runs the bundled model on-device, and creates the event-scoped template locally.</Text>
@@ -57,13 +70,7 @@ export default function ConsentScreen() {
       </SectionCard>
 
       <View style={styles.actions}>
-        <PrimaryButton
-          label="I consent and continue"
-          onPress={() => {
-            acceptConsent();
-            router.push('/capture');
-          }}
-        />
+        {!isCloudE2E ? consentButton : null}
         <PrimaryButton label="Back" onPress={() => router.back()} tone="ghost" />
       </View>
     </ScreenShell>

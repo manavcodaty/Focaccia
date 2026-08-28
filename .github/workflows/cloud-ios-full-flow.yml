@@ -668,28 +668,39 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          XCODE_APP='/Applications/Xcode_26.4.1.app'
+          shopt -s nullglob
+          XCODE_APPS=(/Applications/Xcode_26*.app)
+          if (( ${#XCODE_APPS[@]} == 0 )); then
+            XCODE_APPS=(/Applications/Xcode.app)
+          fi
+          test "${#XCODE_APPS[@]}" -gt 0
+          XCODE_APP="${XCODE_APPS[${#XCODE_APPS[@]} - 1]}"
           test -d "$XCODE_APP/Contents/Developer"
           sudo xcode-select --switch "$XCODE_APP/Contents/Developer"
           XCODE_VERSION="$(xcodebuild -version | sed -n '1p')"
-          test "$XCODE_VERSION" = 'Xcode 26.4.1'
           echo "FOCACCIA_XCODE_VERSION=$XCODE_VERSION" >> "$GITHUB_ENV"
 
       - name: Boot one iPhone simulator and install native dependencies
         shell: bash
         run: |
           set -euo pipefail
-          RUNTIME_ID='com.apple.CoreSimulator.SimRuntime.iOS-26-4'
           SIMULATOR_JSON="$(xcrun simctl list devices available --json)"
-          SIMULATOR_UDID="$(printf '%s' "$SIMULATOR_JSON" | jq -r --arg runtime "$RUNTIME_ID" '
-            .devices[$runtime] // []
-            | map(select(.name == "iPhone 17" and .isAvailable == true))
-            | if length == 1 then .[0].udid else empty end
+          SIMULATOR_TARGET="$(printf '%s' "$SIMULATOR_JSON" | jq -r '
+            [
+              .devices
+              | to_entries[]
+              | . as $runtime
+              | $runtime.value[]
+              | select(.name == "iPhone 17" and .isAvailable == true)
+              | {runtime: $runtime.key, udid, name}
+            ]
+            | sort_by(.runtime)
+            | if length == 0 then empty else .[-1] | [.runtime, .udid, .name] | @tsv end
           ')"
+          test -n "$SIMULATOR_TARGET"
+          IFS=$'\t' read -r RUNTIME_ID SIMULATOR_UDID SIMULATOR_MODEL <<< "$SIMULATOR_TARGET"
+          test -n "$RUNTIME_ID"
           test -n "$SIMULATOR_UDID"
-          SIMULATOR_MODEL="$(printf '%s' "$SIMULATOR_JSON" | jq -r --arg runtime "$RUNTIME_ID" --arg udid "$SIMULATOR_UDID" '
-            .devices[$runtime][] | select(.udid == $udid) | .name
-          ')"
           test "$SIMULATOR_MODEL" = 'iPhone 17'
           echo "FOCACCIA_IOS_RUNTIME_ID=$RUNTIME_ID" >> "$GITHUB_ENV"
           echo "FOCACCIA_IOS_RUNTIME_MODEL=$SIMULATOR_MODEL" >> "$GITHUB_ENV"

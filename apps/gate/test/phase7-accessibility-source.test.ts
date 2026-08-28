@@ -57,7 +57,7 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(home, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
   assert.match(home, /router\.replace\('\/provision'\)/);
   assert.match(shell, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
-  assert.match(shell, /const scrollContent = isCloudE2E \? \(\s*content\s*\) : scroll \?/);
+  assert.match(shell, /const scrollContent = scroll \?/);
   assert.match(shell, /isCloudE2E \? \(\s*<View style=\{styles\.keyboard\}>\{scrollContent\}<\/View>/);
   assert.match(env, /allowCloudSimulatorLoopback: isCloudSimulatorE2E/);
   assert.match(shell, /<KeyboardAvoidingView/);

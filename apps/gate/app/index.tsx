@@ -36,6 +36,7 @@ export default function GateHomeScreen() {
     : scannerReady
       ? 'Offline ready'
       : 'Refresh required';
+  const settingsButton = <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />;
 
   return (
     <ScreenShell>
@@ -87,6 +88,8 @@ export default function GateHomeScreen() {
         ) : null}
       </SectionCard>
 
+      {isCloudE2E && gate ? settingsButton : null}
+
       <SectionCard eyebrow="Local operations" title="Entry records" tone="subtle">
         <MetricRow label="Accepted passes" value={String(stats?.usedPassCount ?? 0)} />
         <MetricRow label="Check-ins synchronized" value={String(stats?.syncedCheckinCount ?? 0)} />
@@ -106,7 +109,7 @@ export default function GateHomeScreen() {
 
       <View style={styles.secondaryActions}>
         <PrimaryButton disabled={!gate} label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
-        <PrimaryButton disabled={!gate} label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
+        {!isCloudE2E ? settingsButton : null}
         <PrimaryButton disabled={!gate} label="Export logs" onPress={() => router.push('/export')} tone="ghost" />
       </View>
     </ScreenShell>

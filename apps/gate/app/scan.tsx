@@ -197,6 +197,7 @@ export default function ScanScreen() {
               style={[
                 styles.preview,
                 previewStyle,
+                isCloudE2E ? styles.cloudPreview : null,
                 {
                   aspectRatio: layout.previewAspectRatio,
                   borderRadius: scaleSpacing(layout, 30, 1.08),
@@ -317,9 +318,10 @@ export default function ScanScreen() {
 
           <View
             style={[
-              styles.preview,
-              previewStyle,
-              {
+                styles.preview,
+                previewStyle,
+                isCloudE2E ? styles.cloudPreview : null,
+                {
                 aspectRatio: layout.previewAspectRatio,
                 borderRadius: scaleSpacing(layout, 30, 1.08),
               },
@@ -355,6 +357,7 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
+  cloudPreview: { aspectRatio: 1.45, maxHeight: 240 },
   cloudE2EImage: { ...StyleSheet.absoluteFillObject, opacity: 0.45 },
   cloudE2ELabel: { backgroundColor: palette.ink, borderRadius: 999, color: palette.textInverse, fontSize: 13, margin: 18, paddingHorizontal: 12, paddingVertical: 8, textAlign: 'center' },
   cloudE2EPreview: { alignItems: 'center', backgroundColor: palette.surfaceInverse, flex: 1, justifyContent: 'center' },

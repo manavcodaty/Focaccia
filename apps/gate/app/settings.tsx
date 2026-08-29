@@ -17,6 +17,8 @@ import { useRevocationCache } from '../src/lib/use-revocation-cache';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
+
 export default function SettingsScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
@@ -52,6 +54,25 @@ export default function SettingsScreen() {
     }
   }
 
+  const retrySyncButton = (
+    <PrimaryButton
+      disabled={!gate || syncInProgress}
+      label={syncInProgress ? 'Synchronizing...' : 'Retry check-in synchronization'}
+      onPress={() => {
+        setError(null);
+        setFeedback(null);
+        void retryCheckinSync()
+          .then(() => {
+            setFeedback('Check-in queue and revocation cache synchronized.');
+          })
+          .catch((syncError) => {
+            setError(syncError instanceof Error ? syncError.message : 'Gate sync failed.');
+          });
+      }}
+      tone="ghost"
+    />
+  );
+
   return (
     <ScreenShell>
       <SectionCard eyebrow="Settings" title="Gate policy and sync state">
@@ -59,6 +80,7 @@ export default function SettingsScreen() {
           label={gate ? 'Provisioned' : 'Provisioning required'}
           tone={gate ? 'success' : 'warning'}
         />
+        {isCloudE2E ? retrySyncButton : null}
         {feedback ? <StatusBanner message={feedback} title="Sync complete" tone="success" /> : null}
         {error ? <StatusBanner message={error} title="Sync failed" tone="danger" /> : null}
         <StatusBanner
@@ -117,22 +139,7 @@ export default function SettingsScreen() {
             void handleSync();
           }}
         />
-        <PrimaryButton
-          disabled={!gate || syncInProgress}
-          label={syncInProgress ? 'Synchronizing...' : 'Retry check-in synchronization'}
-          onPress={() => {
-            setError(null);
-            setFeedback(null);
-            void retryCheckinSync()
-              .then(() => {
-                setFeedback('Check-in queue and revocation cache synchronized.');
-              })
-              .catch((syncError) => {
-                setError(syncError instanceof Error ? syncError.message : 'Gate sync failed.');
-              });
-          }}
-          tone="ghost"
-        />
+        {!isCloudE2E ? retrySyncButton : null}
         {auth ? (
           <PrimaryButton label="Sign out organizer" onPress={signOut} tone="ghost" />
         ) : (

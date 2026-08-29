@@ -13,6 +13,8 @@ import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
+const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
+
 export default function ResultScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
@@ -31,6 +33,8 @@ export default function ResultScreen() {
       </ScreenShell>
     );
   }
+
+  const homeButton = <PrimaryButton label="Home" onPress={() => router.replace('/')} tone="ghost" />;
 
   return (
     <ScreenShell variant={lastResult.accepted ? 'accepted' : 'rejected'}>
@@ -63,6 +67,8 @@ export default function ResultScreen() {
             : 'The gate rejected the pass before entry was granted.'}
         </Text>
       </View>
+
+      {isCloudE2E ? homeButton : null}
 
       <SectionCard eyebrow="Metrics" title="Verification timings">
         <MetricRow label="Scan" value={formatDuration(lastResult.timings.scan_ms)} />
@@ -98,7 +104,7 @@ export default function ResultScreen() {
           onPress={() => router.replace('/fallback')}
           tone="ghost"
         />
-        <PrimaryButton label="Home" onPress={() => router.replace('/')} tone="ghost" />
+        {!isCloudE2E ? homeButton : null}
       </View>
     </ScreenShell>
   );

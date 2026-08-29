@@ -278,6 +278,7 @@ export default function LivenessScreen() {
               style={[
                 styles.preview,
                 previewStyle,
+                isCloudE2E ? styles.cloudPreview : null,
                 {
                   aspectRatio: layout.cameraAspectRatio,
                   borderRadius: scaleSpacing(layout, 30, 1.08),
@@ -431,6 +432,7 @@ export default function LivenessScreen() {
             style={[
               styles.preview,
               previewStyle,
+              isCloudE2E ? styles.cloudPreview : null,
               {
                 aspectRatio: layout.cameraAspectRatio,
                 borderRadius: scaleSpacing(layout, 30, 1.08),
@@ -491,6 +493,10 @@ export default function LivenessScreen() {
 const styles = StyleSheet.create({
   camera: {
     flex: 1,
+  },
+  cloudPreview: {
+    aspectRatio: 1.45,
+    maxHeight: 240,
   },
   cloudE2EImage: {
     ...StyleSheet.absoluteFillObject,

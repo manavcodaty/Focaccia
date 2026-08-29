@@ -99,6 +99,27 @@ test('liveness cancellation clears decrypted pending verification before navigat
   assert.match(liveness, /onPress=\{cancelVerification\}/);
 });
 
+test('cloud scanner, liveness, result, home, and settings actions stay reachable without scrolling', async () => {
+  const [scan, liveness, result, home, settings] = await Promise.all([
+    source('../app/scan.tsx'),
+    source('../app/liveness.tsx'),
+    source('../app/result.tsx'),
+    source('../app/index.tsx'),
+    source('../app/settings.tsx'),
+  ]);
+
+  assert.match(scan, /isCloudE2E \? styles\.cloudPreview : null/);
+  assert.match(liveness, /isCloudE2E \? styles\.cloudPreview : null/);
+  assert.match(scan, /cloudPreview: \{ aspectRatio: 1\.45, maxHeight: 240 \}/);
+  assert.match(liveness, /cloudPreview: \{\s*aspectRatio: 1\.45,\s*maxHeight: 240,\s*\}/s);
+  assert.match(result, /\{isCloudE2E \? homeButton : null\}/);
+  assert.match(result, /\{!isCloudE2E \? homeButton : null\}/);
+  assert.match(home, /\{isCloudE2E && gate \? settingsButton : null\}/);
+  assert.match(home, /\{!isCloudE2E \? settingsButton : null\}/);
+  assert.match(settings, /\{isCloudE2E \? retrySyncButton : null\}/);
+  assert.match(settings, /\{!isCloudE2E \? retrySyncButton : null\}/);
+});
+
 test('liveness match failures stay on capture for another attempt', async () => {
   const liveness = await source('../app/liveness.tsx');
 

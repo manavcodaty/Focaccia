@@ -414,7 +414,12 @@ async function main() {
     assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
 
     await launchGate();
-    await tapAction('Open scanner', { timeoutMs: 90_000 });
+    // Returning to the scanner creates a new UIKit scene after the enrollment
+    // app has been foregrounded. On hosted iOS 26, closing Baguette's
+    // acknowledged session during that scene handoff can interrupt
+    // backboardd before the scanner controls are mounted. Use one raw tap for
+    // this boundary; subsequent scanner input remains session-backed.
+    await tapAction('Open scanner', { timeoutMs: 90_000, useInputSession: false });
     await waitForNode(simulatorUdid, /Offline ready/, { timeoutMs: 90_000 });
     checks.revocation_cache_fresh = true;
     await waitForNode(simulatorUdid, 'Manual fallback', { timeoutMs: 90_000 });
@@ -456,7 +461,7 @@ async function main() {
     // Reusing the accepted token while still offline must be rejected locally.
     await tapAction('Back');
     await waitForNode(simulatorUdid, 'Open scanner', { timeoutMs: 90_000 });
-    await tapAction('Open scanner');
+    await tapAction('Open scanner', { useInputSession: false });
     await tapAction('Manual fallback', { timeoutMs: 90_000, useInputSession: false });
     await fillInputExactly(/^Full pass token\b/, passToken);
     await tapAction('Verify token offline', { timeoutMs: 90_000 });

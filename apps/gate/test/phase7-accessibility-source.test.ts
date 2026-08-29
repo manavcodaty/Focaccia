@@ -74,6 +74,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(driver, /async function tapAction\(matcher, options = \{\}\) \{[\s\S]*?retryIfStillVisible: false,[\s\S]*?useInputSession: true/);
   assert.match(driver, /tapAction\('Manual fallback', \{ useInputSession: false \}\)/);
   assert.match(driver, /tapAction\('Manual fallback', \{ timeoutMs: 90_000, useInputSession: false \}\)/);
+  assert.match(driver, /tapAction\('Open scanner', \{ timeoutMs: 90_000, useInputSession: false \}\)/);
+  assert.match(driver, /tapAction\('Open scanner', \{ useInputSession: false \}\)/);
   assert.match(driver, /try \{\s+await openGateProvisioning\(\);\s+\} catch \(provisioningWaitError\)/);
   assert.doesNotMatch(driver, /tapNode\(simulatorUdid, 'Provision this gate'/);
   assert.doesNotMatch(driver, /tapNode\(simulatorUdid, new RegExp\(context\.eventName\)/);

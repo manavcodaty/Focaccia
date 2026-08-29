@@ -71,6 +71,7 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.doesNotMatch(provision, /onSubmitEditing=\{isCloudE2E \?/);
   assert.doesNotMatch(driver, /settleNativeAuthResponder/);
   assert.match(driver, /matcher: \/Sign in\|My tickets\//);
+  assert.match(driver, /async function tapAction\(matcher, options = \{\}\) \{[\s\S]*?retryIfStillVisible: false/);
   assert.match(driver, /try \{\s+await openGateProvisioning\(\);\s+\} catch \(provisioningWaitError\)/);
   assert.doesNotMatch(driver, /tapNode\(simulatorUdid, 'Set up gate'/);
   assert.doesNotMatch(driver, /matcher: \/[^\n]*Set up gate/);

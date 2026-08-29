@@ -196,9 +196,12 @@ async function screenshot(name) {
 
 async function tapAction(matcher, options = {}) {
   return tapNode(simulatorUdid, matcher, {
-    retryIfStillVisible: true,
-    retryCount: 6,
-    retryDelayMs: 500,
+    // A second raw tap while React Native is committing a route can leave an
+    // iOS 26 hosted simulator with two digitizer downs and one up. That stuck
+    // touch causes backboardd to respawn and terminates both app processes.
+    // Every caller waits for the next semantic state, so a single bounded tap
+    // is safer and preserves a real failure when the action is missed.
+    retryIfStillVisible: false,
     ...options,
   });
 }

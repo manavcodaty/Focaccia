@@ -144,6 +144,20 @@ async function launchGate() {
   });
 }
 
+async function openCloudScannerRoute() {
+  // Baguette's raw tap envelope can leave a digitizer-down active across the
+  // cloud GateHome -> Scan route transition on hosted iOS 26. The registered
+  // Expo Router scheme exercises the same cloud route without injecting a
+  // touch, while production still reaches /scan through the real button.
+  await runCommand('xcrun', [
+    'simctl',
+    'openurl',
+    simulatorUdid,
+    'face-pass-gate:///scan',
+  ]);
+  await waitForNode(simulatorUdid, 'Scanner live', { timeoutMs: 90_000 });
+}
+
 async function openGateProvisioning() {
   // Cloud E2E enables the app's runner-local direct navigation and injects the
   // provisioning payload through the build environment. Do not fall back to
@@ -415,11 +429,9 @@ async function main() {
 
     await launchGate();
     // Returning to the scanner creates a new UIKit scene after the enrollment
-    // app has been foregrounded. On hosted iOS 26, closing Baguette's
-    // acknowledged session during that scene handoff can interrupt
-    // backboardd before the scanner controls are mounted. Use one raw tap for
-    // this boundary; subsequent scanner input remains session-backed.
-    await tapAction('Open scanner', { timeoutMs: 90_000, useInputSession: false });
+    // app has been foregrounded. Avoid a Baguette touch at this boundary;
+    // hosted iOS 26 can retain its digitizer-down until backboardd respawns.
+    await openCloudScannerRoute();
     await waitForNode(simulatorUdid, /Offline ready/, { timeoutMs: 90_000 });
     checks.revocation_cache_fresh = true;
     await waitForNode(simulatorUdid, 'Manual fallback', { timeoutMs: 90_000 });
@@ -461,7 +473,7 @@ async function main() {
     // Reusing the accepted token while still offline must be rejected locally.
     await tapAction('Back');
     await waitForNode(simulatorUdid, 'Open scanner', { timeoutMs: 90_000 });
-    await tapAction('Open scanner', { useInputSession: false });
+    await openCloudScannerRoute();
     await tapAction('Manual fallback', { timeoutMs: 90_000, useInputSession: false });
     await fillInputExactly(/^Full pass token\b/, passToken);
     await tapAction('Verify token offline', { timeoutMs: 90_000 });

@@ -271,6 +271,7 @@ export async function tapNode(udid, matcher, options = {}) {
     retryIfStillVisible = false,
     retryCount = 3,
     retryDelayMs = 250,
+    useInputSession = false,
     ...waitOptions
   } = options;
   const attempts = retryIfStillVisible ? retryCount : 1;
@@ -347,15 +348,21 @@ export async function tapNode(udid, matcher, options = {}) {
       height: root.height,
       duration: 0.1,
     };
-    await runCommand('baguette', [
-      'tap',
-      '--udid', udid,
-      '--x', String(tap.x),
-      '--y', String(tap.y),
-      '--width', String(tap.width),
-      '--height', String(tap.height),
-      '--duration', String(tap.duration),
-    ]);
+    if (useInputSession) {
+      await runWithShortInputSession(udid, async (session) => {
+        await session.dispatch(tap);
+      });
+    } else {
+      await runCommand('baguette', [
+        'tap',
+        '--udid', udid,
+        '--x', String(tap.x),
+        '--y', String(tap.y),
+        '--width', String(tap.width),
+        '--height', String(tap.height),
+        '--duration', String(tap.duration),
+      ]);
+    }
 
     if (!retryIfStillVisible) {
       return node;

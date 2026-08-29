@@ -15,8 +15,6 @@ import {
   pasteIntoNode,
   readSimulatorClipboard,
   runCommand,
-  startBaguetteInput,
-  stopBaguetteInput,
   takeSimulatorScreenshot,
   tapNode,
   typeIntoNode,
@@ -360,17 +358,10 @@ async function main() {
     reconnect_sync: false,
   };
   let failure = null;
-  let cloudInputSessionStarted = false;
 
   try {
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
-    // Keep the acknowledged input transport alive across the hosted
-    // provisioning tap and the enrollment navigation taps. A one-shot tap
-    // can occasionally leave iOS 26 with a missing touch-up; the session
-    // dispatches the same gestures while keeping its HID lifecycle alive.
-    await startBaguetteInput(simulatorUdid);
-    cloudInputSessionStarted = true;
     await launchGate();
     // Cloud E2E signs the organizer in from runner-local build environment
     // values. Avoid the hosted iOS native keyboard entirely: its
@@ -387,6 +378,7 @@ async function main() {
     }
     await tapAction('Provision this gate', {
       timeoutMs: 120_000,
+      useInputSession: true,
     });
     await waitForNode(simulatorUdid, 'Scanner live', { timeoutMs: 120_000 });
     checks.gate_provisioned = true;
@@ -400,15 +392,14 @@ async function main() {
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
     await tapAction(new RegExp(context.eventName), {
       timeoutMs: 90_000,
+      useInputSession: true,
     });
     await waitForNode(simulatorUdid, 'Create event pass', { timeoutMs: 90_000 });
-    await tapAction('Create event pass');
+    await tapAction('Create event pass', { useInputSession: true });
     await waitForNode(simulatorUdid, 'I consent and continue', { timeoutMs: 90_000 });
-    await tapAction('I consent and continue');
+    await tapAction('I consent and continue', { useInputSession: true });
     await waitForNode(simulatorUdid, 'Capture and issue pass', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
-    await stopBaguetteInput();
-    cloudInputSessionStarted = false;
     checks.camera_image_source_started = true;
     await tapAction('Capture and issue pass', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Pass ready', { timeoutMs: 180_000 });
@@ -509,9 +500,6 @@ async function main() {
     failure = redactEvidenceText(error instanceof Error ? error.message : String(error));
     throw error;
   } finally {
-    if (cloudInputSessionStarted) {
-      await stopBaguetteInput();
-    }
     if (!failure && !Object.values(checks).every(Boolean)) {
       failure = 'The native cloud flow did not complete every acceptance stage.';
     }

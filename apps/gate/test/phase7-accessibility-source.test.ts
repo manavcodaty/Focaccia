@@ -72,9 +72,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.doesNotMatch(driver, /settleNativeAuthResponder/);
   assert.match(driver, /matcher: \/Sign in\|My tickets\//);
   assert.match(driver, /async function tapAction\(matcher, options = \{\}\) \{[\s\S]*?retryIfStillVisible: false/);
-  assert.match(driver, /startBaguetteInput,\s*\n\s*stopBaguetteInput/);
-  assert.match(driver, /await startBaguetteInput\(simulatorUdid\);\s*\n\s*cloudInputSessionStarted = true/);
-  assert.match(driver, /await stopBaguetteInput\(\);\s*\n\s*cloudInputSessionStarted = false/);
+  assert.match(driver, /useInputSession: true/);
+  assert.equal((driver.match(/useInputSession: true/g) ?? []).length, 4);
   assert.match(driver, /try \{\s+await openGateProvisioning\(\);\s+\} catch \(provisioningWaitError\)/);
   assert.doesNotMatch(driver, /tapNode\(simulatorUdid, 'Provision this gate'/);
   assert.doesNotMatch(driver, /tapNode\(simulatorUdid, new RegExp\(context\.eventName\)/);

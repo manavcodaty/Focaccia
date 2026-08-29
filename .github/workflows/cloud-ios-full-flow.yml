@@ -300,14 +300,17 @@ jobs:
           PUBLIC_KEY_DIR="$RUNNER_TEMP/focaccia-cloud-public-key"
           mkdir -p "$PUBLIC_KEY_DIR"
           for attempt in $(seq 1 120); do
-            PUBLIC_KEY_ARTIFACT_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
-              --jq '.artifacts[] | select(.name == "focaccia-cloud-ios-recipient-public-key" and .expired == false) | .id' | tail -n 1)"
-            if [ -n "$PUBLIC_KEY_ARTIFACT_ID" ]; then
-              gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$PUBLIC_KEY_ARTIFACT_ID/zip" \
-                > "$RUNNER_TEMP/focaccia-cloud-public-key.zip"
-              unzip -q -o "$RUNNER_TEMP/focaccia-cloud-public-key.zip" -d "$PUBLIC_KEY_DIR"
-              break
+            PUBLIC_KEY_ARTIFACT_ID=""
+            if ! PUBLIC_KEY_ARTIFACT_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+              --jq '.artifacts[] | select(.name == "focaccia-cloud-ios-recipient-public-key" and .expired == false) | .id' 2>/dev/null | tail -n 1)"; then
+              PUBLIC_KEY_ARTIFACT_ID=""
             fi
+           if [ -n "$PUBLIC_KEY_ARTIFACT_ID" ]; then
+              if gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$PUBLIC_KEY_ARTIFACT_ID/zip" \
+                > "$RUNNER_TEMP/focaccia-cloud-public-key.zip" && unzip -q -o "$RUNNER_TEMP/focaccia-cloud-public-key.zip" -d "$PUBLIC_KEY_DIR"; then
+                break
+              fi
+           fi
             if [ "$attempt" -eq 120 ]; then
               echo 'Timed out waiting for the hosted macOS recipient key.' >&2
               exit 1
@@ -341,8 +344,12 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 450); do
-            COMPLETE_COUNT="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
-              --jq '[.artifacts[] | select(.name == "focaccia-cloud-ios-complete")] | length')"
+            COMPLETE_COUNT="0"
+            if ! COMPLETE_COUNT="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+              --jq '[.artifacts[] | select(.name == "focaccia-cloud-ios-complete")] | length' 2>/dev/null)"; then
+              COMPLETE_COUNT="0"
+            fi
+            COMPLETE_COUNT="${COMPLETE_COUNT:-0}"
             if [ "$COMPLETE_COUNT" -gt 0 ]; then
               exit 0
             fi
@@ -804,9 +811,10 @@ jobs:
           set -euo pipefail
           MATRIX_OUTPUT="$RUNNER_TEMP/focaccia-cloud-ios/cloud-security-matrix.json"
           mkdir -p "$(dirname "$MATRIX_OUTPUT")"
-          if [ -s "$FOCACCIA_CLOUD_CONTEXT_PATH" ]; then
-            EVENT_ID="$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).eventId)" "$FOCACCIA_CLOUD_CONTEXT_PATH")"
-            RUN_ID="$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).runId)" "$FOCACCIA_CLOUD_CONTEXT_PATH")"
+          CONTEXT_PATH="${FOCACCIA_CLOUD_CONTEXT_PATH:-}"
+          if [ -n "$CONTEXT_PATH" ] && [ -s "$CONTEXT_PATH" ]; then
+            EVENT_ID="$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).eventId)" "$CONTEXT_PATH")"
+            RUN_ID="$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).runId)" "$CONTEXT_PATH")"
             node --experimental-strip-types scripts/cloud-security-matrix.ts \
               --event-id "$EVENT_ID" \
               --input-identity-prefix "$RUN_ID" \

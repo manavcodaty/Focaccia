@@ -202,6 +202,10 @@ async function tapAction(matcher, options = {}) {
     // Every caller waits for the next semantic state, so a single bounded tap
     // is safer and preserves a real failure when the action is missed.
     retryIfStillVisible: false,
+    // The hosted iOS 26 simulator can acknowledge a one-shot tap while
+    // dropping its touch-up. Open the short acknowledged session only after
+    // frame discovery; tapNode closes it before the next accessibility poll.
+    useInputSession: true,
     ...options,
   });
 }
@@ -378,7 +382,6 @@ async function main() {
     }
     await tapAction('Provision this gate', {
       timeoutMs: 120_000,
-      useInputSession: true,
     });
     await waitForNode(simulatorUdid, 'Scanner live', { timeoutMs: 120_000 });
     checks.gate_provisioned = true;
@@ -392,12 +395,11 @@ async function main() {
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
     await tapAction(new RegExp(context.eventName), {
       timeoutMs: 90_000,
-      useInputSession: true,
     });
     await waitForNode(simulatorUdid, 'Create event pass', { timeoutMs: 90_000 });
-    await tapAction('Create event pass', { useInputSession: true });
+    await tapAction('Create event pass');
     await waitForNode(simulatorUdid, 'I consent and continue', { timeoutMs: 90_000 });
-    await tapAction('I consent and continue', { useInputSession: true });
+    await tapAction('I consent and continue');
     await waitForNode(simulatorUdid, 'Capture and issue pass', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
     checks.camera_image_source_started = true;

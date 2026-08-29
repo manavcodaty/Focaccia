@@ -360,11 +360,17 @@ async function main() {
     reconnect_sync: false,
   };
   let failure = null;
-  let enrollmentInputSessionStarted = false;
+  let cloudInputSessionStarted = false;
 
   try {
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
+    // Keep the acknowledged input transport alive across the hosted
+    // provisioning tap and the enrollment navigation taps. A one-shot tap
+    // can occasionally leave iOS 26 with a missing touch-up; the session
+    // dispatches the same gestures while keeping its HID lifecycle alive.
+    await startBaguetteInput(simulatorUdid);
+    cloudInputSessionStarted = true;
     await launchGate();
     // Cloud E2E signs the organizer in from runner-local build environment
     // values. Avoid the hosted iOS native keyboard entirely: its
@@ -392,13 +398,6 @@ async function main() {
     // Cloud E2E signs the attendee in from runner-local build environment
     // values, keeping the hosted iOS auth path free of native keyboard input.
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
-    // Keep the input transport alive only across the enrollment navigation
-    // taps. A one-shot tap can occasionally leave iOS 26 with a missing
-    // touch-up; the acknowledged session dispatches the same gesture while
-    // keeping its HID lifecycle alive. Provisioning and the later scanner
-    // security/sync actions remain on the already-tested one-shot path.
-    await startBaguetteInput(simulatorUdid);
-    enrollmentInputSessionStarted = true;
     await tapAction(new RegExp(context.eventName), {
       timeoutMs: 90_000,
     });
@@ -409,7 +408,7 @@ async function main() {
     await waitForNode(simulatorUdid, 'Capture and issue pass', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
     await stopBaguetteInput();
-    enrollmentInputSessionStarted = false;
+    cloudInputSessionStarted = false;
     checks.camera_image_source_started = true;
     await tapAction('Capture and issue pass', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Pass ready', { timeoutMs: 180_000 });
@@ -510,7 +509,7 @@ async function main() {
     failure = redactEvidenceText(error instanceof Error ? error.message : String(error));
     throw error;
   } finally {
-    if (enrollmentInputSessionStarted) {
+    if (cloudInputSessionStarted) {
       await stopBaguetteInput();
     }
     if (!failure && !Object.values(checks).every(Boolean)) {

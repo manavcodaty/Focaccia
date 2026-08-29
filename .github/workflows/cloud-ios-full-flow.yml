@@ -785,7 +785,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          command -v baguette >/dev/null || brew install baguette
+          brew update --quiet
+          if command -v baguette >/dev/null; then
+            brew upgrade baguette
+          else
+            brew install baguette
+          fi
+          command -v baguette >/dev/null
+          brew list --versions baguette
           baguette --version
           nohup baguette serve --host 127.0.0.1 --port 8421 \
             > "$RUNNER_TEMP/focaccia-baguette.log" 2>&1 &

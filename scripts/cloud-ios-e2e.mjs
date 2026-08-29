@@ -418,7 +418,12 @@ async function main() {
     await waitForNode(simulatorUdid, /Offline ready/, { timeoutMs: 90_000 });
     checks.revocation_cache_fresh = true;
     await waitForNode(simulatorUdid, 'Manual fallback', { timeoutMs: 90_000 });
-    await tapAction('Manual fallback');
+    // Opening the manual token form also acquires UIKit keyboard focus. On
+    // hosted iOS 26, closing Baguette's acknowledged input session at that
+    // exact boundary can make backboardd respawn and terminate both apps.
+    // The single raw tap is intentional here; the following paste path uses
+    // its own acknowledged session after the form is visible.
+    await tapAction('Manual fallback', { useInputSession: false });
     await pasteIntoNode(simulatorUdid, /^Full pass token\b/, passToken, { timeoutMs: 90_000 });
     await tapAction('Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Capture and verify attendee', { timeoutMs: 120_000 });
@@ -452,7 +457,7 @@ async function main() {
     await tapAction('Back');
     await waitForNode(simulatorUdid, 'Open scanner', { timeoutMs: 90_000 });
     await tapAction('Open scanner');
-    await tapAction('Manual fallback', { timeoutMs: 90_000 });
+    await tapAction('Manual fallback', { timeoutMs: 90_000, useInputSession: false });
     await fillInputExactly(/^Full pass token\b/, passToken);
     await tapAction('Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /^Entry rejected\b/, { timeoutMs: 90_000 });

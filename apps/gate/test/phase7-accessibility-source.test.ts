@@ -110,6 +110,12 @@ test('cloud scanner, liveness, result, home, and settings actions stay reachable
 
   assert.match(scan, /isCloudE2E \? styles\.cloudPreview : null/);
   assert.match(liveness, /isCloudE2E \? styles\.cloudPreview : null/);
+  assert.doesNotMatch(scan, /from ['"]react-native-vision-camera['"]/);
+  assert.match(scan, /function NativeScanScreen\(\)[\s\S]*require\('react-native-vision-camera'\)/);
+  assert.match(scan, /function CloudScanScreen\(\)[\s\S]*cameraContent=\{<CloudE2EPreview \/>\}/);
+  assert.doesNotMatch(liveness, /import\s*\{[^}]*\}\s*from ['"]react-native-vision-camera['"]/s);
+  assert.match(liveness, /function NativeLivenessScreen\(\)[\s\S]*require\('react-native-vision-camera'\)/);
+  assert.match(liveness, /function CloudLivenessScreen\(\)[\s\S]*camera: null/);
   assert.match(scan, /cloudPreview: \{ aspectRatio: 1\.45, maxHeight: 240 \}/);
   assert.match(liveness, /cloudPreview: \{\s*aspectRatio: 1\.45,\s*maxHeight: 240,\s*\}/s);
   assert.match(result, /\{isCloudE2E \? homeButton : null\}/);

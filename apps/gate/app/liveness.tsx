@@ -1,6 +1,6 @@
 import { prepareCrypto } from '@face-pass/shared';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -10,11 +10,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import {
-  Camera,
-  useCameraDevice,
-  useCameraPermission,
-} from 'react-native-vision-camera';
+import type { Camera as VisionCamera } from 'react-native-vision-camera';
 
 import { MetricRow } from '../src/components/metric-row';
 import { PrimaryButton } from '../src/components/primary-button';
@@ -89,10 +85,16 @@ function CloudE2EPreview() {
   );
 }
 
-export default function LivenessScreen() {
+type LivenessControllerOptions = {
+  camera: { current: VisionCamera | null } | null;
+  isCloudE2E: boolean;
+};
+
+function useLivenessController({
+  camera,
+  isCloudE2E,
+}: LivenessControllerOptions) {
   const router = useRouter();
-  const camera = useRef<Camera>(null);
-  const device = useCameraDevice('back');
   const layout = useResponsiveLayout();
   const {
     cancelPendingVerification,
@@ -100,7 +102,6 @@ export default function LivenessScreen() {
     failLiveness,
     pendingVerification,
   } = useGate();
-  const { hasPermission, requestPermission } = useCameraPermission();
   const [challenge, setChallenge] = useState<LivenessProgress>(() =>
     createChallenge(pickChallenge()));
   const [modelError, setModelError] = useState<string | null>(null);
@@ -156,10 +157,10 @@ export default function LivenessScreen() {
     }, 250);
 
     return () => clearInterval(interval);
-  }, [challenge, failLiveness, isProcessing, pendingVerification, router]);
+  }, [challenge, failLiveness, isCloudE2E, isProcessing, pendingVerification, router]);
 
   async function handleVerificationCapture() {
-    if ((!isCloudE2E && !camera.current) || !pendingVerification || !modelReady || isProcessing) {
+    if ((!isCloudE2E && !camera?.current) || !pendingVerification || !modelReady || isProcessing) {
       return;
     }
 
@@ -169,7 +170,7 @@ export default function LivenessScreen() {
     try {
       const photo = isCloudE2E
         ? await prepareCloudE2EPhoto()
-        : camera.current
+        : camera?.current
           ? await camera.current.takePhoto({ enableShutterSound: false })
           : null;
       if (!photo) throw new Error('The camera is not ready.');
@@ -202,6 +203,50 @@ export default function LivenessScreen() {
     cancelPendingVerification();
     router.replace('/scan');
   }
+
+  return {
+    cancelVerification,
+    challenge,
+    handleVerificationCapture,
+    isProcessing,
+    layout,
+    modelError,
+    modelReady,
+    pendingVerification,
+    processingError,
+    router,
+  };
+}
+
+type LivenessController = ReturnType<typeof useLivenessController>;
+
+function LivenessScreenBody({
+  cameraContent,
+  controller,
+  device,
+  hasPermission,
+  isCloudE2E,
+  requestPermission,
+}: {
+  cameraContent: ReactNode;
+  controller: LivenessController;
+  device: unknown;
+  hasPermission: boolean;
+  isCloudE2E: boolean;
+  requestPermission(): void | Promise<unknown>;
+}) {
+  const {
+    cancelVerification,
+    challenge,
+    handleVerificationCapture,
+    isProcessing,
+    layout,
+    modelError,
+    modelReady,
+    pendingVerification,
+    processingError,
+    router,
+  } = controller;
 
   if (!pendingVerification) {
     return (
@@ -263,6 +308,41 @@ export default function LivenessScreen() {
   const timeoutMs = effectiveLivenessTimeoutMs(
     pendingVerification.event.policy.liveness_timeout_ms,
   );
+  const preview = (
+    <View
+      style={[
+        styles.preview,
+        previewStyle,
+        isCloudE2E ? styles.cloudPreview : null,
+        {
+          aspectRatio: layout.cameraAspectRatio,
+          borderRadius: scaleSpacing(layout, 30, 1.08),
+        },
+      ]}
+    >
+      {cameraContent}
+      <View style={styles.overlay} />
+      <View style={[styles.guide, guideStyle]} />
+      {isProcessing ? (
+        <View
+          style={[
+            styles.processingCard,
+            {
+              borderRadius: scaleSpacing(layout, 22, 1.08),
+              left: scaleSpacing(layout, 24, 1.06),
+              paddingHorizontal: scaleSpacing(layout, 18, 1.06),
+              paddingVertical: scaleSpacing(layout, 16, 1.06),
+              right: scaleSpacing(layout, 24, 1.06),
+              top: scaleSpacing(layout, 24, 1.06),
+            },
+          ]}
+        >
+          <ActivityIndicator color={palette.textInverse} />
+          <Text style={[styles.processingText, { fontSize: scaleFont(layout, 16) }]}>Running secure match...</Text>
+        </View>
+      ) : null}
+    </View>
+  );
 
   return (
     <ScreenShell style={styles.screen} variant="scanner">
@@ -273,221 +353,191 @@ export default function LivenessScreen() {
             { gap: scaleSpacing(layout, 18, 1.08), maxWidth: layout.wideContentMaxWidth },
           ]}
         >
-          <View style={styles.previewColumn}>
-            <View
-              style={[
-                styles.preview,
-                previewStyle,
-                isCloudE2E ? styles.cloudPreview : null,
-                {
-                  aspectRatio: layout.cameraAspectRatio,
-                  borderRadius: scaleSpacing(layout, 30, 1.08),
-                },
-              ]}
-            >
-              {isCloudE2E ? (
-                <CloudE2EPreview />
-              ) : (
-                <Camera
-                  ref={camera}
-                  device={device!}
-                  isActive={true}
-                  photo
-                  style={styles.camera}
-                />
-              )}
-              <View style={styles.overlay} />
-              <View style={[styles.guide, guideStyle]} />
-              {isProcessing ? (
-                <View
-                  style={[
-                    styles.processingCard,
-                    {
-                      borderRadius: scaleSpacing(layout, 22, 1.08),
-                      left: scaleSpacing(layout, 24, 1.06),
-                      paddingHorizontal: scaleSpacing(layout, 18, 1.06),
-                      paddingVertical: scaleSpacing(layout, 16, 1.06),
-                      right: scaleSpacing(layout, 24, 1.06),
-                      top: scaleSpacing(layout, 24, 1.06),
-                    },
-                  ]}
-                >
-                  <ActivityIndicator color={palette.textInverse} />
-                  <Text style={[styles.processingText, { fontSize: scaleFont(layout, 16) }]}>
-                    Running secure match...
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
+          <View style={styles.previewColumn}>{preview}</View>
 
           <View style={[styles.infoColumn, { gap: scaleSpacing(layout, 16, 1.08) }]}>
-            <View style={styles.header}>
-              <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Liveness</Text>
-              <Text
-                style={[
-                  styles.title,
-                  {
-                    fontSize: scaleFont(layout, 30, 1.12),
-                    lineHeight: scaleFont(layout, 34, 1.12),
-                  },
-                ]}
-              >
-                Hold still for live face matching.
-              </Text>
-              <Text
-                style={[
-                  styles.subtitle,
-                  {
-                    fontSize: scaleFont(layout, 15),
-                    lineHeight: scaleFont(layout, 22),
-                  },
-                ]}
-              >
-                Ask the attendee to face the camera with eyes open. Capture a clear frame while they
-                hold still; the gate deletes the temporary image after local matching.
-              </Text>
-            </View>
-
-            <SectionCard eyebrow="Live capture" title="Ready for a clear frame">
-              <StatusChip label="steady face" tone="warning" />
-              {modelError ? <StatusBanner message={modelError} tone="danger" /> : null}
-              {processingError ? <StatusBanner message={processingError} tone="danger" /> : null}
-              {!modelReady && !modelError ? (
-                <StatusBanner message="Loading the FaceNet model and crypto runtime..." tone="neutral" />
-              ) : null}
-              <StatusBanner
-                message={isProcessing ? 'Liveness confirmed. Verifying match...' : challenge.prompt}
-                tone={isProcessing ? 'warning' : 'neutral'}
-              />
-              <MetricRow label="Mode" value="Manual capture confirmation" />
-              <MetricRow label="Status" value={verificationStatus(isProcessing, modelReady)} />
-              <MetricRow
-                label="Timeout"
-                value={`${Math.round(timeoutMs / 1000)} seconds`}
-              />
-            </SectionCard>
-
-            <View style={styles.footerActions}>
-              <PrimaryButton
-                disabled={!modelReady || isProcessing}
-                label={isProcessing ? 'Verifying match...' : 'Capture and verify attendee'}
-                onPress={() => {
-                  void handleVerificationCapture();
-                }}
-              />
-              <PrimaryButton label="Cancel verification" onPress={cancelVerification} tone="ghost" />
-            </View>
+            <LivenessHeader layout={layout} />
+            <LiveCaptureCard
+              challenge={challenge}
+              isProcessing={isProcessing}
+              layout={layout}
+              modelError={modelError}
+              modelReady={modelReady}
+              processingError={processingError}
+              timeoutMs={timeoutMs}
+            />
+            <LivenessActions
+              cancelVerification={cancelVerification}
+              handleVerificationCapture={handleVerificationCapture}
+              isProcessing={isProcessing}
+              modelReady={modelReady}
+            />
           </View>
         </View>
       ) : (
         <>
-          <View style={styles.header}>
-            <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Liveness</Text>
-            <Text
-              style={[
-                styles.title,
-                {
-                  fontSize: scaleFont(layout, 30, 1.12),
-                  lineHeight: scaleFont(layout, 34, 1.12),
-                },
-              ]}
-            >
-              Hold still for live face matching.
-            </Text>
-            <Text
-              style={[
-                styles.subtitle,
-                {
-                  fontSize: scaleFont(layout, 15),
-                  lineHeight: scaleFont(layout, 22),
-                },
-              ]}
-            >
-              Ask the attendee to face the camera with eyes open. Capture a clear frame while they
-              hold still; the gate deletes the temporary image after local matching.
-            </Text>
-          </View>
-
-          <SectionCard eyebrow="Live capture" title="Ready for a clear frame">
-            <StatusChip label="steady face" tone="warning" />
-            {modelError ? <StatusBanner message={modelError} tone="danger" /> : null}
-            {processingError ? <StatusBanner message={processingError} tone="danger" /> : null}
-            {!modelReady && !modelError ? (
-              <StatusBanner message="Loading the FaceNet model and crypto runtime..." tone="neutral" />
-            ) : null}
-            <StatusBanner
-              message={isProcessing ? 'Liveness confirmed. Verifying match...' : challenge.prompt}
-              tone={isProcessing ? 'warning' : 'neutral'}
-            />
-            <MetricRow label="Mode" value="Manual capture confirmation" />
-            <MetricRow label="Status" value={verificationStatus(isProcessing, modelReady)} />
-            <MetricRow
-              label="Timeout"
-              value={`${Math.round(timeoutMs / 1000)} seconds`}
-            />
-          </SectionCard>
-
-          <View
-            style={[
-              styles.preview,
-              previewStyle,
-              isCloudE2E ? styles.cloudPreview : null,
-              {
-                aspectRatio: layout.cameraAspectRatio,
-                borderRadius: scaleSpacing(layout, 30, 1.08),
-              },
-            ]}
-          >
-            {isCloudE2E ? (
-              <CloudE2EPreview />
-            ) : (
-              <Camera
-                ref={camera}
-                device={device!}
-                isActive={true}
-                photo
-                style={styles.camera}
-              />
-            )}
-            <View style={styles.overlay} />
-            <View style={[styles.guide, guideStyle]} />
-            {isProcessing ? (
-              <View
-                style={[
-                  styles.processingCard,
-                  {
-                    borderRadius: scaleSpacing(layout, 22, 1.08),
-                    left: scaleSpacing(layout, 24, 1.06),
-                    paddingHorizontal: scaleSpacing(layout, 18, 1.06),
-                    paddingVertical: scaleSpacing(layout, 16, 1.06),
-                    right: scaleSpacing(layout, 24, 1.06),
-                    top: scaleSpacing(layout, 24, 1.06),
-                  },
-                ]}
-              >
-                <ActivityIndicator color={palette.textInverse} />
-                <Text style={[styles.processingText, { fontSize: scaleFont(layout, 16) }]}>
-                  Running secure match...
-                </Text>
-              </View>
-            ) : null}
-          </View>
-
-          <View style={styles.footerActions}>
-            <PrimaryButton
-              disabled={!modelReady || isProcessing}
-              label={isProcessing ? 'Verifying match...' : 'Capture and verify attendee'}
-              onPress={() => {
-                void handleVerificationCapture();
-              }}
-            />
-            <PrimaryButton label="Cancel verification" onPress={cancelVerification} tone="ghost" />
-          </View>
+          <LivenessHeader layout={layout} />
+          <LiveCaptureCard
+            challenge={challenge}
+            isProcessing={isProcessing}
+            layout={layout}
+            modelError={modelError}
+            modelReady={modelReady}
+            processingError={processingError}
+            timeoutMs={timeoutMs}
+          />
+          {preview}
+          <LivenessActions
+            cancelVerification={cancelVerification}
+            handleVerificationCapture={handleVerificationCapture}
+            isProcessing={isProcessing}
+            modelReady={modelReady}
+          />
         </>
       )}
     </ScreenShell>
   );
+}
+
+function LivenessHeader({ layout }: { layout: ReturnType<typeof useResponsiveLayout> }) {
+  return (
+    <View style={styles.header}>
+      <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Liveness</Text>
+      <Text
+        style={[
+          styles.title,
+          {
+            fontSize: scaleFont(layout, 30, 1.12),
+            lineHeight: scaleFont(layout, 34, 1.12),
+          },
+        ]}
+      >
+        Hold still for live face matching.
+      </Text>
+      <Text
+        style={[
+          styles.subtitle,
+          {
+            fontSize: scaleFont(layout, 15),
+            lineHeight: scaleFont(layout, 22),
+          },
+        ]}
+      >
+        Ask the attendee to face the camera with eyes open. Capture a clear frame while they hold still;
+        the gate deletes the temporary image after local matching.
+      </Text>
+    </View>
+  );
+}
+
+function LiveCaptureCard({
+  challenge,
+  isProcessing,
+  layout,
+  modelError,
+  modelReady,
+  processingError,
+  timeoutMs,
+}: {
+  challenge: LivenessProgress;
+  isProcessing: boolean;
+  layout: ReturnType<typeof useResponsiveLayout>;
+  modelError: string | null;
+  modelReady: boolean;
+  processingError: string | null;
+  timeoutMs: number;
+}) {
+  return (
+    <SectionCard eyebrow="Live capture" title="Ready for a clear frame">
+      <StatusChip label="steady face" tone="warning" />
+      {modelError ? <StatusBanner message={modelError} tone="danger" /> : null}
+      {processingError ? <StatusBanner message={processingError} tone="danger" /> : null}
+      {!modelReady && !modelError ? (
+        <StatusBanner message="Loading the FaceNet model and crypto runtime..." tone="neutral" />
+      ) : null}
+      <StatusBanner
+        message={isProcessing ? 'Liveness confirmed. Verifying match...' : challenge.prompt}
+        tone={isProcessing ? 'warning' : 'neutral'}
+      />
+      <MetricRow label="Mode" value="Manual capture confirmation" />
+      <MetricRow label="Status" value={verificationStatus(isProcessing, modelReady)} />
+      <MetricRow label="Timeout" value={`${Math.round(timeoutMs / 1000)} seconds`} />
+    </SectionCard>
+  );
+}
+
+function LivenessActions({
+  cancelVerification,
+  handleVerificationCapture,
+  isProcessing,
+  modelReady,
+}: {
+  cancelVerification(): void;
+  handleVerificationCapture(): void | Promise<void>;
+  isProcessing: boolean;
+  modelReady: boolean;
+}) {
+  return (
+    <View style={styles.footerActions}>
+      <PrimaryButton
+        disabled={!modelReady || isProcessing}
+        label={isProcessing ? 'Verifying match...' : 'Capture and verify attendee'}
+        onPress={() => {
+          void handleVerificationCapture();
+        }}
+      />
+      <PrimaryButton label="Cancel verification" onPress={cancelVerification} tone="ghost" />
+    </View>
+  );
+}
+
+function CloudLivenessScreen() {
+  const controller = useLivenessController({ camera: null, isCloudE2E: true });
+
+  return (
+    <LivenessScreenBody
+      cameraContent={<CloudE2EPreview />}
+      controller={controller}
+      device={null}
+      hasPermission
+      isCloudE2E
+      requestPermission={() => undefined}
+    />
+  );
+}
+
+function NativeLivenessScreen() {
+  // Keep VisionCamera hooks and native camera initialization out of the cloud
+  // fixture route. Production continues to use the native camera component.
+  const { Camera, useCameraDevice, useCameraPermission } =
+    require('react-native-vision-camera') as typeof import('react-native-vision-camera');
+  const camera = useRef<VisionCamera>(null);
+  const device = useCameraDevice('back');
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const controller = useLivenessController({ camera, isCloudE2E: false });
+
+  return (
+    <LivenessScreenBody
+      cameraContent={
+        <Camera
+          ref={camera}
+          device={device!}
+          isActive
+          photo
+          style={styles.camera}
+        />
+      }
+      controller={controller}
+      device={device}
+      hasPermission={hasPermission}
+      isCloudE2E={false}
+      requestPermission={requestPermission}
+    />
+  );
+}
+
+export default function LivenessScreen() {
+  return isCloudE2E ? <CloudLivenessScreen /> : <NativeLivenessScreen />;
 }
 
 const styles = StyleSheet.create({

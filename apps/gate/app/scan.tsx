@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Image,
   Linking,
@@ -8,12 +8,6 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import {
-  Camera,
-  useCameraDevice,
-  useCameraPermission,
-  useCodeScanner,
-} from 'react-native-vision-camera';
 
 import { MetricRow } from '../src/components/metric-row';
 import { PrimaryButton } from '../src/components/primary-button';
@@ -69,7 +63,229 @@ function GateFallback({
   );
 }
 
-export default function ScanScreen() {
+type ScanScreenBodyProps = {
+  cameraContent: ReactNode;
+  error: string | null;
+  gate: NonNullable<ReturnType<typeof useGate>['gate']> | null;
+  isCloudE2E: boolean;
+  isProcessing: boolean;
+  layout: ReturnType<typeof useResponsiveLayout>;
+  router: ReturnType<typeof useRouter>;
+  status: string;
+};
+
+function ScanScreenBody({
+  cameraContent,
+  error,
+  gate,
+  isCloudE2E,
+  isProcessing,
+  layout,
+  router,
+  status,
+}: ScanScreenBodyProps) {
+  if (!gate) {
+    return (
+      <GateFallback
+        body="This device is not provisioned yet. Scan the web dashboard QR first."
+        onPrimaryPress={() => router.replace('/provision')}
+        primaryLabel="Provision gate"
+        title="Provisioning required"
+      />
+    );
+  }
+
+  const previewStyle = layout.isLandscape
+    ? {
+        width: Math.min(
+          layout.previewFrameMaxWidth,
+          layout.shortSide * (layout.isTablet ? 0.82 : 0.9),
+        ),
+      }
+    : {
+        maxWidth: layout.previewFrameMaxWidth,
+        width: '100%' as const,
+      };
+  const scanFrameStyle: ViewStyle = {
+    borderRadius: scaleSpacing(layout, 30, 1.08),
+    height: layout.isLandscape ? '52%' : '46%',
+    left: layout.isLandscape ? '14%' : '10%',
+    top: layout.isLandscape ? '24%' : '27%',
+    width: layout.isLandscape ? '72%' : '80%',
+  };
+  const livenessTimeoutMs = effectiveLivenessTimeoutMs(gate.policy.liveness_timeout_ms);
+  const preview = (
+    <View
+      style={[
+        styles.preview,
+        previewStyle,
+        isCloudE2E ? styles.cloudPreview : null,
+        {
+          aspectRatio: layout.previewAspectRatio,
+          borderRadius: scaleSpacing(layout, 30, 1.08),
+        },
+      ]}
+    >
+      {cameraContent}
+      <View style={styles.dimTop} />
+      <View style={styles.dimBottom} />
+      <View style={[styles.scanFrame, scanFrameStyle]} />
+    </View>
+  );
+
+  return (
+    <ScreenShell style={styles.screen} variant="scanner">
+      {layout.isLandscape ? (
+        <View
+          style={[
+            styles.landscapeShell,
+            { gap: scaleSpacing(layout, 18, 1.08), maxWidth: layout.wideContentMaxWidth },
+          ]}
+        >
+          <View style={styles.previewColumn}>{preview}</View>
+
+          <View style={[styles.infoColumn, { gap: scaleSpacing(layout, 16, 1.08) }]}>
+            <ScanHeader layout={layout} eventName={gate.event_name} />
+            <ScanStatusCard
+              error={error}
+              gate={gate}
+              isProcessing={isProcessing}
+              layout={layout}
+              livenessTimeoutMs={livenessTimeoutMs}
+              status={status}
+            />
+            <ScanActions router={router} />
+          </View>
+        </View>
+      ) : (
+        <>
+          <ScanHeader layout={layout} eventName={gate.event_name} />
+          <ScanStatusCard
+            error={error}
+            gate={gate}
+            isProcessing={isProcessing}
+            layout={layout}
+            livenessTimeoutMs={livenessTimeoutMs}
+            status={status}
+          />
+          {preview}
+          <ScanActions router={router} />
+        </>
+      )}
+    </ScreenShell>
+  );
+}
+
+function ScanHeader({
+  eventName,
+  layout,
+}: {
+  eventName: string;
+  layout: ReturnType<typeof useResponsiveLayout>;
+}) {
+  return (
+    <View style={styles.header}>
+      <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Scan</Text>
+      <Text
+        style={[
+          styles.title,
+          {
+            fontSize: scaleFont(layout, 32, 1.12),
+            lineHeight: scaleFont(layout, 36, 1.12),
+          },
+        ]}
+      >
+        {eventName}
+      </Text>
+      <Text
+        style={[
+          styles.subtitle,
+          {
+            fontSize: scaleFont(layout, 15),
+            lineHeight: scaleFont(layout, 22),
+          },
+        ]}
+      >
+        Offline verification checks signature, event, replay, revocation cache, and gate-only
+        decryptability before live matching starts.
+      </Text>
+    </View>
+  );
+}
+
+function ScanStatusCard({
+  error,
+  gate,
+  isProcessing,
+  layout,
+  livenessTimeoutMs,
+  status,
+}: {
+  error: string | null;
+  gate: NonNullable<ReturnType<typeof useGate>['gate']>;
+  isProcessing: boolean;
+  layout: ReturnType<typeof useResponsiveLayout>;
+  livenessTimeoutMs: number;
+  status: string;
+}) {
+  return (
+    <SectionCard eyebrow="Status" title="Scanner live">
+      <View style={styles.statusRow}>
+        <StatusChip label="Offline ready" tone="success" />
+        <StatusChip
+          label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'}
+          tone="warning"
+        />
+      </View>
+      <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
+      <MetricRow label="Liveness timeout" value={`${Math.round(livenessTimeoutMs / 1000)} seconds`} />
+      <StatusBanner
+        message={error ?? status}
+        tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
+      />
+    </SectionCard>
+  );
+}
+
+function ScanActions({ router }: { router: ReturnType<typeof useRouter> }) {
+  return (
+    <View style={styles.footerActions}>
+      <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
+      <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
+      <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
+    </View>
+  );
+}
+
+function CloudScanScreen() {
+  const router = useRouter();
+  const layout = useResponsiveLayout();
+  const { gate } = useGate();
+
+  return (
+    <ScanScreenBody
+      cameraContent={<CloudE2EPreview />}
+      error={null}
+      gate={gate}
+      isCloudE2E
+      isProcessing={false}
+      layout={layout}
+      router={router}
+      status="Ready to scan"
+    />
+  );
+}
+
+function NativeScanScreen() {
+  // Keep VisionCamera hooks out of the cloud fixture route. Initializing the
+  // simulator camera without rendering a real camera can restart backboardd;
+  // the native production route still loads and uses the module unchanged.
+  const {
+    Camera,
+    useCameraDevice,
+    useCameraPermission,
+    useCodeScanner,
+  } = require('react-native-vision-camera') as typeof import('react-native-vision-camera');
   const router = useRouter();
   const layout = useResponsiveLayout();
   const { gate, processToken } = useGate();
@@ -124,18 +340,7 @@ export default function ScanScreen() {
     ),
   );
 
-  if (!gate) {
-    return (
-      <GateFallback
-        body="This device is not provisioned yet. Scan the web dashboard QR first."
-        onPrimaryPress={() => router.replace('/provision')}
-        primaryLabel="Provision gate"
-        title="Provisioning required"
-      />
-    );
-  }
-
-  if (!device && !isCloudE2E) {
+  if (!device) {
     return (
       <GateFallback
         body="A rear camera is required for QR scanning and live verification."
@@ -146,7 +351,7 @@ export default function ScanScreen() {
     );
   }
 
-  if (!hasPermission && !isCloudE2E) {
+  if (!hasPermission) {
     return (
       <GateFallback
         body="Camera access is required to scan passes and complete offline verification."
@@ -163,194 +368,29 @@ export default function ScanScreen() {
     );
   }
 
-  const previewStyle = layout.isLandscape
-    ? {
-        width: Math.min(
-          layout.previewFrameMaxWidth,
-          layout.shortSide * (layout.isTablet ? 0.82 : 0.9),
-        ),
-      }
-    : {
-        maxWidth: layout.previewFrameMaxWidth,
-        width: '100%' as const,
-      };
-  const scanFrameStyle: ViewStyle = {
-    borderRadius: scaleSpacing(layout, 30, 1.08),
-    height: layout.isLandscape ? '52%' : '46%',
-    left: layout.isLandscape ? '14%' : '10%',
-    top: layout.isLandscape ? '24%' : '27%',
-    width: layout.isLandscape ? '72%' : '80%',
-  };
-  const livenessTimeoutMs = effectiveLivenessTimeoutMs(gate.policy.liveness_timeout_ms);
-
   return (
-    <ScreenShell style={styles.screen} variant="scanner">
-      {layout.isLandscape ? (
-        <View
-          style={[
-            styles.landscapeShell,
-            { gap: scaleSpacing(layout, 18, 1.08), maxWidth: layout.wideContentMaxWidth },
-          ]}
-        >
-          <View style={styles.previewColumn}>
-            <View
-              style={[
-                styles.preview,
-                previewStyle,
-                isCloudE2E ? styles.cloudPreview : null,
-                {
-                  aspectRatio: layout.previewAspectRatio,
-                  borderRadius: scaleSpacing(layout, 30, 1.08),
-                },
-              ]}
-            >
-              {isCloudE2E ? (
-                <CloudE2EPreview />
-              ) : (
-                <Camera
-                  codeScanner={codeScanner}
-                  device={device!}
-                  isActive={!isProcessing}
-                  style={styles.camera}
-                />
-              )}
-              <View style={styles.dimTop} />
-              <View style={styles.dimBottom} />
-              <View style={[styles.scanFrame, scanFrameStyle]} />
-            </View>
-          </View>
-
-          <View style={[styles.infoColumn, { gap: scaleSpacing(layout, 16, 1.08) }]}>
-            <View style={styles.header}>
-              <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Scan</Text>
-              <Text
-                style={[
-                  styles.title,
-                  {
-                    fontSize: scaleFont(layout, 32, 1.12),
-                    lineHeight: scaleFont(layout, 36, 1.12),
-                  },
-                ]}
-              >
-                {gate.event_name}
-              </Text>
-              <Text
-                style={[
-                  styles.subtitle,
-                  {
-                    fontSize: scaleFont(layout, 15),
-                    lineHeight: scaleFont(layout, 22),
-                  },
-                ]}
-              >
-                Offline verification checks signature, event, replay, revocation cache, and gate-only
-                decryptability before live matching starts.
-              </Text>
-            </View>
-
-            <SectionCard eyebrow="Status" title="Scanner live">
-              <View style={styles.statusRow}>
-                <StatusChip label="Offline ready" tone="success" />
-                <StatusChip
-                  label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'}
-                  tone="warning"
-                />
-              </View>
-              <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
-              <MetricRow label="Liveness timeout" value={`${Math.round(livenessTimeoutMs / 1000)} seconds`} />
-              <StatusBanner
-                message={error ?? status}
-                tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
-              />
-            </SectionCard>
-
-            <View style={styles.footerActions}>
-              <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
-              <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
-              <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
-            </View>
-          </View>
-        </View>
-      ) : (
-        <>
-          <View style={styles.header}>
-            <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Scan</Text>
-            <Text
-              style={[
-                styles.title,
-                {
-                  fontSize: scaleFont(layout, 32, 1.12),
-                  lineHeight: scaleFont(layout, 36, 1.12),
-                },
-              ]}
-            >
-              {gate.event_name}
-            </Text>
-            <Text
-              style={[
-                styles.subtitle,
-                {
-                  fontSize: scaleFont(layout, 15),
-                  lineHeight: scaleFont(layout, 22),
-                },
-              ]}
-            >
-              Offline verification checks signature, event, replay, revocation cache, and gate-only
-              decryptability before live matching starts.
-            </Text>
-          </View>
-
-          <SectionCard eyebrow="Status" title="Scanner live">
-            <View style={styles.statusRow}>
-              <StatusChip label="Offline ready" tone="success" />
-              <StatusChip
-                label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'}
-                tone="warning"
-              />
-            </View>
-            <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
-            <MetricRow label="Liveness timeout" value={`${Math.round(livenessTimeoutMs / 1000)} seconds`} />
-            <StatusBanner
-              message={error ?? status}
-              tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
-            />
-          </SectionCard>
-
-          <View
-            style={[
-                styles.preview,
-                previewStyle,
-                isCloudE2E ? styles.cloudPreview : null,
-                {
-                aspectRatio: layout.previewAspectRatio,
-                borderRadius: scaleSpacing(layout, 30, 1.08),
-              },
-            ]}
-          >
-            {isCloudE2E ? (
-              <CloudE2EPreview />
-            ) : (
-              <Camera
-                codeScanner={codeScanner}
-                device={device!}
-                isActive={!isProcessing}
-                style={styles.camera}
-              />
-            )}
-            <View style={styles.dimTop} />
-            <View style={styles.dimBottom} />
-            <View style={[styles.scanFrame, scanFrameStyle]} />
-          </View>
-
-          <View style={styles.footerActions}>
-            <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
-            <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
-            <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
-          </View>
-        </>
-      )}
-    </ScreenShell>
+    <ScanScreenBody
+      cameraContent={
+        <Camera
+          codeScanner={codeScanner}
+          device={device}
+          isActive={!isProcessing}
+          style={styles.camera}
+        />
+      }
+      error={error}
+      gate={gate}
+      isCloudE2E={false}
+      isProcessing={isProcessing}
+      layout={layout}
+      router={router}
+      status={status}
+    />
   );
+}
+
+export default function ScanScreen() {
+  return isCloudE2E ? <CloudScanScreen /> : <NativeScanScreen />;
 }
 
 const styles = StyleSheet.create({

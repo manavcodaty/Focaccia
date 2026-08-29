@@ -376,10 +376,7 @@ async function main() {
         );
       });
     }
-    await tapNode(simulatorUdid, 'Provision this gate', {
-      retryIfStillVisible: true,
-      retryCount: 8,
-      retryDelayMs: 600,
+    await tapAction('Provision this gate', {
       timeoutMs: 120_000,
     });
     await waitForNode(simulatorUdid, 'Scanner live', { timeoutMs: 120_000 });
@@ -392,10 +389,7 @@ async function main() {
     // Cloud E2E signs the attendee in from runner-local build environment
     // values, keeping the hosted iOS auth path free of native keyboard input.
     await waitForNode(simulatorUdid, 'My tickets', { timeoutMs: 90_000 });
-    await tapNode(simulatorUdid, new RegExp(context.eventName), {
-      retryIfStillVisible: true,
-      retryCount: 6,
-      retryDelayMs: 500,
+    await tapAction(new RegExp(context.eventName), {
       timeoutMs: 90_000,
     });
     await waitForNode(simulatorUdid, 'Create event pass', { timeoutMs: 90_000 });

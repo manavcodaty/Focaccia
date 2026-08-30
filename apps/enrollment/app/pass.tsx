@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
@@ -42,6 +42,15 @@ export default function PassScreen() {
   const pass = state.pass;
   const ticket = state.selectedTicket;
   const cloudEvidenceSafe = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_EVIDENCE_SAFE === '1';
+  const passToken = pass?.token;
+  const autoCopiedPassTokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isCloudE2E || !passToken || autoCopiedPassTokenRef.current === passToken) return;
+
+    autoCopiedPassTokenRef.current = passToken;
+    void copyPassTokenToClipboard(passToken, () => undefined);
+  }, [passToken]);
 
   if (!pass) {
     return (
@@ -89,8 +98,6 @@ export default function PassScreen() {
         <Text style={styles.eventMeta}>{pass.event.location || 'Location to be confirmed'}</Text>
         <Text style={styles.eventMeta}>{new Date(pass.event.starts_at).toLocaleString()}</Text>
       </View>
-
-      {isCloudE2E ? copyTokenButton : null}
 
       <SectionCard eyebrow="Event pass" title={pass.ticketTypeName} tone="credential">
         <Text style={styles.generation}>Generation {pass.generation} of 3</Text>

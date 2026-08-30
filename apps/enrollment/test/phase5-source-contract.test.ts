@@ -90,8 +90,25 @@ test('cloud enrollment keeps the required actions in the initial viewport', () =
   assert.match(ticket, /\{!isCloudE2E \? createPassButton : null\}/);
   assert.match(consent, /\{isCloudE2E \? consentButton : null\}/);
   assert.match(consent, /\{!isCloudE2E \? consentButton : null\}/);
-  assert.match(pass, /\{isCloudE2E \? copyTokenButton : null\}/);
+  assert.doesNotMatch(pass, /\{isCloudE2E \? copyTokenButton : null\}/);
   assert.match(pass, /\{!isCloudE2E \? copyTokenButton : null\}/);
+});
+
+test('pass token auto-copy is cloud-only and manual copy remains production-only', () => {
+  const passScreen = source('apps/enrollment/app/pass.tsx');
+
+  assert.match(passScreen, /const isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
+  assert.match(passScreen, /const autoCopiedPassTokenRef = useRef<string \| null>\(null\)/);
+  assert.match(
+    passScreen,
+    /useEffect\(\(\) => \{\s*if \(!isCloudE2E \|\| !passToken \|\| autoCopiedPassTokenRef\.current === passToken\) return;\s*autoCopiedPassTokenRef\.current = passToken;\s*void copyPassTokenToClipboard\(passToken, \(\) => undefined\);\s*\}, \[passToken\]\);/s,
+  );
+  assert.match(
+    passScreen,
+    /label="Copy full signed token"[\s\S]*void copyPassTokenToClipboard\(pass\.token, \(\) => setMessage\('Full signed token copied briefly\.'\)\)/,
+  );
+  assert.match(passScreen, /\{!isCloudE2E \? copyTokenButton : null\}/);
+  assert.doesNotMatch(passScreen, /\{isCloudE2E \? copyTokenButton : null\}/);
 });
 
 test('cloud capture avoids the native scroll responder while production keeps scrolling', () => {

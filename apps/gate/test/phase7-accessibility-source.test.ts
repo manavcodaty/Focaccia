@@ -77,6 +77,7 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(driver, /tapAction\('Manual fallback', \{ useInputSession: false \}\)/);
   assert.match(driver, /tapAction\('Manual fallback', \{ timeoutMs: 90_000, useInputSession: false \}\)/);
   assert.match(driver, /tapAction\('Copy full signed token', \{ useInputSession: false \}\)/);
+  assert.match(driver, /simctl', 'terminate', simulatorUdid, enrollmentBundleId/);
   assert.match(driver, /matcher: \/Prepare this gate\|Open scanner\|Scanner live/);
   assert.doesNotMatch(driver, /openCloudScannerRoute/);
   assert.doesNotMatch(driver, /simctl',\s+'openurl'/);

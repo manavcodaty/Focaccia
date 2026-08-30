@@ -416,6 +416,10 @@ async function main() {
     passToken = await readSimulatorClipboard(simulatorUdid);
     assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
 
+    // The completed Enrollment scene can retain pasteboard/keyboard state
+    // while it is backgrounded. Explicitly end that scene before bringing
+    // Gate forward so hosted BackBoard does not arbitrate two app scenes.
+    await runCommand('xcrun', ['simctl', 'terminate', simulatorUdid, enrollmentBundleId]);
     await launchGate();
     // Returning to the scanner creates a new UIKit scene after the enrollment
     // app has been foregrounded. The cloud Gate app opens its scanner on a

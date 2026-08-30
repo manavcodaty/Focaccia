@@ -18,6 +18,7 @@ import { useGate } from '../src/state/gate-context';
 import { palette, typography } from '../src/theme';
 
 const isCloudE2E = process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1';
+let cloudInitialRouteConsumed = false;
 
 export default function GateHomeScreen() {
   const router = useRouter();
@@ -27,8 +28,20 @@ export default function GateHomeScreen() {
   const scannerReady = cache.state === 'fresh';
   const pendingSyncCount = stats?.pendingSyncCount ?? 0;
   useEffect(() => {
-    if (isCloudE2E && dbReady && !gate) {
+    if (!isCloudE2E || !dbReady) {
+      return;
+    }
+    if (!gate) {
       router.replace('/provision');
+      return;
+    }
+    // A fresh hosted app launch is the only boundary that needs to open the
+    // cloud scanner automatically. Keeping this module-local prevents the
+    // Home and Back actions later in the same run from redirecting back to the
+    // scanner, while production navigation remains button-driven.
+    if (!cloudInitialRouteConsumed) {
+      cloudInitialRouteConsumed = true;
+      router.replace('/scan');
     }
   }, [dbReady, gate, router]);
   const readinessLabel = !gate

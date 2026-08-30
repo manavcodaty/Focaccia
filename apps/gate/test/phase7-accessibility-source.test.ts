@@ -56,6 +56,8 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(provision, /!isCloudE2E \? \(\s*<PrimaryButton/);
   assert.match(home, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
   assert.match(home, /router\.replace\('\/provision'\)/);
+  assert.match(home, /let cloudInitialRouteConsumed = false/);
+  assert.match(home, /cloudInitialRouteConsumed = true;\s+router\.replace\('\/scan'\)/);
   assert.match(shell, /isCloudE2E = process\.env\.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E === '1'/);
   assert.match(shell, /const scrollContent = isCloudE2E \? \(\s*content\s*\) : scroll \?/);
   assert.match(shell, /isCloudE2E \? \(\s*<View style=\{styles\.keyboard\}>\{scrollContent\}<\/View>/);
@@ -74,9 +76,9 @@ test('gate feedback, controls, and credential fields are explicitly labeled', as
   assert.match(driver, /async function tapAction\(matcher, options = \{\}\) \{[\s\S]*?retryIfStillVisible: false,[\s\S]*?useInputSession: true/);
   assert.match(driver, /tapAction\('Manual fallback', \{ useInputSession: false \}\)/);
   assert.match(driver, /tapAction\('Manual fallback', \{ timeoutMs: 90_000, useInputSession: false \}\)/);
-  assert.match(driver, /async function openCloudScannerRoute\(\)/);
-  assert.match(driver, /face-pass-gate:\/\/\/scan/);
-  assert.equal((driver.match(/await openCloudScannerRoute\(\);/g) ?? []).length, 2);
+  assert.match(driver, /matcher: \/Prepare this gate\|Open scanner\|Scanner live/);
+  assert.doesNotMatch(driver, /openCloudScannerRoute/);
+  assert.doesNotMatch(driver, /simctl',\s+'openurl'/);
   assert.match(driver, /try \{\s+await openGateProvisioning\(\);\s+\} catch \(provisioningWaitError\)/);
   assert.doesNotMatch(driver, /tapNode\(simulatorUdid, 'Provision this gate'/);
   assert.doesNotMatch(driver, /tapNode\(simulatorUdid, new RegExp\(context\.eventName\)/);

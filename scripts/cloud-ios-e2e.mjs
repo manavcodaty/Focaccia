@@ -409,7 +409,10 @@ async function main() {
     checks.enrollment_camera_capture_completed = true;
     await screenshot('enrollment-pass.png');
 
-    await tapAction('Copy full signed token');
+    // Copying the token does not need a keyboard or an acknowledged input
+    // session. Keeping this final Enrollment gesture raw prevents a delayed
+    // session teardown from overlapping the fresh Gate launch on hosted iOS.
+    await tapAction('Copy full signed token', { useInputSession: false });
     passToken = await readSimulatorClipboard(simulatorUdid);
     assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
 

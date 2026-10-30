@@ -155,7 +155,7 @@ export default function TicketsScreen() {
           accessibilityRole="button"
           onPress={() => Alert.alert(
             'Switch attendee?',
-            'This removes this attendee’s locally saved passes and pending enrollment from this prepared device before signing out.',
+            'Removes saved passes and pending enrollment from this phone.',
             [
               { style: 'cancel', text: 'Cancel' },
               {
@@ -176,7 +176,7 @@ export default function TicketsScreen() {
 
       <View style={styles.claimBlock}>
         <Text style={styles.claimTitle}>Enter an owned claim code</Text>
-        <Text style={styles.claimHelp}>A code never replaces sign-in. The backend also verifies that this account owns the ticket.</Text>
+        <Text style={styles.claimHelp}>Only codes for this account are accepted.</Text>
         <TextInput
           accessibilityLabel="Owned ticket claim code"
           autoCapitalize="characters"
@@ -215,7 +215,7 @@ export default function TicketsScreen() {
       {message ? <StatusBanner message={message} title="Ticket update" tone="warning" /> : null}
       <View style={styles.listHeading}>
         <Text style={styles.listTitle}>Your tickets</Text>
-        <Text style={styles.listHint}>Pull down to refresh organizer changes.</Text>
+        <Text style={styles.listHint}>Pull to refresh.</Text>
       </View>
     </View>
   ), [claimCode, isClaiming, message, passes, reset, router, selectTicket, signOut, user?.email]);
@@ -233,7 +233,7 @@ export default function TicketsScreen() {
         ListEmptyComponent={isRefreshing ? null : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No tickets yet</Text>
-            <Text style={styles.emptyBody}>Use the public ticket site to claim a free ticket, then refresh this list.</Text>
+            <Text style={styles.emptyBody}>Claim a ticket online, then refresh.</Text>
           </View>
         )}
         ListFooterComponent={(

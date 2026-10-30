@@ -1,4 +1,4 @@
-export const focacciaBrand = {
+export const privatePassBrand = {
   background: "#F7F9FC",
   border: "#D8E0F0",
   borderDark: "#2A3550",
@@ -18,9 +18,9 @@ export const focacciaBrand = {
   warningSoft: "#F5E6CB",
 } as const;
 
-export const focacciaWordmark = "Focaccia" as const;
+export const privatePassWordmark = "PrivatePass" as const;
 
-export const focacciaBrandMark = {
+export const privatePassBrandMark = {
   checkPath: "M51 64.5 60 73l18-20",
   innerRect: {
     height: 92,

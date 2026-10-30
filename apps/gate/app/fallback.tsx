@@ -26,7 +26,7 @@ export default function FallbackScreen() {
     try {
       const decision = await processToken(token, Date.now());
 
-      router.replace(decision ? '/result' : '/liveness');
+      router.replace(decision ? '/result' : '/face-match');
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Manual verification failed.');
     } finally {
@@ -38,8 +38,7 @@ export default function FallbackScreen() {
     <ScreenShell>
       <SectionCard eyebrow="Scanner recovery" title="Paste the full pass token" tone="subtle">
         <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          This screen accepts the full QR token text when optical scanning fails. The short queue
-          code is not enough to reconstruct a pass offline.
+          Paste the full pass token. Short queue codes cannot verify entry.
         </Text>
         {!gate ? (
           <StatusBanner

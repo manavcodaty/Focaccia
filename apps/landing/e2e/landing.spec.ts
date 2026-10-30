@@ -30,6 +30,9 @@ function normalizeHref(value: string | null): string {
 
 test("landing page navigation, FAQ, and layout remain usable", async ({ page }) => {
   await page.goto("/");
+  await expect(page).toHaveTitle("PrivatePass — Privacy-first event access");
+  await expect(page.locator("nav[aria-label='Primary']").getByRole("link", { name: "PrivatePass", exact: true })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText(/focaccia/i);
   await expect(page.getByRole("heading", { level: 1, name: "Your face is your ticket" })).toBeVisible();
   await expect(page.locator("img")).toHaveCount(0);
 
@@ -37,7 +40,7 @@ test("landing page navigation, FAQ, and layout remain usable", async ({ page }) 
   await expect(page.locator("#how-it-works")).toBeInViewport();
 
   await page.getByRole("button", { name: "Is biometric data stored centrally?" }).click();
-  await expect(page.getByText(/Raw images and embeddings are never uploaded/)).toBeVisible();
+  await expect(page.getByText(/Only the encrypted event template is uploaded/)).toBeVisible();
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);

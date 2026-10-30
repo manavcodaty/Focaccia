@@ -1,0 +1,104 @@
+[
+  {
+    "slide": 1,
+    "outlineChangedPercent": 0.2536805555555556,
+    "nativeChangedPercent": 0.3861111111111111,
+    "nativeMeanError": 1.5114759259259252
+  },
+  {
+    "slide": 2,
+    "outlineChangedPercent": 0.23958333333333334,
+    "nativeChangedPercent": 1.1843055555555555,
+    "nativeMeanError": 2.76656759259261
+  },
+  {
+    "slide": 3,
+    "outlineChangedPercent": 0.2665972222222222,
+    "nativeChangedPercent": 1.0075694444444445,
+    "nativeMeanError": 2.382853935185076
+  },
+  {
+    "slide": 4,
+    "outlineChangedPercent": 0.25833333333333336,
+    "nativeChangedPercent": 0.6856944444444445,
+    "nativeMeanError": 1.985117824074087
+  },
+  {
+    "slide": 5,
+    "outlineChangedPercent": 0.16868055555555556,
+    "nativeChangedPercent": 0.8832638888888888,
+    "nativeMeanError": 2.3219775462962753
+  },
+  {
+    "slide": 6,
+    "outlineChangedPercent": 0.2390972222222222,
+    "nativeChangedPercent": 1.0175694444444445,
+    "nativeMeanError": 2.382279861111086
+  },
+  {
+    "slide": 7,
+    "outlineChangedPercent": 0.29791666666666666,
+    "nativeChangedPercent": 1.3736805555555556,
+    "nativeMeanError": 3.0449303240739702
+  },
+  {
+    "slide": 8,
+    "outlineChangedPercent": 0.16305555555555556,
+    "nativeChangedPercent": 1.6492361111111111,
+    "nativeMeanError": 3.3848817129630597
+  },
+  {
+    "slide": 9,
+    "outlineChangedPercent": 0.22756944444444444,
+    "nativeChangedPercent": 1.140763888888889,
+    "nativeMeanError": 2.6129576388888203
+  },
+  {
+    "slide": 10,
+    "outlineChangedPercent": 0.3894444444444444,
+    "nativeChangedPercent": 1.1878472222222223,
+    "nativeMeanError": 2.676688425925917
+  },
+  {
+    "slide": 11,
+    "outlineChangedPercent": 0.5142361111111111,
+    "nativeChangedPercent": 1.4617361111111111,
+    "nativeMeanError": 3.043737268518359
+  },
+  {
+    "slide": 12,
+    "outlineChangedPercent": 0.386875,
+    "nativeChangedPercent": 1.615763888888889,
+    "nativeMeanError": 3.277671527778133
+  },
+  {
+    "slide": 13,
+    "outlineChangedPercent": 0.4901388888888889,
+    "nativeChangedPercent": 1.7043055555555555,
+    "nativeMeanError": 3.296858564814698
+  },
+  {
+    "slide": 14,
+    "outlineChangedPercent": 0.2540277777777778,
+    "nativeChangedPercent": 1.3476388888888888,
+    "nativeMeanError": 3.0048453703703593
+  },
+  {
+    "slide": 15,
+    "outlineChangedPercent": 0.4565972222222222,
+    "nativeChangedPercent": 1.4641666666666666,
+    "nativeMeanError": 3.1116692129629313
+  },
+  {
+    "slide": 16,
+    "outlineChangedPercent": 0.18833333333333332,
+    "nativeChangedPercent": 0.658125,
+    "nativeMeanError": 2.11102939814826
+  },
+  {
+    "slide": 17,
+    "outlineChangedPercent": 0.22604166666666667,
+    "nativeChangedPercent": 1.2161805555555556,
+    "nativeMeanError": 2.7843335648146437
+  }
+]

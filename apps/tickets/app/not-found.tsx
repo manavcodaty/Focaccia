@@ -1,6 +1,20 @@
+import { TicketXIcon } from 'lucide-react';
 import Link from 'next/link';
+
+import { Page } from '@/components/page';
 import { Button } from '@/components/ui/button';
+import { Empty, EmptyContent, EmptyHeader, EmptyMedia } from '@/components/ui/empty';
 
 export default function NotFound() {
-  return <main className="page-shell route-message" id="main-content"><p className="overline">404 · Page not found</p><h1 className="display-heading">There is no ticket here</h1><p>The address may be wrong, or the event may no longer be publicly listed.</p><Button asChild><Link href="/">Browse listed events</Link></Button></main>;
+  return (
+    <Page className="justify-center">
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon"><TicketXIcon /></EmptyMedia>
+          <h1 className="text-lg font-medium tracking-tight">Page not found</h1>
+        </EmptyHeader>
+        <EmptyContent><Button asChild><Link href="/">Browse events</Link></Button></EmptyContent>
+      </Empty>
+    </Page>
+  );
 }

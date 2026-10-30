@@ -5,6 +5,7 @@ import ReactAppDependencyProvider
 @main
 class AppDelegate: ExpoAppDelegate {
   var window: UIWindow?
+  var gateLaunchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
@@ -21,11 +22,7 @@ class AppDelegate: ExpoAppDelegate {
     reactNativeFactory = factory
 
 #if os(iOS) || os(tvOS)
-    window = UIWindow(frame: UIScreen.main.bounds)
-    factory.startReactNative(
-      withModuleName: "main",
-      in: window,
-      launchOptions: launchOptions)
+    gateLaunchOptions = launchOptions
 #endif
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -66,5 +63,69 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
 #else
     return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
+  }
+}
+
+class GateSceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
+             options connectionOptions: UIScene.ConnectionOptions) {
+    guard let windowScene = scene as? UIWindowScene,
+          let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+          let factory = appDelegate.reactNativeFactory else { return }
+    let window = UIWindow(windowScene: windowScene)
+    self.window = window
+    appDelegate.window = window
+    var launchOptions = appDelegate.gateLaunchOptions ?? [:]
+    if let context = connectionOptions.urlContexts.first {
+      launchOptions[.url] = context.url
+      launchOptions[.sourceApplication] = context.options.sourceApplication
+    }
+    if let activity = connectionOptions.userActivities.first {
+      launchOptions[.userActivityDictionary] = [
+        "UIApplicationLaunchOptionsUserActivityKey": activity
+      ]
+    }
+    factory.startReactNative(withModuleName: "main", in: window, launchOptions: launchOptions)
+    self.scene(scene, openURLContexts: connectionOptions.urlContexts)
+    for activity in connectionOptions.userActivities {
+      self.scene(scene, continue: activity)
+    }
+  }
+
+  func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
+    guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+    let application = UIApplication.shared
+    for context in contexts {
+      var options: [UIApplication.OpenURLOptionsKey: Any] = [
+        .openInPlace: context.options.openInPlace
+      ]
+      options[.sourceApplication] = context.options.sourceApplication
+      options[.annotation] = context.options.annotation
+      _ = appDelegate.application(application, open: context.url, options: options)
+    }
+  }
+
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+    _ = appDelegate.application(UIApplication.shared, continue: userActivity,
+                               restorationHandler: { _ in })
+  }
+
+  func sceneDidBecomeActive(_ scene: UIScene) {
+    (UIApplication.shared.delegate as? AppDelegate)?.applicationDidBecomeActive(UIApplication.shared)
+  }
+
+  func sceneWillResignActive(_ scene: UIScene) {
+    (UIApplication.shared.delegate as? AppDelegate)?.applicationWillResignActive(UIApplication.shared)
+  }
+
+  func sceneDidEnterBackground(_ scene: UIScene) {
+    (UIApplication.shared.delegate as? AppDelegate)?.applicationDidEnterBackground(UIApplication.shared)
+  }
+
+  func sceneWillEnterForeground(_ scene: UIScene) {
+    (UIApplication.shared.delegate as? AppDelegate)?.applicationWillEnterForeground(UIApplication.shared)
   }
 }

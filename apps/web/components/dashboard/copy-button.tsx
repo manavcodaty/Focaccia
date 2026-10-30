@@ -1,37 +1,50 @@
 "use client";
 
-import { Check, Copy } from "lucide-react";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { InputGroupButton } from "@/components/ui/input-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { copyText } from "@/lib/copy-text";
 
-export function CopyButton({
-  label = "Copied to clipboard.",
-  value,
-}: {
-  label?: string;
-  value: string;
-}) {
+function useCopy(value: string, label: string) {
   const [didCopy, setDidCopy] = useState(false);
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(value);
-    setDidCopy(true);
-    toast.success(label);
-    window.setTimeout(() => setDidCopy(false), 1800);
+  async function copy() {
+    try {
+      await copyText(value);
+      setDidCopy(true);
+      toast.success(label);
+      window.setTimeout(() => setDidCopy(false), 1600);
+    } catch {
+      toast.error("Clipboard unavailable. Select the value and copy it manually.");
+    }
   }
+  return { copy, didCopy };
+}
 
+export function CopyButton({ label = "Copied to clipboard.", value }: { label?: string; value: string }) {
+  const { copy, didCopy } = useCopy(value, label);
   return (
-    <Button
-      onClick={handleCopy}
-      size="sm"
-      type="button"
-      variant="outline"
-      className={didCopy ? "border-[color:var(--success)]/30 bg-[color:var(--success-soft)]/50 text-[color:var(--success)]" : ""}
-    >
-      {didCopy ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+    <Button onClick={() => void copy()} type="button" variant="outline">
+      {didCopy ? <CheckIcon data-icon="inline-start" /> : <CopyIcon data-icon="inline-start" />}
       {didCopy ? "Copied" : "Copy"}
     </Button>
+  );
+}
+
+/** Icon-only copy control for use inside an InputGroupAddon. */
+export function CopyInputButton({ label = "Copied to clipboard.", name, value }: { label?: string; name: string; value: string }) {
+  const { copy, didCopy } = useCopy(value, label);
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <InputGroupButton aria-label={`Copy ${name}`} onClick={() => void copy()} size="icon-xs">
+          {didCopy ? <CheckIcon /> : <CopyIcon />}
+        </InputGroupButton>
+      </TooltipTrigger>
+      <TooltipContent>{didCopy ? "Copied" : `Copy ${name}`}</TooltipContent>
+    </Tooltip>
   );
 }

@@ -151,6 +151,77 @@ test('does not persist queue-code event secrets in gate configuration SQLite', a
   assert.equal((await repository.getGateConfig())?.k_code_event, undefined);
 });
 
+test('isolates active-event data when provisioning switches events and preserves previous check-ins', async () => {
+  const database = new DatabaseSync(':memory:');
+  const repository = new GateRepository(new NodeSqliteDriver(database));
+  await repository.migrate();
+  await repository.saveGateConfig(gateConfig);
+  await repository.replaceRevocations(gateConfig.event_id, [{
+    pass_id: 'old-revoked-pass',
+    revoked_at: log.recorded_at,
+  }], log.recorded_at);
+  await repository.recordAcceptedDecision(log, syncItem);
+  for (const status of ['blocked', 'synced'] as const) {
+    const passId = `old-${status}-pass`;
+    const idempotencyKey = `old-${status}-key`;
+    await repository.recordAcceptedDecision({ ...log, pass_id: passId }, {
+      ...syncItem, idempotency_key: idempotencyKey, pass_id: passId,
+    });
+    if (status === 'blocked') {
+      await repository.markSyncBlocked(idempotencyKey, 'invalid_gate_signature');
+    } else {
+      await repository.markSyncSucceeded(idempotencyKey, log.recorded_at);
+    }
+  }
+  const oldStats = await repository.getStats();
+  assert.equal(oldStats.revocationCount, 1);
+  assert.equal(oldStats.logCount, 3);
+
+  const nextGate = { ...gateConfig, event_id: 'evt_next', event_name: 'Next event' };
+  await repository.saveGateConfig(nextGate);
+  assert.deepEqual(await repository.getStats(), {
+    blockedSyncCount: 0,
+    lastRecordedAt: null,
+    lastSyncAt: null,
+    logCount: 0,
+    pendingSyncCount: 0,
+    revocationCount: 0,
+    syncedCheckinCount: 0,
+    usedPassCount: 0,
+  });
+  assert.deepEqual(await repository.listLogs(), []);
+  assert.doesNotMatch(await repository.exportLogsCsv(), /evt_gate/);
+
+  // A refresh started for the previous event must not mark the new cache fresh.
+  await repository.replaceRevocations(gateConfig.event_id, [], log.recorded_at);
+  assert.equal((await repository.getGateConfig())?.last_revocation_sync_at, null);
+  await repository.replaceRevocations(nextGate.event_id, [], log.recorded_at);
+  assert.equal((await repository.getStats()).revocationCount, 0);
+  await repository.replaceRevocations(nextGate.event_id, [{
+    pass_id: 'new-revoked-pass',
+    revoked_at: log.recorded_at,
+  }], log.recorded_at);
+  await repository.recordAcceptedDecision({ ...log, event_id: nextGate.event_id }, {
+    ...syncItem, event_id: nextGate.event_id, idempotency_key: 'new-key',
+  });
+  const nextStats = await repository.getStats();
+  assert.equal(nextStats.revocationCount, 1);
+  assert.equal(nextStats.logCount, 1);
+  assert.equal(nextStats.usedPassCount, 1);
+  assert.equal(nextStats.pendingSyncCount, 1);
+  assert.equal(nextStats.blockedSyncCount, 0);
+  assert.equal(nextStats.syncedCheckinCount, 0);
+  assert.equal(nextStats.lastSyncAt, null);
+  assert.equal((await repository.listLogs())[0]?.event_id, nextGate.event_id);
+  assert.doesNotMatch(await repository.exportLogsCsv(), /evt_gate/);
+
+  assert.equal(await repository.isPassUsed(gateConfig.event_id, log.pass_id!), true);
+  assert.equal((await repository.listDueSyncItems(log.recorded_at)).length, 2);
+  await repository.saveGateConfig(gateConfig);
+  assert.deepEqual(await repository.getStats(), { ...oldStats, revocationCount: 0 });
+  await repository.close();
+});
+
 test('migrates an existing gate_config table with signed-sync columns', async () => {
   const database = new DatabaseSync(':memory:');
   database.exec(`
@@ -176,6 +247,7 @@ test('commits replay marker, accepted log, and queue row atomically and survives
   const database = new DatabaseSync(':memory:');
   const repository = new GateRepository(new NodeSqliteDriver(database));
   await repository.migrate();
+  await repository.saveGateConfig(gateConfig);
 
   assert.equal(await repository.recordAcceptedDecision(log, syncItem), true);
   assert.equal(await repository.recordAcceptedDecision(log, { ...syncItem, idempotency_key: '223e4567-e89b-42d3-a456-426614174000' }), false);
@@ -213,6 +285,7 @@ test('tracks retry, blocked, and synchronized queue states', async () => {
   const database = new DatabaseSync(':memory:');
   const repository = new GateRepository(new NodeSqliteDriver(database));
   await repository.migrate();
+  await repository.saveGateConfig(gateConfig);
   await repository.recordAcceptedDecision(log, syncItem);
 
   await repository.markSyncRetry(syncItem.idempotency_key, 1, '2026-06-14T08:31:00.000Z', 'network_error');
@@ -259,6 +332,7 @@ test('queue runner blocks signature failures until manual retry', async () => {
   const database = new DatabaseSync(':memory:');
   const repository = new GateRepository(new NodeSqliteDriver(database));
   await repository.migrate();
+  await repository.saveGateConfig(gateConfig);
   await repository.recordAcceptedDecision(log, syncItem);
 
   const result = await flushCheckinQueue({

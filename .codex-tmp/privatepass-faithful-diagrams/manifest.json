@@ -1,0 +1,216 @@
+{
+  "master": "/Users/manavcodaty/repos/Focaccia/output/privatepass-faithful-diagrams/Private Pass - Faithful Diagrams.excalidraw",
+  "frames": 19,
+  "spokenWords": 1655,
+  "slides": [
+    {
+      "slide": 1,
+      "title": "Introducing Private Pass",
+      "spoken": "Hi, my project is called Private Pass. I wanted to find out whether an event could check that a ticket belongs to the right person, without storing everybody's face in one central database. I also wanted the entrance check to work without internet. I built a working prototype, and I'll show you how it works, how I made my decisions, and what my testing did and didn't prove.",
+      "keyPoints": "1. Ticket must belong to the right person.\n2. No central face database; gate works offline.\n3. Show the build, the tests and the limits.",
+      "originalSlideText": "Private Pass  /  MANAV CODATY\n01\nEVENT ENTRY  /  SOFTWARE PROJECT\nPrivate Pass\nOne ticket. \nOne person.\nEntry checks that work offline,\nwithout a central face database.\nOFFLINE ENTRY\nFACE CHECK\nDATA MINIMISATION\nTHE ENTRY JOURNEY\nREGISTER\nGET PASS\nVERIFY\nGate makes the entry decision \nlocally\n.",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 1"
+      ],
+      "claim": "Introducing Private Pass"
+    },
+    {
+      "slide": 2,
+      "title": "The problem",
+      "spoken": "Imagine buying a concert ticket as a QR code. You could send a screenshot to a friend, and the code might still scan. So the code alone doesn't prove who the person is. One solution is to keep a database of people's faces, but that creates another problem: face information is much harder to replace if it is stolen. I wanted the benefits of a face check without putting everyone's reusable face information in one place.",
+      "keyPoints": "1. A QR code can be shared.\n2. A central face database creates a different risk.\n3. My idea tries to avoid both problems.",
+      "originalSlideText": "PROBLEM\nA QR code proves you have a ticket — not who you are.\nPrivate Pass  /  MANAV CODATY\n02\nQR TICKET\nCan be shared\nA screenshot might work for someone else.\nFACE DATABASE\nStores lasting data\nA central set of face records creates new risk.\nPrivate Pass\nLinks ticket + person\nCheck the holder without a central face database.",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 2"
+      ],
+      "claim": "The problem"
+    },
+    {
+      "slide": 3,
+      "title": "My goals",
+      "spoken": "I decided on four main goals. First, check the person's face against the face linked to their ticket, rather than searching through a list of people. Second, let a prepared gate make that decision offline. Third, avoid keeping reusable face information on the main server. And fourth, keep evidence of what actually worked. That last point became really important, because making something work once isn't the same as proving it will work reliably.",
+      "keyPoints": "1. Match one person to one ticket.\n2. Work offline and limit central face storage.\n3. Keep evidence, not just a working screen.",
+      "originalSlideText": "GOALS\nFour checks defined what success meant.\nBuild a working prototype, then test its claims.\nPrivate Pass  /  MANAV CODATY\n03\n1:1 MATCH\nTicket + registered face\nOFFLINE\nGate decides without internet\nPRIVACY\nNo central reusable face records\nEVIDENCE\nSave tests and limits",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 3"
+      ],
+      "claim": "My goals"
+    },
+    {
+      "slide": 4,
+      "title": "How the project changed",
+      "spoken": "My original plan focused mainly on the face-checking part. My supervisor asked an important question: how does someone get a ticket in the first place? So I added the public ticket website. I then had to connect that with the organiser system, the phone app and the gate app. I worked on the basic design first, joined the parts together in June, and improved the apps in July. The finished project was more complete, but it also left me less time for proper testing.",
+      "keyPoints": "1. Supervisor asked how tickets are obtained.\n2. I added ticketing and connected four parts.\n3. More features meant less time for testing.",
+      "originalSlideText": "PROJECT BUILD\nThe project grew as I built it.\nAdding ticketing made it more useful — and left less time for testing.\nPrivate Pass  /  MANAV CODATY\n04\n1\nBuild the base\nCamera, local network, privacy design\n2\nConnect the parts\nTickets, offline checks, syncing\n3\nFix and improve\nLogin, networking, app screens\nTRADE-OFF: MORE FEATURES MEANT FEWER PLANNED BIOMETRIC TESTS",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 4"
+      ],
+      "claim": "How the project changed"
+    },
+    {
+      "slide": 5,
+      "title": "What research taught me",
+      "spoken": "I used research to help make three choices. First, the FaceNet paper showed how a computer can turn a face into numbers that can be compared. That supported my idea of checking one person against one ticket. Second, I found research showing that those numbers can still reveal private information. So I changed them for each event, rather than using one reusable version everywhere. But I cannot claim this makes them impossible to recover. Third, I learned about digital signatures, which are like a stamp that helps the gate check that a ticket is genuine. These papers helped with the design; they are not test results for my app.",
+      "keyPoints": "1. Research explained how to compare faces.\n2. Face data still has privacy risks.\n3. Signatures help check a ticket is genuine; papers are not my results.",
+      "originalSlideText": "RESEARCH\nThree sources that shaped my design.\nPublished results guided decisions; they were not Private Pass test results.\nPrivate Pass  /  MANAV CODATY\n05\nSchroff et al. (2015)\nFaces can be compared as numerical data.\nUse a trained model for a 1:1 check.\nMai et al. (2019) + Rathgeb & Uhl (2011)\nA face template can still reveal information.\nUse event-specific data. Avoid claiming anonymity.\nJosefsson & Liusvaara (2017)\nSignatures show if a pass was changed.\nLet the gate check passes offline.",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 5"
+      ],
+      "claim": "What research taught me"
+    },
+    {
+      "slide": 6,
+      "title": "Four parts of Private Pass",
+      "spoken": "Private Pass has four connected parts. The organiser creates an event. The attendee then uses a website to claim a ticket. Next, the enrolment app uses the phone camera to register the attendee's face and prepare their pass. Finally, at the event, the gate app checks the pass and the person's face. The important detail is that the final check can work offline, but the earlier steps still need the main system to be online.",
+      "keyPoints": "1. Organiser creates the event.\n2. Attendee claims a ticket and registers their face.\n3. Prepared gate checks locally without internet.",
+      "originalSlideText": "SYSTEM\nFour parts. One ticket journey.\nPrivate Pass  /  MANAV CODATY\n06\nORGANISER\nCreates an event\nTICKETS\nAttendee claims a ticket\nENROLMENT\nPhone registers face\nGATE\nChecks pass + face offline\nTHE GATE’S FINAL ENTRY CHECK WORKS WITHOUT A LIVE CONNECTION",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 6"
+      ],
+      "claim": "Four parts of Private Pass"
+    },
+    {
+      "slide": 7,
+      "title": "Where face data goes",
+      "spoken": "This is the main privacy choice in my project. The attendee's phone handles the face image and turns it into a set of numbers. Those numbers are changed for that event and protected inside the pass. The main server still keeps things like accounts, events and ticket records, because the system needs them. But it isn't meant to keep a central collection of reusable faces. The gate checks the protected face information on its own device. This reduces one privacy risk; it doesn't remove every risk.",
+      "keyPoints": "1. Face is processed on the attendee phone.\n2. Server stores ticket records, not reusable faces.\n3. Gate checks locally; some risk remains.",
+      "originalSlideText": "DATA FLOW\nThe important choice: where face data goes.\nThe event service stores normal ticket records, not a reusable face database.\nPrivate Pass  /  MANAV CODATY\n07\nATTENDEE PHONE\nFace processed on-device\nCENTRAL SERVICE\nAccounts, events, tickets\nPREPARED GATE\nReads protected face data\nLESS CENTRAL FACE DATA DOES NOT MEAN ZERO RISK",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 7"
+      ],
+      "claim": "Where face data goes"
+    },
+    {
+      "slide": 8,
+      "title": "How the face check works",
+      "spoken": "When someone reaches the gate, the system isn't trying to find them in a crowd. It already has their ticket, so it only needs to ask: does this person match the face linked to this pass? The phone compares two sets of numbers made from the face. There is a limit for deciding how close they need to be. If that limit is too strict, the right person might be rejected. If it's too loose, the wrong person might get in. I didn't run enough tests to give a reliable accuracy figure.",
+      "keyPoints": "1. Check one person against one ticket.\n2. The matching limit affects false rejections and acceptance.\n3. No reliable measured accuracy figure.",
+      "originalSlideText": "FACE CHECK\nOne person is compared with one ticket.\nNo search through a crowd or a central face database.\nPrivate Pass  /  MANAV CODATY\n08\nLOCAL\nMODEL\nLIVE FACE\nPASS TEMPLATE\nEVENT A ≠ EVENT B\nThe same face is represented differently for each event.\nNOT PROVEN: UNLINKABILITY",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 8"
+      ],
+      "claim": "How the face check works"
+    },
+    {
+      "slide": 9,
+      "title": "Why the pass has two protections",
+      "spoken": "I used two different ways to protect a pass. A digital signature works a bit like a stamp. It lets the gate check that the pass came from the right system and hasn't been changed. Encryption is more like putting the face information in a locked box, so only the prepared gate can read it. Those checks help protect the ticket, but they don't prove who is holding it. That's why the gate still needs to check the person's face.",
+      "keyPoints": "1. Signature: genuine ticket, not changed.\n2. Encryption: keep face information private.\n3. Still need to match the person.",
+      "originalSlideText": "PASS SECURITY\nSigned and encrypted are not the same.\nPrivate Pass  /  MANAV CODATY\n09\nDIGITAL SIGNATURE\nIs the pass genuine?\nShows who issued it and whether it was changed.\nENCRYPTION\nWho can read the face data?\nKeeps the face record protected until the prepared gate opens it.\nA VALID PASS STILL NEEDS A MATCHING PERSON",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 9"
+      ],
+      "claim": "Why the pass has two protections"
+    },
+    {
+      "slide": 10,
+      "title": "The offline gate decision",
+      "spoken": "Before the event, the gate downloads the information it needs. After that, it can work without internet. It checks that the ticket is for the right event, that it hasn't been changed, that it hasn't already been used, and that the face matches. If everything passes, entry is allowed and the ticket is marked as used. There's one important limit: if a ticket is cancelled while the gate is offline, the gate won't know until it reconnects.",
+      "keyPoints": "1. Prepare the gate before going offline.\n2. Check ticket, use status and face.\n3. New cancellations cannot arrive while offline.",
+      "originalSlideText": "OFFLINE ENTRY\nThe gate can decide without internet.\nIt uses event data downloaded before the event.\nPrivate Pass  /  MANAV CODATY\n10\n✓\nCorrect event and time\n✓\nValid digital signature\n✓\nNot cancelled or already used\n✓\nFace matches the ticket\nFIRST VALID SCAN\nACCEPT\nSECOND SCAN → REJECT\nLIMIT: THE GATE CANNOT SEE A NEW CANCELLATION UNTIL IT RECONNECTS",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 10"
+      ],
+      "claim": "The offline gate decision"
+    },
+    {
+      "slide": 11,
+      "title": "Problems I fixed while building",
+      "spoken": "Some of the hardest problems had nothing to do with artificial intelligence. One was the camera. If the two apps cropped someone's face differently, the comparison became less reliable. I changed them to use the same cropping rules. Another problem was ticket claims. If the server received a request but the phone missed the reply, pressing again could create a second request. I made retries use the same request number. Finally, I made the gate save that a ticket had been used before showing the success screen. Otherwise, an app crash could leave a ticket able to be reused. These changes taught me to think about what happens when things go wrong halfway through.",
+      "keyPoints": "1. Use matching camera-crop rules.\n2. Make a retry safe if a reply gets lost.\n3. Save ticket use before showing success.",
+      "originalSlideText": "ENGINEERING\nThe hardest bugs were not about AI.\nThree changes made the whole process more reliable.\nPrivate Pass  /  MANAV CODATY\n11\n01\nCAMERA CROPPING\nDifferent crops give different face inputs.\nFIX\nUse the same crop rules in both apps.\n02\nREPEATED CLAIMS\nA failed response can lead to a second request.\nFIX\nReuse the same request ID on retry.\n03\nRECORD BEFORE SUCCESS\nThe app could stop before saving entry.\nFIX\nSave the used ticket before showing success.",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 11"
+      ],
+      "claim": "Problems I fixed while building"
+    },
+    {
+      "slide": 12,
+      "title": "Detailed test evidence",
+      "spoken": "This slide is the most important evidence from my testing. The saved records from 15 June show checks of ticket claims, who is allowed to claim them, ticket limits, safe retries, signed passes, stopping a reused ticket, and sending entry records back later. I also checked local networking and launched both phone apps on a real iPhone. During development, I found and fixed problems with face cropping, repeat ticket requests and saving used tickets. But these records are mainly software tests. They do not show a complete physical test of every step on the final version. I later saw the whole journey work, but I did not keep a detailed record from that run. I also didn't collect enough attempts to measure face accuracy or test whether photos or screens could fool it. So I can show which parts worked, but I can't claim the system is ready for a real event.",
+      "keyPoints": "1. 15 June records: ticket, retry, replay, sync and networking checks.\n2. Bugs found and fixed during development.\n3. Full later run observed, not fully documented.\n4. No measured face accuracy, fake-face or real-event results.",
+      "originalSlideText": "TESTING  /  EVIDENCE REVIEW\nWhat testing proved — and what it didn’t\nRECORDED CHECKS\n✓\nTICKETS & RULES\nBrowser/automated: ticket claims, ownership, capacity and access.\n✓\nRETRIES\nIdempotent claim requests handled without unwanted duplicates.\n✓\nSIGNING & REPLAY\nPass authenticity and reused-ticket rejection covered by tests.\n✓\nSYNC & REVOCATION\nSigned sync and cancellation refresh logic checked in software.\n✓\nIPHONE + LOCAL WI-FI\nApps installed/launched; iPhone communicated with the Mac locally.\nWHAT BROKE → WHAT I FIXED\nCROPPING\nUneven face crops → shared crop rules.\nCLAIM RETRIES\nLost response → persistent request ID.\nREPLAY SAFETY\nSave used-ticket state before “accepted”.\nNOT PROVEN / NOT TESTED ENOUGH\n—\nFULL PHONE JOURNEY\nLater observed, but no detailed dated final receipt.\n—\nFACE ACCURACY\nNo genuine/impostor trials or FAR / FRR figures.\n—\nSPOOF RESISTANCE\nNo retained structured photo, screen or mask trials.\n—\nREAL-WORLD USE\nNo repeated queue timings, user study or field rollout.\nPrivate Pass  /  MANAV CODATY\n12A",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 12"
+      ],
+      "claim": "Detailed test evidence"
+    },
+    {
+      "slide": 13,
+      "title": "The short evidence summary",
+      "spoken": "So the short version is this: I have saved results for important software checks. I also saw the full system work later, but didn't keep enough detail to prove that whole run in the same way. And I didn't properly measure face accuracy, fake-face attacks or how fast it would be with lots of people. That difference between what I saw and what I can prove matters to my final answer.",
+      "keyPoints": "1. Some software tests are recorded.\n2. Whole journey was later observed, but not fully documented.\n3. Face performance and real-world use are still unknown.",
+      "originalSlideText": "TESTING\nWhat the evidence really shows.\nI separated saved tests, my own observation, and what I never measured.\nPrivate Pass  /  MANAV CODATY\n12\nRECORDED\nAutomated, browser, simulator and local-network checks. Apps launched on a real iPhone.\nLATER OBSERVED\nI saw the full journey work, but did not keep a detailed final test record.\nNOT MEASURED\nFace accuracy, spoof resistance, queue speed, user experience and public rollout.",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 13"
+      ],
+      "claim": "The short evidence summary"
+    },
+    {
+      "slide": 14,
+      "title": "Live demonstration",
+      "spoken": "I'll now show the four steps. First, the gate has already downloaded the event details, and I'll disconnect it. Next, I'll scan a valid ticket and see whether the gate accepts it. Then I'll scan the same ticket again. This time, it should be rejected because it was already used. Finally, I'll reconnect the gate so its saved entry record can be sent back. I'll explain what actually happens, rather than just what I expected to happen.",
+      "keyPoints": "1. Prepare and disconnect.\n2. First scan: check actual result.\n3. Second scan: check reuse is blocked.\n4. Reconnect and check saved record.",
+      "originalSlideText": "DEMO\nFour steps to demonstrate offline entry.\nThese are demo steps — not a substitute for saved test data.\nPrivate Pass  /  MANAV CODATY\n13\n01\nPREPARE\nDownload event data, then disconnect.\n02\nSCAN ONCE\nA valid pass should be accepted.\n03\nSCAN AGAIN\nThe same pass should be rejected.\n04\nRECONNECT\nSaved entry records should sync.\nREHEARSE AND RECORD WHAT ACTUALLY HAPPENS",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 14"
+      ],
+      "claim": "Live demonstration"
+    },
+    {
+      "slide": 15,
+      "title": "Did I meet my goals?",
+      "spoken": "I went back to my four goals to judge the project fairly. The software checks support the offline gate idea, although the full phone journey wasn't saved as a detailed final test. The saved tests also support stopping a ticket from being used twice. The system was designed so the server doesn't keep reusable face information, but I didn't carry out an independent security review. The biggest gap is face performance. I can't give reliable figures for accuracy or protection against fake faces. So I built a useful prototype, but not something I'd call ready for public use.",
+      "keyPoints": "1. Offline checks partly evidenced.\n2. Replay protection supported by tests.\n3. Privacy supported by design; face performance not proved.",
+      "originalSlideText": "EVALUATION\nDid Private Pass meet its goals?\nPrivate Pass  /  MANAV CODATY\n14\nOffline gate decisions\nSoftware checks supported; full phone route later observed.\nPARTIAL\nStop ticket reuse\nRepeated-use handling backed by tests.\nSUPPORTED\nLimit central face storage\nArchitecture avoids reusable central face records.\nBY DESIGN\nProven face performance\nNo full accuracy, spoof or fairness dataset.\nNOT PROVEN\nA WORKING PROTOTYPE IS NOT YET A TESTED COMMERCIAL PRODUCT",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 15"
+      ],
+      "claim": "Did I meet my goals?"
+    },
+    {
+      "slide": 16,
+      "title": "What could go wrong?",
+      "spoken": "Before using this at a real event, I would need to deal with three things. First, an offline gate may still accept a ticket that was cancelled after it lost internet. Second, simply seeing a face in the camera doesn't mean it's a real person. A photo or screen might be a problem, and I didn't complete proper tests for that. Third, I would need to know whether people can use it easily, including anyone who doesn't want a face check. I'd test all three before calling it safe for a real crowd.",
+      "keyPoints": "1. Offline cancellations can be out of date.\n2. Face presence is not proof against photos.\n3. Need usability and non-face alternatives.",
+      "originalSlideText": "LIMITATIONS\nWhat could go wrong at a real event?\nPrivate Pass  /  MANAV CODATY\n15\nCANCELLED TICKETS\nOffline gates have an old cancellation list.\nUse shorter validity and refresh rules.\nFAKE FACES\nFace detected does not mean real person.\nRun photo, screen and mask tests.\nUSABILITY\nThere was no retained user or fallback study.\nTest accessibility and manual entry.",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 16"
+      ],
+      "claim": "What could go wrong?"
+    },
+    {
+      "slide": 17,
+      "title": "What I learned",
+      "spoken": "The biggest lesson for me was that building something and proving it works are two different jobs. I got carried away adding features because I wanted the whole process to feel real. But that gave me less time for testing. If I did this again, I would stop adding features sooner and save a clear test record each time I finished something. I'd also test face matching on new examples, instead of just checking it on the examples I used while building it.",
+      "keyPoints": "1. Building is different from proving.\n2. Stop adding features earlier.\n3. Save records and test on new examples.",
+      "originalSlideText": "LESSONS\nWhat I would do differently next time.\nI spent too long adding features and not enough time testing.\nPrivate Pass  /  MANAV CODATY\n16\n01\nSTOP ADDING FEATURES SOONER\nAdding tickets made the product complete, but reduced testing time.\n02\nSAVE TEST EVIDENCE WHILE BUILDING\nRecord device details, steps, logs and outcomes.\n03\nTEST ON FRESH EXAMPLES\nSet thresholds first; use new cases for evaluation.",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 17"
+      ],
+      "claim": "What I learned"
+    },
+    {
+      "slide": 18,
+      "title": "Final answer",
+      "spoken": "So, did Private Pass answer my question? My answer is yes, but only for a small, prepared prototype. I built the four parts of the ticket journey, and I have evidence for important checks like ticket rules and stopping reuse. I also saw the whole process work together. But I didn't keep a complete record of that later run, and I haven't proved how well the face check would work at a crowded event. For me, the project showed that the idea is possible, and also how much testing is needed before it can be trusted.",
+      "keyPoints": "1. Yes, for a prepared prototype.\n2. Key software checks worked; whole journey later observed.\n3. More testing needed before a real event.",
+      "originalSlideText": "FINAL ANSWER\nA working prototype — not a finished product.\nPrivate Pass shows this approach is possible in a prepared setup.\nPrivate Pass  /  MANAV CODATY\n17\nWHAT I CAN SHOW\nThe ticket, face check and offline gate can work together.\nWHAT I CANNOT CLAIM\nAccuracy at scale, strong anti-spoofing or readiness for public events.\nREAL TESTS ARE STILL NEEDED BEFORE LIVE DEPLOYMENT",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 18"
+      ],
+      "claim": "Final answer"
+    },
+    {
+      "slide": 19,
+      "title": "Questions",
+      "spoken": "That's the end of my presentation. I'm happy to answer questions about the design, the testing, or what I'd change if I built it again. The main thing I want to be clear about is that I have a working prototype, but I won't claim that I've tested things I haven't.",
+      "keyPoints": "1. Invite questions about design and decisions.\n2. Be clear about saved evidence versus observation.\n3. Be honest about what was not tested.",
+      "originalSlideText": "Private Pass  /  MANAV CODATY\n18\nPrivate Pass  /  DISCUSSION\nQUESTIONS?\nThree things worth asking me:\n01\nWhy compare one face with one ticket?\n02\nWhat tests support the offline checks?\n03\nWhat would I test before a real event?",
+      "sources": [
+        "/Users/manavcodaty/Library/Mobile Documents/com~apple~CloudDocs/Praco Family/EPQ/Mav/PrivatePass_EPQ Presentation_v4.pptx — slide 19"
+      ],
+      "claim": "Questions"
+    }
+  ]
+}

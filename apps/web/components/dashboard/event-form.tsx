@@ -1,21 +1,23 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, CalendarClock, CheckCircle2, KeyRound } from "lucide-react";
+import { CircleCheckIcon, KeyRoundIcon } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { DateTimeField } from "@/components/dashboard/date-time-field";
+import { PageHeader } from "@/components/page-header";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { createEventIdFromDraft } from "@/lib/dashboard-adapters";
 import { invokeEdgeFunction } from "@/lib/functions";
@@ -78,11 +80,15 @@ export function EventForm({ initialEvent, mode }: { initialEvent?: EventRecord; 
   const [createdEvent, setCreatedEvent] = useState<CreateEventResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const defaults = useMemo(() => eventDefaults(initialEvent), [initialEvent]);
-  const form = useForm<EventFormValues>({ defaultValues: defaults, resolver: zodResolver(eventFormSchema) });
+  const form = useForm<z.input<typeof eventFormSchema>, unknown, EventFormValues>({ defaultValues: defaults, resolver: zodResolver(eventFormSchema) });
+  const { errors } = form.formState;
   const nameValue = form.watch("name");
+  const isEdit = mode === "edit";
+  const backHref = isEdit ? `/events/${encodeURIComponent(initialEvent?.event_id ?? "")}` : "/dashboard";
+  const nameField = form.register("name");
 
   function handleNameBlur() {
-    if (mode === "edit" || form.formState.dirtyFields.event_id) return;
+    if (isEdit || form.formState.dirtyFields.event_id) return;
     form.setValue("event_id", createEventIdFromDraft(nameValue), { shouldDirty: false, shouldValidate: true });
   }
 
@@ -113,109 +119,112 @@ export function EventForm({ initialEvent, mode }: { initialEvent?: EventRecord; 
       } else {
         await invokeEdgeFunction<EventRecord>({ accessToken, body, name: "update-event" });
         toast.success("Event updated.");
-        window.location.assign(`/events/${values.event_id}`);
+        window.location.assign(`/events/${encodeURIComponent(values.event_id)}`);
       }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : `Failed to ${mode} event.`);
     }
   }
 
-  const isEdit = mode === "edit";
-  const backHref = isEdit ? `/events/${initialEvent?.event_id}` : "/dashboard";
-
   return (
-    <div className="fade-section flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Button asChild size="sm" variant="outline"><Link href={backHref}><ArrowLeft className="size-3.5" />Back</Link></Button>
-        <Badge variant="outline">Organizer-only</Badge>
-      </div>
+    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <PageHeader title={isEdit ? `Edit ${initialEvent?.name ?? "event"}` : "Create event"} />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
+      <form className="flex w-full max-w-3xl flex-col gap-4 px-4 lg:px-6" noValidate onSubmit={form.handleSubmit(onSubmit)}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><CalendarClock className="size-4 text-[var(--color-terracotta)]" />{isEdit ? "Edit event" : "Create event"}</CardTitle>
-            <CardDescription>{isEdit ? "Update public details and capacity. Allocated tickets can never be displaced." : "Create the event catalogue entry and its default free ticket in one transaction."}</CardDescription>
+            <CardTitle>Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <form className="flex flex-col gap-5" onSubmit={form.handleSubmit(onSubmit)}>
-              <FieldGroup className="grid gap-4 md:grid-cols-2">
-                <Field data-invalid={Boolean(form.formState.errors.name)}>
-                  <FieldLabel htmlFor="event-name">Event name</FieldLabel>
-                  <Input id="event-name" aria-invalid={Boolean(form.formState.errors.name)} {...form.register("name")} onBlur={(event) => { form.register("name").onBlur(event); handleNameBlur(); }} />
-                  <FieldError>{form.formState.errors.name?.message}</FieldError>
+            <FieldGroup>
+              <div className="grid gap-4 @2xl/main:grid-cols-2">
+                <Field data-invalid={Boolean(errors.name)}>
+                  <FieldLabel htmlFor="event-name">Name</FieldLabel>
+                  <Input aria-invalid={Boolean(errors.name)} id="event-name" {...nameField} onBlur={(event) => { void nameField.onBlur(event); handleNameBlur(); }} />
+                  <FieldError>{errors.name?.message}</FieldError>
                 </Field>
-                <Field data-invalid={Boolean(form.formState.errors.event_id)}>
+                <Field data-disabled={isEdit} data-invalid={Boolean(errors.event_id)}>
                   <FieldLabel htmlFor="event-id">Event ID</FieldLabel>
-                  <Input id="event-id" disabled={isEdit} aria-invalid={Boolean(form.formState.errors.event_id)} {...form.register("event_id")} />
-                  <FieldDescription>{isEdit ? "Event IDs are permanent after creation." : "Stable identifier used by ticket and gate apps."}</FieldDescription>
-                  <FieldError>{form.formState.errors.event_id?.message}</FieldError>
+                  <Input aria-invalid={Boolean(errors.event_id)} className="font-mono" disabled={isEdit} id="event-id" {...form.register("event_id")} />
+                  <FieldError>{errors.event_id?.message}</FieldError>
                 </Field>
-              </FieldGroup>
-
-              <Field data-invalid={Boolean(form.formState.errors.description)}>
-                <FieldLabel htmlFor="description">Description</FieldLabel>
-                <Textarea id="description" rows={5} {...form.register("description")} />
-                <FieldError>{form.formState.errors.description?.message}</FieldError>
-              </Field>
-
-              <FieldGroup className="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem]">
-                <Field data-invalid={Boolean(form.formState.errors.location)}>
-                  <FieldLabel htmlFor="location">Location</FieldLabel>
-                  <Input id="location" {...form.register("location")} />
-                  <FieldError>{form.formState.errors.location?.message}</FieldError>
-                </Field>
-                <Field data-invalid={Boolean(form.formState.errors.capacity)}>
-                  <FieldLabel htmlFor="capacity">Global capacity</FieldLabel>
-                  <Input id="capacity" min={1} type="number" {...form.register("capacity", { valueAsNumber: true })} />
-                  <FieldError>{form.formState.errors.capacity?.message}</FieldError>
-                </Field>
-              </FieldGroup>
-
-              <FieldGroup className="grid gap-4 md:grid-cols-2">
-                <Field data-invalid={Boolean(form.formState.errors.starts_at)}>
-                  <FieldLabel htmlFor="starts-at">Starts at</FieldLabel>
-                  <Input id="starts-at" type="datetime-local" {...form.register("starts_at")} />
-                  <FieldError>{form.formState.errors.starts_at?.message}</FieldError>
-                </Field>
-                <Field data-invalid={Boolean(form.formState.errors.ends_at)}>
-                  <FieldLabel htmlFor="ends-at">Ends at</FieldLabel>
-                  <Input id="ends-at" type="datetime-local" {...form.register("ends_at")} />
-                  <FieldError>{form.formState.errors.ends_at?.message}</FieldError>
-                </Field>
-              </FieldGroup>
-
-              <label className="flex items-start gap-3 rounded-[var(--radius-panel)] border border-border bg-secondary p-4">
-                <Checkbox
-                  checked={form.watch("is_listed")}
-                  className="mt-0.5"
-                  onCheckedChange={(checked) => form.setValue("is_listed", checked === true, { shouldDirty: true, shouldValidate: true })}
-                />
-                <span><span className="block text-sm font-medium text-[var(--color-ink)]">Listed publicly</span><span className="mt-1 block text-[13px] leading-5 text-[var(--color-muted-stone)]">Show this event in the public ticket app. Unlisted events remain organizer-only.</span></span>
-              </label>
-
-              {errorMessage ? <Alert variant="destructive"><KeyRound className="size-4" /><AlertTitle>Save failed</AlertTitle><AlertDescription>{errorMessage}</AlertDescription></Alert> : null}
-
-              <div className="flex flex-wrap justify-end gap-2">
-                <Button asChild variant="ghost"><Link href={backHref}>Cancel</Link></Button>
-                <Button disabled={form.formState.isSubmitting || Boolean(createdEvent)} type="submit">{form.formState.isSubmitting ? "Saving…" : createdEvent ? "Event created" : isEdit ? "Save changes" : "Create event"}</Button>
               </div>
-            </form>
+              <Field data-invalid={Boolean(errors.description)}>
+                <FieldLabel htmlFor="description">Description</FieldLabel>
+                <Textarea aria-invalid={Boolean(errors.description)} id="description" rows={4} {...form.register("description")} />
+                <FieldError>{errors.description?.message}</FieldError>
+              </Field>
+            </FieldGroup>
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-5">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Ticket contract</CardTitle></CardHeader>
-            <CardContent className="space-y-3 text-[13px] leading-5 text-[var(--color-muted-stone)]">
-              <p><strong className="text-[var(--color-ink)]">General Admission</strong> is created automatically at GBP 0 and follows the event capacity.</p>
-              <p>Additional ticket types can be added from the event workspace with optional type capacities.</p>
-              <Alert><AlertTitle>Paid checkout is unavailable</AlertTitle><AlertDescription>Paid types remain visible to attendees, but checkout is blocked until a payment provider is implemented.</AlertDescription></Alert>
-            </CardContent>
-          </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Schedule</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FieldGroup>
+              <div className="grid gap-4 @2xl/main:grid-cols-2">
+                <DateTimeField error={errors.starts_at?.message} id="starts-at" label="Starts" onChange={(value) => form.setValue("starts_at", value, { shouldDirty: true, shouldValidate: form.formState.isSubmitted })} value={form.watch("starts_at")} />
+                <DateTimeField error={errors.ends_at?.message} id="ends-at" label="Ends" onChange={(value) => form.setValue("ends_at", value, { shouldDirty: true, shouldValidate: form.formState.isSubmitted })} value={form.watch("ends_at")} />
+              </div>
+              <div className="grid gap-4 @2xl/main:grid-cols-[minmax(0,1fr)_11rem]">
+                <Field data-invalid={Boolean(errors.location)}>
+                  <FieldLabel htmlFor="location">Location</FieldLabel>
+                  <Input aria-invalid={Boolean(errors.location)} id="location" {...form.register("location")} />
+                  <FieldError>{errors.location?.message}</FieldError>
+                </Field>
+                <Field data-invalid={Boolean(errors.capacity)}>
+                  <FieldLabel htmlFor="capacity">Capacity</FieldLabel>
+                  <Input aria-invalid={Boolean(errors.capacity)} id="capacity" inputMode="numeric" min={1} type="number" {...form.register("capacity", { valueAsNumber: true })} />
+                  <FieldError>{errors.capacity?.message}</FieldError>
+                </Field>
+              </div>
+            </FieldGroup>
+          </CardContent>
+        </Card>
 
-          {createdEvent ? <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><CheckCircle2 className="size-4 text-[var(--success)]" />Event created</CardTitle><CardDescription>The default General Admission ticket is ready.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="rounded-[16px] bg-[var(--color-warm-mist)] p-4"><p className="text-xs font-medium text-[var(--color-terracotta)]">Join code</p><p className="token-mono mt-2 text-2xl tracking-[0.15em]">{createdEvent.join_code}</p></div><Button asChild><Link href={`/events/${createdEvent.event_id}`}>Open event workspace</Link></Button></CardContent></Card> : null}
-        </div>
-      </div>
+        <Card>
+          <CardContent>
+            <Field orientation="horizontal">
+              <FieldLabel htmlFor="is-listed">Listed</FieldLabel>
+              <Switch checked={form.watch("is_listed")} id="is-listed" onCheckedChange={(checked) => form.setValue("is_listed", checked, { shouldDirty: true })} />
+            </Field>
+          </CardContent>
+        </Card>
+
+        {errorMessage ? (
+          <Alert variant="destructive">
+            <KeyRoundIcon />
+            <AlertTitle>Save failed</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        {createdEvent ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><CircleCheckIcon className="size-4 text-success" />Event created</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-1">
+              <span className="text-sm text-muted-foreground">Join code</span>
+              <span className="font-mono text-2xl font-medium tracking-[0.2em]">{createdEvent.join_code}</span>
+            </CardContent>
+            <CardFooter className="gap-2">
+              <Button asChild><Link href={`/events/${encodeURIComponent(createdEvent.event_id)}`}>Open event</Link></Button>
+              <Button asChild variant="outline"><Link href={`/events/${encodeURIComponent(createdEvent.event_id)}/provisioning`}>Gate setup</Link></Button>
+            </CardFooter>
+          </Card>
+        ) : (
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button asChild variant="ghost"><Link href={backHref}>Cancel</Link></Button>
+            <Button disabled={form.formState.isSubmitting} type="submit">
+              {form.formState.isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+              {form.formState.isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create event"}
+            </Button>
+          </div>
+        )}
+      </form>
     </div>
   );
 }

@@ -23,7 +23,7 @@ export default function ApprovedScreen() {
     return (
       <ScreenShell style={styles.screen}>
         <SectionCard title="No approved ticket selected">
-          <Text style={styles.body}>Return to My tickets and refresh after the gate has synchronized its decision.</Text>
+          <Text style={styles.body}>Refresh My tickets after the gate syncs.</Text>
           <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
         </SectionCard>
       </ScreenShell>
@@ -45,7 +45,7 @@ export default function ApprovedScreen() {
             </View>
           </View>
         </View>
-        <Text style={styles.kicker}>Gate verification complete</Text>
+        <Text style={styles.kicker}>Entry approved</Text>
         <Text style={styles.title}>{confirmation.title}</Text>
         <Text style={styles.body}>{confirmation.body}</Text>
       </View>
@@ -58,7 +58,7 @@ export default function ApprovedScreen() {
       </SectionCard>
 
       <StatusBanner
-        message="This ticket is closed. The gate decision has been recorded and the reusable pass is no longer shown."
+        message="Ticket closed. Pass removed from view."
         title="Checked in"
         tone="success"
       />

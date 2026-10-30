@@ -7,5 +7,5 @@ it("reveals FAQ answers accessibly", async () => {
   render(<FaqSection />);
   const trigger = screen.getByRole("button", { name: "Is biometric data stored centrally?" });
   await user.click(trigger);
-  expect(screen.getByText(/Raw images and embeddings are never uploaded/)).toBeVisible();
+  expect(screen.getByText(/Only the encrypted event template is uploaded/)).toBeVisible();
 });

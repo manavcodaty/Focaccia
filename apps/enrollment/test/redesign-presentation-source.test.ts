@@ -30,6 +30,6 @@ test('consent explains temporary capture files and on-device processing exactly'
   const consent = await source('app/consent.tsx');
 
   assert.match(consent, /on your iPhone|on-device/i);
-  assert.match(consent, /temporary file/i);
-  assert.match(consent, /raw face images/i);
+  assert.match(consent, /Temporary captures are deleted best-effort/i);
+  assert.match(consent, /Face images, embeddings, and unencrypted templates are not saved to your account/i);
 });

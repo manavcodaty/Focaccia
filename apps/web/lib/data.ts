@@ -24,6 +24,11 @@ const EMPTY_COUNTS: TicketStatusCounts = {
   revoked: 0,
 };
 
+interface DashboardTicketRow {
+  event_id: string;
+  status: TicketStatus;
+}
+
 function groupCount<T extends { event_id: string }>(rows: T[]): Map<string, number> {
   const map = new Map<string, number>();
 
@@ -88,7 +93,7 @@ export async function getDashboardData() {
   const eventIds = eventRows.map((event) => event.event_id);
   let revocations: RevocationRecord[] = [];
   let logs: GateLogRecord[] = [];
-  let tickets: Array<{ event_id: string; status: TicketStatus }> = [];
+  let tickets: DashboardTicketRow[] = [];
   let gates: Array<{ event_id: string; last_seen_at: string | null }> = [];
 
   if (eventIds.length > 0) {
@@ -103,7 +108,7 @@ export async function getDashboardData() {
     if (queryError) throw new Error(queryError.message);
     revocations = (revocationResult.data ?? []) as RevocationRecord[];
     logs = (logResult.data ?? []) as GateLogRecord[];
-    tickets = (ticketResult.data ?? []) as Array<{ event_id: string; status: TicketStatus }>;
+    tickets = (ticketResult.data ?? []) as DashboardTicketRow[];
     gates = (gateResult.data ?? []) as Array<{ event_id: string; last_seen_at: string | null }>;
   }
 
@@ -120,6 +125,7 @@ export async function getDashboardData() {
   }));
 
   return {
+
     events: summaries,
     metrics: {
       checkedIn: tickets.filter((ticket) => ticket.status === "checked_in").length,

@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "presentation-finalization.v1",
+  "finalSha256": "41f2617cc14efa59c5e4f8057a9d46d0002308e2b0ced3c78cf45b1f2ee8cedd",
+  "byteCount": 438157,
+  "packageIntegrity": {
+    "chart_count": 0,
+    "claim_boundary": "Structural package checks only; no slide text, notes, formulas, chart values, or native PowerPoint execution were inspected.",
+    "finding_count": 0,
+    "findings": [],
+    "notes_parts_skipped": 17,
+    "relationship_part_count": 44,
+    "slide_count": 17,
+    "status": "pass",
+    "exitCode": 0,
+    "findingCount": 0,
+    "warnings": []
+  },
+  "presentationLayout": {
+    "finding_count": 0,
+    "findings": [],
+    "slide_count": 17,
+    "slide_size_in": [
+      16.6667,
+      9.375
+    ],
+    "warning_count": 0,
+    "warnings": [],
+    "exitCode": 0,
+    "findingCount": 0
+  },
+  "fontSelection": {
+    "basis": "unspecified",
+    "approvedFamilies": [],
+    "scriptFonts": {},
+    "referenceSha256": null,
+    "referenceFontsVerifiedInEncodedText": false
+  },
+  "firstPartyImport": {
+    "performed": true,
+    "passed": true,
+    "slideCount": 17,
+    "sha256": "41f2617cc14efa59c5e4f8057a9d46d0002308e2b0ced3c78cf45b1f2ee8cedd",
+    "runtimeNodeModules": "/Users/manavcodaty/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules",
+    "nodeExecutable": "/Users/manavcodaty/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node"
+  },
+  "nativeTableArithmetic": {
+    "performed": true,
+    "checked_column_count": 0,
+    "checks": [],
+    "claim_boundary": "Displayed-value arithmetic with rounding tolerance; not source-data verification.",
+    "eligible_table_count": 0,
+    "finding_count": 0,
+    "findings": [],
+    "native_table_count": 0,
+    "passed": true,
+    "schema_version": "presentation-native-table-arithmetic.v1",
+    "skipped_tables": [],
+    "slide_count": 17,
+    "warning_count": 0,
+    "warnings": []
+  },
+  "nativeChartTitles": {
+    "performed": true,
+    "checks": [],
+    "finding_count": 0,
+    "findings": [],
+    "native_chart_count": 0,
+    "native_powerpoint_verified": false,
+    "passed": true,
+    "presentation_sha256": "41f2617cc14efa59c5e4f8057a9d46d0002308e2b0ced3c78cf45b1f2ee8cedd",
+    "schema_version": "presentation-native-chart-titles.v1",
+    "slide_count": 17,
+    "source_text_emitted": false,
+    "unresolved_linked_title_count": 0
+  },
+  "sourceDerivedPolicyFlags": [
+    "--expected-slide-size-emu",
+    "15240000,8572500",
+    "--cover-role",
+    "none",
+    "--expected-slide-count",
+    "17"
+  ],
+  "nativeChartValidation": {
+    "detectedOwnerSlides": [],
+    "detectedChartCount": 0,
+    "targetApplication": "portable",
+    "sourceChartOwnersExplicitlyDeclared": true,
+    "validatorRan": false,
+    "passed": true
+  }
+}

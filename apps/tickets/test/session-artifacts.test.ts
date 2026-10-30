@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { clearFocacciaSessionArtifacts } from '../lib/session-artifacts.ts';
+import { clearPrivatePassSessionArtifacts } from '../lib/session-artifacts.ts';
 
 function memoryStorage(values: string[]): Pick<Storage, 'key' | 'length' | 'removeItem'> & { values: string[] } {
   return {
@@ -20,14 +20,14 @@ function memoryStorage(values: string[]): Pick<Storage, 'key' | 'length' | 'remo
   };
 }
 
-test('sign-out cleanup removes Focaccia ticket and idempotency session artifacts only', () => {
+test('sign-out cleanup removes PrivatePass ticket and idempotency session artifacts only', () => {
   const storage = memoryStorage([
     'focaccia:ticket:ticket-a',
     'focaccia:idempotency:checkout:event-a',
     'unrelated:key',
   ]);
 
-  clearFocacciaSessionArtifacts(storage);
+  clearPrivatePassSessionArtifacts(storage);
 
   assert.deepEqual(storage.values, ['unrelated:key']);
 });

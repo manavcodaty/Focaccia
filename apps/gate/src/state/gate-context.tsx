@@ -20,14 +20,13 @@ import {
 import { openGateRepository } from '../lib/expo-db';
 import { expoSecureValueStore } from '../lib/expo-secure-store';
 import type { GateRepository } from '../lib/gate-db';
-import { cacheFreshness, createSignedCheckin, createSignedRevocationRequest } from '../lib/gate-sync';
+import { verifyFaceAndRecord } from '../lib/face-verification';
+import { cacheFreshness, createSignedRevocationRequest } from '../lib/gate-sync';
 import { flushCheckinQueue } from '../lib/gate-sync-runner';
 import {
   decisionToLogEntry,
   destroyPendingVerification,
-  finalizeOfflineVerification,
   prepareOfflineVerification,
-  recordLivenessFailure,
 } from '../lib/offline-verifier';
 import {
   loadGatePrivateKey,
@@ -49,13 +48,12 @@ interface GateContextValue {
   cancelPendingVerification(): void;
   completePendingVerification(
     liveEmbedding: ArrayLike<number>,
-    livenessMs: number,
+    faceCaptureMs: number,
   ): Promise<VerificationDecision>;
   completeProvisioning(payload: ProvisioningQrPayload, deviceName: string): Promise<void>;
   dbError: string | null;
   dbReady: boolean;
   exportLogsCsv(): Promise<string>;
-  failLiveness(livenessMs: number): Promise<VerificationDecision>;
   gate: StoredGateConfig | null;
   lastResult: VerificationDecision | null;
   pendingVerification: PendingVerification | null;
@@ -72,7 +70,6 @@ interface GateContextValue {
 }
 
 const GateContext = createContext<GateContextValue | null>(null);
-const REPLAY_CONFLICT_HINT = 'This pass has already been accepted on this gate.';
 
 export function GateProvider({ children }: PropsWithChildren) {
   const [auth, setAuth] = useState<OrganizerAuthState | null>(null);
@@ -205,72 +202,20 @@ export function GateProvider({ children }: PropsWithChildren) {
         destroyPendingVerification(pendingVerification);
         setPendingVerification(null);
       },
-      async completePendingVerification(liveEmbedding, livenessMs) {
+      async completePendingVerification(liveEmbedding, faceCaptureMs) {
         if (!repository || !pendingVerification) {
           throw new Error('No pending verification is ready.');
         }
 
-        let keepPendingForRetry = false;
-
         try {
-          const acceptedDecision = await finalizeOfflineVerification({
+          // One face capture decides the attempt: a mismatch is a final, logged rejection.
+          const decision = await verifyFaceAndRecord({
+            faceCaptureMs,
             liveEmbedding,
-            livenessMs,
+            loadSyncPrivateKey: (eventId) => loadGateSyncPrivateKey(expoSecureValueStore, eventId),
             pending: pendingVerification,
+            repository,
           });
-          let decision = acceptedDecision;
-
-          if (decision.reasonCode === 'MATCH_FAIL') {
-            keepPendingForRetry = true;
-            setLastResult(null);
-            return decision;
-          }
-
-          if (acceptedDecision.accepted && acceptedDecision.pass_id) {
-            const gateTimestamp = new Date().toISOString();
-            const syncPrivateKey = await loadGateSyncPrivateKey(
-              expoSecureValueStore,
-              acceptedDecision.event_id,
-            );
-            if (!syncPrivateKey) {
-              throw new Error('The gate synchronization key is missing from secure storage.');
-            }
-            let signedCheckin;
-            try {
-              signedCheckin = await createSignedCheckin({
-                eventId: acceptedDecision.event_id,
-                gateTimestamp,
-                passId: acceptedDecision.pass_id,
-                privateKey: syncPrivateKey,
-              });
-            } finally {
-              syncPrivateKey.fill(0);
-            }
-            const wasRecorded = await repository.recordAcceptedDecision(
-              decisionToLogEntry(acceptedDecision, gateTimestamp),
-              {
-                ...signedCheckin,
-                attempt_count: 0,
-                last_error_code: null,
-                next_attempt_at: gateTimestamp,
-                status: 'pending',
-                synced_at: null,
-              },
-            );
-
-            if (!wasRecorded) {
-              decision = {
-                ...acceptedDecision,
-                accepted: false,
-                hint: REPLAY_CONFLICT_HINT,
-                outcome: 'REJECT',
-                reasonCode: 'REPLAY_USED',
-              };
-              await repository.insertLog(decisionToLogEntry(decision, gateTimestamp));
-            }
-          } else {
-            await repository.insertLog(decisionToLogEntry(decision));
-          }
           setLastResult(decision);
           await reloadFromRepository(repository);
           if (decision.accepted && gate) {
@@ -280,10 +225,8 @@ export function GateProvider({ children }: PropsWithChildren) {
           }
           return decision;
         } finally {
-          if (!keepPendingForRetry) {
-            destroyPendingVerification(pendingVerification);
-            setPendingVerification(null);
-          }
+          destroyPendingVerification(pendingVerification);
+          setPendingVerification(null);
         }
       },
       async completeProvisioning(payload, deviceName) {
@@ -350,6 +293,9 @@ export function GateProvider({ children }: PropsWithChildren) {
             ),
           ]);
           await repository.saveGateConfig(storedGate);
+          destroyPendingVerification(pendingVerification);
+          setPendingVerification(null);
+          setLastResult(null);
           try {
             await refreshSignedRevocations(repository, storedGate);
           } finally {
@@ -371,23 +317,7 @@ export function GateProvider({ children }: PropsWithChildren) {
 
         return repository.exportLogsCsv();
       },
-      async failLiveness(livenessMs) {
-        if (!repository || !pendingVerification) {
-          throw new Error('No pending verification is ready.');
-        }
 
-        try {
-          const decision = recordLivenessFailure(pendingVerification, livenessMs);
-
-          await repository.insertLog(decisionToLogEntry(decision));
-          setLastResult(decision);
-          await reloadFromRepository(repository);
-          return decision;
-        } finally {
-          destroyPendingVerification(pendingVerification);
-          setPendingVerification(null);
-        }
-      },
       gate,
       lastResult,
       pendingVerification,

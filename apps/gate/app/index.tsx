@@ -38,7 +38,7 @@ export default function GateHomeScreen() {
           {gate?.event_name ?? 'Prepare this gate'}
         </Text>
         <Text style={[styles.subtitle, { fontSize: scaleFont(layout, 16), lineHeight: scaleFont(layout, 24) }]}>
-          Confirm readiness, admit attendees offline, and synchronize signed check-ins when connectivity returns.
+          Offline entry. Automatic sync.
         </Text>
       </View>
 
@@ -56,15 +56,15 @@ export default function GateHomeScreen() {
         {gate && !scannerReady ? (
           <StatusBanner
             message={cache.state === 'critical'
-              ? 'The revocation cache is missing or too old. Refresh it before opening the scanner.'
-              : 'The revocation cache is stale. Refresh it before admitting attendees.'}
+              ? 'Revocations missing or expired. Refresh to scan.'
+              : 'Revocations stale. Refresh before entry.'}
             title="Refresh required"
             tone="warning"
           />
         ) : null}
         {!gate ? (
           <StatusBanner
-            message="Sign in as an organizer and scan the event provisioning QR before this device can verify passes."
+            message="Sign in and scan the dashboard gate QR."
             title="Needs setup"
             tone="warning"
           />

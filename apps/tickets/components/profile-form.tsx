@@ -1,15 +1,18 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { AlertCircle, UserRound } from 'lucide-react';
+import { AlertCircleIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Card, CardContent } from '@/components/ui/card';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { ticketApi } from '@/lib/api';
 
+import { AuthShell } from './auth-form';
 import { useAuth } from './auth-provider';
 
 export function ProfileForm() {
@@ -40,13 +43,24 @@ export function ProfileForm() {
   }
 
   return (
-    <div className="auth-card fade-section">
-      <div className="auth-heading"><p className="overline">Profile required</p><h1 className="display-heading">Confirm your name</h1><p>Your ticket email is fixed to <strong>{user.email}</strong>. Add the full name that should own the ticket.</p></div>
-      <form action={submit} className="auth-form">
-        <Field><FieldLabel htmlFor="full-name"><UserRound />Full name</FieldLabel><Input autoComplete="name" id="full-name" maxLength={120} name="full_name" required type="text" /><FieldDescription>This trusted name will own every ticket you claim.</FieldDescription></Field>
-        {error ? <Alert variant="destructive"><AlertCircle /><AlertTitle>Profile could not be saved</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
-        <Button className="w-full" disabled={pending} size="lg" type="submit">{pending ? 'Saving…' : 'Save profile'}</Button>
-      </form>
-    </div>
+    <AuthShell title="Your name">
+      <Card>
+        <CardContent>
+          <form action={submit} className="flex flex-col gap-6">
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="full-name">Full name</FieldLabel>
+                <Input autoComplete="name" id="full-name" maxLength={120} name="full_name" required type="text" />
+              </Field>
+            </FieldGroup>
+            {error ? <Alert role="alert" variant="destructive"><AlertCircleIcon /><AlertTitle>{error}</AlertTitle></Alert> : null}
+            <Button className="w-full" disabled={pending} size="lg" type="submit">
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              {pending ? 'Saving…' : 'Save'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </AuthShell>
   );
 }

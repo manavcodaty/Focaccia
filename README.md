@@ -7,7 +7,7 @@ The system has four applications:
 - `apps/tickets`: public Next.js event catalogue, attendee authentication, free checkout, My tickets, cancellation, and recovery
 - `apps/web`: organizer-only Next.js dashboard for events, ticket types, tickets, gate provisioning, reset/revocation, activity, and CSV export
 - `apps/enrollment`: Expo iOS attendee app for owned-ticket selection, consent, local face processing, pass issuance, regeneration, and secure pass storage
-- `apps/gate`: Expo iOS gate app for provisioning, revocation refresh, offline signature/replay/revocation/liveness/face checks, and durable signed synchronization
+- `apps/gate`: Expo iOS gate app for provisioning, revocation refresh, offline signature/replay/revocation/face-match checks, and durable signed synchronization
 
 `packages/shared` contains deterministic crypto, template, type, and network helpers. Supabase supplies email/password Auth, PostgreSQL/RLS, Realtime, and Edge Functions.
 
@@ -19,7 +19,7 @@ The system has four applications:
 4. Checkout returns a ticket-scoped claim code. The code can select a ticket, but authenticated ownership is always required.
 5. The attendee signs into `apps/enrollment` with the same account, selects the owned ticket, consents, and captures locally.
 6. The app derives an event-scoped cancelable template, encrypts it to the gate public key, and requests a server-signed pass. Raw images, embeddings, and decrypted templates are not sent to Supabase.
-7. The gate refreshes revocations before doors open, then can disconnect completely. It verifies the pass, blocks replay, runs liveness and local matching, and records `ACCEPT` or `REJECT` locally.
+7. The gate refreshes revocations before doors open, then can disconnect completely. It verifies the pass, blocks replay, captures the attendee's face once and matches it locally against the pass, and records `ACCEPT` or `REJECT` locally.
 8. An accepted check-in is atomically queued with its original gate time. When connectivity returns, the gate signs and synchronizes it; the organizer dashboard updates automatically.
 
 Gate decisions remain offline. A cancellation or revocation made while the gate is disconnected takes effect only after the next successful revocation refresh.

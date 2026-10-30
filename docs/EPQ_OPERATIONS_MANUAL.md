@@ -169,11 +169,11 @@ Use **Switch** and choose the clear-local-data option. It deletes only the curre
 
 1. Disable Wi-Fi/mobile networking after refresh.
 2. Open scanner and scan the attendee QR.
-3. Complete active liveness.
+3. Capture the attendee's face once (no head-turn or liveness step).
 4. Observe `ACCEPT` or a plain-English rejection reason.
 5. Scan the same pass again and capture replay rejection.
 
-The decision uses only provisioned keys, cached revocations, local liveness/matching, and SQLite replay state. Network failure cannot change the result.
+The decision uses only provisioned keys, cached revocations, local face matching, and SQLite replay state. Network failure cannot change the result.
 
 ### Optical Fallback
 

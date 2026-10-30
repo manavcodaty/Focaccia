@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
       .from('event_tickets')
       .select('id, event_id, ticket_type_id, status, generation_count, current_pass_id')
       .eq('attendee_user_id', user.id)
-      .in('status', ['claimed', 'enrolled']);
+      .in('status', ['claimed', 'enrolled', 'checked_in']);
 
     if (body.claim_code) {
       const [userScope, ipScope] = await Promise.all([
@@ -52,6 +52,9 @@ Deno.serve(async (req) => {
     const { data: ticket, error: ticketError } = await query.maybeSingle();
     if (ticketError) throw ticketError;
     if (!ticket) return jsonError(req, 404, 'ticket_not_found', 'Ticket not found.');
+    if (ticket.status === 'checked_in') {
+      return jsonError(req, 409, 'ticket_already_used', 'This ticket has already been used for entry and cannot generate another pass.');
+    }
 
     const { data: event, error: eventError } = await adminClient
       .from('events')

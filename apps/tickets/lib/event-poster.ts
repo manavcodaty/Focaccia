@@ -1,17 +1,9 @@
-const POSTER_PALETTES = [
-  { accent: '#B86143', background: '#F1D8C9', foreground: '#3E2017' },
-  { accent: '#2F6955', background: '#DCE9DF', foreground: '#183A30' },
-  { accent: '#A46A18', background: '#F1E4C8', foreground: '#4A3210' },
-  { accent: '#675167', background: '#E8DEE6', foreground: '#332733' },
-  { accent: '#445F79', background: '#DCE5EC', foreground: '#223443' },
-] as const;
+/** Mid-tone identity hues. Tints are mixed against the theme surface at render time. */
+const POSTER_ACCENTS = ['#2563EB', '#0F8A6A', '#C2410C', '#BE185D', '#0E7490', '#A16207'] as const;
 
 export interface EventPosterModel {
   accent: string;
-  background: string;
-  foreground: string;
   initials: string;
-  motif: 'arc' | 'grid' | 'rays' | 'steps';
   serial: string;
 }
 
@@ -24,19 +16,16 @@ function stableHash(value: string): number {
 
 export function createEventPoster(eventId: string, eventName: string): EventPosterModel {
   const hash = stableHash(`${eventId}:${eventName}`);
-  const palette = POSTER_PALETTES[hash % POSTER_PALETTES.length];
   const initials = eventName
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((word) => word[0]?.toLocaleUpperCase('en-GB') ?? '')
     .join('') || 'FC';
-  const motifs: EventPosterModel['motif'][] = ['arc', 'grid', 'rays', 'steps'];
 
   return {
-    ...palette,
+    accent: POSTER_ACCENTS[hash % POSTER_ACCENTS.length],
     initials,
-    motif: motifs[hash % motifs.length],
     serial: String((hash % 900) + 100),
   };
 }

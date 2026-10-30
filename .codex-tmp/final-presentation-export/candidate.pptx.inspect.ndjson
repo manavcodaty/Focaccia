@@ -1,0 +1,59 @@
+{"kind":"deck","id":"pr/jyw35t","name":"Deck"}
+{"kind":"layout","id":"ly/t4jedkv2","editable":false,"name":"Master","type":"master"}
+{"kind":"layout","id":"ly/rah8juhs","editable":false,"name":"Title Slide","type":"title","placeholders":[{"name":"title","type":"title"},{"name":"subtitle","type":"subtitle"}]}
+{"kind":"layout","id":"ly/rat032xc","editable":false,"name":"Section Header","type":"sectionHeader","placeholders":[{"name":"title","type":"title"}]}
+{"kind":"layout","id":"ly/03a18fu5","editable":false,"name":"Title and Body","type":"tx","placeholders":[{"name":"title","type":"title"},{"name":"body","type":"body"}]}
+{"kind":"layout","id":"ly/i1ozml8b","editable":false,"name":"Title and Two Column","type":"twoColTx","placeholders":[{"name":"title","type":"title"},{"name":"Left column","type":"body"},{"name":"Right column","type":"body"}]}
+{"kind":"layout","id":"ly/76dwfqdw","editable":false,"name":"Title and One Column","type":"tx","placeholders":[{"name":"title","type":"title"},{"name":"body","type":"body"}]}
+{"kind":"layout","id":"ly/bq5836ts","editable":false,"name":"Blank","type":"blank"}
+{"kind":"slide","id":"sl/ybt2cz","slideIndex":0,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 1","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/ja10re54","slideIndex":0,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 1"}
+{"kind":"notes","id":"nt/ybt2cz","slideIndex":0,"text":""}
+{"kind":"slide","id":"sl/zqofl1","slideIndex":1,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 2","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/yp4rix83","slideIndex":1,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 2"}
+{"kind":"notes","id":"nt/zqofl1","slideIndex":1,"text":""}
+{"kind":"slide","id":"sl/0p0xcl","slideIndex":2,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 3","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/yd4ru183","slideIndex":2,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 3"}
+{"kind":"notes","id":"nt/0p0xcl","slideIndex":2,"text":""}
+{"kind":"slide","id":"sl/evjvru","slideIndex":3,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 4","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/58fidsfu","slideIndex":3,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 4"}
+{"kind":"notes","id":"nt/evjvru","slideIndex":3,"text":""}
+{"kind":"slide","id":"sl/rj4efp","slideIndex":4,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 5","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/s7ypw3q9","slideIndex":4,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 5"}
+{"kind":"notes","id":"nt/rj4efp","slideIndex":4,"text":""}
+{"kind":"slide","id":"sl/5l1tqi","slideIndex":5,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 6","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/dwji54fy","slideIndex":5,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 6"}
+{"kind":"notes","id":"nt/5l1tqi","slideIndex":5,"text":""}
+{"kind":"slide","id":"sl/1ulsqq","slideIndex":6,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 7","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/0769sfq5","slideIndex":6,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 7"}
+{"kind":"notes","id":"nt/1ulsqq","slideIndex":6,"text":""}
+{"kind":"slide","id":"sl/mftbpu","slideIndex":7,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 8","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/hwv2p4fy","slideIndex":7,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 8"}
+{"kind":"notes","id":"nt/mftbpu","slideIndex":7,"text":""}
+{"kind":"slide","id":"sl/r0wlsh","slideIndex":8,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 9","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/po3mx0na","slideIndex":8,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 9"}
+{"kind":"notes","id":"nt/r0wlsh","slideIndex":8,"text":""}
+{"kind":"slide","id":"sl/hy3sx6","slideIndex":9,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 10","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/ql0z65c7","slideIndex":9,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 10"}
+{"kind":"notes","id":"nt/hy3sx6","slideIndex":9,"text":""}
+{"kind":"slide","id":"sl/p1muzg","slideIndex":10,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 11","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/l0rmpcby","slideIndex":10,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 11"}
+{"kind":"notes","id":"nt/p1muzg","slideIndex":10,"text":""}
+{"kind":"slide","id":"sl/8chi4b","slideIndex":11,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 12","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/jatonelc","slideIndex":11,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 12"}
+{"kind":"notes","id":"nt/8chi4b","slideIndex":11,"text":""}
+{"kind":"slide","id":"sl/nn79z5","slideIndex":12,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 13","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/ob2ton6t","slideIndex":12,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 13"}
+{"kind":"notes","id":"nt/nn79z5","slideIndex":12,"text":""}
+{"kind":"slide","id":"sl/x7p5vq","slideIndex":13,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 14","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/ix0ji5cn","slideIndex":13,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 14"}
+{"kind":"notes","id":"nt/x7p5vq","slideIndex":13,"text":""}
+{"kind":"slide","id":"sl/f5tzoa","slideIndex":14,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 15","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/a1kf2987","slideIndex":14,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 15"}
+{"kind":"notes","id":"nt/f5tzoa","slideIndex":14,"text":""}
+{"kind":"slide","id":"sl/rwulfb","slideIndex":15,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 16","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/58r2t0bm","slideIndex":15,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 16"}
+{"kind":"notes","id":"nt/rwulfb","slideIndex":15,"text":""}
+{"kind":"slide","id":"sl/12qqtv","slideIndex":16,"layout":{"id":"ly/bq5836ts","name":"Blank"},"title":"Slide 17","textShapes":0,"backgroundColor":"rgba(255,253,248,1)"}
+{"kind":"image","id":"im/edkv6tcz","slideIndex":16,"position":{"left":0,"top":0,"width":1600,"height":900},"fit":"contain","name":"","alt":"Final Excalidraw presentation, slide 17"}
+{"kind":"notes","id":"nt/12qqtv","slideIndex":16,"text":""}

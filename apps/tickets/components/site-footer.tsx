@@ -1,11 +1,13 @@
-import Link from 'next/link';
+import { cn } from '@/lib/utils';
+
+import { Wordmark } from './brand';
+import { pageContainer } from './page';
 
 export function SiteFooter() {
   return (
-    <footer className="site-footer">
-      <div className="footer-inner">
-        <div><strong>Focaccia tickets</strong><p>Free event tickets for the controlled EPQ deployment.</p></div>
-        <nav aria-label="Footer navigation"><Link href="/">Discover</Link><Link href="/tickets">My tickets</Link><Link href="/privacy">Privacy</Link></nav>
+    <footer className="border-t">
+      <div className={cn(pageContainer, 'flex h-16 items-center')}>
+        <Wordmark className="text-muted-foreground" label="Tickets" />
       </div>
     </footer>
   );

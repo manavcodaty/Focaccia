@@ -10,9 +10,9 @@ beforeEach(() => {
 it("renders a semantic full landing page", () => {
   render(<LandingPage />);
   expect(screen.getByRole("main")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "From discovery to the door." })).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Private by architecture, not by promise." })).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Run the room, not the queue." })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "How it works" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Private by design." })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Run your event." })).toBeVisible();
   expect(screen.getByRole("contentinfo")).toBeInTheDocument();
 });
 

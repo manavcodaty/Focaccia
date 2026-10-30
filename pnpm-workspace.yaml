@@ -1,6 +1,9 @@
 packages:
   - apps/*
   - packages/*
+allowBuilds:
+  '@more-tech/react-native-libsodium': true
+  sharp: true
 overrides:
   '@babel/core@7.29.0': 7.29.6
   '@xmldom/xmldom@0.8.11': 0.8.13
@@ -17,6 +20,6 @@ overrides:
   ws@7.5.10: 7.5.11
   ws@8.18.3: 8.21.0
   ws@8.20.1: 8.21.0
-allowBuilds:
-  '@more-tech/react-native-libsodium': true
-  sharp: true
+patchedDependencies:
+  '@expo/cli@55.0.22': patches/@expo__cli@55.0.22.patch
+  expo-router@55.0.11: patches/expo-router@55.0.11.patch

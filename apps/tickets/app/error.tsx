@@ -1,7 +1,25 @@
 'use client';
 
+import { TriangleAlertIcon } from 'lucide-react';
+import Link from 'next/link';
+
+import { Page } from '@/components/page';
 import { Button } from '@/components/ui/button';
+import { Empty, EmptyContent, EmptyHeader, EmptyMedia } from '@/components/ui/empty';
 
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  return <main className="page-shell route-message" id="main-content"><p className="overline">Application error</p><h1 className="display-heading">This page could not finish loading</h1><p>No checkout should be assumed complete. Retry the page, then check My tickets before submitting again.</p><Button onClick={reset} type="button">Try again</Button></main>;
+  return (
+    <Page className="justify-center">
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon"><TriangleAlertIcon /></EmptyMedia>
+          <h1 className="text-lg font-medium tracking-tight">Something went wrong</h1>
+        </EmptyHeader>
+        <EmptyContent className="flex-row justify-center">
+          <Button onClick={reset} type="button">Retry</Button>
+          <Button asChild variant="outline"><Link href="/tickets">My tickets</Link></Button>
+        </EmptyContent>
+      </Empty>
+    </Page>
+  );
 }

@@ -1,37 +1,47 @@
+import { AlertCircleIcon, CalendarIcon, SearchXIcon, TicketIcon } from 'lucide-react';
 import Link from 'next/link';
-import { AlertCircle, CalendarDays, Ticket } from 'lucide-react';
 
-import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertAction, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Item, ItemContent, ItemGroup, ItemMedia } from '@/components/ui/item';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export function LoadingEvents() {
+export function LoadingEvents({ label = 'Loading events' }: { label?: string }) {
   return (
-    <output aria-label="Loading events" aria-live="polite" className="event-grid">
-      {[0, 1, 2].map((item) => <div aria-hidden="true" className="event-skeleton" key={item}><Skeleton className="event-skeleton-poster" /><div><Skeleton className="h-4 w-24" /><Skeleton className="mt-4 h-8 w-4/5" /><Skeleton className="mt-3 h-4 w-full" /><Skeleton className="mt-2 h-4 w-2/3" /></div></div>)}
+    <output aria-label={label} aria-live="polite" className="flex flex-col gap-3">
+      <Skeleton className="h-4 w-24" />
+      <ItemGroup className="gap-3">
+        {[0, 1, 2].map((item) => (
+          <Item aria-hidden="true" key={item} variant="outline">
+            <ItemMedia className="size-14" variant="image"><Skeleton className="size-full" /></ItemMedia>
+            <ItemContent className="gap-2">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3.5 w-1/2" />
+            </ItemContent>
+          </Item>
+        ))}
+      </ItemGroup>
     </output>
   );
 }
 
 export function InlineError({ message, retry }: { message: string; retry?: () => void }) {
   return (
-    <Alert className="state-alert" variant="destructive">
-      <AlertCircle />
-      <AlertTitle>Unable to load this view</AlertTitle>
-      <AlertDescription>{message}</AlertDescription>
-      {retry ? <AlertAction><Button onClick={retry} size="sm" variant="outline">Try again</Button></AlertAction> : null}
+    <Alert variant="destructive">
+      <AlertCircleIcon />
+      <AlertTitle>{message}</AlertTitle>
+      {retry ? <AlertAction><Button onClick={retry} size="sm" variant="outline">Retry</Button></AlertAction> : null}
     </Alert>
   );
 }
 
 export function EmptyTickets() {
   return (
-    <Empty className="empty-state">
+    <Empty className="border border-dashed">
       <EmptyHeader>
-        <EmptyMedia variant="icon"><Ticket /></EmptyMedia>
-        <EmptyTitle>No tickets yet</EmptyTitle>
-        <EmptyDescription>Claim a free place from a listed event. Your ticket remains recoverable with the same attendee account.</EmptyDescription>
+        <EmptyMedia variant="icon"><TicketIcon /></EmptyMedia>
+        <EmptyTitle>No tickets</EmptyTitle>
       </EmptyHeader>
       <EmptyContent><Button asChild><Link href="/">Browse events</Link></Button></EmptyContent>
     </Empty>
@@ -40,12 +50,23 @@ export function EmptyTickets() {
 
 export function EmptyEvents() {
   return (
-    <Empty className="empty-state">
+    <Empty className="border border-dashed">
       <EmptyHeader>
-        <EmptyMedia variant="icon"><CalendarDays /></EmptyMedia>
-        <EmptyTitle>No listed events</EmptyTitle>
-        <EmptyDescription>There are no upcoming public events at the moment. Check back after an organizer publishes one.</EmptyDescription>
+        <EmptyMedia variant="icon"><CalendarIcon /></EmptyMedia>
+        <EmptyTitle>No events</EmptyTitle>
       </EmptyHeader>
+    </Empty>
+  );
+}
+
+export function NoMatchingEvents({ reset }: { reset: () => void }) {
+  return (
+    <Empty className="border border-dashed">
+      <EmptyHeader>
+        <EmptyMedia variant="icon"><SearchXIcon /></EmptyMedia>
+        <EmptyTitle>No results</EmptyTitle>
+      </EmptyHeader>
+      <EmptyContent><Button onClick={reset} variant="outline">Clear search</Button></EmptyContent>
     </Empty>
   );
 }

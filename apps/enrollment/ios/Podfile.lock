@@ -2499,7 +2499,7 @@ DEPENDENCIES:
   - "ExpoLogBox (from `../../../node_modules/.pnpm/@expo+log-box@55.0.10_@expo+dom-webview@55.0.3_expo@55.0.12_react-native@0.83.4_@babel+_ffed593631bff32645cc34e3b523754a/node_modules/@expo/log-box`)"
   - "ExpoModulesCore (from `../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-co_4fde175b75379f69e5758af3d385f6f3/node_modules/expo-modules-core`)"
   - "ExpoModulesJSI (from `../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-co_4fde175b75379f69e5758af3d385f6f3/node_modules/expo-modules-core`)"
-  - "ExpoRouter (from `../../../node_modules/.pnpm/expo-router@55.0.11_54424cdf86189de807dc52af274b5716/node_modules/expo-router/ios`)"
+  - "ExpoRouter (from `../../../node_modules/.pnpm/expo-router@55.0.11_patch_hash=6ea393fde8c19fc30047d3d4f8a367be2df55a6d75df63839738d34f_2966396c4f1f52eb18c3f28ddff0589f/node_modules/expo-router/ios`)"
   - "ExpoSecureStore (from `../../../node_modules/.pnpm/expo-secure-store@55.0.12_expo@55.0.12/node_modules/expo-secure-store/ios`)"
   - "ExpoSplashScreen (from `../../../node_modules/.pnpm/expo-splash-screen@55.0.16_expo@55.0.12_typescript@5.9.3/node_modules/expo-splash-screen/ios`)"
   - "ExpoSymbols (from `../../../node_modules/.pnpm/expo-symbols@55.0.7_expo-font@55.0.6_expo@55.0.12_react-native@0.83.4_@babel+core@7.29._f11cf3765f1250709e1ab3624e109f2b/node_modules/expo-symbols/ios`)"
@@ -2646,7 +2646,7 @@ EXTERNAL SOURCES:
   ExpoModulesJSI:
     :path: "../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-co_4fde175b75379f69e5758af3d385f6f3/node_modules/expo-modules-core"
   ExpoRouter:
-    :path: "../../../node_modules/.pnpm/expo-router@55.0.11_54424cdf86189de807dc52af274b5716/node_modules/expo-router/ios"
+    :path: "../../../node_modules/.pnpm/expo-router@55.0.11_patch_hash=6ea393fde8c19fc30047d3d4f8a367be2df55a6d75df63839738d34f_2966396c4f1f52eb18c3f28ddff0589f/node_modules/expo-router/ios"
   ExpoSecureStore:
     :path: "../../../node_modules/.pnpm/expo-secure-store@55.0.12_expo@55.0.12/node_modules/expo-secure-store/ios"
   ExpoSplashScreen:
@@ -2853,7 +2853,7 @@ SPEC CHECKSUMS:
   ExpoSymbols: 8b63e859ba013df1f2fc666f535fddb3d5270569
   EXUpdatesInterface: 39d05400a9226c438565dbaaa8447b5f0672ba45
   FBLazyVector: 061f518bbd81677ed8a8317e2ae60b8779495808
-  hermes-engine: 8fc32adcac0732d2841e7a213434992b0ade0842
+  hermes-engine: 468ed59881bac3fee8394312119b3a83d6374476
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
@@ -2866,7 +2866,7 @@ SPEC CHECKSUMS:
   React-callinvoker: bd7959a24564feaf5e4c8c11789e64884da13482
   React-Codegen: 4b8b4817cea7a54b83851d4c1f91f79aa73de30a
   React-Core: f060f4e14e9301685ce63ea65fbe903bf3397e45
-  React-Core-prebuilt: c2008b205b6dfbe2fad1bef5f2362b18ead3c350
+  React-Core-prebuilt: 2e746598b5fbc2f4ca7be1b883c89fc6e69c05e7
   React-CoreModules: 89a1a544297be88ca4cdff317423f9e0d0c192a4
   React-cxxreact: 81b1bfa305b1b759cc0fe18327644816216e5993
   React-debug: 234fddb309822e13b9b442ef1bdca8d2b8c3cbf2
@@ -2932,7 +2932,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 2b19d66e5ddfe8dc7afb6338a4626156cbf2bab1
   ReactCodegen: 8c08a6e50bc079070cad53c55686366642ff405c
   ReactCommon: c6e81cc1ae185fa84863f3ea1d58caac4be741d7
-  ReactNativeDependencies: d8b7b18baf0392c2cce1cc95d08f73cd7d65afbf
+  ReactNativeDependencies: 4fa93b51e51b9b6fb2bf09c960076b0fd2368f18
   RNGestureHandler: 5494787ce29288a8941fa825663f2b1fa0a5aaf1
   RNReanimated: 104930fa5ace1bcc8d284c0ab4cacaac4abf2316
   RNScreens: 02e62f995ceb94ea465864b3bf4d4767b87f0362
@@ -2946,6 +2946,6 @@ SPEC CHECKSUMS:
   VisionCamera: 0044a94f7489f19e19d5938e97dfc36f4784af3c
   Yoga: acd565934addf7423687593ec490bd4491b2a802
 
-PODFILE CHECKSUM: b4a3810e1dada1242eef4ed08c6c503e0d283d0e
+PODFILE CHECKSUM: 56b10865b89c307888163c755cd02d7a6f92f945
 
 COCOAPODS: 1.16.2

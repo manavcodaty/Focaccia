@@ -1,4 +1,4 @@
-export declare const focacciaBrand: {
+export declare const privatePassBrand: {
     readonly background: "#F7F9FC";
     readonly border: "#D8E0F0";
     readonly borderDark: "#2A3550";
@@ -17,8 +17,8 @@ export declare const focacciaBrand: {
     readonly warning: "#8A5B14";
     readonly warningSoft: "#F5E6CB";
 };
-export declare const focacciaWordmark: "Focaccia";
-export declare const focacciaBrandMark: {
+export declare const privatePassWordmark: "PrivatePass";
+export declare const privatePassBrandMark: {
     readonly checkPath: "M51 64.5 60 73l18-20";
     readonly innerRect: {
         readonly height: 92;

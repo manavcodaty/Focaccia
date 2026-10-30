@@ -4,8 +4,8 @@ import { decode } from 'jpeg-js';
 import { loadTensorflowModel, type TensorflowModel } from 'react-native-fast-tflite';
 import faceModelAsset from '../../../enrollment/assets/models/facenet_512.tflite';
 
-import { buildSquareCrop, snapshotRollDegrees } from './face-crop';
-import type { FaceSnapshot } from './types';
+import { buildSquareCrop } from './face-crop';
+import { detectFace } from './face-detector';
 
 const FACE_INPUT_SIZE = 160;
 const FACE_OUTPUT_SIZE = 512;
@@ -72,28 +72,30 @@ export async function extractFaceEmbeddingFromPhoto({
   photoHeight,
   photoPath,
   photoWidth,
-  snapshot,
 }: {
   photoHeight: number;
   photoPath: string;
   photoWidth: number;
-  snapshot?: FaceSnapshot | null;
 }): Promise<Float32Array> {
-  const model = await loadFaceEmbeddingModel();
   const photoUri = ensureFileUri(photoPath);
   const sourceFile = new File(photoUri);
   let alignedFile: File | null = null;
   let alignedBytes: Uint8Array | null = null;
   let modelInput: Float32Array | null = null;
+  let uprightFile: File | null = null;
 
   try {
-    const crop = buildSquareCrop(photoWidth, photoHeight, snapshot);
-    const rollDegrees = snapshotRollDegrees(snapshot);
+    buildSquareCrop(photoWidth, photoHeight);
+    const upright = await manipulateAsync(photoUri, [], { compress: 1, format: SaveFormat.JPEG });
+    uprightFile = new File(upright.uri);
+    await detectFace(upright.uri);
+    const model = await loadFaceEmbeddingModel();
+    // Match enrollment's guide crop; a gate-only face crop changes the model input scale.
+    const crop = buildSquareCrop(upright.width, upright.height);
     const alignedFace = await manipulateAsync(
-      photoUri,
+      upright.uri,
       [
         { crop },
-        ...(rollDegrees === null ? [] : [{ rotate: rollDegrees }]),
         { resize: { height: FACE_INPUT_SIZE, width: FACE_INPUT_SIZE } },
       ],
       {
@@ -123,6 +125,7 @@ export async function extractFaceEmbeddingFromPhoto({
   } finally {
     alignedBytes?.fill(0);
     await deleteFileBestEffort(alignedFile);
+    await deleteFileBestEffort(uprightFile);
     await deleteFileBestEffort(sourceFile);
   }
 }

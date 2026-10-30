@@ -1,201 +1,48 @@
-import Link from "next/link";
-import { ArrowLeft, CheckCircle2, ShieldAlert, ShieldCheck } from "lucide-react";
+import { SmartphoneIcon } from "lucide-react";
 
 import type { ProvisionedGateSummary } from "@/lib/dashboard-adapters";
-import type { EventLifecyclePhase } from "@/lib/event-lifecycle";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { formatTimestamp } from "@/lib/format-timestamp";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item";
 
 export interface GateProvisioningViewProps {
-  backHref: string;
-  eventId: string;
-  eventName: string;
   gates: ProvisionedGateSummary[];
-  phase: EventLifecyclePhase;
 }
 
-export function GateProvisioningView({
-  backHref,
-  eventId,
-  eventName,
-  gates,
-  phase,
-}: GateProvisioningViewProps) {
-  const isClosed = phase === "ended";
-  const isProvisioned = gates.length > 0;
-
+export function GateProvisioningView({ gates }: GateProvisioningViewProps) {
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Button asChild size="sm" variant="outline">
-          <Link href={backHref}>
-            <ArrowLeft className="size-3.5" />
-            Back to event
-          </Link>
-        </Button>
-        <Badge variant={isClosed ? "warning" : isProvisioned ? "success" : "warning"}>
-          {isClosed ? "Event ended" : isProvisioned ? "Gate provisioned" : "Awaiting gate"}
-        </Badge>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Provisioning control panel</CardTitle>
-          <CardDescription>
-            {isClosed
-              ? "This event window has closed. Gate provisioning is locked and kept here only for audit reference."
-              : "Bind one gate phone to this event. The first successful provisioning call sets the permanent event gate key."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="border-l-2 border-[color:var(--primary)] pl-4">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-[color:var(--muted-foreground)]">Assigned event</p>
-            <p className="mt-1.5 text-base font-semibold text-[color:var(--foreground)]">{eventName}</p>
-            <p className="mt-1 token-mono text-xs text-[color:var(--muted-foreground)]">{eventId}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Provision gate instructions</CardTitle>
-          <CardDescription>
-            {isClosed
-              ? "Provisioning has been closed because the event already ended."
-              : "Follow this exact sequence to avoid locking the event to an unintended device."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-3">
-            {(isClosed
-              ? [
-                  {
-                    step: "1",
-                    text: "No new gate devices can be bound after the event window ends.",
-                  },
-                  {
-                    step: "2",
-                    text: "Attendee enrollment is closed for this event, even if the join code is still visible for audit purposes.",
-                  },
-                  {
-                    step: "3",
-                    text: "Use this page only to review the prior provisioning state and any public event values.",
-                  },
-                ]
-              : [
-                  {
-                    step: "1",
-                    text: "Open the Gate App on the intended device and navigate to the provisioning scanner.",
-                  },
-                  {
-                    step: "2",
-                    text: "Scan the QR payload from this page. The gate device generates its keypair on-device and submits only the public key.",
-                  },
-                  {
-                    step: "3",
-                    text: "Confirm this page shows the event as provisioned. This event cannot be rebound to a different gate afterwards.",
-                  },
-                ]).map((item) => (
-              <div key={item.step} className="flex gap-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] p-4">
-                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--primary)]/10 text-xs font-semibold text-[color:var(--primary)]">
-                  {item.step}
-                </div>
-                <p className="text-[0.8125rem] leading-relaxed text-[color:var(--foreground)]">
-                  {item.text}
-                </p>
-              </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Device</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {gates.length > 0 ? (
+          <ItemGroup>
+            {gates.map((gate) => (
+              <Item key={gate.id} variant="outline">
+                <ItemMedia variant="icon"><SmartphoneIcon /></ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{gate.name}</ItemTitle>
+                  <ItemDescription className="tabular-nums">{formatTimestamp(gate.createdAt)}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <span className="text-sm">
+                    {gate.isActive ? "Active" : "Inactive"}
+                  </span>
+                </ItemActions>
+              </Item>
             ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Provisioned devices</CardTitle>
-          <CardDescription>
-            Gate binding is single-device. If a key is present, this event is considered operationally bound.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {gates.length > 0 ? (
-            <div className="flex flex-col gap-3">
-              {gates.map((gate) => (
-                <div
-                  key={gate.id}
-                  className="rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium text-[color:var(--foreground)]">{gate.name}</p>
-                      <p className="mt-0.5 token-mono text-xs text-[color:var(--muted-foreground)]">{gate.id}</p>
-                    </div>
-                    <Badge variant={gate.isActive ? "success" : "warning"}>
-                      {gate.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                  <p className="mt-3 text-xs leading-5 text-[color:var(--muted-foreground)]">
-                    The bound public key is available in advanced cryptographic details.
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Empty>
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <ShieldAlert />
-                  </EmptyMedia>
-                  <EmptyTitle>No gate bound yet</EmptyTitle>
-                  <EmptyDescription>
-                    {isClosed
-                      ? "This event ended before a gate device was provisioned. No new binding can be created now."
-                      : "Complete the QR flow to bind the first gate device for this event."}
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-          )}
-        </CardContent>
-      </Card>
-
-      {isClosed ? (
-        <div className="flex items-start gap-3 rounded-xl border border-[color:var(--warning)]/20 bg-[color:var(--warning-soft)]/50 p-4">
-          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-[color:var(--warning)]" />
-          <div>
-            <p className="text-sm font-medium text-[color:var(--warning)]">
-              Event closed
-            </p>
-            <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-[color:var(--warning)]/90">
-              This event no longer accepts new gate provisioning or attendee enrollment requests.
-            </p>
-          </div>
-        </div>
-      ) : isProvisioned ? (
-        <div className="flex items-start gap-3 rounded-xl border border-[color:var(--success)]/20 bg-[color:var(--success-soft)]/40 p-4">
-          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[color:var(--success)]" />
-          <div>
-            <p className="text-sm font-medium text-[color:var(--success)]">
-              Gate device successfully provisioned
-            </p>
-            <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-[color:var(--success)]/80">
-              Keep this page available for audit reference and proceed with attendee enrollment operations.
-            </p>
-          </div>
-        </div>
-      ) : null}
-    </div>
+          </ItemGroup>
+        ) : (
+          <Empty className="border border-dashed">
+            <EmptyHeader>
+              <EmptyMedia variant="icon"><SmartphoneIcon /></EmptyMedia>
+              <EmptyTitle>No device</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
+        )}
+      </CardContent>
+    </Card>
   );
 }

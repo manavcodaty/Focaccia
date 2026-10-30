@@ -10,9 +10,7 @@ import { getLandingPortalLinks } from "@/lib/portal-links";
 export function Hero() {
   const reducedMotion = useReducedMotion();
   const portalLinks = getLandingPortalLinks();
-  const entrance = reducedMotion
-    ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
-    : { initial: { opacity: 0, transform: "translateY(20px)" }, animate: { opacity: 1, transform: "translateY(0px)" } };
+  const entrance = { initial: false as const, animate: { opacity: 1 } };
 
   return (
     <section id="top" className="relative min-h-[100svh] overflow-hidden bg-canvas pt-28 text-ink">
@@ -30,7 +28,7 @@ export function Hero() {
           transition={{ duration: 0.65, delay: reducedMotion ? 0 : 0.12, ease: [0.23, 1, 0.32, 1] }}
           className="mt-6 max-w-xl text-base leading-7 text-muted-stone sm:text-lg"
         >
-          Privacy-first biometric event access. No tickets to lose. No queues to stand in.
+          Private event entry.
         </m.p>
         <m.div
           {...entrance}

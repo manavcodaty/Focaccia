@@ -1,28 +1,31 @@
 "use client";
 
 import {
-  Activity,
-  ArrowLeft,
-  Download,
-  ExternalLink,
-  Pencil,
-  Plus,
-  RefreshCcw,
-  Search,
-  ShieldCheck,
-  TicketCheck,
-  TicketX,
-  Users,
-  type LucideIcon,
+  ActivityIcon,
+  CircleCheckIcon,
+  DownloadIcon,
+  EllipsisVerticalIcon,
+  ExternalLinkIcon,
+  PencilIcon,
+  PlusIcon,
+  QrCodeIcon,
+  RefreshCcwIcon,
+  SearchIcon,
+  TicketIcon,
+  TicketXIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Fragment, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { CopyButton } from "@/components/dashboard/copy-button";
+import { CopyInputButton } from "@/components/dashboard/copy-button";
+import { EventHeader } from "@/components/dashboard/event-header";
 import { LiveEventRefresh } from "@/components/dashboard/live-event-refresh";
 import { useAuth } from "@/components/providers/auth-provider";
+import { SectionCards, type SectionCardItem } from "@/components/section-cards";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,18 +36,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
+import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemSeparator, ItemTitle } from "@/components/ui/item";
+
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { getEventLifecycleState } from "@/lib/event-lifecycle";
+import { formatTimestamp } from "@/lib/format-timestamp";
 import { invokeEdgeFunction } from "@/lib/functions";
 import { filterOrganizerTickets } from "@/lib/organizer-dashboard";
 import type {
@@ -55,39 +78,37 @@ import type {
   TicketStatus,
 } from "@/lib/types";
 
-function formatTimestamp(value: string | null): string {
-  if (!value) return "Never";
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
-}
+const statuses: TicketStatus[] = ["claimed", "enrolled", "checked_in", "cancelled", "revoked"];
 
 function formatPrice(pence: number): string {
-  return new Intl.NumberFormat("en-GB", { currency: "GBP", style: "currency" }).format(pence / 100);
-}
-
-function statusVariant(status: TicketStatus) {
-  if (status === "checked_in") return "success" as const;
-  if (status === "revoked") return "destructive" as const;
-  if (status === "cancelled") return "secondary" as const;
-  if (status === "enrolled") return "warning" as const;
-  return "outline" as const;
+  return pence === 0 ? "Free" : new Intl.NumberFormat("en-GB", { currency: "GBP", style: "currency" }).format(pence / 100);
 }
 
 function statusLabel(status: TicketStatus): string {
   return status.replace("_", " ").replace(/^./, (value) => value.toUpperCase());
 }
 
-function syncContext(lastSeenAt: string | null) {
-  if (!lastSeenAt) return { label: "Critical: never synced", variant: "destructive" as const };
-  const ageMinutes = (Date.now() - new Date(lastSeenAt).getTime()) / 60_000;
-  if (ageMinutes <= 5) return { label: "Fresh signed receipt", variant: "success" as const };
-  if (ageMinutes <= 30) return { label: "Stale signed receipt", variant: "warning" as const };
-  return { label: "Critical signed receipt age", variant: "destructive" as const };
+function TicketStatusText({ status }: { status: TicketStatus }) {
+  return (
+    <span className={status === "revoked" ? "text-sm text-destructive" : "text-sm"}>
+      {statusLabel(status)}
+    </span>
+  );
 }
 
-function TicketActionDialog({ action, ticket }: { action: "reset" | "revoke"; ticket: OrganizerTicket }) {
+/** crypto.randomUUID needs a secure context; the LAN demo runs on plain HTTP. */
+function createIdempotencyKey(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+
+function TicketActionDialog({ action, onOpenChange, open, ticket }: { action: "reset" | "revoke"; onOpenChange: (open: boolean) => void; open: boolean; ticket: OrganizerTicket }) {
   const { supabase } = useAuth();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [reason, setReason] = useState("");
   const isReset = action === "reset";
@@ -104,11 +125,11 @@ function TicketActionDialog({ action, ticket }: { action: "reset" | "revoke"; ti
       await invokeEdgeFunction({
         accessToken: session.access_token,
         body: isReset ? { ticket_id: ticket.id } : { reason: reason.trim(), ticket_id: ticket.id },
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey: createIdempotencyKey(),
         name: isReset ? "reset-attendee-pass" : "revoke-ticket",
       });
-      toast.success(isReset ? "Pass reset. The attendee can enroll again." : "Ticket revoked.");
-      setOpen(false);
+      toast.success(isReset ? "Pass reset." : "Ticket revoked.");
+      onOpenChange(false);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Ticket action failed.");
@@ -118,31 +139,61 @@ function TicketActionDialog({ action, ticket }: { action: "reset" | "revoke"; ti
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <Button size="sm" variant={isReset ? "outline" : "ghost"} onClick={() => setOpen(true)}>
-        {isReset ? <RefreshCcw className="size-3.5" /> : <TicketX className="size-3.5" />}
-        {isReset ? "Reset pass" : "Revoke ticket"}
-      </Button>
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{isReset ? "Reset attendee pass" : "Revoke ticket"}</AlertDialogTitle>
+          <AlertDialogTitle>{isReset ? "Reset pass" : "Revoke ticket"}</AlertDialogTitle>
           <AlertDialogDescription>
-            {isReset
-              ? `This immediately revokes ${ticket.attendee_name}'s active pass, resets generation to 0, and returns the ticket to Claimed.`
-              : `This makes ${ticket.attendee_name}'s ticket unusable. Any active pass is revoked immediately.`}
+            {ticket.attendee_name} · This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {!isReset ? <div><label className="mb-2 block text-sm font-medium" htmlFor={`reason-${ticket.id}`}>Reason</label><Textarea id={`reason-${ticket.id}`} maxLength={500} onChange={(event) => setReason(event.target.value)} value={reason} /></div> : null}
-        <Alert variant="destructive"><AlertTitle>This action cannot be undone</AlertTitle><AlertDescription>{isReset ? "The old pass remains revoked even after a new enrollment." : "The attendee cannot reclaim another ticket for this event."}</AlertDescription></Alert>
+        {!isReset ? (
+          <Field>
+            <FieldLabel htmlFor={`reason-${ticket.id}`}>Reason</FieldLabel>
+            <Textarea id={`reason-${ticket.id}`} maxLength={500} onChange={(event) => setReason(event.target.value)} value={reason} />
+          </Field>
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction disabled={pending} onClick={(event) => { event.preventDefault(); void submit(); }}>
+          <AlertDialogAction disabled={pending} onClick={(event) => { event.preventDefault(); void submit(); }} variant="destructive">
+            {pending ? <Spinner data-icon="inline-start" /> : null}
             {pending ? "Applying…" : isReset ? "Reset pass" : "Revoke ticket"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
+}
+
+function TicketRowActions({ ticket }: { ticket: OrganizerTicket }) {
+  const [action, setAction] = useState<"reset" | "revoke" | null>(null);
+  const canReset = ticket.status === "enrolled";
+  const canRevoke = ticket.status === "claimed" || ticket.status === "enrolled";
+  if (!canReset && !canRevoke) return null;
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button aria-label={`Actions for ${ticket.attendee_name}`} className="text-muted-foreground data-[state=open]:bg-muted" size="icon-sm" variant="ghost">
+            <EllipsisVerticalIcon />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuGroup>
+            {canReset ? <DropdownMenuItem onSelect={() => setAction("reset")}><RefreshCcwIcon />Reset pass</DropdownMenuItem> : null}
+            {canRevoke ? <DropdownMenuItem onSelect={() => setAction("revoke")} variant="destructive"><TicketXIcon />Revoke ticket</DropdownMenuItem> : null}
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {action ? <TicketActionDialog action={action} onOpenChange={(open) => { if (!open) setAction(null); }} open ticket={ticket} /> : null}
+    </>
+  );
+}
+
+function pricePenceFromInput(value: string): number {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
 }
 
 function TicketTypeDialog({ eventId, ticketType }: { eventId: string; ticketType?: EventTicketType }) {
@@ -155,6 +206,7 @@ function TicketTypeDialog({ eventId, ticketType }: { eventId: string; ticketType
   const [price, setPrice] = useState(String((ticketType?.price_pence ?? 0) / 100));
   const [capacity, setCapacity] = useState(ticketType?.capacity === null || ticketType?.capacity === undefined ? "" : String(ticketType.capacity));
   const [active, setActive] = useState(ticketType?.is_active ?? true);
+  const idPrefix = ticketType ? `ticket-type-${ticketType.id}` : "ticket-type-new";
 
   async function submit() {
     const pricePence = Math.round(Number(price) * 100);
@@ -193,48 +245,159 @@ function TicketTypeDialog({ eventId, ticketType }: { eventId: string; ticketType
 
   return (
     <>
-      <Button size="sm" variant={ticketType ? "outline" : "default"} onClick={() => setOpen(true)}>{ticketType ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}{ticketType ? "Edit" : "Add ticket type"}</Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Button onClick={() => setOpen(true)} size={ticketType ? "sm" : "default"} variant={ticketType ? "ghost" : "outline"}>
+        {ticketType ? <PencilIcon data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}
+        {ticketType ? "Edit" : "Add ticket type"}
+      </Button>
+      <Dialog onOpenChange={setOpen} open={open}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{ticketType ? "Edit ticket type" : "Add ticket type"}</DialogTitle><DialogDescription>Set the GBP price and an optional type capacity. The event capacity always remains the global ceiling.</DialogDescription></DialogHeader>
-          <div className="grid gap-4">
-            <div><label className="mb-2 block text-sm font-medium" htmlFor="ticket-type-name">Name</label><Input id="ticket-type-name" maxLength={120} onChange={(event) => setName(event.target.value)} value={name} /></div>
-            <div><label className="mb-2 block text-sm font-medium" htmlFor="ticket-type-description">Description</label><Textarea id="ticket-type-description" maxLength={1000} onChange={(event) => setDescription(event.target.value)} value={description} /></div>
-            <div className="grid gap-4 sm:grid-cols-2"><div><label className="mb-2 block text-sm font-medium" htmlFor="ticket-type-price">Price in GBP</label><Input id="ticket-type-price" min="0" onChange={(event) => setPrice(event.target.value)} step="0.01" type="number" value={price} /></div><div><label className="mb-2 block text-sm font-medium" htmlFor="ticket-type-capacity">Optional type capacity</label><Input id="ticket-type-capacity" min="1" onChange={(event) => setCapacity(event.target.value)} placeholder="Uses event capacity" type="number" value={capacity} /></div></div>
-            <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius-field)] bg-secondary px-3 text-sm"><Checkbox checked={active} onCheckedChange={(checked) => setActive(checked === true)} />Active and visible</label>
-            {pricePenceFromInput(price) > 0 ? <Alert><AlertTitle>Paid checkout is unavailable</AlertTitle><AlertDescription>This type is visible in the public app, but attendees cannot check out.</AlertDescription></Alert> : null}
-          </div>
-          <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button disabled={pending} onClick={() => void submit()}>{pending ? "Saving…" : "Save ticket type"}</Button></DialogFooter>
+          <DialogHeader>
+            <DialogTitle>{ticketType ? `Edit ${ticketType.name}` : "Add ticket type"}</DialogTitle>
+            <DialogDescription className="sr-only">Name, price, capacity and visibility.</DialogDescription>
+          </DialogHeader>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor={`${idPrefix}-name`}>Name</FieldLabel>
+              <Input id={`${idPrefix}-name`} maxLength={120} onChange={(event) => setName(event.target.value)} value={name} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`${idPrefix}-description`}>Description</FieldLabel>
+              <Textarea id={`${idPrefix}-description`} maxLength={1000} onChange={(event) => setDescription(event.target.value)} value={description} />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field>
+                <FieldLabel htmlFor={`${idPrefix}-price`}>Price</FieldLabel>
+                <InputGroup>
+                  <InputGroupAddon>£</InputGroupAddon>
+                  <InputGroupInput id={`${idPrefix}-price`} inputMode="decimal" min={0} onChange={(event) => setPrice(event.target.value)} step="0.01" type="number" value={price} />
+                </InputGroup>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor={`${idPrefix}-capacity`}>Capacity</FieldLabel>
+                <Input id={`${idPrefix}-capacity`} min={1} onChange={(event) => setCapacity(event.target.value)} type="number" value={capacity} />
+              </Field>
+            </div>
+            <Field orientation="horizontal">
+              <FieldLabel htmlFor={`${idPrefix}-active`}>Active</FieldLabel>
+              <Switch checked={active} id={`${idPrefix}-active`} onCheckedChange={setActive} />
+            </Field>
+            {pricePenceFromInput(price) > 0 ? (
+              <Alert>
+                <TriangleAlertIcon />
+                <AlertTitle>Paid checkout is unavailable</AlertTitle>
+              </Alert>
+            ) : null}
+          </FieldGroup>
+          <DialogFooter>
+            <Button onClick={() => setOpen(false)} variant="outline">Cancel</Button>
+            <Button disabled={pending} onClick={() => void submit()}>
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              {pending ? "Saving…" : "Save ticket type"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-function pricePenceFromInput(value: string): number {
-  const amount = Number(value);
-  return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
+/** Allocation as plain figures, laid out like the neighbouring public link card's details. */
+function AllocationCard({ capacity, counts, ticketTypes, tickets }: { capacity: number; counts: OrganizerEventOperations["counts"]; ticketTypes: EventTicketType[]; tickets: OrganizerTicket[] }) {
+  const issuedByType = tickets.reduce<Record<string, number>>((map, ticket) => {
+    if (ticket.status === "claimed" || ticket.status === "enrolled" || ticket.status === "checked_in") map[ticket.ticket_type_id] = (map[ticket.ticket_type_id] ?? 0) + 1;
+    return map;
+  }, {});
+  const allocated = counts.claimed + counts.enrolled + counts.checked_in;
+  const totals: Array<[string, number]> = [
+    ["Remaining", Math.max(0, capacity - allocated)],
+    ["Cancelled", counts.cancelled],
+    ["Revoked", counts.revoked],
+  ];
+
+  return (
+    <Card className="@container/card @5xl/main:col-span-2">
+      <CardHeader>
+        <CardTitle>Allocation</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <dl aria-label="Tickets by type" className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 text-sm">
+          {ticketTypes.map((type) => (
+            <Fragment key={type.id}>
+              <dt className="truncate text-muted-foreground">{type.name}</dt>
+              <dd className="text-right tabular-nums">{issuedByType[type.id] ?? 0}<span className="text-muted-foreground"> / {type.capacity ?? capacity}</span></dd>
+            </Fragment>
+          ))}
+        </dl>
+        <Separator />
+        <dl aria-label="Ticket totals" className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 text-sm">
+          {totals.map(([term, value]) => (
+            <Fragment key={term}>
+              <dt className="text-muted-foreground">{term}</dt>
+              <dd className="text-right tabular-nums">{value}</dd>
+            </Fragment>
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ShareCard({ eventId, gateDevice, networkLabel, publicTicketUrl, revocations }: { eventId: string; gateDevice: OrganizerEventOperations["gate"]; networkLabel: string; publicTicketUrl: string; revocations: number }) {
+  const base = `/events/${encodeURIComponent(eventId)}`;
+  return (
+    <Card className="@container/card">
+      <CardHeader>
+        <CardTitle>Public link</CardTitle>
+        <CardDescription className="sr-only">{networkLabel}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <InputGroup>
+          <InputGroupInput aria-label="Public ticket URL" className="font-mono text-xs" readOnly value={publicTicketUrl} />
+          <InputGroupAddon align="inline-end">
+            <CopyInputButton label="Public ticket URL copied." name="public ticket URL" value={publicTicketUrl} />
+            <InputGroupButton asChild aria-label="Open public ticket page" size="icon-xs">
+              <a href={publicTicketUrl} rel="noreferrer" target="_blank"><ExternalLinkIcon /></a>
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+        <Separator />
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+          <dt className="text-muted-foreground">Gate</dt>
+          <dd className="truncate text-right">{gateDevice ? gateDevice.device_name || "Unnamed device" : "—"}</dd>
+          <dt className="text-muted-foreground">Last sync</dt>
+          <dd className="text-right tabular-nums">{formatTimestamp(gateDevice?.last_seen_at ?? null)}</dd>
+          <dt className="text-muted-foreground">Revocations</dt>
+          <dd className="text-right tabular-nums"><Link className="underline-offset-4 hover:underline" href={`${base}/revocations`}>{revocations}</Link></dd>
+        </dl>
+      </CardContent>
+      <CardFooter>
+        <Button asChild className="w-full" variant="outline"><Link href={`${base}/provisioning`}><QrCodeIcon data-icon="inline-start" />Gate setup</Link></Button>
+      </CardFooter>
+    </Card>
+  );
 }
 
 export function EventOperationsWorkspace({ operations, publicTicketUrl, networkLabel }: { operations: OrganizerEventOperations; publicTicketUrl: string; networkLabel: string }) {
   const { supabase } = useAuth();
   const event = operations.event;
-  const lifecycle = getEventLifecycleState(event);
-  const sync = syncContext(operations.gate?.last_seen_at ?? null);
+  const counts = operations.counts;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<TicketStatus | "all">("all");
   const [ticketType, setTicketType] = useState("all");
   const [exporting, setExporting] = useState(false);
   const filteredTickets = useMemo(() => filterOrganizerTickets(operations.tickets, { query, status, ticketType }), [operations.tickets, query, status, ticketType]);
   const combinedActivity = useMemo(() => [
-    ...operations.organizer_activity.map((item) => ({ created_at: item.created_at, detail: `${item.resource_type}: ${item.resource_id}`, id: `organizer-${item.id}`, label: item.activity_type.replaceAll("_", " ") })),
-    ...operations.activity.map((item) => ({ created_at: item.created_at, detail: item.pass_id ? `Pass ${item.pass_id}` : `Ticket ${item.ticket_id}`, id: `ticket-${item.id}`, label: item.activity_type.replaceAll("_", " ") })),
-    ...operations.checkins.map((item) => ({ created_at: item.received_at, detail: `Pass ${item.pass_id}`, id: `checkin-${item.id}`, label: "gate check-in" })),
+    ...operations.organizer_activity.map((item) => ({ created_at: item.created_at, detail: `${item.resource_type.replaceAll("_", " ")} · ${item.resource_id}`, id: `organizer-${item.id}`, kind: "organizer" as const, label: item.activity_type.replaceAll("_", " ") })),
+    ...operations.activity.map((item) => ({ created_at: item.created_at, detail: item.pass_id ? `Pass ${item.pass_id}` : `Ticket ${item.ticket_id}`, id: `ticket-${item.id}`, kind: "ticket" as const, label: item.activity_type.replaceAll("_", " ") })),
+    ...operations.checkins.map((item) => ({ created_at: item.received_at, detail: `Pass ${item.pass_id}`, id: `checkin-${item.id}`, kind: "checkin" as const, label: "gate check-in" })),
   ].sort((a, b) => b.created_at.localeCompare(a.created_at)), [operations]);
-  const summaryCards: Array<{ icon: LucideIcon; label: string; value: number }> = [
-    { icon: Users, label: "Attendees", value: operations.tickets.length },
-    { icon: TicketCheck, label: "Accepted check-ins", value: operations.checkins.length },
-    { icon: Activity, label: "Audit records", value: combinedActivity.length },
+
+  const allocated = counts.claimed + counts.enrolled + counts.checked_in;
+  const cards: SectionCardItem[] = [
+    { label: "Tickets", suffix: `/ ${event.capacity}`, value: allocated },
+    { label: "Claimed", value: counts.claimed },
+    { label: "Enrolled", value: counts.enrolled },
+    { label: "Checked in", value: counts.checked_in },
   ];
 
   async function exportCsv() {
@@ -258,66 +421,182 @@ export function EventOperationsWorkspace({ operations, publicTicketUrl, networkL
   }
 
   return (
-    <div className="fade-section flex flex-col gap-6">
+    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <LiveEventRefresh eventId={event.event_id} />
-      <div className="flex flex-wrap items-center gap-2"><Button asChild size="sm" variant="outline"><Link href="/dashboard"><ArrowLeft className="size-3.5" />Dashboard</Link></Button><Badge variant={lifecycle.phase === "active" ? "warmAccent" : lifecycle.phase === "ended" ? "warning" : "outline"}>{lifecycle.phase}</Badge><Badge variant={event.is_listed ? "success" : "secondary"}>{event.is_listed ? "Listed" : "Unlisted"}</Badge></div>
+      <EventHeader
+        actions={
+          <>
+            <Button asChild variant="outline"><Link href={`/events/${encodeURIComponent(event.event_id)}/edit`}><PencilIcon data-icon="inline-start" />Edit event</Link></Button>
+            <Button asChild variant="outline"><a href={publicTicketUrl} rel="noreferrer" target="_blank">Public page<ExternalLinkIcon data-icon="inline-end" /></a></Button>
+          </>
+        }
+        counts={{ "/revocations": operations.revocations.length }}
+        event={event}
+      />
 
-      <header className="grid gap-5 border-b border-[var(--color-hint-of-grey)]/25 pb-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-        <div><p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--color-terracotta)]">Event operations</p><h1 className="display-heading mt-2 text-4xl text-[var(--color-ink)] sm:text-5xl">{event.name}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-muted-stone)]">{event.description || "No public description yet."}</p><p className="token-mono mt-2 text-xs text-[var(--color-hint-of-grey)]">{event.event_id}</p></div>
-        <div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link href={`/events/${event.event_id}/edit`}><Pencil className="size-4" />Edit event</Link></Button><Button asChild><Link href={publicTicketUrl} target="_blank">Public event<ExternalLink className="size-4" /></Link></Button></div>
-      </header>
+      <SectionCards items={cards} label="Ticket state summary" />
 
-      <section
-        aria-label="Ticket state summary"
-        className="grid grid-cols-2 gap-x-6 gap-y-5 border-y border-[var(--color-hint-of-grey)]/25 py-5 sm:grid-cols-5 sm:gap-y-0"
-      >
-        {[ ["Claimed", operations.counts.claimed], ["Enrolled", operations.counts.enrolled], ["Checked in", operations.counts.checked_in], ["Cancelled", operations.counts.cancelled], ["Revoked", operations.counts.revoked] ].map(([label, value]) => (
-          <div className="min-w-0 sm:border-l sm:border-[var(--color-hint-of-grey)]/25 sm:pl-5 sm:first:border-l-0 sm:first:pl-0" key={label}>
-            <p className="text-xs font-medium uppercase tracking-[0.08em] text-[var(--color-muted-stone)]">{label}</p>
-            <p className="mt-2 text-3xl font-medium tabular-nums text-[var(--color-ink)]">{value}</p>
-          </div>
-        ))}
-      </section>
+      <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @5xl/main:grid-cols-3">
+        <AllocationCard capacity={event.capacity} counts={counts} ticketTypes={operations.ticket_types} tickets={operations.tickets} />
+        <ShareCard eventId={event.event_id} gateDevice={operations.gate} networkLabel={networkLabel} publicTicketUrl={publicTicketUrl} revocations={operations.revocations.length} />
+      </div>
 
-      <section className="grid gap-4 xl:grid-cols-[1.4fr_0.6fr]">
-        <Card className="min-w-0"><CardHeader><CardTitle>Public ticket URL</CardTitle><CardDescription>{networkLabel} mode. Mode changes require restarting Metro or rebuilding native clients.</CardDescription></CardHeader><CardContent><div className="flex min-w-0 items-center gap-2 rounded-[16px] bg-[var(--color-fog)] p-3"><code className="min-w-0 flex-1 truncate text-xs">{publicTicketUrl}</code><CopyButton label="Public ticket URL copied." value={publicTicketUrl} /></div></CardContent></Card>
-        <Card className="min-w-0"><CardHeader><CardTitle>Capacity</CardTitle><CardDescription>Active allocations across every ticket type.</CardDescription></CardHeader><CardContent><p className="text-3xl font-medium tabular-nums">{operations.counts.claimed + operations.counts.enrolled + operations.counts.checked_in} <span className="text-base font-normal text-[var(--color-muted-stone)]">of {event.capacity}</span></p><p className="mt-2 text-sm text-[var(--color-muted-stone)]">{event.location || "Location not set"} · {formatTimestamp(event.starts_at)}</p></CardContent></Card>
-      </section>
+      <Tabs className="min-w-0 gap-4 px-4 lg:px-6" defaultValue="tickets">
+        <TabsList>
+          <TabsTrigger value="tickets">Tickets <span className="text-sm tabular-nums">{operations.tickets.length}</span></TabsTrigger>
+          <TabsTrigger value="types">Ticket types</TabsTrigger>
+          <TabsTrigger value="activity">Activity history</TabsTrigger>
+        </TabsList>
 
-      <section className="grid gap-4 xl:grid-cols-3">
-        <Card><CardHeader><CardTitle>Gate state</CardTitle><CardDescription>Provisioning and signed check-in receipt context.</CardDescription></CardHeader><CardContent className="space-y-3"><Badge variant={operations.gate ? "success" : "warning"}>{operations.gate ? "Provisioned" : "Not provisioned"}</Badge><p className="text-sm text-[var(--color-muted-stone)]">{operations.gate?.device_name || "No gate device name"}</p><Button asChild size="sm" variant="outline"><Link href={`/events/${event.event_id}/provisioning`}>Open provisioning</Link></Button></CardContent></Card>
-        <Card><CardHeader><CardTitle>Last signed sync</CardTitle><CardDescription>Updated automatically when signed gate check-ins reach Supabase.</CardDescription></CardHeader><CardContent className="space-y-3"><Badge variant={sync.variant}>{sync.label}</Badge><p className="text-sm text-[var(--color-muted-stone)]">{formatTimestamp(operations.gate?.last_seen_at ?? null)}</p><p className="text-xs leading-5 text-[var(--color-hint-of-grey)]">No manual gate-log upload is required for dashboard check-in totals.</p></CardContent></Card>
-        <Card><CardHeader><CardTitle>Revocation context</CardTitle><CardDescription>{operations.revocations.length} server revocations for this event.</CardDescription></CardHeader><CardContent><p className="text-sm leading-6 text-[var(--color-muted-stone)]">Gate cache policy: fresh at 5 minutes or less, stale over 5 minutes, critical over 30 minutes or never refreshed. A disconnected gate applies only its latest cached revocations.</p></CardContent></Card>
-      </section>
-
-      <Tabs className="min-w-0" defaultValue="tickets">
-        <TabsList className="w-full justify-start overflow-x-auto"><TabsTrigger value="tickets">Tickets</TabsTrigger><TabsTrigger value="types">Ticket types</TabsTrigger><TabsTrigger value="activity">Activity history</TabsTrigger></TabsList>
-        <TabsContent className="min-w-0" value="tickets">
-          <Card className="min-w-0"><CardHeader><div className="flex flex-wrap items-end justify-between gap-4"><div><CardTitle>Ticket table</CardTitle><CardDescription>Trusted attendee profiles, pass generations, and terminal states.</CardDescription></div><Button disabled={exporting} onClick={() => void exportCsv()} variant="outline"><Download className="size-4" />{exporting ? "Exporting…" : "Export CSV"}</Button></div></CardHeader><CardContent>
-            <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_14rem]">
-              <div className="relative"><Search className="absolute left-3 top-3.5 size-4 text-[var(--color-hint-of-grey)]" /><Input aria-label="Search attendees" className="pl-9" onChange={(event) => setQuery(event.target.value)} placeholder="Search name or email" value={query} /></div>
-              <Select onValueChange={(value) => setStatus(value as TicketStatus | "all")} value={status}><SelectTrigger aria-label="Filter status" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{["claimed", "enrolled", "checked_in", "cancelled", "revoked"].map((value) => <SelectItem key={value} value={value}>{statusLabel(value as TicketStatus)}</SelectItem>)}</SelectContent></Select>
-              <Select onValueChange={setTicketType} value={ticketType}><SelectTrigger aria-label="Filter ticket type" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All ticket types</SelectItem>{operations.ticket_types.map((type) => <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>)}</SelectContent></Select>
+        <TabsContent className="flex min-w-0 flex-col gap-4" value="tickets">
+          <div className="flex flex-col gap-2 @3xl/main:flex-row @3xl/main:items-center">
+            <InputGroup className="@3xl/main:max-w-72">
+              <InputGroupAddon><SearchIcon /></InputGroupAddon>
+              <InputGroupInput aria-label="Search attendees" onChange={(changeEvent) => setQuery(changeEvent.target.value)} placeholder="Search name or email" value={query} />
+            </InputGroup>
+            <div className="flex gap-2">
+              <Select onValueChange={(value) => setStatus(value as TicketStatus | "all")} value={status}>
+                <SelectTrigger aria-label="Filter status" className="flex-1 @3xl/main:w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    {statuses.map((value) => <SelectItem key={value} value={value}>{statusLabel(value)} ({counts[value]})</SelectItem>)}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Select onValueChange={setTicketType} value={ticketType}>
+                <SelectTrigger aria-label="Filter ticket type" className="flex-1 @3xl/main:w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">All ticket types</SelectItem>
+                    {operations.ticket_types.map((type) => <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>)}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="overflow-x-auto rounded-[16px] border border-[var(--color-hint-of-grey)]/25"><Table><TableHeader><TableRow><TableHead>Attendee</TableHead><TableHead>Ticket</TableHead><TableHead>Status</TableHead><TableHead>Generation</TableHead><TableHead>Pass</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filteredTickets.map((ticket) => <TableRow key={ticket.id}><TableCell><p className="font-medium">{ticket.attendee_name}</p><p className="text-xs text-[var(--color-muted-stone)]">{ticket.attendee_email}</p></TableCell><TableCell><p>{ticket.ticket_type_name}</p><p className="text-xs text-[var(--color-muted-stone)]">{formatPrice(ticket.ticket_type_price_pence)}</p></TableCell><TableCell><Badge variant={statusVariant(ticket.status)}>{statusLabel(ticket.status)}</Badge></TableCell><TableCell className="tabular-nums">{ticket.generation_count} of 3</TableCell><TableCell className="token-mono max-w-36 truncate text-xs">{ticket.current_pass_id ?? "—"}</TableCell><TableCell><div className="flex justify-end gap-2">{ticket.status === "enrolled" ? <TicketActionDialog action="reset" ticket={ticket} /> : null}{ticket.status === "claimed" || ticket.status === "enrolled" ? <TicketActionDialog action="revoke" ticket={ticket} /> : null}</div></TableCell></TableRow>)}{filteredTickets.length === 0 ? <TableRow><TableCell className="py-10 text-center text-[var(--color-muted-stone)]" colSpan={6}>No tickets match these filters.</TableCell></TableRow> : null}</TableBody></Table></div>
-          </CardContent></Card>
+            <Button className="@3xl/main:ml-auto" disabled={exporting} onClick={() => void exportCsv()} variant="outline">
+              {exporting ? <Spinner data-icon="inline-start" /> : <DownloadIcon data-icon="inline-start" />}
+              {exporting ? "Exporting…" : "Export CSV"}
+            </Button>
+          </div>
+          <div className="overflow-hidden rounded-lg border">
+            <Table aria-label="Tickets" className="min-w-[48rem]">
+              <TableHeader className="bg-muted">
+                <TableRow>
+                  <TableHead>Attendee</TableHead>
+                  <TableHead>Ticket</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Generation</TableHead>
+                  <TableHead>Pass</TableHead>
+                  <TableHead><span className="sr-only">Actions</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTickets.map((ticket) => (
+                  <TableRow key={ticket.id}>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{ticket.attendee_name}</span>
+                        <span className="text-xs text-muted-foreground">{ticket.attendee_email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {ticket.ticket_type_name}
+                    </TableCell>
+                    <TableCell><TicketStatusText status={ticket.status} /></TableCell>
+                    <TableCell className="text-right tabular-nums">{ticket.generation_count}<span className="text-muted-foreground"> / 3</span></TableCell>
+                    <TableCell className="max-w-36 truncate font-mono text-xs text-muted-foreground">{ticket.current_pass_id ?? "—"}</TableCell>
+                    <TableCell><div className="flex justify-end"><TicketRowActions ticket={ticket} /></div></TableCell>
+                  </TableRow>
+                ))}
+                {filteredTickets.length === 0 ? (
+                  <TableRow>
+                    <TableCell className="h-24 text-center text-muted-foreground" colSpan={6}>
+                      {operations.tickets.length === 0 ? "No tickets" : "No results"}
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
+
         <TabsContent className="min-w-0" value="types">
-          <Card className="min-w-0"><CardHeader><div className="flex flex-wrap items-end justify-between gap-4"><div><CardTitle>Ticket types</CardTitle><CardDescription>General Admission remains free and follows global capacity.</CardDescription></div><TicketTypeDialog eventId={event.event_id} /></div></CardHeader><CardContent><div className="overflow-x-auto rounded-[16px] border border-[var(--color-hint-of-grey)]/25"><Table><TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Price</TableHead><TableHead>Capacity</TableHead><TableHead>State</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{operations.ticket_types.map((type) => <TableRow key={type.id}><TableCell><p className="font-medium">{type.name}</p><p className="text-xs text-[var(--color-muted-stone)]">{type.description || (type.is_default ? "Default event admission" : "No description")}</p>{type.price_pence > 0 ? <p className="mt-1 text-xs text-[var(--warning)]">Paid checkout unavailable</p> : null}</TableCell><TableCell>{formatPrice(type.price_pence)}</TableCell><TableCell>{type.capacity ?? "Event capacity"}</TableCell><TableCell><Badge variant={type.is_active ? "success" : "secondary"}>{type.is_active ? "Active" : "Inactive"}</Badge></TableCell><TableCell className="text-right">{type.is_default ? <Badge variant="outline">Managed by event</Badge> : <TicketTypeDialog eventId={event.event_id} ticketType={type} />}</TableCell></TableRow>)}</TableBody></Table></div></CardContent></Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Ticket types</CardTitle>
+              <CardAction><TicketTypeDialog eventId={event.event_id} /></CardAction>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-hidden rounded-lg border">
+                <Table aria-label="Ticket types" className="min-w-[40rem]">
+                  <TableHeader className="bg-muted">
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                      <TableHead className="text-right">Capacity</TableHead>
+                      <TableHead>State</TableHead>
+                      <TableHead><span className="sr-only">Actions</span></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {operations.ticket_types.map((type) => (
+                      <TableRow key={type.id}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{type.name}</span>
+                            {type.description ? <span className="text-xs text-muted-foreground">{type.description}</span> : null}
+                                                      </div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{formatPrice(type.price_pence)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{type.capacity ?? <span className="text-muted-foreground">Event</span>}</TableCell>
+                        <TableCell><span className="text-sm">{type.is_active ? "Active" : "Inactive"}</span></TableCell>
+                        <TableCell className="text-right">{type.is_default ? null : <TicketTypeDialog eventId={event.event_id} ticketType={type} />}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
+
         <TabsContent className="min-w-0" value="activity">
-          <Card className="min-w-0"><CardHeader><CardTitle>Activity history</CardTitle><CardDescription>Organizer changes, ticket transitions, and accepted signed check-ins.</CardDescription></CardHeader><CardContent><div className="space-y-0">{combinedActivity.map((item, index) => <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3" key={item.id}><div className="flex flex-col items-center"><span className="mt-1.5 size-2 rounded-full bg-[var(--color-terracotta)]" />{index < combinedActivity.length - 1 ? <span className="h-full w-px bg-[var(--color-hint-of-grey)]/30" /> : null}</div><div className="pb-5"><p className="text-sm font-medium capitalize">{item.label}</p><p className="mt-1 text-xs text-[var(--color-muted-stone)]">{item.detail}</p><p className="mt-1 text-xs text-[var(--color-hint-of-grey)]">{formatTimestamp(item.created_at)}</p></div></div>)}{combinedActivity.length === 0 ? <p className="py-10 text-center text-sm text-[var(--color-muted-stone)]">No activity recorded yet.</p> : null}</div></CardContent></Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Activity history</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {combinedActivity.length > 0 ? (
+                <ItemGroup className="max-h-[32rem] overflow-y-auto">
+                  {combinedActivity.map((item, index) => (
+                    <Fragment key={item.id}>
+                      {index > 0 ? <ItemSeparator /> : null}
+                      <Item size="sm">
+                        <ItemMedia variant="icon">
+                          {item.kind === "checkin" ? <CircleCheckIcon className="text-success" /> : item.kind === "ticket" ? <TicketIcon className="text-muted-foreground" /> : <ActivityIcon className="text-muted-foreground" />}
+                        </ItemMedia>
+                        <ItemContent>
+                          <ItemTitle className="capitalize">{item.label}</ItemTitle>
+                          <ItemDescription className="font-mono text-xs">{item.detail}</ItemDescription>
+                        </ItemContent>
+                        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{formatTimestamp(item.created_at)}</span>
+                      </Item>
+                    </Fragment>
+                  ))}
+                </ItemGroup>
+              ) : (
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon"><ActivityIcon /></EmptyMedia>
+                    <EmptyTitle>No activity</EmptyTitle>
+                  </EmptyHeader>
+                </Empty>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
-
-      <section aria-label="Operational evidence summary" className="grid border-y border-[var(--color-hint-of-grey)]/25 sm:grid-cols-3">
-        {summaryCards.map(({ icon: Icon, label, value }) => (
-          <div className="flex items-center gap-3 border-b border-[var(--color-hint-of-grey)]/25 py-4 last:border-b-0 sm:border-b-0 sm:border-l sm:px-5 sm:first:border-l-0 sm:first:pl-0" key={label}>
-            <Icon aria-hidden="true" className="size-4 text-[var(--color-terracotta)]" />
-            <div><p className="text-xs text-[var(--color-muted-stone)]">{label}</p><p className="font-medium tabular-nums">{value}</p></div>
-          </div>
-        ))}
-      </section>
     </div>
   );
 }

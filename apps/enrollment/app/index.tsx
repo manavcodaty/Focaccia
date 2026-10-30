@@ -47,7 +47,7 @@ export default function AuthScreen() {
     return (
       <View style={styles.loadingScreen}>
         <ActivityIndicator color={palette.ink} />
-        <Text style={styles.loadingText}>Restoring your secure session...</Text>
+        <Text style={styles.loadingText}>Signing in…</Text>
       </View>
     );
   }
@@ -60,8 +60,8 @@ export default function AuthScreen() {
         <Text style={styles.title}>{mode === 'sign-in' ? 'Sign in' : 'Create account'}</Text>
         <Text style={styles.subtitle}>
           {mode === 'sign-in'
-            ? 'Use the same account that holds your event ticket.'
-            : 'Create the attendee account you will use for ticket checkout and enrollment.'}
+            ? 'Use your ticket account.'
+            : 'Create your ticket account.'}
         </Text>
       </View>
 
@@ -130,7 +130,7 @@ export default function AuthScreen() {
 
       <View style={styles.switchBlock}>
         <Text style={styles.switchPrompt}>
-          {mode === 'sign-in' ? 'New to Focaccia?' : 'Already have an account?'}
+          {mode === 'sign-in' ? 'New to PrivatePass?' : 'Already have an account?'}
         </Text>
         <Pressable
           accessibilityRole="button"
@@ -146,7 +146,7 @@ export default function AuthScreen() {
       </View>
 
       <Text style={styles.privacyCopy}>
-        Face images and reusable embeddings never leave this phone. Your session and issued passes use iOS protected storage.
+        Face processing stays on this phone.
       </Text>
     </ScreenShell>
   );

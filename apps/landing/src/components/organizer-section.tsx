@@ -13,8 +13,8 @@ export function OrganizerSection() {
     <section id="organizers" className="section-shell scroll-mt-28">
       <div className="section-heading-grid">
         <Reveal delay={0.05} className="max-w-3xl">
-          <h2 className="section-title">Run the room, not the queue.</h2>
-          <p className="section-copy">Create the event, provision the gate, watch readiness, and export the evidence from one calm operating surface.</p>
+          <h2 className="section-title">Run your event.</h2>
+
         </Reveal>
       </div>
 
@@ -37,7 +37,7 @@ export function OrganizerSection() {
                   <div className="flex items-center justify-between"><UsersRound className="size-5 stroke-[1.4] text-ink" /><span className="text-xs text-light-steel">Capacity</span></div>
                   <p className="mt-8 text-lg font-medium text-ink">Within event limit</p>
                   <Progress value={64} className="mt-4" aria-label="Example capacity progress" />
-                  <p className="mt-3 text-xs text-light-steel">Inventory remains server-enforced</p>
+                  <p className="mt-3 text-xs text-light-steel">Capacity enforced</p>
                 </div>
                 <div className="rounded-[20px] bg-ink p-5 text-canvas">
                   <div className="flex items-center justify-between"><Radio className="size-5 stroke-[1.4]" /><span className="text-xs text-white/55">Gate A</span></div>

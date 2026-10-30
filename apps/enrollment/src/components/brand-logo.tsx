@@ -1,4 +1,4 @@
-import { focacciaBrandMark, focacciaWordmark } from '@face-pass/shared';
+import { privatePassBrandMark, privatePassWordmark } from '@face-pass/shared';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
@@ -7,33 +7,33 @@ import { palette, typography } from '../theme';
 export function BrandLogo() {
   return (
     <View
-      accessibilityLabel={focacciaWordmark}
+      accessibilityLabel={privatePassWordmark}
       accessibilityRole="image"
       accessible
       style={styles.logo}
     >
-      <Svg height={36} viewBox={focacciaBrandMark.viewBox} width={36}>
+      <Svg height={36} viewBox={privatePassBrandMark.viewBox} width={36}>
         <Rect
           fill={palette.canvas}
-          height={focacciaBrandMark.outerRect.height}
-          rx={focacciaBrandMark.outerRect.rx}
-          width={focacciaBrandMark.outerRect.width}
-          x={focacciaBrandMark.outerRect.x}
-          y={focacciaBrandMark.outerRect.y}
+          height={privatePassBrandMark.outerRect.height}
+          rx={privatePassBrandMark.outerRect.rx}
+          width={privatePassBrandMark.outerRect.width}
+          x={privatePassBrandMark.outerRect.x}
+          y={privatePassBrandMark.outerRect.y}
         />
         <Rect
           fill={palette.canvas}
-          height={focacciaBrandMark.innerRect.height}
-          rx={focacciaBrandMark.innerRect.rx}
+          height={privatePassBrandMark.innerRect.height}
+          rx={privatePassBrandMark.innerRect.rx}
           stroke={palette.hintOfGrey}
           strokeWidth={4}
-          width={focacciaBrandMark.innerRect.width}
-          x={focacciaBrandMark.innerRect.x}
-          y={focacciaBrandMark.innerRect.y}
+          width={privatePassBrandMark.innerRect.width}
+          x={privatePassBrandMark.innerRect.x}
+          y={privatePassBrandMark.innerRect.y}
         />
-        <Path d={focacciaBrandMark.shieldPath} fill={palette.ink} />
+        <Path d={privatePassBrandMark.shieldPath} fill={palette.ink} />
         <Path
-          d={focacciaBrandMark.checkPath}
+          d={privatePassBrandMark.checkPath}
           fill="none"
           stroke={palette.canvas}
           strokeLinecap="round"
@@ -41,7 +41,7 @@ export function BrandLogo() {
           strokeWidth={8}
         />
       </Svg>
-      <Text style={styles.wordmark}>{focacciaWordmark}</Text>
+      <Text style={styles.wordmark}>{privatePassWordmark}</Text>
     </View>
   );
 }

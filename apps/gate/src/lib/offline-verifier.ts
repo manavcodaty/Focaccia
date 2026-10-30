@@ -21,7 +21,8 @@ import {
 } from './types.ts';
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
-const MAX_MATCH_THRESHOLD = 80;
+// shortcut: synthetic-only threshold evidence, recalibrate with paired real captures before production.
+const MAX_MATCH_THRESHOLD = 82;
 const MAX_TOKEN_LENGTH = 4096;
 const TEMPLATE_BYTES = 32;
 const textDecoder = new TextDecoder();
@@ -84,9 +85,10 @@ function decisionHint(code: GateReasonCode): string {
     case 'DECRYPT_FAIL':
       return 'The encrypted template could not be opened on this gate.';
     case 'LIVENESS_FAIL':
-      return 'The active liveness challenge was not completed in time.';
+      // Only present in logs written by earlier gate builds that ran a liveness challenge.
+      return 'An earlier gate build rejected this attempt at its liveness step.';
     case 'MATCH_FAIL':
-      return 'Live face comparison failed the event threshold.';
+      return 'The face at the gate does not match the person who enrolled this pass.';
     case 'MANUAL_OVERRIDE':
       return 'Manual override was used. Review the queue manually.';
     case 'SYSTEM_ERROR':
@@ -406,18 +408,19 @@ export async function prepareOfflineVerification({
 }
 
 export async function finalizeOfflineVerification({
+  faceCaptureMs,
   liveEmbedding,
-  livenessMs,
   pending,
 }: {
+  faceCaptureMs: number;
   liveEmbedding: ArrayLike<number>;
-  livenessMs: number;
   pending: PendingVerification;
 }): Promise<VerificationDecision> {
   const timings: StageTimings = {
     decode_ms: pending.timings.decode_ms,
     decrypt_ms: pending.timings.decrypt_ms,
-    liveness_ms: Math.max(0, Math.round(livenessMs)),
+    // Stored in the legacy liveness_ms column; it now measures the single face capture step.
+    liveness_ms: Math.max(0, Math.round(faceCaptureMs)),
     match_ms: 0,
     replay_ms: pending.timings.replay_ms,
     revocation_ms: pending.timings.revocation_ms,
@@ -454,28 +457,6 @@ export function effectiveMatchThreshold(threshold: number): number {
   return Math.min(threshold, MAX_MATCH_THRESHOLD);
 }
 
-export function recordLivenessFailure(
-  pending: PendingVerification,
-  livenessMs: number,
-): VerificationDecision {
-  return buildDecision({
-    eventId: pending.event.event_id,
-    passId: pending.payload.pass_id,
-    passRef: pending.passRef,
-    reasonCode: 'LIVENESS_FAIL',
-    timings: {
-      decode_ms: pending.timings.decode_ms,
-      decrypt_ms: pending.timings.decrypt_ms,
-      liveness_ms: Math.max(0, Math.round(livenessMs)),
-      match_ms: 0,
-      replay_ms: pending.timings.replay_ms,
-      revocation_ms: pending.timings.revocation_ms,
-      scan_ms: pending.timings.scan_ms,
-      total_ms: 0,
-      verify_ms: pending.timings.verify_ms,
-    },
-  });
-}
 
 export function destroyPendingVerification(pending: PendingVerification | null): void {
   pending?.decryptedTemplate.fill(0);

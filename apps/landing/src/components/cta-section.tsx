@@ -35,8 +35,8 @@ export function CtaSection() {
           />
           <div className="relative grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(330px,0.55fr)] lg:items-center">
             <div>
-              <h2 className="font-display text-[clamp(3rem,5.2vw,5.4rem)] leading-[0.95] tracking-[-0.04em] text-ink">Make entry feel effortless.</h2>
-              <p className="mt-6 max-w-xl text-base leading-7 text-muted-stone">Claim a free ticket for an upcoming event, or open the organizer workspace to prepare your own.</p>
+              <h2 className="font-display text-[clamp(3rem,5.2vw,5.4rem)] leading-[0.95] tracking-[-0.04em] text-ink">Ready to enter?</h2>
+
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="group"><Link href={portalLinks.attendeeHref}>Browse events <ArrowUpRight className="size-4 stroke-[1.5] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></Link></Button>
                 <Button asChild size="lg" variant="outline"><Link href={portalLinks.organizerHref}>For organizers</Link></Button>

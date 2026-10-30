@@ -30,7 +30,7 @@ export default function TicketDetailScreen() {
     return (
       <ScreenShell style={styles.screen}>
         <SectionCard title="Select a ticket first">
-          <Text style={styles.body}>Return to My tickets and choose the ticket you want to use.</Text>
+          <Text style={styles.body}>Choose a ticket in My tickets.</Text>
           <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
         </SectionCard>
       </ScreenShell>
@@ -79,8 +79,8 @@ export default function TicketDetailScreen() {
       </SectionCard>
 
       <SectionCard eyebrow="Privacy boundary" title="Processed on this phone" tone="subtle">
-        <Text style={styles.body}>Capture and face processing happen on this phone. The server receives only an encrypted, event-scoped template inside the pass payload for signing.</Text>
-        <Text style={styles.body}>The event organizer can see ticket and pass status, but not face images, embeddings, decrypted templates, passwords, or full pass tokens.</Text>
+        <Text style={styles.body}>Face processing stays local. Only the encrypted event template is sent for signing.</Text>
+        <Text style={styles.body}>Organizers see ticket status, not your face data, password, or pass token.</Text>
       </SectionCard>
 
       <SectionCard eyebrow="Account recovery" title="Claim code">
@@ -90,12 +90,12 @@ export default function TicketDetailScreen() {
         ) : null}
       </SectionCard>
 
-      {ticket.status === 'cancelled' ? <StatusBanner message="This ticket was cancelled and cannot be enrolled." title="Cancelled" tone="warning" /> : null}
-      {ticket.status === 'revoked' ? <StatusBanner message="The organizer revoked this ticket. Any saved pass has been removed." title="Revoked" tone="danger" /> : null}
+      {ticket.status === 'cancelled' ? <StatusBanner message="Cancelled. Enrollment unavailable." title="Cancelled" tone="warning" /> : null}
+      {ticket.status === 'revoked' ? <StatusBanner message="Revoked. Saved pass removed." title="Revoked" tone="danger" /> : null}
       {confirmation ? (
-        <StatusBanner message="The gate has processed and approved this ticket. Open the approval receipt for the final record." title="Checked in" tone="success" />
+        <StatusBanner message="Entry approved. View your receipt." title="Checked in" tone="success" />
       ) : null}
-      {action === 'regenerate' ? <StatusBanner message="No usable pass for this ticket is stored on this device. Regeneration revokes the previous pass and uses another generation." title="Pass recovery" tone="warning" /> : null}
+      {action === 'regenerate' ? <StatusBanner message="No pass on this phone. Regenerating replaces the old pass and uses a generation." title="Pass recovery" tone="warning" /> : null}
       {error ? <StatusBanner message={error} title="Could not prepare enrollment" tone="warning" /> : null}
 
       <View style={styles.actions}>
@@ -110,7 +110,7 @@ export default function TicketDetailScreen() {
                 label="Regenerate pass"
                 onPress={() => Alert.alert(
                   'Regenerate pass?',
-                  'The current pass will be revoked when the replacement is issued. This uses one of the remaining generations.',
+                  'Replaces your current pass and uses one generation.',
                   [
                     { style: 'cancel', text: 'Cancel' },
                     { onPress: () => void startEnrollment('regeneration'), style: 'destructive', text: 'Regenerate' },

@@ -1,0 +1,16 @@
+Verified 28 October 2026.
+
+Command:
+/Users/manavcodaty/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --experimental-strip-types --test --test-name-pattern='commits replay marker, accepted log, and queue row atomically and survives restart' apps/gate/test/gate-db.test.ts
+
+Observed result: exit code 0; tests 1; pass 1; fail 0.
+Test: commits replay marker, accepted log, and queue row atomically and survives restart
+
+The inspected test uses SQLite :memory: and GateRepository.
+The first recordAcceptedDecision call returns true.
+The second call for the same event/pass returns false.
+The used marker exists; one log and one queued record remain.
+
+The handout reports only duplicate-record protection in the local test database.
+The test does not use a physical camera or measure face accuracy or fake-face protection.
+The test name includes restart, but it reopens a repository over the same in-memory database; this is not a device-restart trial.

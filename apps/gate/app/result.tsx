@@ -23,7 +23,7 @@ export default function ResultScreen() {
       <ScreenShell>
         <SectionCard eyebrow="Result" title="No verification result">
           <StatusBanner
-            message="Scan a pass first so the gate can render the final decision."
+            message="Scan a pass first."
             tone="warning"
           />
           <PrimaryButton label="Back to scanner" onPress={() => router.replace('/scan')} />
@@ -59,8 +59,8 @@ export default function ResultScreen() {
           ]}
         >
           {lastResult.accepted
-            ? 'The pass was verified offline. Its replay marker and signed check-in are stored locally for automatic synchronization.'
-            : 'The gate rejected the pass before entry was granted.'}
+            ? 'Entry approved. Check-in saved for sync.'
+            : 'Entry blocked.'}
         </Text>
       </View>
 
@@ -69,7 +69,7 @@ export default function ResultScreen() {
         <MetricRow label="Decode" value={formatDuration(lastResult.timings.decode_ms)} />
         <MetricRow label="Verify" value={formatDuration(lastResult.timings.verify_ms)} />
         <MetricRow label="Decrypt" value={formatDuration(lastResult.timings.decrypt_ms)} />
-        <MetricRow label="Liveness" value={formatDuration(lastResult.timings.liveness_ms)} />
+        <MetricRow label="Face capture" value={formatDuration(lastResult.timings.liveness_ms)} />
         <MetricRow label="Match" value={formatDuration(lastResult.timings.match_ms)} />
         <MetricRow label="Total" value={formatDuration(lastResult.timings.total_ms)} />
         <MetricRow

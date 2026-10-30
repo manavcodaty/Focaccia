@@ -4,10 +4,10 @@ import { SpotlightCard } from "@/components/spotlight-card";
 import { EventSearchDemo, TicketDemo, EnrollmentDemo, GateDecisionDemo } from "@/components/animated-demos";
 
 const steps = [
-  { number: "01", title: "Browse an event", description: "Find a listed event and see the available free ticket before signing in.", icon: Ticket, demo: <EventSearchDemo />, className: "md:col-span-1 lg:col-span-7", contentClassName: "" },
-  { number: "02", title: "Claim one free ticket", description: "Ownership is attached to the attendee account and enforced server-side.", icon: ArrowDownRight, demo: <TicketDemo />, className: "md:col-span-1 lg:col-span-5", contentClassName: "" },
-  { number: "03", title: "Enroll privately", description: "Face capture and template derivation stay on the attendee's iPhone.", icon: LockKeyhole, demo: <EnrollmentDemo />, className: "md:col-span-1 lg:col-span-5", contentClassName: "px-5 sm:px-0" },
-  { number: "04", title: "Enter at an offline gate", description: "The prepared gate checks the pass, liveness, replay state, and local match.", icon: ScanFace, demo: <GateDecisionDemo />, className: "md:col-span-1 lg:col-span-7", contentClassName: "" },
+  { number: "01", title: "Browse an event", description: "Find free tickets.", icon: Ticket, demo: <EventSearchDemo />, className: "md:col-span-1 lg:col-span-7", contentClassName: "" },
+  { number: "02", title: "Claim a ticket", description: "Linked to your account.", icon: ArrowDownRight, demo: <TicketDemo />, className: "md:col-span-1 lg:col-span-5", contentClassName: "" },
+  { number: "03", title: "Enroll privately", description: "Processed on your iPhone.", icon: LockKeyhole, demo: <EnrollmentDemo />, className: "md:col-span-1 lg:col-span-5", contentClassName: "px-5 sm:px-0" },
+  { number: "04", title: "Enter offline", description: "Verify your pass and face offline.", icon: ScanFace, demo: <GateDecisionDemo />, className: "md:col-span-1 lg:col-span-7", contentClassName: "" },
 ] as const;
 
 export function JourneySection() {
@@ -15,8 +15,7 @@ export function JourneySection() {
     <section id="how-it-works" className="section-shell scroll-mt-28">
       <div className="section-heading-grid">
         <Reveal delay={0.05} className="max-w-3xl">
-          <h2 className="section-title">From discovery to the door.</h2>
-          <p className="section-copy">One continuous attendee journey, with privacy and ownership checks built into every handoff.</p>
+          <h2 className="section-title">How it works</h2>
         </Reveal>
       </div>
       <div className="bento-grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12">

@@ -1,0 +1,31 @@
+Private Pass architecture companion: verification
+PASS: two A4 pages; pure black/white confirmed by the NASA skill checker.
+PASS: all fonts embedded; complete paragraphs, table, headings and figure labels read back from final PDF.
+PASS: 39 descriptive text units checked; maximum 20 words per sentence; at most six sentences per paragraph.
+PASS: no contractions; all PDF text inside page bounds.
+PASS: four mechanism diagrams, one compact six-term glossary, correct page lookup index.
+PASS: nine content scenarios cover architecture, issuance, keys, gate checks, matching, storage, evidence limits and first-use definitions.
+PASS: aim/build statement is one sentence; all four online connections have two-way arrowheads and a legend.
+PASS: both PPS tabs and their complete labels are inside the paper, with about 5 mm of right margin.
+PASS: one real local SQLite test passed; the panel limits the result to duplicate-record protection.
+PASS: source contract checks for encryption before signing request, ownership verification, local checks, matching and storage before displayed approval.
+PASS: no invented accuracy, speed, model or key-size figures.
+Fit checks: see the final render output; both pages must have positive footer clearance.
+Language review: ASD-STE100 Issue 9 rules and dictionary consulted; computing terms are field-specific technical nouns and verbs.
+Deliberate simplification: cryptographic algorithms, encoding, database schema and exceptional/manual flows are omitted.
+The gate face-presence step is not presented as established anti-spoof protection.
+Document and source checks do not establish physical operation, audience comprehension, or independent STE certification.
+Source files inspected:
+  /Users/manavcodaty/repos/Focaccia/README.md
+  /Users/manavcodaty/repos/Focaccia/docs/ARCHITECTURE.md
+  /Users/manavcodaty/repos/Focaccia/docs/PHASE_6_OFFLINE_GATE_AND_SIGNED_SYNC.md
+  /Users/manavcodaty/repos/Focaccia/apps/enrollment/src/lib/pass-flow.ts
+  /Users/manavcodaty/repos/Focaccia/supabase/functions/issue-pass/index.ts
+  /Users/manavcodaty/repos/Focaccia/apps/gate/src/lib/offline-verifier.ts
+  /Users/manavcodaty/repos/Focaccia/apps/gate/src/lib/gate-db.ts
+  /Users/manavcodaty/repos/Focaccia/apps/gate/src/lib/secure-value-store.ts
+  /Users/manavcodaty/repos/Focaccia/apps/gate/src/state/gate-context.tsx
+  /Users/manavcodaty/repos/Focaccia/apps/gate/src/lib/liveness.ts
+  /Users/manavcodaty/repos/Focaccia/packages/shared/src/template.ts
+PDF SHA-256: 65bc333a4415d8d456dd35b10fd771b5b1cbcb8582e47f46f3d461d48f971d25
+Final visual review: all 16 PDF tiles inspected at 300 dpi. No clipping, label collisions, or incorrect arrow directions found. Page 2 PPS tab and full label are visibly inset from the page edge.

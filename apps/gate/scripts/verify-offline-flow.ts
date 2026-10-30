@@ -208,12 +208,12 @@ async function main(): Promise<void> {
   assert.equal(firstPrepared.ok, true, 'first token should survive offline checks');
 
   if (!firstPrepared.ok) {
-    throw new Error('Expected the first verification to reach the liveness stage.');
+    throw new Error('Expected the first verification to reach the face match stage.');
   }
 
   const acceptedDecision = await finalizeOfflineVerification({
     liveEmbedding: mockEmbedding(),
-    livenessMs: 240,
+    faceCaptureMs: 240,
     pending: firstPrepared.pending,
   });
 
@@ -253,7 +253,7 @@ async function main(): Promise<void> {
   assert.equal(replayPrepared.ok, false, 'second use should reject as replay');
 
   if (replayPrepared.ok) {
-    throw new Error('Replay path unexpectedly reached liveness.');
+    throw new Error('Replay path unexpectedly reached the face match.');
   }
 
   assert.equal(replayPrepared.decision.reasonCode, 'REPLAY_USED');
@@ -290,10 +290,10 @@ async function main(): Promise<void> {
     token: revokedToken.token,
   });
 
-  assert.equal(revokedPrepared.ok, false, 'revoked pass should reject before liveness');
+  assert.equal(revokedPrepared.ok, false, 'revoked pass should reject before the face match');
 
   if (revokedPrepared.ok) {
-    throw new Error('Revoked pass unexpectedly reached liveness.');
+    throw new Error('Revoked pass unexpectedly reached the face match.');
   }
 
   assert.equal(revokedPrepared.decision.reasonCode, 'REVOKED');

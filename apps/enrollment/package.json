@@ -6,7 +6,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start --dev-client",
-    "ios": "expo run:ios",
+    "ios": "expo run:ios --device",
     "export:ios": "expo export --platform ios",
     "test": "node --experimental-strip-types --test ./test/*.test.ts",
     "test:coverage": "node --experimental-strip-types --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-include=src/lib/auth-session.ts --test-coverage-include=src/lib/auth-validation.ts --test-coverage-include=src/lib/api.ts --test-coverage-include=src/lib/function-errors.ts --test-coverage-include=src/lib/function-request.ts --test-coverage-include=src/lib/idempotency-key.ts --test-coverage-include=src/lib/issuance-coordinator.ts --test-coverage-include=src/lib/pass-flow.ts --test-coverage-include=src/lib/pass-vault.ts --test-coverage-include=src/lib/ticket-state.ts ./test/*.test.ts",

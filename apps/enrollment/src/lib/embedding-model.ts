@@ -85,12 +85,16 @@ export async function extractFaceEmbeddingFromPhoto({
   let alignedFile: File | null = null;
   let alignedBytes: Uint8Array | null = null;
   let modelInput: Float32Array | null = null;
+  let uprightFile: File | null = null;
 
   try {
-    const crop = buildSquareCrop(photoWidth, photoHeight, snapshot);
+    buildSquareCrop(photoWidth, photoHeight);
+    const upright = await manipulateAsync(photoUri, [], { compress: 1, format: SaveFormat.JPEG });
+    uprightFile = new File(upright.uri);
+    const crop = buildSquareCrop(upright.width, upright.height, snapshot);
     const rollDegrees = snapshotRollDegrees(snapshot);
     const alignedFace = await manipulateAsync(
-      photoUri,
+      upright.uri,
       [
         { crop },
         ...(rollDegrees === null ? [] : [{ rotate: rollDegrees }]),
@@ -123,6 +127,7 @@ export async function extractFaceEmbeddingFromPhoto({
   } finally {
     alignedBytes?.fill(0);
     await deleteFileBestEffort(alignedFile);
+    await deleteFileBestEffort(uprightFile);
     await deleteFileBestEffort(sourceFile);
   }
 }

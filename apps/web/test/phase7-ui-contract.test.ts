@@ -21,27 +21,30 @@ test('organizer surfaces expose skip navigation and avoid decorative motion', as
   assert.match(shell, /id="main-content"/);
 });
 
-test('active organizer branding uses the locked warm palette', async () => {
-  const [icon, shell, provisioning] = await Promise.all([
+test('organizer branding is the monochrome PrivatePass mark, not the retired palettes', async () => {
+  const [icon, sidebar, provisioning, css] = await Promise.all([
     source('../app/icon.svg'),
-    source('../components/layout/app-shell.tsx'),
+    source('../components/app-sidebar.tsx'),
     source('../components/dashboard/provisioning-qr-card.tsx'),
+    source('../app/globals.css'),
   ]);
-  const activeSources = [icon, shell, provisioning].join('\n');
+  const activeSources = [icon, sidebar, provisioning, css].join('\n');
 
   assert.doesNotMatch(activeSources, /#0066ff|#0055DD|0,102,255/i);
-  assert.match(icon, /#7b3f2c/i);
+  assert.doesNotMatch(activeSources, /#7b3f2c|#f4ded2|terracotta/i);
+  assert.match(icon, /#0a0a0a/i);
+  assert.match(sidebar, /PrivatePassMark/);
 });
 
-test('the organizer roster keeps every operational column reachable on mobile', async () => {
+test('the organizer events table keeps every operational column reachable on mobile', async () => {
   const [table, globals] = await Promise.all([
-    source('../components/dashboard/event-table.tsx'),
+    source('../components/dashboard/events-data-table.tsx'),
     source('../app/globals.css'),
   ]);
 
-  assert.match(table, /tabIndex: 0/);
-  assert.match(table, /"aria-describedby": "event-roster-scroll-help"/);
-  assert.match(table, /min-w-\[70rem\]/);
-  assert.match(table, /token-mono mt-1 text-\[11px\] text-\[var\(--color-muted-stone\)\]/);
-  assert.match(globals, /--success: #176747/);
+  assert.match(table, /aria-label="Events"/);
+  assert.match(table, /min-w-\[60rem\]/);
+  assert.match(table, /<SortHeader/);
+  assert.match(globals, /--success:\s*oklch\(/);
+  assert.match(globals, /--color-success: var\(--success\)/);
 });

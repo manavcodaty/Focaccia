@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 
+import { authenticateTestOrganizer } from './lib/organizer-test-auth.mjs';
+
 function parseEnv(text) {
   return Object.fromEntries(text.split(/\r?\n/).flatMap((line) => {
     const separator = line.indexOf('=');
@@ -22,7 +24,6 @@ function localSupabase() {
 
 const { API_URL, ANON_KEY, SERVICE_ROLE_KEY } = localSupabase();
 const runId = randomUUID().replaceAll('-', '').slice(0, 8);
-const localOrganizerTestPassword = process.env.FOCACCIA_LOCAL_ORGANIZER_TEST_PASSWORD ?? 'FocacciaLocal2026!';
 
 async function jsonResponse(response) {
   const text = await response.text();
@@ -34,26 +35,9 @@ async function jsonResponse(response) {
 }
 
 async function authenticateAllowlisted(email) {
-  const password = localOrganizerTestPassword;
-  const usersResponse = await fetch(`${API_URL}/auth/v1/admin/users?page=1&per_page=1000`, {
-    headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+  return authenticateTestOrganizer({
+    apiUrl: API_URL, anonKey: ANON_KEY, serviceRoleKey: SERVICE_ROLE_KEY, email,
   });
-  const users = await jsonResponse(usersResponse);
-  const existing = users.users.find((user) => user.email?.toLowerCase() === email.toLowerCase());
-  const adminResponse = await fetch(existing ? `${API_URL}/auth/v1/admin/users/${existing.id}` : `${API_URL}/auth/v1/admin/users`, {
-    body: JSON.stringify(existing ? { email_confirm: true, password } : { email, email_confirm: true, password }),
-    headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
-    method: existing ? 'PUT' : 'POST',
-  });
-  assert.ok(adminResponse.ok, JSON.stringify(await jsonResponse(adminResponse)));
-  const tokenResponse = await fetch(`${API_URL}/auth/v1/token?grant_type=password`, {
-    body: JSON.stringify({ email, password }),
-    headers: { apikey: ANON_KEY, 'Content-Type': 'application/json' },
-    method: 'POST',
-  });
-  const token = await jsonResponse(tokenResponse);
-  assert.equal(tokenResponse.status, 200, JSON.stringify(token));
-  return { accessToken: token.access_token, userId: token.user.id };
 }
 
 async function signUp(email) {

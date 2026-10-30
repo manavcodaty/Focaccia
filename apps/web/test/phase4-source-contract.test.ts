@@ -68,7 +68,8 @@ test("event form covers the complete event transaction and paid-ticket warning",
     assert.match(form, new RegExp(field));
   }
   assert.match(form, /General Admission/);
-  assert.match(form, /Paid checkout is unavailable/);
+  // The warning sits where a price is entered: the ticket type dialog.
+  assert.match(source("components/dashboard/event-operations-workspace.tsx"), /Paid checkout is unavailable/);
 });
 
 test("live dashboard refreshes from ticket, check-in, and organizer audit changes", () => {

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Face Pass Gate",
+    "name": "PrivatePass Gate",
     "slug": "face-pass-gate",
     "scheme": "face-pass-gate",
     "orientation": "portrait",
@@ -19,8 +19,8 @@
           "NSAllowsArbitraryLoads": false,
           "NSAllowsLocalNetworking": true
         },
-        "NSCameraUsageDescription": "Face Pass Gate uses the camera to scan attendee passes and complete offline face verification without uploading images.",
-        "NSLocalNetworkUsageDescription": "Focaccia connects to services running on the organizer's Mac when Local network mode is selected."
+        "NSCameraUsageDescription": "PrivatePass Gate uses the camera to scan attendee passes and complete offline face verification without uploading images.",
+        "NSLocalNetworkUsageDescription": "PrivatePass connects to services running on the organizer's Mac when Local network mode is selected."
       }
     },
     "plugins": [
@@ -41,7 +41,8 @@
           "enableCoreMLDelegate": true
         }
       ],
-      "expo-font"
+      "expo-font",
+      "./plugins/with-ios-scene.cjs"
     ]
   }
 }

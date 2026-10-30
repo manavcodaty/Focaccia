@@ -33,24 +33,35 @@ test('gate scanner requires a fresh revocation cache before admitting attendees'
   assert.match(context, /cacheFreshness\(gate\.last_revocation_sync_at\)\.state !== 'fresh'/);
 });
 
-test('liveness cancellation clears decrypted pending verification before navigation', async () => {
-  const [liveness, context] = await Promise.all([
-    source('../app/liveness.tsx'),
+test('face match cancellation clears decrypted pending verification before navigation', async () => {
+  const [faceMatch, context] = await Promise.all([
+    source('../app/face-match.tsx'),
     source('../src/state/gate-context.tsx'),
   ]);
 
   assert.match(context, /cancelPendingVerification\(\)/);
   assert.match(context, /destroyPendingVerification\(pendingVerification\)/);
-  assert.match(liveness, /cancelPendingVerification\(\)/);
-  assert.match(liveness, /onPress=\{cancelVerification\}/);
+  assert.match(faceMatch, /cancelPendingVerification\(\)/);
+  assert.match(faceMatch, /onPress=\{cancelVerification\}/);
 });
 
-test('liveness match failures stay on capture for another attempt', async () => {
-  const liveness = await source('../app/liveness.tsx');
+test('a scanned pass goes straight to one face capture with no liveness challenge', async () => {
+  const [scan, fallback, faceMatch, context] = await Promise.all([
+    source('../app/scan.tsx'),
+    source('../app/fallback.tsx'),
+    source('../app/face-match.tsx'),
+    source('../src/state/gate-context.tsx'),
+  ]);
 
-  assert.match(liveness, /decision\.reasonCode === 'MATCH_FAIL'/);
-  assert.match(liveness, /setProcessingError\(decision\.hint\)/);
-  assert.doesNotMatch(liveness, /challengeInstruction\(challenge\.type\)/);
+  assert.match(scan, /router\.replace\('\/face-match'\)/);
+  assert.match(fallback, /'\/face-match'/);
+  for (const file of [scan, fallback, faceMatch, context]) {
+    assert.doesNotMatch(file, /lib\/liveness|failLiveness|recordLivenessFailure|hasTimedOut|advanceChallenge/);
+  }
+  // Every face comparison (accept or mismatch) ends on the result screen, never a retry prompt.
+  assert.match(faceMatch, /await completePendingVerification\(embedding, .*\);\n\s*router\.replace\('\/result'\)/);
+  assert.doesNotMatch(faceMatch, /MATCH_FAIL/);
+  assert.doesNotMatch(context, /keepPendingForRetry/);
 });
 
 test('gate iOS privacy copy does not claim platform Face ID access', async () => {

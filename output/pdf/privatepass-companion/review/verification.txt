@@ -1,0 +1,29 @@
+Private Pass presentation companion: final verification
+PASS: 2 A4 pages; all fonts embedded; all text within paper bounds.
+PASS: paragraph, table, heading, and checklist text read back from final PDF.
+PASS: 50 descriptive text units; maximum 17 words per sentence.
+PASS: 8 procedure text units; maximum 7 words per step.
+PASS: paragraphs have at most six sentences; no contractions.
+PASS: both page indexes point to the page containing the explanation.
+PASS: 8 reader lookup scenarios have explicit answers on the indexed page.
+  Page 1: Is a template a photograph?
+  Page 1: Does the gate search everyone?
+  Page 1: Can it reject the right person?
+  Page 2: Why does a signed copy still need a face check?
+  Page 2: How does it operate without internet?
+  Page 2: Why does an offline gate miss a cancellation?
+  Page 2: Does seeing one run establish performance?
+  Page 2: Does seeing a face stop a photo attack?
+PASS: examples are explicitly distinguished from recorded test results.
+PASS: no invented numerical accuracy or speed claims.
+Print verification: nasa-handbook check.py passed; A4 and pure black/white.
+Language: ASD-STE100 Issue 9 writing rules and dictionary reviewed from the local official specification.
+Subject terms: pass, face template, embedding, match limit, enrollment, spoof attack, encryption, digital signature,
+offline, server, software test, observed run, prototype. Save/download are computer operations.
+Explanations deliberately omit algorithms, keys, model details, and biometric performance figures.
+Source: PrivatePass_EPQ Presentation_v4.pptx, physical slides 2, 5, 7-10, 12-16, 18 and associated speaker notes.
+No repository implementation or hardware behavior was revalidated for this document-only task.
+These automated checks establish document integrity and lookup coverage, not human comprehension.
+No physical print test, external STE certification, or audience trial was performed.
+PDF SHA-256: 082bec057d9c0e18d8124a775c96bae21b7b7eac1b783d5f870cfd42c3052f0b
+Visual review completed: all 16 final-PDF review tiles inspected at 300 dpi; no clipping, text/line collisions, or incorrect arrow targets found.

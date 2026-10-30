@@ -251,6 +251,8 @@ PODS:
   - EXUpdatesInterface (55.1.5):
     - ExpoModulesCore
   - FBLazyVector (0.83.4)
+  - GateFaceDetector (1.0.0):
+    - ExpoModulesCore
   - hermes-engine (0.14.1):
     - hermes-engine/Pre-built (= 0.14.1)
   - hermes-engine/Pre-built (0.14.1)
@@ -2483,7 +2485,7 @@ DEPENDENCIES:
   - "ExpoLogBox (from `../../../node_modules/.pnpm/@expo+log-box@55.0.10_@expo+dom-webview@55.0.3_expo@55.0.12_react-native@0.83.4_@babel+_ffed593631bff32645cc34e3b523754a/node_modules/@expo/log-box`)"
   - "ExpoModulesCore (from `../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-co_4fde175b75379f69e5758af3d385f6f3/node_modules/expo-modules-core`)"
   - "ExpoModulesJSI (from `../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-co_4fde175b75379f69e5758af3d385f6f3/node_modules/expo-modules-core`)"
-  - "ExpoRouter (from `../../../node_modules/.pnpm/expo-router@55.0.11_54424cdf86189de807dc52af274b5716/node_modules/expo-router/ios`)"
+  - "ExpoRouter (from `../../../node_modules/.pnpm/expo-router@55.0.11_patch_hash=6ea393fde8c19fc30047d3d4f8a367be2df55a6d75df63839738d34f_2966396c4f1f52eb18c3f28ddff0589f/node_modules/expo-router/ios`)"
   - "ExpoSecureStore (from `../../../node_modules/.pnpm/expo-secure-store@55.0.12_expo@55.0.12/node_modules/expo-secure-store/ios`)"
   - "ExpoSharing (from `../../../node_modules/.pnpm/expo-sharing@55.0.17_expo@55.0.12_react-native@0.83.4_@babel+core@7.29.6_@react-native+_4975d50bf9c2fa444f1bb8f1568caaed/node_modules/expo-sharing/ios`)"
   - "ExpoSplashScreen (from `../../../node_modules/.pnpm/expo-splash-screen@55.0.16_expo@55.0.12_typescript@5.9.3/node_modules/expo-splash-screen/ios`)"
@@ -2491,6 +2493,7 @@ DEPENDENCIES:
   - "ExpoSymbols (from `../../../node_modules/.pnpm/expo-symbols@55.0.7_expo-font@55.0.6_expo@55.0.12_react-native@0.83.4_@babel+core@7.29._f11cf3765f1250709e1ab3624e109f2b/node_modules/expo-symbols/ios`)"
   - "EXUpdatesInterface (from `../../../node_modules/.pnpm/expo-updates-interface@55.1.5_expo@55.0.12/node_modules/expo-updates-interface/ios`)"
   - "FBLazyVector (from `../../../node_modules/.pnpm/react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-config@0.84.1_@babel+core@7._a2adcb9f1c257eceaf4bdbf61853d81a/node_modules/react-native/Libraries/FBLazyVector`)"
+  - GateFaceDetector (from `../modules/gate-face-detector/ios`)
   - "hermes-engine (from `../../../node_modules/.pnpm/react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-config@0.84.1_@babel+core@7._a2adcb9f1c257eceaf4bdbf61853d81a/node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)"
   - "RCTDeprecation (from `../../../node_modules/.pnpm/react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-config@0.84.1_@babel+core@7._a2adcb9f1c257eceaf4bdbf61853d81a/node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)"
   - "RCTRequired (from `../../../node_modules/.pnpm/react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-config@0.84.1_@babel+core@7._a2adcb9f1c257eceaf4bdbf61853d81a/node_modules/react-native/Libraries/Required`)"
@@ -2632,7 +2635,7 @@ EXTERNAL SOURCES:
   ExpoModulesJSI:
     :path: "../../../node_modules/.pnpm/expo-modules-core@55.0.21_react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-co_4fde175b75379f69e5758af3d385f6f3/node_modules/expo-modules-core"
   ExpoRouter:
-    :path: "../../../node_modules/.pnpm/expo-router@55.0.11_54424cdf86189de807dc52af274b5716/node_modules/expo-router/ios"
+    :path: "../../../node_modules/.pnpm/expo-router@55.0.11_patch_hash=6ea393fde8c19fc30047d3d4f8a367be2df55a6d75df63839738d34f_2966396c4f1f52eb18c3f28ddff0589f/node_modules/expo-router/ios"
   ExpoSecureStore:
     :path: "../../../node_modules/.pnpm/expo-secure-store@55.0.12_expo@55.0.12/node_modules/expo-secure-store/ios"
   ExpoSharing:
@@ -2647,6 +2650,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/expo-updates-interface@55.1.5_expo@55.0.12/node_modules/expo-updates-interface/ios"
   FBLazyVector:
     :path: "../../../node_modules/.pnpm/react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-config@0.84.1_@babel+core@7._a2adcb9f1c257eceaf4bdbf61853d81a/node_modules/react-native/Libraries/FBLazyVector"
+  GateFaceDetector:
+    :path: "../modules/gate-face-detector/ios"
   hermes-engine:
     :podspec: "../../../node_modules/.pnpm/react-native@0.83.4_@babel+core@7.29.6_@react-native+metro-config@0.84.1_@babel+core@7._a2adcb9f1c257eceaf4bdbf61853d81a/node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
     :tag: hermes-v0.14.1
@@ -2845,7 +2850,8 @@ SPEC CHECKSUMS:
   ExpoSymbols: 8b63e859ba013df1f2fc666f535fddb3d5270569
   EXUpdatesInterface: 39d05400a9226c438565dbaaa8447b5f0672ba45
   FBLazyVector: 061f518bbd81677ed8a8317e2ae60b8779495808
-  hermes-engine: 8fc32adcac0732d2841e7a213434992b0ade0842
+  GateFaceDetector: 805b3673918157e2b618cafe9b68546930ed7c63
+  hermes-engine: 468ed59881bac3fee8394312119b3a83d6374476
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
@@ -2858,7 +2864,7 @@ SPEC CHECKSUMS:
   React-callinvoker: bd7959a24564feaf5e4c8c11789e64884da13482
   React-Codegen: 4b8b4817cea7a54b83851d4c1f91f79aa73de30a
   React-Core: f060f4e14e9301685ce63ea65fbe903bf3397e45
-  React-Core-prebuilt: 15d162e5baf0c61815964e5dbf1fad4b740114d8
+  React-Core-prebuilt: 478305f3d5471faabd75d34f24ca37517abfd32d
   React-CoreModules: 89a1a544297be88ca4cdff317423f9e0d0c192a4
   React-cxxreact: 81b1bfa305b1b759cc0fe18327644816216e5993
   React-debug: 234fddb309822e13b9b442ef1bdca8d2b8c3cbf2
@@ -2924,7 +2930,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 2b19d66e5ddfe8dc7afb6338a4626156cbf2bab1
   ReactCodegen: 8c08a6e50bc079070cad53c55686366642ff405c
   ReactCommon: c6e81cc1ae185fa84863f3ea1d58caac4be741d7
-  ReactNativeDependencies: be19c7c9d80c4b64b65df8907b797dd48e2846bd
+  ReactNativeDependencies: 06d0aada39ffd3506ff17cf8ab003c86e07d0004
   RNGestureHandler: 5494787ce29288a8941fa825663f2b1fa0a5aaf1
   RNReanimated: 104930fa5ace1bcc8d284c0ab4cacaac4abf2316
   RNScreens: 02e62f995ceb94ea465864b3bf4d4767b87f0362
@@ -2938,6 +2944,6 @@ SPEC CHECKSUMS:
   VisionCamera: 0044a94f7489f19e19d5938e97dfc36f4784af3c
   Yoga: acd565934addf7423687593ec490bd4491b2a802
 
-PODFILE CHECKSUM: 1d9dc95c211d1c9b2a9706f567cfd3b75a99a680
+PODFILE CHECKSUM: ecdd72733c3e6831accee4a0c730d6fb725a79f5
 
 COCOAPODS: 1.16.2

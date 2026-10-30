@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Face Pass Enrollment",
+    "name": "PrivatePass Enrollment",
     "slug": "face-pass-enrollment",
     "scheme": "face-pass-enrollment",
     "orientation": "portrait",
@@ -19,8 +19,8 @@
           "NSAllowsArbitraryLoads": false,
           "NSAllowsLocalNetworking": true
         },
-        "NSCameraUsageDescription": "Face Pass uses the front camera to capture your face on-device so it can issue an event-scoped pass. No face image is uploaded or stored.",
-        "NSLocalNetworkUsageDescription": "Focaccia connects to services running on the organizer's Mac when Local network mode is selected."
+        "NSCameraUsageDescription": "PrivatePass uses the front camera to capture your face on-device so it can issue an event-scoped pass. No face image is uploaded or stored.",
+        "NSLocalNetworkUsageDescription": "PrivatePass connects to services running on the organizer's Mac when Local network mode is selected."
       }
     },
     "plugins": [

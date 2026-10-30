@@ -4,7 +4,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { ticketApi } from '@/lib/api';
-import { clearFocacciaSessionArtifacts } from '@/lib/session-artifacts';
+import { clearPrivatePassSessionArtifacts } from '@/lib/session-artifacts';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import type { AttendeeProfile } from '@/lib/types';
 
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await getSupabaseBrowserClient().auth.signOut();
       if (error) throw error;
       if (typeof sessionStorage !== 'undefined') {
-        clearFocacciaSessionArtifacts(sessionStorage);
+        clearPrivatePassSessionArtifacts(sessionStorage);
       }
       await applySession(null);
     },

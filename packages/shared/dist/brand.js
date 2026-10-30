@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.focacciaBrandMark = exports.focacciaWordmark = exports.focacciaBrand = void 0;
-exports.focacciaBrand = {
+exports.privatePassBrandMark = exports.privatePassWordmark = exports.privatePassBrand = void 0;
+exports.privatePassBrand = {
     background: "#F7F9FC",
     border: "#D8E0F0",
     borderDark: "#2A3550",
@@ -20,8 +20,8 @@ exports.focacciaBrand = {
     warning: "#8A5B14",
     warningSoft: "#F5E6CB",
 };
-exports.focacciaWordmark = "Focaccia";
-exports.focacciaBrandMark = {
+exports.privatePassWordmark = "PrivatePass";
+exports.privatePassBrandMark = {
     checkPath: "M51 64.5 60 73l18-20",
     innerRect: {
         height: 92,

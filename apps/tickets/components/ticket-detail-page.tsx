@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle, ArrowLeft, CalendarDays, MapPin, ShieldCheck, Ticket } from 'lucide-react';
+import { ArrowLeftIcon, CalendarIcon, CircleCheckIcon, MapPinIcon, TicketXIcon, TriangleAlertIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,16 +18,24 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Empty, EmptyContent, EmptyHeader, EmptyMedia } from '@/components/ui/empty';
+import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { ticketApi } from '@/lib/api';
 import { clearIdempotencyKey, getOrCreateIdempotencyKey } from '@/lib/idempotency';
-import { formatEventDate, formatPrice, statusCopy } from '@/lib/presentation';
+import { formatEventDate, formatEventTimeRange } from '@/lib/presentation';
 import type { OwnedTicket } from '@/lib/types';
 
 import { useAuth } from './auth-provider';
 import { CopyCodeButton } from './copy-code-button';
+import { EventPoster } from './event-poster';
 import { InlineError } from './feedback';
-import { StatusPill } from './status-pill';
+import { Page, SectionHeading } from './page';
+import { StatusText } from './status-text';
+
+const enrollmentSteps = ['Open PrivatePass on iPhone', 'Sign in with this account', 'Select this ticket'];
 
 export function TicketDetailPage({ ticketId, confirmation = false }: { confirmation?: boolean; ticketId: string }) {
   const { loading: authLoading, session, user } = useAuth();
@@ -76,49 +84,107 @@ export function TicketDetailPage({ ticketId, confirmation = false }: { confirmat
     }
   }
 
-  if (authLoading || loading) return <main className="page-shell detail-loading" id="main-content"><div className="ticket-detail-skeleton"><Skeleton className="h-5 w-28" /><Skeleton className="h-14 w-3/4" /><Skeleton className="h-80 w-full" /></div></main>;
-  if (error) return <main className="page-shell route-message" id="main-content"><InlineError message={error} retry={() => void load()} /></main>;
-  if (!ticket) return <main className="page-shell route-message" id="main-content"><p className="overline">Ticket unavailable</p><h1 className="display-heading">This ticket was not found</h1><p>It may belong to a different attendee account.</p><Button asChild><Link href="/tickets">Open My tickets</Link></Button></main>;
+  if (authLoading || loading) {
+    return (
+      <Page>
+        <div aria-busy="true" className="flex flex-col gap-8">
+          <Skeleton className="h-9 w-2/3" />
+          <Skeleton className="h-72 w-full rounded-xl" />
+        </div>
+      </Page>
+    );
+  }
+  if (error) return <Page><InlineError message={error} retry={() => void load()} /></Page>;
+  if (!ticket) {
+    return (
+      <Page className="justify-center">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon"><TicketXIcon /></EmptyMedia>
+            <h1 className="text-lg font-medium tracking-tight">Ticket not found</h1>
+          </EmptyHeader>
+          <EmptyContent><Button asChild><Link href="/tickets">My tickets</Link></Button></EmptyContent>
+        </Empty>
+      </Page>
+    );
+  }
 
-  const state = statusCopy(ticket.status);
   const cancellable = ticket.status === 'claimed' || ticket.status === 'enrolled';
+  const name = ticket.event?.name ?? 'Event ticket';
 
   return (
-    <main className="ticket-detail-page page-shell" id="main-content">
-      <div className="page-shell ticket-detail-shell">
-        <Button asChild className="ticket-detail-back" size="sm" variant="ghost"><Link href="/tickets"><ArrowLeft data-icon="inline-start" />My tickets</Link></Button>
-        <div className="ticket-confirmation fade-section">
-          <p className="overline">{confirmation ? 'Ticket confirmed' : 'Your ticket'}</p>
-          <StatusPill status={ticket.status} />
-          <h1 className="display-heading">{confirmation ? 'Your place is saved' : ticket.event?.name ?? 'Event ticket'}</h1>
-          {confirmation ? <p>A real ticket has been created for your account. Keep the claim code available for enrollment.</p> : null}
-        </div>
+    <Page>
+      <Button asChild className="-ml-2.5 w-fit" size="sm" variant="ghost"><Link href="/tickets"><ArrowLeftIcon data-icon="inline-start" />My tickets</Link></Button>
 
-        <section className="ticket-paper fade-section fade-delay-1" aria-label="Ticket details">
-          <div className="ticket-paper-main">
-            <div className="ticket-paper-mark" aria-hidden="true"><Ticket /></div>
-            <p className="overline">{ticket.ticket_type?.name ?? 'Admission'}</p>
-            <h2>{ticket.event?.name ?? 'Event ticket'}</h2>
-            <div className="ticket-information">
-              <div><small><CalendarDays />Date and time</small><strong>{ticket.event ? formatEventDate(ticket.event.starts_at, ticket.event.ends_at) : 'Unavailable'}</strong></div>
-              <div><small><MapPin />Location</small><strong>{ticket.event?.location || 'Unavailable'}</strong></div>
-              <div><small>Total paid</small><strong>{formatPrice(ticket.ticket_type?.price_pence ?? 0)}</strong></div>
+      <header className="flex items-center gap-3">
+        {confirmation ? <CircleCheckIcon aria-hidden="true" className="size-6 shrink-0 text-success" /> : null}
+        <h1 className="text-3xl font-semibold tracking-tight text-balance">{confirmation ? 'Your place is saved' : name}</h1>
+      </header>
+
+      <Card aria-label="Ticket details" className="max-w-2xl gap-0 py-0" role="region">
+        <div className="flex flex-col gap-6 p-6">
+          <div className="flex items-center gap-4">
+            <div className="size-14 shrink-0 overflow-hidden rounded-md"><EventPoster event={{ event_id: ticket.event_id, name }} /></div>
+            <div className="flex min-w-0 flex-col gap-1">
+              {confirmation ? <h2 className="truncate text-base font-semibold">{name}</h2> : null}
+              <div className="flex flex-wrap items-center gap-2"><StatusText status={ticket.status} /><span className="text-sm text-muted-foreground">{ticket.ticket_type?.name ?? 'Admission'}</span></div>
             </div>
           </div>
-          <div className="ticket-perforation" aria-hidden="true" />
-          <div className="claim-code-panel">
-            <small>{ticket.claim_code ? 'Claim code' : 'Claim code unavailable'}</small>
-            <strong>{ticket.claim_code || `Ends ${ticket.claim_code_hint}`}</strong>
-            {ticket.claim_code ? <CopyCodeButton code={ticket.claim_code} /> : <p>Claim-code recovery is unavailable because this local ticket was encrypted with older server secret material.</p>}
-          </div>
-        </section>
-
-        <div className="ticket-next-grid fade-section fade-delay-2">
-          <section className="next-step"><p className="overline">Next step</p><h2>{state.label === 'Claimed' ? 'Continue in the enrollment app' : state.label}</h2><p>{state.nextStep}</p>{ticket.status === 'claimed' ? <ol><li>Open the Focaccia enrollment app on iPhone.</li><li>Sign in with the same attendee account.</li><li>Select this ticket or enter the claim code above.</li><li>Review consent before any camera capture begins.</li></ol> : null}</section>
-          <aside className="ticket-actions"><p className="overline">Ticket controls</p><Button asChild className="w-full" variant="outline"><Link href="/tickets">Back to My tickets</Link></Button>{cancellable ? <AlertDialog onOpenChange={setCancelOpen} open={cancelOpen}><AlertDialogTrigger asChild><Button className="w-full" variant="destructive">Cancel ticket</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Cancel this ticket?</AlertDialogTitle><AlertDialogDescription>Cancelling an enrolled ticket revokes its active pass. Cancelled tickets cannot be restored from the attendee app.</AlertDialogDescription></AlertDialogHeader><Alert className="my-1" variant="destructive"><AlertTriangle /><AlertTitle>This action is terminal</AlertTitle><AlertDescription>The ticket will remain in your history as Cancelled and can no longer be used for entry.</AlertDescription></Alert><AlertDialogFooter><AlertDialogCancel disabled={pending}>Keep ticket</AlertDialogCancel><AlertDialogAction disabled={pending} onClick={(event) => { event.preventDefault(); void cancel(); }} variant="destructive">{pending ? 'Cancelling…' : 'Cancel ticket'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog> : null}{cancelError ? <Alert variant="destructive"><AlertTitle>Cancellation failed</AlertTitle><AlertDescription>{cancelError}</AlertDescription></Alert> : null}<p>Checked-in tickets are terminal. Cancelled and revoked tickets cannot be restored here.</p></aside>
+          <ul className="flex flex-col gap-2 text-sm">
+            {ticket.event ? (
+              <li className="flex items-center gap-2 tabular-nums"><CalendarIcon className="size-4 text-muted-foreground" />{formatEventDate(ticket.event.starts_at, ticket.event.ends_at).split(',').slice(0, 2).join(',')} · {formatEventTimeRange(ticket.event.starts_at, ticket.event.ends_at)}</li>
+            ) : null}
+            {ticket.event?.location ? <li className="flex items-center gap-2"><MapPinIcon className="size-4 text-muted-foreground" />{ticket.event.location}</li> : null}
+          </ul>
         </div>
-        <Alert className="ticket-security-note"><ShieldCheck /><AlertTitle>Event-scoped credential</AlertTitle><AlertDescription>Your ticket is tied to this attendee account. Enrollment creates an event-scoped pass; it is not reusable identity.</AlertDescription></Alert>
-      </div>
-    </main>
+        <div aria-hidden="true" className="relative">
+          <Separator className="border-t border-dashed bg-transparent" />
+          <span className="absolute top-1/2 -left-3 size-6 -translate-y-1/2 rounded-full bg-background ring-1 ring-foreground/10" />
+          <span className="absolute top-1/2 -right-3 size-6 -translate-y-1/2 rounded-full bg-background ring-1 ring-foreground/10" />
+        </div>
+        <div className="flex flex-col gap-4 bg-muted/40 p-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-muted-foreground">Claim code</span>
+            <span className="font-mono text-2xl font-medium tracking-[0.18em] sm:text-3xl">{ticket.claim_code || `•••• ${ticket.claim_code_hint}`}</span>
+          </div>
+          {ticket.claim_code ? <CopyCodeButton code={ticket.claim_code} /> : null}
+        </div>
+      </Card>
+
+      {ticket.status === 'claimed' ? (
+        <section aria-labelledby="next-heading" className="flex flex-col gap-3">
+          <SectionHeading id="next-heading">Next</SectionHeading>
+          <ol className="flex flex-col gap-2 text-sm">
+            {enrollmentSteps.map((step, index) => (
+              <li className="flex items-center gap-3" key={step}>
+                <span aria-hidden="true" className="text-sm tabular-nums text-muted-foreground">{index + 1}</span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
+      {cancelError ? <Alert variant="destructive"><TriangleAlertIcon /><AlertTitle>{cancelError}</AlertTitle></Alert> : null}
+
+      {cancellable ? (
+        <AlertDialog onOpenChange={setCancelOpen} open={cancelOpen}>
+          <AlertDialogTrigger asChild><Button className="w-fit" variant="destructive">Cancel ticket</Button></AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancel this ticket?</AlertDialogTitle>
+              <AlertDialogDescription>It cannot be restored.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={pending}>Keep ticket</AlertDialogCancel>
+              <AlertDialogAction disabled={pending} onClick={(event) => { event.preventDefault(); void cancel(); }} variant="destructive">
+                {pending ? <Spinner data-icon="inline-start" /> : null}
+                {pending ? 'Cancelling…' : 'Cancel ticket'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : null}
+    </Page>
   );
 }

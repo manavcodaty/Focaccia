@@ -1,45 +1,45 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist } from 'next/font/google';
-import localFont from 'next/font/local';
+import { Geist, Geist_Mono } from 'next/font/google';
 
 import { AuthProvider } from '@/components/auth-provider';
+import { ThemeProvider } from '@/components/providers/theme-provider';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
+import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 import './globals.css';
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
-
-const sentient = localFont({
-  display: 'swap',
-  src: '../../web/public/Sentient-Extralight.woff',
-  variable: '--font-sentient',
-  weight: '200',
-});
+const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' });
+const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
 
 export const metadata: Metadata = {
-  description: 'Browse listed Focaccia events, claim free tickets, and recover them across devices.',
-  title: { default: 'Focaccia Tickets', template: '%s · Focaccia Tickets' },
+  description: 'Browse listed PrivatePass events, claim free tickets, and recover them across devices.',
+  title: { default: 'PrivatePass Tickets', template: '%s · PrivatePass Tickets' },
 };
 
 export const viewport: Viewport = {
-  colorScheme: 'light',
-  themeColor: '#fffdfc',
+  themeColor: [
+    { color: '#ffffff', media: '(prefers-color-scheme: light)' },
+    { color: '#0a0a0a', media: '(prefers-color-scheme: dark)' },
+  ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className={cn('font-sans', geist.variable, sentient.variable)} lang="en">
-      <body>
-        <TooltipProvider>
-          <AuthProvider>
-            <SiteHeader />
-            {children}
-            <SiteFooter />
-          </AuthProvider>
-        </TooltipProvider>
+    <html className={cn(geistSans.variable, geistMono.variable)} lang="en" suppressHydrationWarning>
+      <body className="flex min-h-svh flex-col">
+        <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange enableSystem>
+          <TooltipProvider>
+            <AuthProvider>
+              <SiteHeader />
+              <div className="flex flex-1 flex-col">{children}</div>
+              <SiteFooter />
+              <Toaster position="bottom-center" />
+            </AuthProvider>
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

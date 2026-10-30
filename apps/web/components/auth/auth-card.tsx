@@ -1,30 +1,29 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { MailCheckIcon } from "lucide-react";
 import type { FormEvent } from "react";
 import { useState } from "react";
 
+import { PrivatePassMark } from "@/components/brand";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import { getFriendlyAuthErrorMessage, getPostAuthSuccessState, type AuthMode } from "@/lib/auth-feedback";
 import { invokeEdgeFunction } from "@/lib/functions";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils";
 
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
-const modeCopy: Record<AuthMode, { cta: string; description: string; title: string }> = {
+const modeCopy: Record<AuthMode, { cta: string; title: string }> = {
   signin: {
     cta: "Sign in",
-    description: "Enter your organizer credentials to access the event console.",
-    title: "Welcome back",
+    title: "Sign in",
   },
   signup: {
     cta: "Create account",
-    description: "Create an account, then verify that its email is approved for organizer access.",
-    title: "Create an account",
+    title: "Create organizer account",
   },
 };
 
@@ -106,34 +105,15 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
 
   if (pendingConfirmationEmail) {
     return (
-      <div className={cn("flex w-full max-w-sm flex-col gap-5", className)} {...props}>
-        <Card className="border-[var(--color-ink)]/[0.1] shadow-[var(--shadow-card)]">
-          <CardHeader className="text-center">
-            <h2 className="text-[17px] font-medium tracking-[-0.009em] text-[var(--color-ink)]">
-              Check your email
-            </h2>
-            <CardDescription>
-              We sent a confirmation link to{" "}
-              <span className="font-medium text-[var(--color-ink)]">
-                {pendingConfirmationEmail}
-              </span>
-              .
-            </CardDescription>
+      <div className={cn("flex w-full max-w-sm flex-col gap-6", className)} {...props}>
+        <Card>
+          <CardHeader className="items-center text-center">
+            <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-full bg-muted"><MailCheckIcon className="size-5" /></div>
+            <CardTitle className="text-xl">Check your email</CardTitle>
+            <CardDescription>{pendingConfirmationEmail}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <p className="text-center text-[13px] text-[var(--color-muted-stone)]">
-                Confirm the address, then return here to sign in.
-              </p>
-              <Button
-                className="w-full"
-                type="button"
-                variant="outline"
-                onClick={() => switchMode("signin")}
-              >
-                Back to sign in
-              </Button>
-            </div>
+            <Button className="w-full" onClick={() => switchMode("signin")} type="button" variant="outline">Back to sign in</Button>
           </CardContent>
         </Card>
       </div>
@@ -143,99 +123,61 @@ export function AuthCard({ className, ...props }: React.ComponentProps<"div">) {
   const copy = modeCopy[mode];
 
   return (
-    <div className={cn("flex w-full max-w-sm flex-col gap-5", className)} {...props}>
-      <Card className="border-[var(--color-ink)]/[0.1] shadow-[var(--shadow-card)]">
-        <CardHeader className="text-center">
-          {/* Logo */}
-          <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-[12px] bg-[var(--color-ink)]">
-            <svg viewBox="0 0 16 16" fill="none" className="size-5">
-              <path
-                d="M8 2.5a5 5 0 00-5 5v1.75C3 12.6 5.4 14.7 8 15.5c2.6-.8 5-2.9 5-6.25V7.5a5 5 0 00-5-5z"
-                fill="rgba(255,255,255,0.15)"
-                stroke="white"
-                strokeWidth="1.2"
-              />
-              <path
-                d="M6 8.5l1.5 1.5 3-3.5"
-                stroke="white"
-                strokeWidth="1.3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
-          </div>
-          <h2 className="text-[17px] font-medium tracking-[-0.009em] text-[var(--color-ink)]">
-            {copy.title}
-          </h2>
-          <CardDescription>{copy.description}</CardDescription>
-        </CardHeader>
+    <div className={cn("flex w-full max-w-sm flex-col gap-6", className)} {...props}>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><PrivatePassMark /></span>
+        <h1 className="text-xl font-semibold tracking-tight">{copy.title}</h1>
+      </div>
+      <Card>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                autoComplete="email"
-                disabled={isSubmitting}
-                placeholder="organizer@example.com"
-                required
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
+          <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <Input
+                  autoComplete="email"
+                  disabled={isSubmitting}
+                  id="email"
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                  type="email"
+                  value={email}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <Input
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  disabled={isSubmitting}
+                  id="password"
+                  minLength={8}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  type="password"
+                  value={password}
+                />
+              </Field>
+            </FieldGroup>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                disabled={isSubmitting}
-                minLength={8}
-                placeholder={mode === "signin" ? "Enter your password" : "Create a password (8+ characters)"}
-                required
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-              <p className="text-[12px] text-[var(--color-muted-stone)]">
-                {mode === "signin"
-                  ? "Use the organizer account attached to this event inventory."
-                  : "Use at least 8 characters for the organizer password."}
-              </p>
-            </div>
+            {errorMessage ? <Alert role="alert" variant="destructive"><AlertDescription>{errorMessage}</AlertDescription></Alert> : null}
 
-            {errorMessage ? <Alert variant="destructive"><AlertDescription>{errorMessage}</AlertDescription></Alert> : null}
-
-            <Button className="w-full" disabled={isSubmitting} type="submit">
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin" />
-                  {mode === "signin" ? "Signing in…" : "Creating account…"}
-                </>
-              ) : (
-                copy.cta
-              )}
+            <Button className="w-full" disabled={isSubmitting} size="lg" type="submit">
+              {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+              {isSubmitting ? (mode === "signin" ? "Signing in…" : "Creating account…") : copy.cta}
             </Button>
-
-            <p className="text-center text-[13px] text-[var(--color-muted-stone)]">
-              {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
-              <Button
-                disabled={isSubmitting}
-                type="button"
-                className="h-auto min-h-0 px-1 py-0 align-baseline"
-                onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
-                variant="link"
-              >
-                {mode === "signin" ? "Sign up" : "Sign in"}
-              </Button>
-            </p>
           </form>
         </CardContent>
       </Card>
-      <p className="px-4 text-center text-[12px] text-[var(--color-muted-stone)]">
-        By continuing, you agree to the organizer terms and privacy expectations for event access.
+      <p className="text-center text-sm text-muted-foreground">
+        <Button
+          className="h-auto p-0 align-baseline text-muted-foreground hover:text-foreground"
+          disabled={isSubmitting}
+          onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
+          type="button"
+          variant="link"
+        >
+          {mode === "signin" ? "Create account" : "Sign in"}
+        </Button>
       </p>
     </div>
   );

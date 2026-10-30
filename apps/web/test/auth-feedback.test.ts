@@ -32,7 +32,7 @@ test("maps thrown Supabase fetch failures to an actionable local-network message
   const message = getFriendlyAuthErrorMessage("Failed to fetch", "signup");
 
   assert.match(message, /Unable to reach the organizer sign-in service/i);
-  assert.match(message, /Focaccia network mode and Supabase URL/i);
+  assert.match(message, /PrivatePass network mode and Supabase URL/i);
   assert.match(message, /restart the local Supabase stack/i);
 });
 

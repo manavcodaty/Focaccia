@@ -28,16 +28,16 @@ export function TicketDemo() {
   return (
     <div className="flex min-h-52 flex-col justify-between rounded-[20px] bg-ink p-5 text-canvas">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-white/55">FOCACCIA PASS</span>
+        <span className="text-xs text-white/55">PrivatePass</span>
         <TicketCheck className="size-5 stroke-[1.5]" />
       </div>
       <div>
         <p className="font-display text-3xl tracking-[-0.03em]">One ticket, claimed.</p>
         <div className="mt-4 flex items-center gap-2 text-xs text-white/65">
           <span className="size-1.5 rounded-full bg-[#fbe1d1]" />
-          Ownership verified before enrollment
+          Ticket verified
         </div>
-        <p className="mt-2 max-w-sm text-xs leading-5 text-white/55">Enrollment opens only after the attendee account owns this event-scoped ticket.</p>
+
         <div className="mt-5 grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
           <div className="rounded-2xl bg-white/[0.06] px-3 py-2">
             <p className="text-[11px] uppercase tracking-[0.08em] text-white/40">Ticket</p>
@@ -55,7 +55,7 @@ export function TicketDemo() {
 
 function EnrollmentDemoComponent() {
   const reduced = useReducedMotion();
-  const [progress, setProgress] = useState(reduced ? 100 : 28);
+  const [progress, setProgress] = useState(100);
 
   useEffect(() => {
     if (reduced) return;
@@ -113,7 +113,7 @@ function GateDecisionDemoComponent() {
             <m.div
               aria-hidden="true"
               className="mt-2 h-1 rounded-full bg-terracotta"
-              initial={{ width: reduced ? "100%" : "44%" }}
+              initial={false}
               animate={{ width: "100%" }}
               transition={{ duration: reduced ? 0 : 1.1, delay: index * 0.18, ease: [0.23, 1, 0.32, 1] }}
             />
@@ -121,7 +121,7 @@ function GateDecisionDemoComponent() {
         ))}
       </div>
       <div className="relative mt-3 rounded-2xl bg-canvas/80 p-3 text-xs leading-5 text-muted-stone shadow-hairline">
-        Signed decision stays on the device until sync returns.
+        Saved until reconnected.
       </div>
     </div>
   );
@@ -162,7 +162,7 @@ const commandPhrases = ["Show gates that need a refresh", "Find tickets awaiting
 function CommandDemoComponent() {
   const reduced = useReducedMotion();
   const [phraseIndex, setPhraseIndex] = useState(0);
-  const [length, setLength] = useState(reduced ? commandPhrases[0].length : 0);
+  const [length, setLength] = useState(commandPhrases[0].length);
 
   useEffect(() => {
     if (reduced) return;

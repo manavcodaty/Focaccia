@@ -5,7 +5,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "node ../../scripts/gate-dev.mjs",
-    "ios": "expo run:ios",
+    "ios": "expo run:ios --device",
     "typecheck": "tsc --noEmit",
     "export:ios": "expo export --platform ios --output-dir dist-ios",
     "test": "node --experimental-strip-types --test ./test/*.test.ts",

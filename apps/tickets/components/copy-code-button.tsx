@@ -1,30 +1,30 @@
 'use client';
 
+import { CheckIcon, CopyIcon } from 'lucide-react';
 import { useState } from 'react';
-
-import { Check, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { copyText } from '@/lib/copy-text';
 
 export function CopyCodeButton({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    try {
+      await copyText(code);
+      setCopied(true);
+      toast.success('Claim code copied.');
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      toast.error('Clipboard unavailable. Select the code and copy it manually.');
+    }
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button aria-live="polite" onClick={copy} size="sm" type="button" variant="outline">
-          {copied ? <Check data-icon="inline-start" /> : <Copy data-icon="inline-start" />}
-          {copied ? 'Copied' : 'Copy code'}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{copied ? 'Claim code copied' : 'Copy the claim code'}</TooltipContent>
-    </Tooltip>
+    <Button aria-live="polite" onClick={() => void copy()} type="button" variant="outline">
+      {copied ? <CheckIcon data-icon="inline-start" /> : <CopyIcon data-icon="inline-start" />}
+      {copied ? 'Copied' : 'Copy code'}
+    </Button>
   );
 }

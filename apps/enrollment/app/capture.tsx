@@ -208,7 +208,7 @@ export default function CaptureScreen() {
         <ScrollView bounces={false} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.eyebrow}>{state.intent === 'regeneration' ? 'Regeneration' : 'Enrollment'}</Text>
-            <Text style={styles.title}>Create the pass on this phone.</Text>
+            <Text style={styles.title}>Create your pass.</Text>
             <Text style={styles.subtitle}>{ticket.event.name}</Text>
           </View>
 
@@ -221,18 +221,18 @@ export default function CaptureScreen() {
           ) : (
             <View style={styles.resumeCard}>
               <Text style={styles.resumeTitle}>Resume secure issuance</Text>
-              <Text style={styles.resumeBody}>The encrypted payload and idempotency key are protected on this device. Retrying sends the exact same request and does not consume another generation.</Text>
+              <Text style={styles.resumeBody}>Retry safely. No extra generation is used.</Text>
             </View>
           )}
 
           <View style={styles.controls}>
             {modelError ? <StatusBanner message={modelError} title="Model unavailable" tone="warning" /> : null}
-            {!modelReady && !hasPending ? <StatusBanner message="Loading the face model and cryptographic runtime…" title="Preparing on-device processing" tone="neutral" /> : null}
+            {!modelReady && !hasPending ? <StatusBanner message="Preparing capture…" title="Preparing on-device processing" tone="neutral" /> : null}
             {captureError ? <StatusBanner message={captureError} title="Pass not issued" tone="warning" /> : null}
             <View style={styles.progressCard}>
               {isProcessing ? <ActivityIndicator color={palette.ink} /> : null}
               <Text style={styles.progressTitle}>{phaseLabel(processingPhase, hasPending)}</Text>
-              <Text style={styles.progressBody}>Keep this screen open until the signed pass is saved.</Text>
+              <Text style={styles.progressBody}>Keep this screen open.</Text>
             </View>
             <PrimaryButton
               disabled={isProcessing || (!hasPending && !modelReady)}

@@ -45,7 +45,7 @@ export default function PassScreen() {
     return (
       <ScreenShell style={styles.screen}>
         <SectionCard title="No secure pass is stored">
-          <Text style={styles.body}>Open the ticket and enroll or regenerate on this device.</Text>
+          <Text style={styles.body}>Open the ticket to enroll or replace its pass.</Text>
           <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
         </SectionCard>
       </ScreenShell>
@@ -87,10 +87,10 @@ export default function PassScreen() {
         <Text style={styles.validUntil}>Valid until {new Date(pass.event.ends_at).toLocaleString()}</Text>
       </SectionCard>
 
-      <StatusBanner message="This signed pass is stored in iOS protected storage on this device." title="Offline ready" tone="success" />
+      <StatusBanner message="Saved securely on this phone." title="Offline ready" tone="success" />
 
       <SectionCard eyebrow="Scanner recovery" title="Manual fallback" tone="subtle">
-        <Text style={styles.body}>If QR scanning fails, gate staff can paste the full signed token into the same offline verification pipeline.</Text>
+        <Text style={styles.body}>If scanning fails, copy the token for gate staff.</Text>
         <Text style={styles.snippet}>{pass.tokenSnippet}</Text>
         <PrimaryButton
           label="Copy full signed token"
@@ -119,7 +119,7 @@ export default function PassScreen() {
             tone="ghost"
           />
         ) : null}
-        {remaining === 0 ? <StatusBanner message="Generation limit reached. The organizer must reset the ticket before another pass can be issued." tone="warning" /> : null}
+        {remaining === 0 ? <StatusBanner message="Limit reached. Ask the organizer to reset your ticket." tone="warning" /> : null}
         <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
       </View>
     </ScreenShell>

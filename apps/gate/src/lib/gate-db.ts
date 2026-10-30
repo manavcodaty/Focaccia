@@ -304,7 +304,7 @@ export class GateRepository {
           [eventId, row.pass_id, row.revoked_at],
         );
       }
-      await driver.run('update gate_config set last_revocation_sync_at = ?', [syncedAtIso]);
+      await driver.run('update gate_config set last_revocation_sync_at = ? where event_id = ?', [syncedAtIso, eventId]);
     });
   }
 
@@ -434,6 +434,7 @@ export class GateRepository {
         total_ms,
         hamming_distance
       from scan_logs
+      where event_id = (select event_id from gate_config limit 1)
       order by recorded_at desc, id desc`,
     );
   }
@@ -450,14 +451,15 @@ export class GateRepository {
       usedPassCount: number;
     }>(
       `select
-        (select count(*) from scan_logs) as logCount,
-        (select count(*) from used_passes) as usedPassCount,
-        (select count(*) from revocation_cache) as revocationCount,
-        (select count(*) from checkin_sync_queue where status = 'pending') as pendingSyncCount,
-        (select count(*) from checkin_sync_queue where status = 'blocked') as blockedSyncCount,
-        (select count(*) from checkin_sync_queue where status = 'synced') as syncedCheckinCount,
-        (select max(synced_at) from checkin_sync_queue where status = 'synced') as lastSyncAt,
-        (select recorded_at from scan_logs order by recorded_at desc, id desc limit 1) as lastRecordedAt`,
+        (select count(*) from scan_logs where event_id = gate_config.event_id) as logCount,
+        (select count(*) from used_passes where event_id = gate_config.event_id) as usedPassCount,
+        (select count(*) from revocation_cache where event_id = gate_config.event_id) as revocationCount,
+        (select count(*) from checkin_sync_queue where event_id = gate_config.event_id and status = 'pending') as pendingSyncCount,
+        (select count(*) from checkin_sync_queue where event_id = gate_config.event_id and status = 'blocked') as blockedSyncCount,
+        (select count(*) from checkin_sync_queue where event_id = gate_config.event_id and status = 'synced') as syncedCheckinCount,
+        (select max(synced_at) from checkin_sync_queue where event_id = gate_config.event_id and status = 'synced') as lastSyncAt,
+        (select recorded_at from scan_logs where event_id = gate_config.event_id order by recorded_at desc, id desc limit 1) as lastRecordedAt
+      from gate_config limit 1`,
     );
 
     return {

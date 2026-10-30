@@ -1,34 +1,20 @@
 "use client";
 
-import { CopyButton } from "@/components/dashboard/copy-button";
-import { cn } from "@/lib/utils";
+import { CopyInputButton } from "@/components/dashboard/copy-button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 
-export function PublicValue({
-  label,
-  value,
-  subtle = false,
-}: {
-  label: string;
-  subtle?: boolean;
-  value: string;
-}) {
+export function PublicValue({ label, value }: { label: string; value: string }) {
+  const id = `public-value-${label.toLowerCase()}`;
   return (
-    <div className="group rounded-xl border border-[color:var(--border)] bg-[color:var(--muted)]/20 p-4 transition-colors duration-150 hover:border-[color:var(--border-strong)]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="size-1.5 rounded-full bg-[color:var(--primary)]/60" />
-          <span className="token-mono text-xs font-medium text-[color:var(--muted-foreground)]">{label}</span>
-        </div>
-        <CopyButton label={`${label} copied.`} value={value} />
-      </div>
-      <p
-        className={cn(
-          "mt-3 token-mono break-all text-[0.8125rem] leading-6 text-[color:var(--foreground)]",
-          subtle && "text-[color:var(--muted-foreground)]",
-        )}
-      >
-        {value}
-      </p>
-    </div>
+    <Field>
+      <FieldLabel className="font-mono text-xs" htmlFor={id}>{label}</FieldLabel>
+      <InputGroup>
+        <InputGroupInput className="font-mono text-xs" id={id} readOnly value={value} />
+        <InputGroupAddon align="inline-end">
+          <CopyInputButton label={`${label} copied.`} name={label} value={value} />
+        </InputGroupAddon>
+      </InputGroup>
+    </Field>
   );
 }

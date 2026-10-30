@@ -1,0 +1,32 @@
+diff --git a/ios/LinkPreview/LinkPreviewNativeActionView.swift b/ios/LinkPreview/LinkPreviewNativeActionView.swift
+index 3884b7844b99484f705632100134a16547e0bf0f..06fc6bca77931681cc80d2e3f64ca3f7a6c1dd13 100644
+--- a/ios/LinkPreview/LinkPreviewNativeActionView.swift
++++ b/ios/LinkPreview/LinkPreviewNativeActionView.swift
+@@ -107,11 +107,10 @@ class LinkPreviewNativeActionView: RouterViewWithLogger, LinkPreviewMenuUpdatabl
+       children: subActions
+     )
+ 
+-    if let subtitle = subtitle {
+-      menuAction.subtitle = subtitle
+-    }
+-
+     if #available(iOS 16.0, *) {
++      if let subtitle = subtitle {
++        menuAction.subtitle = subtitle
++      }
+       if let preferredElementSize = preferredElementSize {
+         menuAction.preferredElementSize = preferredElementSize.toUIMenuElementSize()
+       }
+@@ -137,8 +136,10 @@ class LinkPreviewNativeActionView: RouterViewWithLogger, LinkPreviewMenuUpdatabl
+     baseUiAction.attributes = attributes
+     baseUiAction.state = isOn == true ? .on : .off
+ 
+-    if let subtitle = subtitle {
+-      baseUiAction.subtitle = subtitle
++    if #available(iOS 16.0, *) {
++      if let subtitle = subtitle {
++        baseUiAction.subtitle = subtitle
++      }
+     }
+     if let label = discoverabilityLabel {
+       baseUiAction.discoverabilityTitle = label

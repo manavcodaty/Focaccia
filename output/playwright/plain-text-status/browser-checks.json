@@ -1,0 +1,381 @@
+{
+  "scope": "Local ticketing and organizer apps",
+  "checks": [
+    {
+      "screen": "Organizer overview",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "9"
+        },
+        {
+          "plain": true,
+          "text": "16"
+        },
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        }
+      ]
+    },
+    {
+      "screen": "Event workspace tickets",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "1"
+        },
+        {
+          "plain": true,
+          "text": "Enrolled"
+        }
+      ]
+    },
+    {
+      "screen": "Ticket types",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Active"
+        }
+      ]
+    },
+    {
+      "screen": "Provisioned gate",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Bound"
+        },
+        {
+          "plain": true,
+          "text": "Active"
+        }
+      ]
+    },
+    {
+      "screen": "Revocations",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Live"
+        }
+      ]
+    },
+    {
+      "screen": "Gate logs",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Live"
+        }
+      ]
+    },
+    {
+      "screen": "Ticket claim confirmation",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Claimed"
+        }
+      ]
+    },
+    {
+      "screen": "My tickets wallet",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Claimed"
+        }
+      ]
+    },
+    {
+      "screen": "Ticket details",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Claimed"
+        }
+      ]
+    },
+    {
+      "screen": "Upcoming QA event",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Upcoming"
+        }
+      ]
+    },
+    {
+      "screen": "Unbound QA gate",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Upcoming"
+        },
+        {
+          "plain": true,
+          "text": "Awaiting scan"
+        }
+      ]
+    },
+    {
+      "screen": "Cancelled ticket",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Cancelled"
+        }
+      ]
+    },
+    {
+      "screen": "QA claimed ticket roster",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Upcoming"
+        },
+        {
+          "plain": true,
+          "text": "1"
+        },
+        {
+          "plain": true,
+          "text": "Claimed"
+        }
+      ]
+    },
+    {
+      "screen": "Sold-out event and ticket type",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Sold out"
+        },
+        {
+          "plain": true,
+          "text": "Sold out"
+        }
+      ]
+    },
+    {
+      "screen": "Sold-out catalogue card",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Sold out"
+        }
+      ]
+    },
+    {
+      "screen": "Mobile sold-out catalogue",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Sold out"
+        }
+      ]
+    },
+    {
+      "screen": "Ended events filter",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "16"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Ended"
+        }
+      ]
+    },
+    {
+      "screen": "Ended event gate",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Ended"
+        },
+        {
+          "plain": true,
+          "text": "Closed"
+        }
+      ]
+    },
+    {
+      "screen": "Inactive gate",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Inactive"
+        }
+      ]
+    },
+    {
+      "screen": "QA cancellation detail",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Cancelled"
+        }
+      ]
+    },
+    {
+      "screen": "Unlisted QA event after cancellation",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Upcoming"
+        },
+        {
+          "plain": true,
+          "text": "Unlisted"
+        },
+        {
+          "plain": true,
+          "text": "Cancelled"
+        }
+      ]
+    },
+    {
+      "screen": "Final Live event header",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Live"
+        },
+        {
+          "plain": true,
+          "text": "Enrolled"
+        }
+      ]
+    },
+    {
+      "screen": "Organizer mobile 390px final",
+      "badges": 0,
+      "statuses": [
+        {
+          "plain": true,
+          "text": "Upcoming"
+        },
+        {
+          "plain": true,
+          "text": "Unlisted"
+        },
+        {
+          "plain": true,
+          "text": "Cancelled"
+        }
+      ]
+    }
+  ],
+  "qaReservations": "cancelled",
+  "qaEventVisibility": "unlisted"
+}

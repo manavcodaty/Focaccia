@@ -20,7 +20,6 @@ import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
 import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
-import { effectiveLivenessTimeoutMs } from '../src/lib/liveness';
 import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useGate } from '../src/state/gate-context';
@@ -82,7 +81,7 @@ export default function ScanScreen() {
 
           lockRef.current = true;
           setError(null);
-          setStatus('Token detected. Verifying signature and replay state...');
+          setStatus('Verifying pass…');
           setIsProcessing(true);
 
           void processToken(token, scanStartedAtRef.current)
@@ -92,7 +91,7 @@ export default function ScanScreen() {
                 return;
               }
 
-              router.replace('/liveness');
+              router.replace('/face-match');
             })
             .catch((scanError) => {
               setError(scanError instanceof Error ? scanError.message : 'Offline verification failed.');
@@ -112,7 +111,7 @@ export default function ScanScreen() {
   if (!gate) {
     return (
       <GateFallback
-        body="This device is not provisioned yet. Scan the web dashboard QR first."
+        body="Set up this gate with the dashboard QR first."
         onPrimaryPress={() => router.replace('/provision')}
         primaryLabel="Provision gate"
         title="Provisioning required"
@@ -123,7 +122,7 @@ export default function ScanScreen() {
   if (!device) {
     return (
       <GateFallback
-        body="A rear camera is required for QR scanning and live verification."
+        body="Rear camera required."
         onPrimaryPress={() => router.replace('/')}
         primaryLabel="Back to home"
         title="Rear camera unavailable"
@@ -134,7 +133,7 @@ export default function ScanScreen() {
   if (!hasPermission) {
     return (
       <GateFallback
-        body="Camera access is required to scan passes and complete offline verification."
+        body="Allow camera access to scan passes."
         onPrimaryPress={() => {
           void requestPermission();
         }}
@@ -166,7 +165,6 @@ export default function ScanScreen() {
     top: layout.isLandscape ? '24%' : '27%',
     width: layout.isLandscape ? '72%' : '80%',
   };
-  const livenessTimeoutMs = effectiveLivenessTimeoutMs(gate.policy.liveness_timeout_ms);
 
   return (
     <ScreenShell style={styles.screen} variant="scanner">
@@ -223,8 +221,7 @@ export default function ScanScreen() {
                   },
                 ]}
               >
-                Offline verification checks signature, event, replay, revocation cache, and gate-only
-                decryptability before live matching starts.
+                Scan an attendee pass.
               </Text>
             </View>
 
@@ -237,7 +234,6 @@ export default function ScanScreen() {
                 />
               </View>
               <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
-              <MetricRow label="Liveness timeout" value={`${Math.round(livenessTimeoutMs / 1000)} seconds`} />
               <StatusBanner
                 message={error ?? status}
                 tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
@@ -275,8 +271,7 @@ export default function ScanScreen() {
                 },
               ]}
             >
-              Offline verification checks signature, event, replay, revocation cache, and gate-only
-              decryptability before live matching starts.
+              Scan an attendee pass.
             </Text>
           </View>
 
@@ -289,7 +284,6 @@ export default function ScanScreen() {
               />
             </View>
             <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
-            <MetricRow label="Liveness timeout" value={`${Math.round(livenessTimeoutMs / 1000)} seconds`} />
             <StatusBanner
               message={error ?? status}
               tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}

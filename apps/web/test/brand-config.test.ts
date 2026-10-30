@@ -32,15 +32,11 @@ test("DESIGN.md token contract: both themes share consistent core tokens", () =>
   assert.equal(enrollmentTheme.palette.fog, gateTheme.palette.fog);
 });
 
-test("web globals.css references the shared warm civic tokens", () => {
-  const globalsSource = readFileSync(
-    path.join(import.meta.dirname, "../app/globals.css"),
-    "utf8",
-  );
+test("organizer and ticket web apps share one neutral shadcn token set", () => {
+  const web = readFileSync(path.join(import.meta.dirname, "../app/globals.css"), "utf8");
+  const tickets = readFileSync(path.join(import.meta.dirname, "../../tickets/app/globals.css"), "utf8");
+  const tokens = (css: string) => css.slice(css.indexOf(":root"), css.indexOf("@theme inline"));
 
-  assert.match(globalsSource, /--color-canvas:\s*#fffdfc/);
-  assert.match(globalsSource, /--color-ink:\s*#1d1917/);
-  assert.match(globalsSource, /--color-warm-mist:\s*#f4ded2/);
-  assert.match(globalsSource, /--color-terracotta:\s*#7b3f2c/);
-  assert.match(globalsSource, /--color-fog:\s*#f7f4f1/);
+  assert.equal(tokens(web), tokens(tickets));
+  assert.match(web, /--primary:\s*oklch\(0\.205 0 0\)/);
 });

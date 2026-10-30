@@ -96,7 +96,7 @@ export default function ProvisionScreen() {
 
             scanLockRef.current = true;
             setError(null);
-            setFeedback('Provisioning QR decoded. Confirm the event and sync this device.');
+            setFeedback('QR scanned. Confirm the event and sync.');
             setDraft(payload);
           } catch (scanError) {
             setError(scanError instanceof Error ? scanError.message : 'Failed to parse provisioning QR.');
@@ -114,7 +114,7 @@ export default function ProvisionScreen() {
 
     try {
       await signIn(email, password);
-      setFeedback('Organizer session is active. Scan the dashboard provisioning QR now.');
+      setFeedback('Scan the dashboard gate QR.');
     } catch (signInError) {
       setError(signInError instanceof Error ? signInError.message : 'Sign-in failed.');
     } finally {
@@ -150,7 +150,7 @@ export default function ProvisionScreen() {
   if (!device) {
     return (
       <PermissionFallback
-        body="A rear camera is required to read the web dashboard provisioning QR."
+        body="Rear camera required."
         onPrimaryPress={() => router.replace('/')}
         primaryLabel="Back to home"
         title="Rear camera unavailable"
@@ -161,7 +161,7 @@ export default function ProvisionScreen() {
   if (!hasPermission) {
     return (
       <PermissionFallback
-        body="Camera access is required to provision the gate from the dashboard QR."
+        body="Allow camera access to scan the gate QR."
         onPrimaryPress={() => {
           void requestPermission();
         }}
@@ -197,8 +197,7 @@ export default function ProvisionScreen() {
           tone={gate ? 'warning' : 'success'}
         />
         <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          The gate phone generates its own X25519 keypair locally. Only the public key leaves the
-          device during provisioning.
+          Gate keys stay on this phone. Only the public key is shared.
         </Text>
         {feedback ? <StatusBanner message={feedback} title="Setup update" tone="success" /> : null}
         {error ? <StatusBanner message={error} title="Setup failed" tone="danger" /> : null}
@@ -207,7 +206,7 @@ export default function ProvisionScreen() {
       <SectionCard eyebrow="Organizer auth" title={auth ? auth.email : 'Sign in before sync'}>
         {auth ? (
           <StatusBanner
-            message="Organizer sign-in is active. You can scan the provisioning QR and complete the one-gate sync."
+            message="Signed in. Scan the gate QR."
             title="Organizer authenticated"
             tone="success"
           />
@@ -271,8 +270,8 @@ export default function ProvisionScreen() {
         </View>
         <Text style={[styles.caption, { fontSize: scaleFont(layout, 14), lineHeight: scaleFont(layout, 20) }]}>
           {draft
-            ? 'Provisioning QR captured. Review the public event material below.'
-            : 'Point the rear camera at the dashboard provisioning QR.'}
+            ? 'QR scanned. Confirm the event.'
+            : 'Scan the dashboard gate QR.'}
         </Text>
         {draft ? (
           <>
@@ -284,7 +283,7 @@ export default function ProvisionScreen() {
             <MetricRow label="EVENT_SALT" value={snippet(draft.event_salt)} />
             {draft.pk_gate_event ? (
               <StatusBanner
-                message="The dashboard QR already carries a gate public key. The server will reject duplicate provisioning if another device owns this event."
+                message="Gate already bound. Another phone cannot replace it."
                 tone="warning"
               />
             ) : null}

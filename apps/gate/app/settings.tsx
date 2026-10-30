@@ -10,7 +10,6 @@ import { StatusBanner } from '../src/components/status-banner';
 import { StatusChip } from '../src/components/status-chip';
 import { formatTimestamp } from '../src/lib/display';
 import { formatCacheAge } from '../src/lib/gate-sync';
-import { effectiveLivenessTimeoutMs } from '../src/lib/liveness';
 import { scaleFont } from '../src/lib/responsive-metrics';
 import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
 import { useRevocationCache } from '../src/lib/use-revocation-cache';
@@ -34,7 +33,6 @@ export default function SettingsScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cache = useRevocationCache(gate?.last_revocation_sync_at ?? null);
-  const livenessTimeoutMs = gate ? effectiveLivenessTimeoutMs(gate.policy.liveness_timeout_ms) : null;
 
   async function handleSync() {
     setError(null);
@@ -62,7 +60,7 @@ export default function SettingsScreen() {
         {feedback ? <StatusBanner message={feedback} title="Sync complete" tone="success" /> : null}
         {error ? <StatusBanner message={error} title="Sync failed" tone="danger" /> : null}
         <StatusBanner
-          message="Revocations created while this gate is disconnected cannot affect entry decisions until a later successful refresh."
+          message="Offline revocations apply after the next refresh."
           title={cache.state === 'fresh' ? 'Offline ready' : 'Refresh required'}
           tone={cache.state === 'fresh' ? 'neutral' : 'warning'}
         />
@@ -76,10 +74,6 @@ export default function SettingsScreen() {
         <MetricRow
           label="Match threshold"
           value={gate ? String(gate.policy.match_threshold) : 'Unavailable'}
-        />
-        <MetricRow
-          label="Liveness timeout"
-          value={livenessTimeoutMs ? `${Math.round(livenessTimeoutMs / 1000)} seconds` : 'Unavailable'}
         />
         <MetricRow
           label="Typed fallback"
@@ -103,9 +97,7 @@ export default function SettingsScreen() {
 
       <SectionCard eyebrow="Notes" title="Offline operation">
         <Text style={[styles.note, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          The scan pipeline never calls the network. Signed check-ins upload after acceptance, and
-          the gate refreshes revocations on foreground, network restoration, and once per minute
-          while active.
+          Checks run offline. Check-ins sync when connected; revocations refresh every minute while active.
         </Text>
       </SectionCard>
 
@@ -125,7 +117,7 @@ export default function SettingsScreen() {
             setFeedback(null);
             void retryCheckinSync()
               .then(() => {
-                setFeedback('Check-in queue and revocation cache synchronized.');
+                setFeedback('Check-ins and revocations synced.');
               })
               .catch((syncError) => {
                 setError(syncError instanceof Error ? syncError.message : 'Gate sync failed.');

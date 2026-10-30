@@ -1,19 +1,44 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, CalendarDays, MapPin, Ticket } from 'lucide-react';
+import { ChevronRightIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Button } from '@/components/ui/button';
+import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/components/ui/item';
 import { ticketApi } from '@/lib/api';
-import { formatEventDate, statusCopy } from '@/lib/presentation';
+import { formatEventDay, formatEventTimeRange } from '@/lib/presentation';
 import type { OwnedTicket } from '@/lib/types';
 
 import { useAuth } from './auth-provider';
 import { EmptyTickets, InlineError, LoadingEvents } from './feedback';
+import { EventPoster } from './event-poster';
+import { Page, SectionHeading } from './page';
 import { RevealItem, RevealList } from './reveal-list';
-import { StatusPill } from './status-pill';
+import { StatusText } from './status-text';
+
+function TicketRow({ ticket }: { ticket: OwnedTicket }) {
+  const name = ticket.event?.name ?? 'Event ticket';
+  return (
+    <Item asChild className="group/ticket transition-colors hover:bg-muted/50" variant="outline">
+      <Link aria-label={`Open ticket for ${name}`} href={`/tickets/${ticket.id}`}>
+        <ItemMedia className="size-14" variant="image">
+          <EventPoster event={{ event_id: ticket.event_id, name }} />
+        </ItemMedia>
+        <ItemContent className="min-w-0">
+          <ItemTitle className="text-base">{name}<StatusText status={ticket.status} /></ItemTitle>
+          <ItemDescription className="truncate tabular-nums">
+            {ticket.event ? `${formatEventDay(ticket.event.starts_at)} · ${formatEventTimeRange(ticket.event.starts_at, ticket.event.ends_at)}` : '—'}
+          </ItemDescription>
+        </ItemContent>
+        <ItemActions className="hidden sm:flex">
+          <span className="font-mono text-sm tracking-wider text-muted-foreground">{ticket.claim_code || `•••• ${ticket.claim_code_hint}`}</span>
+        </ItemActions>
+        <ChevronRightIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover/ticket:translate-x-0.5" />
+      </Link>
+    </Item>
+  );
+}
 
 export function MyTicketsPage() {
   const { loading: authLoading, session, user } = useAuth();
@@ -40,28 +65,25 @@ export function MyTicketsPage() {
     if (session) void load();
   }, [authLoading, load, router, session, user]);
 
-  if (authLoading || (!user && loading)) return <main className="page-shell account-loading" id="main-content"><LoadingEvents /></main>;
+  const active = tickets.filter((ticket) => ticket.status === 'claimed' || ticket.status === 'enrolled');
+  const closed = tickets.filter((ticket) => !active.includes(ticket));
 
   return (
-    <main className="page-shell account-page" id="main-content">
-      <div className="account-heading fade-section"><div><p className="overline">Attendee wallet</p><h1 className="display-heading">My tickets</h1></div><p>Every ticket is tied to <strong>{user?.email}</strong>. Sign in with the same account on another device to recover it.</p></div>
-      {loading ? <LoadingEvents /> : error ? <InlineError message={error} retry={() => void load()} /> : tickets.length === 0 ? <EmptyTickets /> : (
-        <RevealList className="owned-ticket-list">
-          {tickets.map((ticket, index) => {
-            const state = statusCopy(ticket.status);
-            return (
-              <RevealItem key={ticket.id}>
-                <article className="owned-ticket fade-section" style={{ animationDelay: `${index * 45}ms` }}>
-                  <div className="owned-ticket-identity"><div className="owned-ticket-mark" aria-hidden="true"><Ticket /></div><div><StatusPill status={ticket.status} /><h2>{ticket.event?.name ?? 'Event ticket'}</h2><p>{ticket.ticket_type?.name ?? 'Admission'}</p></div></div>
-                  <div className="owned-ticket-meta"><span><CalendarDays />{ticket.event ? formatEventDate(ticket.event.starts_at, ticket.event.ends_at) : 'Date unavailable'}</span><span><MapPin />{ticket.event?.location || 'Location unavailable'}</span></div>
-                  <div className="owned-ticket-recovery"><small>{ticket.claim_code ? 'Claim code' : 'Claim code unavailable'}</small><strong>{ticket.claim_code || `Ends ${ticket.claim_code_hint}`}</strong><span><b>Next step:</b> {ticket.claim_code ? state.nextStep : 'Open this ticket for recovery options.'}</span></div>
-                  <Button asChild size="sm" variant="outline"><Link aria-label={`Open ticket for ${ticket.event?.name ?? 'event'}`} href={`/tickets/${ticket.id}`}>Open ticket<ArrowUpRight data-icon="inline-end" /></Link></Button>
-                </article>
-              </RevealItem>
-            );
-          })}
-        </RevealList>
+    <Page title="My tickets">
+      {authLoading || loading ? <LoadingEvents label="Loading tickets" /> : error ? <InlineError message={error} retry={() => void load()} /> : tickets.length === 0 ? <EmptyTickets /> : (
+        <div className="flex flex-col gap-8">
+          {[{ id: 'active', items: active, title: 'Active' }, { id: 'closed', items: closed, title: 'Past' }].filter((group) => group.items.length > 0).map((group) => (
+            <section aria-labelledby={`tickets-${group.id}`} className="flex flex-col gap-3" key={group.id}>
+              <SectionHeading id={`tickets-${group.id}`}>{group.title}</SectionHeading>
+              <RevealList className="flex flex-col gap-3">
+                {group.items.map((ticket) => (
+                  <RevealItem key={ticket.id}><TicketRow ticket={ticket} /></RevealItem>
+                ))}
+              </RevealList>
+            </section>
+          ))}
+        </div>
       )}
-    </main>
+    </Page>
   );
 }

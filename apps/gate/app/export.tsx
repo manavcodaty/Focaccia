@@ -31,7 +31,7 @@ export default function ExportScreen() {
       const csv = await exportLogsCsv();
 
       await Clipboard.setStringAsync(csv);
-      setFeedback('Copied the current offline gate log CSV to the clipboard.');
+      setFeedback('CSV copied.');
     } catch (copyError) {
       setError(copyError instanceof Error ? copyError.message : 'Failed to copy logs.');
     } finally {
@@ -72,8 +72,7 @@ export default function ExportScreen() {
     <ScreenShell>
       <SectionCard eyebrow="Evidence export" title="Operational records only" tone="subtle">
         <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          CSV export contains timings, event IDs, pass references, outcomes, and reason codes. It
-          never includes biometric templates or captured images.
+          Gate decisions and timings. No face data.
         </Text>
         {feedback ? <StatusBanner message={feedback} title="Export ready" tone="success" /> : null}
         {error ? <StatusBanner message={error} title="Export failed" tone="danger" /> : null}

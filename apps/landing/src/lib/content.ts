@@ -9,26 +9,26 @@ export const faqs = [
   {
     question: "Is biometric data stored centrally?",
     answer:
-      "No. Raw images and embeddings are never uploaded. Enrollment creates an event-scoped template locally, encrypts it to the assigned gate, and sends only the encrypted result for pass issuance.",
+      "No. Only the encrypted event template is uploaded.",
   },
   {
     question: "Can a gate admit people without internet?",
     answer:
-      "Yes. A prepared gate verifies the signed pass, liveness, replay state, revocation cache, and local face match without a live connection. Check-ins queue locally and synchronize when connectivity returns.",
+      "Yes. Prepared gates verify offline and sync check-ins when reconnected.",
   },
   {
     question: "What happens when a ticket is revoked?",
     answer:
-      "Connected gates receive the updated revocation state on refresh. A gate that is already disconnected cannot learn about a new remote revocation until its next successful refresh.",
+      "Revocations take effect after the gate refreshes, including after offline use.",
   },
   {
     question: "How do attendees get a ticket?",
     answer:
-      "Attendees browse listed events, sign in, and claim one real free ticket per event. The same account is then used for private enrollment on iOS.",
+      "Claim a free ticket, then use the same account in the iPhone enrollment app.",
   },
   {
     question: "Who can run events?",
     answer:
-      "Organizer access is granted through a server-side allowlist. Authentication alone does not provide organizer privileges or access to another organizer's events.",
+      "Approved organizers only.",
   },
 ] as const;

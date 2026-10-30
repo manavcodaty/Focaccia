@@ -11,7 +11,7 @@ Focaccia proves that event entry can bind a one-time signed pass to local face v
 | `apps/tickets` | Listed-event catalogue, attendee signup/login, free checkout, claim-code display, My tickets, cancellation, privacy information |
 | `apps/web` | Allowlisted organizer onboarding, owned-event CRUD, ticket types, ticket operations, gate provisioning, activity, revocations, CSV export |
 | `apps/enrollment` | Authenticated owned-ticket lookup, consent, local capture/inference, encrypted-template pass issuance, secure pass wallet, regeneration |
-| `apps/gate` | Gate provisioning, revocation refresh, offline scan/liveness/match/replay decision, durable signed queue, sync status, gate CSV |
+| `apps/gate` | Gate provisioning, revocation refresh, offline scan/face-match/replay decision, durable signed queue, sync status, gate CSV |
 | `packages/shared` | Canonical JSON/base64url, Ed25519/X25519 helpers, cancelable template, pass types, typed network parsing |
 | Supabase | Email/password Auth, PostgreSQL/RLS, transactional RPCs, Realtime, Edge Functions, encrypted event-secret storage |
 
@@ -156,7 +156,7 @@ temporary capture -> face alignment -> local embedding
 -> 256-bit cancelable template -> wipe raw values
 ```
 
-Enrollment encrypts the template; the server never compares biometrics. At the gate, the encrypted template is decrypted locally only after token/event/time/replay/revocation checks and is compared with the locally derived live template using Hamming distance after active liveness.
+Enrollment encrypts the template; the server never compares biometrics. At the gate, the encrypted template is decrypted locally only after token/event/time/replay/revocation checks and is compared with the locally derived live template using Hamming distance. The gate captures one face photo; there is no liveness challenge. A mismatch is a final logged `MATCH_FAIL` rejection that leaves the pass unused for its real holder.
 
 ## Offline Gate Decision
 
@@ -170,10 +170,10 @@ Offline verification order:
 4. local replay lookup
 5. cached revocation lookup
 6. X25519 sealed-box decryption
-7. active liveness
+7. one face capture at the gate
 8. local face-template comparison
-9. atomic used-pass marker, accepted log, and signed queue row
-10. display `ACCEPT`
+9. atomic used-pass marker, accepted log, and signed queue row (or a logged `MATCH_FAIL` rejection)
+10. display `ACCEPT` or `REJECT`
 
 Network failure cannot reverse an entry decision. A new remote revocation cannot affect a disconnected gate until refresh.
 

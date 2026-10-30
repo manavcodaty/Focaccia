@@ -14,7 +14,7 @@ export function Navigation() {
     <header className="fixed inset-x-0 top-0 z-30 px-3 pt-3 sm:px-5 sm:pt-5">
       <nav aria-label="Primary" className="mx-auto flex h-16 max-w-[1180px] items-center rounded-full border border-white/70 bg-white/85 px-3 shadow-nav backdrop-blur-xl sm:px-4">
         <a href="#top" className="flex min-h-11 items-center rounded-full px-3 font-display text-2xl tracking-[-0.03em] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta">
-          Focaccia
+          PrivatePass
         </a>
 
         <div className="ml-auto hidden items-center gap-1 lg:flex">
@@ -42,8 +42,8 @@ export function Navigation() {
               </Button>
             </SheetTrigger>
             <SheetContent>
-              <SheetTitle>Focaccia</SheetTitle>
-              <SheetDescription className="sr-only">Navigate the Focaccia landing page.</SheetDescription>
+              <SheetTitle>PrivatePass</SheetTitle>
+              <SheetDescription className="sr-only">Navigate the PrivatePass landing page.</SheetDescription>
               <div className="mt-8 flex flex-col">
                 {navLinks.map((link) => (
                   <SheetClose key={link.href} asChild>

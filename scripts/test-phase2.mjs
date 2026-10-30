@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 
+import { authenticateTestOrganizer } from './lib/organizer-test-auth.mjs';
+
 const require = createRequire(import.meta.url);
 const shared = require('../packages/shared/dist/index.js');
 
@@ -28,7 +30,6 @@ function localSupabase() {
 const { API_URL, ANON_KEY, SERVICE_ROLE_KEY } = localSupabase();
 const runId = randomUUID().replace(/-/g, '').slice(0, 8);
 const defaultSourceIp = `2001:db8:${runId.slice(0, 4)}:${runId.slice(4)}::1`;
-const localOrganizerTestPassword = process.env.FOCACCIA_LOCAL_ORGANIZER_TEST_PASSWORD ?? 'FocacciaLocal2026!';
 
 async function jsonResponse(response) {
   const text = await response.text();
@@ -56,44 +57,9 @@ async function signUp(email) {
 }
 
 async function authenticateAllowlisted(email) {
-  const password = localOrganizerTestPassword;
-  const listResponse = await fetch(`${API_URL}/auth/v1/admin/users?page=1&per_page=1000`, {
-    headers: {
-      apikey: SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-    },
+  return authenticateTestOrganizer({
+    apiUrl: API_URL, anonKey: ANON_KEY, serviceRoleKey: SERVICE_ROLE_KEY, email,
   });
-  const listed = await jsonResponse(listResponse);
-  assert.equal(listResponse.status, 200, JSON.stringify(listed));
-  const existing = listed.users.find((user) => user.email?.toLowerCase() === email.toLowerCase());
-  const adminResponse = await fetch(
-    existing
-      ? `${API_URL}/auth/v1/admin/users/${existing.id}`
-      : `${API_URL}/auth/v1/admin/users`,
-    {
-      method: existing ? 'PUT' : 'POST',
-      headers: {
-        apikey: SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(existing
-        ? { email_confirm: true, password }
-        : { email, email_confirm: true, password }),
-    },
-  );
-  const adminJson = await jsonResponse(adminResponse);
-  assert.ok(adminResponse.ok, JSON.stringify(adminJson));
-
-  const tokenResponse = await fetch(`${API_URL}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: { apikey: ANON_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  const tokenJson = await jsonResponse(tokenResponse);
-  assert.equal(tokenResponse.status, 200, JSON.stringify(tokenJson));
-  assert.ok(tokenJson.access_token, `Missing access token for ${email}`);
-  return { accessToken: tokenJson.access_token, email, userId: tokenJson.user.id };
 }
 
 async function invoke(name, {
@@ -497,6 +463,24 @@ const checkin = await invoke('record-gate-checkin', { body: signedCheckin });
 assert.equal(checkin.response.status, 201, JSON.stringify(checkin.json));
 const checkinReplay = await invoke('record-gate-checkin', { body: signedCheckin });
 assert.equal(checkinReplay.response.status, 200, JSON.stringify(checkinReplay.json));
+
+for (const selector of [
+  { ticket_id: firstClaim.json.data.ticket.id },
+  { claim_code: firstClaim.json.data.claim_code },
+]) {
+  const usedBundle = await invoke('get-enrollment-bundle', {
+    accessToken: attendees[0].accessToken,
+    body: selector,
+  });
+  assert.equal(usedBundle.response.status, 409, JSON.stringify(usedBundle.json));
+  assert.equal(usedBundle.json.error.code, 'ticket_already_used');
+}
+const foreignUsedBundle = await invoke('get-enrollment-bundle', {
+  accessToken: attendees[1].accessToken,
+  body: { ticket_id: firstClaim.json.data.ticket.id },
+});
+assert.equal(foreignUsedBundle.response.status, 404);
+assert.equal(foreignUsedBundle.json.error.code, 'ticket_not_found');
 
 const tampered = { ...signedCheckin, pass_id: await randomBase64Url(16) };
 const tamperedResult = await invoke('record-gate-checkin', { body: tampered });

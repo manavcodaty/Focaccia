@@ -18,7 +18,7 @@ export default function ConsentScreen() {
     return (
       <ScreenShell style={styles.screen}>
         <SectionCard title="Select a ticket first">
-          <Text style={styles.body}>Enrollment can only continue from an owned ticket in My tickets.</Text>
+          <Text style={styles.body}>Select your ticket in My tickets.</Text>
           <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
         </SectionCard>
       </ScreenShell>
@@ -36,14 +36,14 @@ export default function ConsentScreen() {
         <Text style={styles.subtitle}>{ticket.event.name}</Text>
       </View>
 
-      <SectionCard eyebrow="On-device processing" title="What happens on your iPhone" tone="subtle">
-        <Text style={styles.body}>The app captures one face image, aligns it, runs the bundled model on-device, and creates the event-scoped template locally.</Text>
-        <Text style={styles.body}>Native capture can create a temporary file and aligned crop. The app deletes them best-effort after inference; raw face images, the reusable embedding, and the unencrypted template are not saved as account records.</Text>
+      <SectionCard eyebrow="On-device processing" title="On your iPhone" tone="subtle">
+        <Text style={styles.body}>One face capture is processed locally into an event template.</Text>
+        <Text style={styles.body}>Temporary captures are deleted best-effort after processing. Face images, embeddings, and unencrypted templates are not saved to your account.</Text>
       </SectionCard>
 
       <SectionCard eyebrow="Signing boundary" title="What the server receives">
-        <Text style={styles.body}>The server receives the ticket ID and a pass payload containing only the template encrypted to this event’s gate public key. It verifies ticket ownership and signs the payload.</Text>
-        <Text style={styles.body}>The server does not receive the face image, reusable embedding, decrypted template, password, or a stored copy of the final signed token.</Text>
+        <Text style={styles.body}>Your ticket ID and gate-encrypted event template, for pass signing.</Text>
+        <Text style={styles.body}>No face image, reusable embedding, decrypted template, or password is sent. The final signed token is not stored on the server.</Text>
       </SectionCard>
 
       <SectionCard title="Ticket and generation">
@@ -52,7 +52,7 @@ export default function ConsentScreen() {
         <Detail label="Generation used" value={`${allowance.used} of 3`} />
         <Detail label="Remaining after this pass" value={String(Math.max(0, allowance.remaining - 1))} />
         {state.intent === 'regeneration' ? (
-          <Text style={styles.warning}>The existing pass is revoked only when the replacement is successfully issued.</Text>
+          <Text style={styles.warning}>The old pass is revoked when its replacement is issued.</Text>
         ) : null}
       </SectionCard>
 

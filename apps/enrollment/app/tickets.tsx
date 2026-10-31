@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { CheckIcon, CopyIcon, TicketIcon } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -155,22 +155,18 @@ export default function TicketsScreen() {
     />
   ), [passes, router, selectTicket]);
 
-  const header = useMemo(() => (
-    <View className="gap-6 pb-4">
+  // Claim-code lookup comes first; the owned tickets follow under their own heading.
+  const header = (
+    <View className="gap-8 pb-3">
       <Text variant="h1">My tickets</Text>
       {message ? <InlineAlert message={message} tone="default" /> : null}
-    </View>
-  ), [message]);
-
-  const footer = (
-    <View className="gap-8 pt-8">
       <Section title="Claim code">
         <View className="flex-row gap-2">
           <Input
             accessibilityLabel="Claim code"
             autoCapitalize="characters"
             autoCorrect={false}
-            className="flex-1 tracking-widest"
+            className="flex-1 tracking-wider"
             onChangeText={(value) => setClaimCode(value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 14))}
             onSubmitEditing={() => { if (claimCode.length === 14) void findTicket(); }}
             placeholder="ABCD-EFGH-JKLM"
@@ -187,21 +183,24 @@ export default function TicketsScreen() {
           </Button>
         </View>
       </Section>
+      <Text variant="h2">Tickets</Text>
+    </View>
+  );
 
+  const footer = (
+    <View className="pt-8">
       <Section title="Account">
-        <View className="border-border flex-row items-center gap-3 rounded-lg border py-1 pl-3 pr-1">
-          <Text className="flex-1 text-sm" numberOfLines={1}>{user?.email}</Text>
-          <Button
-            accessibilityLabel="Copy account email"
-            onPress={() => {
-              void Clipboard.setStringAsync(user?.email ?? '').then(() => setEmailCopied(true));
-            }}
-            size="icon"
-            variant="ghost"
-          >
-            <Icon as={emailCopied ? CheckIcon : CopyIcon} size={16} />
-          </Button>
-        </View>
+        <Button
+          accessibilityLabel="Copy account email"
+          className="h-11 justify-start gap-3 px-4"
+          onPress={() => {
+            void Clipboard.setStringAsync(user?.email ?? '').then(() => setEmailCopied(true));
+          }}
+          variant="outline"
+        >
+          <Text className="flex-1 text-left text-sm font-normal" numberOfLines={1}>{user?.email}</Text>
+          <Icon as={emailCopied ? CheckIcon : CopyIcon} className="text-muted-foreground" size={16} />
+        </Button>
         <Button
           onPress={() => {
             reset();
@@ -247,7 +246,7 @@ export default function TicketsScreen() {
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={isRefreshing ? null : (
-          <View className="border-border items-center gap-3 rounded-xl border border-dashed px-6 py-10">
+          <View className="border-border items-center gap-3 rounded-lg border border-dashed px-4 py-10">
             <View className="bg-muted h-10 w-10 items-center justify-center rounded-lg">
               <Icon as={TicketIcon} size={20} />
             </View>

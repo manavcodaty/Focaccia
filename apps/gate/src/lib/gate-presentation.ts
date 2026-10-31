@@ -28,3 +28,20 @@ export function shortAge(ageMs: number | null): string {
 export function decisionTitle(accepted: boolean): string {
   return accepted ? 'Entry accepted' : 'Entry rejected';
 }
+
+/**
+ * Slider range for the demo threshold, in template bits. Templates are 256 bits, so 128
+ * is a coin-flip match — anything looser accepts strangers as readily as the owner.
+ */
+export const THRESHOLD_RANGE = { max: 128, min: 0, step: 1 } as const;
+
+/** Looser than the calibrated cap is allowed for the demo but flagged. */
+export function thresholdTone(threshold: number, calibratedMax: number): Tone {
+  return threshold > calibratedMax ? 'warning' : 'default';
+}
+
+/** "Distance 74 ≤ 80" — why a face match was accepted or rejected. */
+export function distanceSummary(distance: number | null, threshold: number | null): string | null {
+  if (distance === null || threshold === null) return null;
+  return `Distance ${distance} ${distance <= threshold ? '≤' : '>'} ${threshold}`;
+}

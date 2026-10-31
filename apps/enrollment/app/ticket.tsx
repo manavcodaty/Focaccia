@@ -80,15 +80,15 @@ export default function TicketDetailScreen() {
       </View>
 
       <Card accessibilityLabel="Ticket" className="gap-0 overflow-hidden py-0">
-        <View className="flex-row items-center justify-between gap-3 p-4">
+        <View className="flex-row items-center justify-between gap-4 px-4 py-3">
           <Text className="flex-1 font-medium" numberOfLines={1}>{ticket.ticket_type.name}</Text>
-          <StatusText status={ticket.status} />
+          <StatusText className="shrink" status={ticket.status} />
         </View>
         <Separator />
-        <View className="bg-muted/40 flex-row items-end justify-between gap-3 p-4">
+        <View className="bg-muted/40 flex-row items-center justify-between gap-4 px-4 py-3">
           <View className="flex-1 gap-1">
             <Text className="text-muted-foreground text-sm">Claim code</Text>
-            <Text className="text-xl font-medium tracking-widest" selectable>
+            <Text adjustsFontSizeToFit className="text-xl font-medium tracking-wider" numberOfLines={1} selectable>
               {ticket.claim_code || (ticket.claim_code_hint ? `•••• ${ticket.claim_code_hint}` : '—')}
             </Text>
           </View>

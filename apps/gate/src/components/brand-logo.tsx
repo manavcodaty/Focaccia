@@ -22,7 +22,7 @@ export function BrandLogo() {
           fillRule="evenodd"
         />
       </Svg>
-      <Text className="text-[15px] font-semibold tracking-tight">{privatePassWordmark}</Text>
+      <Text className="shrink text-[15px] font-semibold tracking-tight">{privatePassWordmark}</Text>
     </View>
   );
 }

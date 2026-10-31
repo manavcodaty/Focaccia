@@ -34,20 +34,20 @@ export default function ApprovedScreen() {
     <ScreenShell>
       <View accessibilityLabel={`Checked in. ${ticket.event.name}`} accessibilityRole="summary" className="flex-row items-center gap-3">
         <Icon as={CircleCheckIcon} className="text-success" size={28} />
-        <Text variant="h1">Checked in</Text>
+        <Text className="flex-1" variant="h1">Checked in</Text>
       </View>
 
       <Card className="gap-0 py-0">
-        <CardContent className="gap-1 py-4">
+        <CardContent className="gap-1 py-3">
           <Text className="font-medium">{ticket.event.name}</Text>
           <Text className="text-muted-foreground text-sm">{ticket.ticket_type.name}</Text>
         </CardContent>
         {processedAt ? (
           <>
             <Separator />
-            <CardContent className="flex-row justify-between gap-3 py-4">
-              <Text className="text-muted-foreground text-sm">Entry</Text>
-              <Text className="text-sm">{processedAt}</Text>
+            <CardContent className="flex-row items-center justify-between gap-4 py-3">
+              <Text className="text-muted-foreground shrink text-sm">Entry</Text>
+              <Text className="shrink text-right text-sm">{processedAt}</Text>
             </CardContent>
           </>
         ) : null}

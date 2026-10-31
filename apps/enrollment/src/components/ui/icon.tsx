@@ -47,7 +47,7 @@ function Icon({ as: IconComponent, className, size = 14, ...props }: IconProps) 
   return (
     <IconImpl
       as={IconComponent}
-      className={cn('text-foreground', textClass, className)}
+      className={cn('text-foreground', textClass, 'shrink-0', className)}
       size={size}
       {...props}
     />

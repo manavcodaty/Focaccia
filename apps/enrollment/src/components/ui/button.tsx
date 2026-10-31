@@ -28,8 +28,8 @@ const buttonVariants = cva(
       },
       size: {
         default: 'h-11 px-4',
-        sm: 'h-9 gap-1.5 px-3',
-        lg: 'h-12 px-5',
+        sm: 'h-9 gap-1.5 px-4',
+        lg: 'h-12 px-4',
         icon: 'h-11 w-11',
       },
     },
@@ -41,7 +41,8 @@ const buttonVariants = cva(
 );
 
 const buttonTextVariants = cva(
-  cn('text-foreground text-base font-medium', Platform.select({ web: 'pointer-events-none transition-colors' })),
+  // `shrink` keeps a long label inside the button instead of pushing past its edges.
+  cn('text-foreground shrink text-center text-base font-medium', Platform.select({ web: 'pointer-events-none transition-colors' })),
   {
     variants: {
       variant: {

@@ -12,9 +12,12 @@ import {
 import { EmptyState } from '@/components/empty-state';
 import { InlineAlert } from '@/components/inline-alert';
 import { ScreenShell } from '@/components/screen-shell';
+import { Section } from '@/components/section';
+import { ThresholdControl } from '@/components/threshold-control';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { extractFaceEmbeddingFromPhoto, loadFaceEmbeddingModel } from '@/lib/embedding-model';
+import { MAX_MATCH_THRESHOLD } from '@/lib/offline-verifier';
 import { THEME } from '@/lib/theme';
 import { useResponsiveLayout } from '@/lib/use-responsive-layout';
 import { useGate } from '@/state/gate-context';
@@ -30,7 +33,10 @@ export default function FaceMatchScreen() {
   const {
     cancelPendingVerification,
     completePendingVerification,
+    defaultMatchThreshold,
+    matchThreshold,
     pendingVerification,
+    setMatchThresholdOverride,
   } = useGate();
   const { hasPermission, requestPermission } = useCameraPermission();
   const [modelError, setModelError] = useState<string | null>(null);
@@ -141,21 +147,33 @@ export default function FaceMatchScreen() {
 
   const preview = (
     <View
-      className="bg-foreground w-full self-center overflow-hidden rounded-xl"
+      className="bg-foreground w-full self-center overflow-hidden rounded-lg"
       style={{ aspectRatio: layout.cameraAspectRatio, maxWidth: layout.cameraFrameMaxWidth }}
     >
       <Camera ref={camera} device={device} isActive={true} photo style={StyleSheet.absoluteFill} />
       <View className="absolute inset-0 items-center justify-center" pointerEvents="none">
-        <View className="aspect-[3/4] w-[62%] rounded-[999px] border-2 border-white/80" />
+        <View className="aspect-[3/4] w-[62%] rounded-full border-2 border-white/80" />
       </View>
       {isProcessing ? (
         <View className="absolute inset-x-4 top-4 flex-row items-center justify-center gap-2 rounded-lg bg-foreground/70 px-4 py-3">
           <ActivityIndicator color={THEME.light.primaryForeground} size="small" />
-          <Text className="text-primary-foreground text-sm font-medium">Matching</Text>
+          <Text className="text-primary-foreground shrink text-sm font-medium">Matching</Text>
         </View>
       ) : null}
     </View>
   );
+
+  const threshold = matchThreshold !== null && defaultMatchThreshold !== null ? (
+    <Section title="Match threshold">
+      <ThresholdControl
+        calibratedMax={MAX_MATCH_THRESHOLD}
+        defaultValue={defaultMatchThreshold}
+        disabled={isProcessing}
+        onChange={setMatchThresholdOverride}
+        value={matchThreshold}
+      />
+    </Section>
+  ) : null;
 
   const controls = (
     <View className="gap-3">
@@ -182,8 +200,9 @@ export default function FaceMatchScreen() {
       {layout.isLandscape ? (
         <View className="flex-1 flex-row items-center gap-6">
           <View className="flex-1">{preview}</View>
-          <View className="w-[300px] gap-6">
+          <View className="w-[320px] gap-6">
             <Text variant="h1">Face match</Text>
+            {threshold}
             {controls}
           </View>
         </View>
@@ -191,6 +210,7 @@ export default function FaceMatchScreen() {
         <>
           <Text variant="h1">Face match</Text>
           {preview}
+          {threshold}
           {controls}
         </>
       )}

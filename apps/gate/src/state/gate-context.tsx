@@ -26,6 +26,7 @@ import { flushCheckinQueue } from '../lib/gate-sync-runner';
 import {
   decisionToLogEntry,
   destroyPendingVerification,
+  effectiveMatchThreshold,
   prepareOfflineVerification,
 } from '../lib/offline-verifier';
 import {
@@ -52,16 +53,22 @@ interface GateContextValue {
   ): Promise<VerificationDecision>;
   completeProvisioning(payload: ProvisioningQrPayload, deviceName: string): Promise<void>;
   dbError: string | null;
+  /** Threshold from the provisioned policy (capped); what the gate uses with no override. */
+  defaultMatchThreshold: number | null;
   dbReady: boolean;
   exportLogsCsv(): Promise<string>;
   gate: StoredGateConfig | null;
   lastResult: VerificationDecision | null;
+  /** Threshold the next face match is judged against: the demo override, else the default. */
+  matchThreshold: number | null;
   pendingVerification: PendingVerification | null;
   processToken(token: string, scanStartedAtMs?: number): Promise<VerificationDecision | null>;
   refreshLocalState(): Promise<void>;
   refreshStats(): Promise<void>;
   retryCheckinSync(): Promise<void>;
   resetLastResult(): void;
+  /** In-memory only: resets to the policy default when the app restarts or `null` is passed. */
+  setMatchThresholdOverride(threshold: number | null): void;
   signIn(email: string, password: string): Promise<void>;
   signOut(): void;
   stats: GateStats | null;
@@ -77,6 +84,14 @@ export function GateProvider({ children }: PropsWithChildren) {
   const [dbReady, setDbReady] = useState(false);
   const [gate, setGate] = useState<StoredGateConfig | null>(null);
   const [lastResult, setLastResult] = useState<VerificationDecision | null>(null);
+  const [thresholdOverride, setThresholdOverride] = useState<number | null>(null);
+  const defaultMatchThreshold = gate ? effectiveMatchThreshold(gate.policy.match_threshold) : null;
+  const matchThreshold = thresholdOverride ?? defaultMatchThreshold;
+
+  // A demo override belongs to the event it was set for; re-provisioning starts from policy.
+  useEffect(() => {
+    setThresholdOverride(null);
+  }, [gate?.event_id, gate?.key_version]);
   const [pendingVerification, setPendingVerification] = useState<PendingVerification | null>(null);
   const [repository, setRepository] = useState<GateRepository | null>(null);
   const [stats, setStats] = useState<GateStats | null>(null);
@@ -213,6 +228,7 @@ export function GateProvider({ children }: PropsWithChildren) {
             faceCaptureMs,
             liveEmbedding,
             loadSyncPrivateKey: (eventId) => loadGateSyncPrivateKey(expoSecureValueStore, eventId),
+            matchThreshold: thresholdOverride,
             pending: pendingVerification,
             repository,
           });
@@ -310,6 +326,7 @@ export function GateProvider({ children }: PropsWithChildren) {
       },
       dbError,
       dbReady,
+      defaultMatchThreshold,
       async exportLogsCsv() {
         if (!repository) {
           throw new Error('Gate storage is not ready yet.');
@@ -320,6 +337,7 @@ export function GateProvider({ children }: PropsWithChildren) {
 
       gate,
       lastResult,
+      matchThreshold,
       pendingVerification,
       async processToken(token, scanStartedAtMs) {
         if (!repository || !gate) {
@@ -395,6 +413,9 @@ export function GateProvider({ children }: PropsWithChildren) {
         const nextAuth = await signInOrganizer(email, password);
         setAuth(nextAuth);
       },
+      setMatchThresholdOverride(threshold) {
+        setThresholdOverride(threshold);
+      },
       signOut() {
         setAuth(null);
       },
@@ -410,7 +431,20 @@ export function GateProvider({ children }: PropsWithChildren) {
         return count;
       },
     }),
-    [auth, dbError, dbReady, gate, lastResult, pendingVerification, repository, stats, syncInProgress],
+    [
+      auth,
+      dbError,
+      dbReady,
+      defaultMatchThreshold,
+      gate,
+      lastResult,
+      matchThreshold,
+      pendingVerification,
+      repository,
+      stats,
+      syncInProgress,
+      thresholdOverride,
+    ],
   );
 
   return <GateContext.Provider value={value}>{children}</GateContext.Provider>;

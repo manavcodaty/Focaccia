@@ -182,9 +182,12 @@ test("finalizeOfflineVerification enforces the two-bit adjustment boundary and s
   );
   const enrolledTemplate = await cancelableTemplateV1(liveEmbedding, eventSalt);
 
-  for (const [threshold, distance, accepted] of [
-    [112, 80, true], [112, 81, true], [112, 82, true],
-    [112, 83, false], [112, 88, false], [80, 81, false],
+  // [policy, operator override, distance, accepted, threshold reported on the decision]
+  for (const [threshold, override, distance, accepted, reported] of [
+    [112, null, 80, true, 82], [112, null, 81, true, 82], [112, null, 82, true, 82],
+    [112, null, 83, false, 82], [112, null, 88, false, 82], [80, null, 81, false, 80],
+    // The demo override replaces the policy outright, including past the calibrated cap.
+    [80, 90, 88, true, 90], [80, 90, 91, false, 90], [80, 60, 61, false, 60], [80, 0, 0, true, 0],
   ] as const) {
     event.policy.match_threshold = threshold;
     const template = enrolledTemplate.slice();
@@ -194,6 +197,7 @@ test("finalizeOfflineVerification enforces the two-bit adjustment boundary and s
     const decision = await finalizeOfflineVerification({
       liveEmbedding,
       faceCaptureMs: 250,
+      matchThreshold: override,
       pending: {
         decryptedTemplate: template,
         event,
@@ -223,5 +227,6 @@ test("finalizeOfflineVerification enforces the two-bit adjustment boundary and s
     assert.equal(decision.hammingDistance, distance);
     assert.equal(decision.reasonCode, accepted ? "ACCEPT" : "MATCH_FAIL");
     assert.equal(decision.accepted, accepted);
+    assert.equal(decision.matchThreshold, reported);
   }
 });

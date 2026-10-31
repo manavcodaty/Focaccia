@@ -43,10 +43,10 @@ export default function GateHomeScreen() {
             {!dbReady ? (
               <ActivityIndicator accessibilityLabel="Opening gate storage" color={THEME.light.mutedForeground} size="small" />
             ) : (
-              <Text className={cn('text-sm', toneClass[readiness.tone])}>{readiness.label}</Text>
+              <Text className={cn('shrink text-sm', toneClass[readiness.tone])}>{readiness.label}</Text>
             )}
             {dbReady && gate && pendingSyncCount > 0 ? (
-              <Text className={cn('text-sm', toneClass[sync.tone])}>· {sync.label}</Text>
+              <Text className={cn('shrink text-sm', toneClass[sync.tone])}>· {sync.label}</Text>
             ) : null}
           </View>
         </View>

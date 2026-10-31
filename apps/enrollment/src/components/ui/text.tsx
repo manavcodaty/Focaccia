@@ -19,14 +19,6 @@ const textVariants = cva(
         h2: 'text-sm font-medium text-muted-foreground',
         h3: 'text-lg font-semibold tracking-tight',
         h4: 'text-base font-medium',
-        p: 'mt-3 leading-7 sm:mt-6',
-        blockquote: 'mt-4 border-l-2 pl-3 italic sm:mt-6 sm:pl-6',
-        code: cn(
-          'bg-muted relative rounded px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold'
-        ),
-        lead: 'text-muted-foreground text-xl',
-        large: 'text-lg font-semibold',
-        small: 'text-sm font-medium leading-none',
         muted: 'text-muted-foreground text-sm',
       },
     },
@@ -45,8 +37,6 @@ const ROLE: Partial<Record<TextVariant, Role | undefined>> = {
   h2: 'heading',
   h3: 'heading',
   h4: 'heading',
-  blockquote: Platform.select({ web: 'blockquote' as Role }),
-  code: Platform.select({ web: 'code' as Role }),
 };
 
 const ARIA_LEVEL: Partial<Record<TextVariant, string>> = {

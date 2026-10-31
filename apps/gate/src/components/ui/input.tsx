@@ -5,7 +5,8 @@ function Input({ className, ...props }: React.ComponentProps<typeof TextInput> &
   return (
     <TextInput
       className={cn(
-        'dark:bg-input/30 border-input bg-background text-foreground flex h-11 w-full min-w-0 flex-row items-center rounded-lg border px-3 py-1 text-base font-normal leading-5',
+        // Font size without a line height: iOS draws single-line TextInput text off-centre when lineHeight is set.
+        'dark:bg-input/30 border-input bg-background text-foreground flex h-11 w-full min-w-0 flex-row items-center rounded-lg border px-4 py-0 text-[16px] font-normal',
         props.editable === false &&
         cn(
           'opacity-50',

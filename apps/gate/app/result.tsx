@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { formatDuration } from '@/lib/display';
-import { decisionTitle } from '@/lib/gate-presentation';
+import { decisionTitle, distanceSummary } from '@/lib/gate-presentation';
 import { cn } from '@/lib/utils';
 import { useGate } from '@/state/gate-context';
 
@@ -31,6 +31,7 @@ export default function ResultScreen() {
   }
 
   const title = decisionTitle(lastResult.accepted);
+  const summary = distanceSummary(lastResult.hammingDistance, lastResult.matchThreshold);
   const { timings } = lastResult;
 
   return (
@@ -50,6 +51,7 @@ export default function ResultScreen() {
           {title}
         </Text>
         <Text className="text-muted-foreground text-center">{lastResult.hint}</Text>
+        {summary ? <Text className="text-center text-sm font-medium">{summary}</Text> : null}
       </View>
 
       <Collapsible onOpenChange={setDetailsOpen} open={detailsOpen}>
@@ -70,6 +72,7 @@ export default function ResultScreen() {
               { label: 'Face capture', value: formatDuration(timings.liveness_ms) },
               { label: 'Match', value: formatDuration(timings.match_ms) },
               { label: 'Distance', value: lastResult.hammingDistance === null ? '—' : String(lastResult.hammingDistance) },
+              { label: 'Threshold', value: lastResult.matchThreshold === null ? '—' : String(lastResult.matchThreshold) },
               { label: 'Reason', value: lastResult.reasonCode },
             ]}
           />

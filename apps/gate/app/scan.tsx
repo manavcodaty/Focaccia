@@ -102,11 +102,11 @@ export default function ScanScreen() {
 
   const preview = (
     <View
-      className="bg-foreground w-full self-center overflow-hidden rounded-xl"
+      className="bg-foreground w-full self-center overflow-hidden rounded-lg"
       style={{ aspectRatio: layout.previewAspectRatio, maxWidth: layout.previewFrameMaxWidth }}
     >
       <Camera codeScanner={codeScanner} device={device} isActive={!isProcessing} style={StyleSheet.absoluteFill} />
-      <View className="absolute inset-[12%] rounded-2xl border-2 border-white/80" pointerEvents="none" />
+      <View className="absolute inset-[12%] rounded-lg border-2 border-white/80" pointerEvents="none" />
     </View>
   );
 
@@ -114,7 +114,7 @@ export default function ScanScreen() {
     <View className="gap-4">
       <View accessibilityLiveRegion="polite" className="flex-row items-center gap-2">
         {isProcessing ? <ActivityIndicator color={THEME.light.mutedForeground} size="small" /> : null}
-        <Text className="text-muted-foreground text-sm">{isProcessing ? 'Verifying' : 'Ready'}</Text>
+        <Text className="text-muted-foreground shrink text-sm">{isProcessing ? 'Verifying' : 'Ready'}</Text>
       </View>
       {error ? <InlineAlert message={error} /> : null}
       <Button onPress={() => router.push('/fallback')} variant="outline">

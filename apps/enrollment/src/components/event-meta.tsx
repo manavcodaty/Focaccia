@@ -13,15 +13,15 @@ export function EventMeta({ event }: { event: EnrollmentTicket['event'] }) {
   return (
     <View className="gap-2">
       {when ? (
-        <View className="flex-row items-center gap-2">
-          <Icon as={CalendarIcon} className="text-muted-foreground" size={16} />
-          <Text className="text-sm">{when}</Text>
+        <View className="flex-row items-start gap-2">
+          <Icon as={CalendarIcon} className="text-muted-foreground mt-0.5" size={16} />
+          <Text className="flex-1 text-sm leading-5">{when}</Text>
         </View>
       ) : null}
       {event.location ? (
-        <View className="flex-row items-center gap-2">
-          <Icon as={MapPinIcon} className="text-muted-foreground" size={16} />
-          <Text className="flex-1 text-sm">{event.location}</Text>
+        <View className="flex-row items-start gap-2">
+          <Icon as={MapPinIcon} className="text-muted-foreground mt-0.5" size={16} />
+          <Text className="flex-1 text-sm leading-5">{event.location}</Text>
         </View>
       ) : null}
     </View>

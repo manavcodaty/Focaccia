@@ -22,7 +22,7 @@ import {
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
 // shortcut: synthetic-only threshold evidence, recalibrate with paired real captures before production.
-const MAX_MATCH_THRESHOLD = 82;
+export const MAX_MATCH_THRESHOLD = 82;
 const MAX_TOKEN_LENGTH = 4096;
 const TEMPLATE_BYTES = 32;
 const textDecoder = new TextDecoder();
@@ -139,6 +139,7 @@ async function passReference(passId: string): Promise<string> {
 function buildDecision({
   eventId,
   hammingDistanceValue = null,
+  matchThreshold = null,
   passId = null,
   passRef = null,
   reasonCode,
@@ -146,6 +147,7 @@ function buildDecision({
 }: {
   eventId: string;
   hammingDistanceValue?: number | null;
+  matchThreshold?: number | null;
   passId?: string | null;
   passRef?: string | null;
   reasonCode: GateReasonCode;
@@ -156,6 +158,7 @@ function buildDecision({
     event_id: eventId,
     hammingDistance: hammingDistanceValue,
     hint: decisionHint(reasonCode),
+    matchThreshold,
     outcome: reasonCode === 'ACCEPT' ? 'ACCEPT' : 'REJECT',
     pass_id: passId,
     pass_ref: passRef,
@@ -410,12 +413,16 @@ export async function prepareOfflineVerification({
 export async function finalizeOfflineVerification({
   faceCaptureMs,
   liveEmbedding,
+  matchThreshold = null,
   pending,
 }: {
   faceCaptureMs: number;
   liveEmbedding: ArrayLike<number>;
+  /** Operator demo override; when null the event policy (capped) decides. */
+  matchThreshold?: number | null;
   pending: PendingVerification;
 }): Promise<VerificationDecision> {
+  const threshold = matchThreshold ?? effectiveMatchThreshold(pending.event.policy.match_threshold);
   const timings: StageTimings = {
     decode_ms: pending.timings.decode_ms,
     decrypt_ms: pending.timings.decrypt_ms,
@@ -439,12 +446,10 @@ export async function finalizeOfflineVerification({
     return buildDecision({
       eventId: pending.event.event_id,
       hammingDistanceValue: distance,
+      matchThreshold: threshold,
       passId: pending.payload.pass_id,
       passRef: pending.passRef,
-      reasonCode:
-        distance <= effectiveMatchThreshold(pending.event.policy.match_threshold)
-          ? 'ACCEPT'
-          : 'MATCH_FAIL',
+      reasonCode: distance <= threshold ? 'ACCEPT' : 'MATCH_FAIL',
       timings,
     });
   } finally {

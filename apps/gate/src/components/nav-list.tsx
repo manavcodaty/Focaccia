@@ -18,13 +18,13 @@ export function NavList({ items }: { items: NavItem[] }) {
           {index > 0 ? <Separator /> : null}
           <Button
             accessibilityLabel={item.label}
-            className="h-12 justify-start gap-3 rounded-none px-4"
+            className="h-11 justify-start gap-3 rounded-none px-4"
             disabled={Boolean(item.disabled)}
             onPress={item.onPress}
             variant="ghost"
           >
             <Icon as={item.icon} className="text-muted-foreground" size={18} />
-            <Text className="flex-1 font-normal">{item.label}</Text>
+            <Text className="flex-1 text-left font-normal" numberOfLines={1}>{item.label}</Text>
             <Icon as={ChevronRightIcon} className="text-muted-foreground" size={16} />
           </Button>
         </Fragment>

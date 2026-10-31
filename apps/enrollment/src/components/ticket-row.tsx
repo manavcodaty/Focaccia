@@ -22,19 +22,19 @@ export const TicketRow = memo(function TicketRow({
   return (
     <Button
       accessibilityLabel={`${ticket.event.name}, ${status.label}`}
-      className="h-auto justify-start gap-3 p-3"
+      className="h-auto justify-start gap-3 px-4 py-3"
       onPress={onPress}
       variant="outline"
     >
-      <View className="bg-muted h-14 w-14 items-center justify-center rounded-md">
-        <Text className="text-muted-foreground text-xs font-normal">{tile.month}</Text>
-        <Text className="text-xl font-semibold leading-6">{tile.day}</Text>
+      <View className="bg-muted h-12 w-12 items-center justify-center rounded-md">
+        <Text className="text-muted-foreground text-xs font-normal leading-4">{tile.month}</Text>
+        <Text className="text-lg font-semibold leading-6">{tile.day}</Text>
       </View>
-      <View className="flex-1 gap-1">
-        <Text numberOfLines={1}>{ticket.event.name}</Text>
+      <View className="flex-1 gap-0.5">
+        <Text className="text-left" numberOfLines={1}>{ticket.event.name}</Text>
         <View className="flex-row items-center gap-2">
-          <StatusText className="font-normal" status={ticket.status} />
-          <Text className="text-muted-foreground text-sm font-normal">
+          <StatusText className="shrink font-normal" status={ticket.status} />
+          <Text className="text-muted-foreground flex-1 text-left text-sm font-normal" numberOfLines={1}>
             {formatEventTimeRange(ticket.event.starts_at, ticket.event.ends_at)}
           </Text>
         </View>

@@ -148,7 +148,7 @@ async function setUpEvent() {
   }
 
   /** Gate app: scan + verify the pass, then one face capture decides entry. */
-  async function arriveAtGate(token: string, face: Float32Array): Promise<VerificationDecision> {
+  async function arriveAtGate(token: string, face: Float32Array, matchThreshold: number | null = null): Promise<VerificationDecision> {
     const prepared = await prepareOfflineVerification({
       checkReplay: (passId) => repository.isPassUsed(gate.event_id, passId),
       checkRevoked: (passId) => repository.isPassRevoked(gate.event_id, passId),
@@ -174,6 +174,7 @@ async function setUpEvent() {
         faceCaptureMs: 900,
         liveEmbedding: face,
         loadSyncPrivateKey: async () => syncKeys.privateKey.slice(),
+        matchThreshold,
         pending: prepared.pending,
         repository,
       });
@@ -251,6 +252,41 @@ test('repeated attempts by other people never unlock the pass, and the owner sti
     assert.equal(decision.reasonCode, 'MATCH_FAIL', `attempt ${attempt} distance ${decision.hammingDistance}`);
   }
   assert.equal((await arriveAtGate(pass.token, captureOf(PERSON_1, 0.75, 200))).reasonCode, 'ACCEPT');
+});
+
+test('the live threshold slider decides the same capture either way at exactly its distance', async () => {
+  const { arriveAtGate, enroll, gate, repository } = await setUpEvent();
+  const pass = await enroll(PERSON_1);
+  const ownerCapture = captureOf(PERSON_1, 0.8, 12);
+
+  // Default: the provisioned policy decides and the decision reports which threshold it used.
+  const strictest = await arriveAtGate(pass.token, ownerCapture, 0);
+  assert.equal(strictest.reasonCode, 'MATCH_FAIL');
+  assert.equal(strictest.matchThreshold, 0);
+  const distance = strictest.hammingDistance!;
+  assert.ok(distance > 0);
+
+  const justBelow = await arriveAtGate(pass.token, ownerCapture, distance - 1);
+  assert.equal(justBelow.reasonCode, 'MATCH_FAIL', 'one bit stricter than the distance rejects');
+  assert.equal(await repository.isPassUsed(gate.event_id, pass.passId), false, 'a rejection never consumes the pass');
+
+  const atDistance = await arriveAtGate(pass.token, ownerCapture, distance);
+  assert.equal(atDistance.reasonCode, 'ACCEPT', 'distance equal to the threshold accepts');
+  assert.equal(atDistance.matchThreshold, distance);
+  assert.equal(atDistance.hammingDistance, distance);
+  assert.equal(await repository.isPassUsed(gate.event_id, pass.passId), true);
+});
+
+test('a loosened threshold admits a stranger, which is what the demo shows', async () => {
+  const { arriveAtGate, enroll } = await setUpEvent();
+  const stranger = captureOf(PERSON_2, 0.92, 11);
+
+  const atPolicy = await arriveAtGate((await enroll(PERSON_1)).token, stranger);
+  assert.equal(atPolicy.reasonCode, 'MATCH_FAIL');
+  assert.equal(atPolicy.matchThreshold, 82, 'no override: the capped policy threshold applies');
+
+  const loosened = await arriveAtGate((await enroll(PERSON_1)).token, stranger, atPolicy.hammingDistance!);
+  assert.equal(loosened.reasonCode, 'ACCEPT');
 });
 
 test('compare nearby thresholds in two-bit steps on synthetic captures', async (t) => {

@@ -135,11 +135,11 @@ export default function ProvisionScreen() {
 
       <Section title="Organizer">
         {auth ? (
-          <Card className="py-2">
-            <CardContent className="flex-row items-center gap-3 pr-2">
+          <Card className="py-3">
+            <CardContent className="flex-row items-center gap-3">
               <Icon as={CircleCheckIcon} className="text-success" size={18} />
               <Text className="flex-1 text-sm" numberOfLines={1}>{auth.email}</Text>
-              <Button disabled={isBusy} onPress={signOut} size="sm" variant="ghost">
+              <Button disabled={isBusy} onPress={signOut} size="sm" variant="outline">
                 <Text>Sign out</Text>
               </Button>
             </CardContent>
@@ -193,7 +193,7 @@ export default function ProvisionScreen() {
           />
         ) : (
           <View
-            className="bg-foreground w-full self-center overflow-hidden rounded-xl"
+            className="bg-foreground w-full self-center overflow-hidden rounded-lg"
             style={{ aspectRatio: layout.previewAspectRatio, maxWidth: layout.previewFrameMaxWidth }}
           >
             <Camera
@@ -202,7 +202,7 @@ export default function ProvisionScreen() {
               isActive={!draft && !isBusy}
               style={StyleSheet.absoluteFill}
             />
-            <View className="absolute inset-[15%] rounded-xl border-2 border-white/80" pointerEvents="none" />
+            <View className="absolute inset-[15%] rounded-lg border-2 border-white/80" pointerEvents="none" />
           </View>
         )}
       </Section>

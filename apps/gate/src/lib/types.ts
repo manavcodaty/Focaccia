@@ -141,6 +141,8 @@ export interface VerificationDecision {
   event_id: string;
   hammingDistance: number | null;
   hint: string;
+  /** Threshold the face match was judged against; null when no face comparison ran. */
+  matchThreshold: number | null;
   outcome: GateOutcome;
   pass_id: string | null;
   pass_ref: string | null;

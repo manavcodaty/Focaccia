@@ -79,7 +79,7 @@ test('every screen has exactly one page heading', () => {
 });
 
 test('type scale and gutters are shared across every screen', () => {
-  const allowed = new Set(['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-3xl', 'text-4xl', 'text-[15px]']);
+  const allowed = new Set(['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-3xl', 'text-4xl', 'text-[15px]', 'text-[16px]']);
   for (const file of [...screens, ...tsx('src/components')]) {
     for (const match of source(file).matchAll(/\btext-(?:xs|sm|base|lg|xl|\dxl|\[\d+px\])\b/g)) {
       assert.ok(allowed.has(match[0]), `${file} uses off-scale ${match[0]}`);
@@ -141,6 +141,19 @@ test('consent keeps the exact on-device and temporary-file disclosure', () => {
   assert.match(consent, /on your iPhone|on-device/i);
   assert.match(consent, /Temporary captures are deleted best-effort/i);
   assert.match(consent, /Face images, embeddings, and unencrypted templates are not saved to your account/i);
+});
+
+test('the claim-code input comes first and owned tickets follow below it', () => {
+  const tickets = source('app/tickets.tsx');
+  const header = tickets.slice(tickets.indexOf('const header = ('), tickets.indexOf('const footer = ('));
+  const footer = tickets.slice(tickets.indexOf('const footer = ('), tickets.indexOf('if (!session) return null;'));
+
+  assert.ok(header.indexOf('<Section title="Claim code">') > header.indexOf('variant="h1">My tickets'), 'claim code sits under the page title');
+  assert.ok(header.indexOf('<Text variant="h2">Tickets</Text>') > header.indexOf('accessibilityLabel="Claim code"'), 'tickets heading follows the input');
+  assert.doesNotMatch(footer, /Claim code/, 'the input is no longer below the list');
+  assert.match(footer, /<Section title="Account">/);
+  assert.match(tickets, /ListHeaderComponent=\{header\}/);
+  assert.match(tickets, /renderItem=\{renderTicket\}/);
 });
 
 test('regeneration is confirmed at the moment of action rather than explained up front', () => {

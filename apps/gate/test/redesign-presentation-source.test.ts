@@ -87,7 +87,7 @@ test('every screen has a page heading, with Provisioning named as such', () => {
 });
 
 test('type scale and gutters are shared across every screen', () => {
-  const allowed = new Set(['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-3xl', 'text-4xl', 'text-[15px]']);
+  const allowed = new Set(['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-3xl', 'text-4xl', 'text-[15px]', 'text-[16px]']);
   for (const file of [...screens, ...tsx('src/components')]) {
     for (const match of source(file).matchAll(/\btext-(?:xs|sm|base|lg|xl|\dxl|\[\d+px\])\b/g)) {
       assert.ok(allowed.has(match[0]), `${file} uses off-scale ${match[0]}`);
@@ -127,6 +127,46 @@ test('redundant instructional copy, chips and technical rows stay removed', () =
       assert.ok(!code.includes(phrase), `${file} still says "${phrase}"`);
     }
   }
+});
+
+test('face verification exposes a live threshold slider wired to the next decision', () => {
+  const faceMatch = source('app/face-match.tsx');
+  const control = source('src/components/threshold-control.tsx');
+  const context = source('src/state/gate-context.tsx');
+  const slider = source('src/components/ui/slider.tsx');
+
+  assert.match(faceMatch, /<ThresholdControl/);
+  assert.match(faceMatch, /onChange=\{setMatchThresholdOverride\}/);
+  assert.match(faceMatch, /value=\{matchThreshold\}/);
+  assert.match(faceMatch, /disabled=\{isProcessing\}/, 'locked while a capture is being judged');
+  assert.match(faceMatch, /<Section title="Match threshold">/);
+
+  assert.match(control, /<Slider/);
+  assert.match(control, /accessibilityLabel="Lower threshold"/);
+  assert.match(control, /accessibilityLabel="Raise threshold"/);
+  assert.match(control, /onChange\(snapped === defaultValue \? null : snapped\)/, 'returning to the default clears the override');
+
+  // In-memory only: the override is React state and is handed to the verifier, never persisted.
+  assert.match(context, /useState<number \| null>\(null\)/);
+  assert.match(context, /matchThreshold: thresholdOverride,/);
+  assert.doesNotMatch(context, /saveGateConfig\([^)]*threshold/i);
+
+  assert.match(context, /setThresholdOverride\(null\);\n  \}, \[gate\?\.event_id, gate\?\.key_version\]\)/, 're-provisioning clears the override');
+  assert.match(control, /min-h-9 flex-row/, 'Reset appearing does not move the slider');
+
+  assert.match(slider, /@rn-primitives\/slider/);
+  assert.match(slider, /PanResponder\.create/);
+  assert.match(slider, /onStartShouldSetPanResponder: \(\) => false/, 'a vertical swipe over the slider still scrolls');
+  assert.match(slider, /Math\.abs\(gesture\.dx\) > Math\.abs\(gesture\.dy\)/);
+  assert.match(slider, /paddingHorizontal: THUMB \/ 2/, 'thumb stays inside the slider at both ends');
+  assert.match(slider, /h-11/, '44pt touch target');
+});
+
+test('the result shows distance against the threshold it was judged by', () => {
+  const result = source('app/result.tsx');
+
+  assert.match(result, /distanceSummary\(lastResult\.hammingDistance, lastResult\.matchThreshold\)/);
+  assert.match(result, /label: 'Threshold'/);
 });
 
 test('result timings are progressive disclosure, not the default view', () => {

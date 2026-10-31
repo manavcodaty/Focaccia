@@ -16,7 +16,7 @@ export function DetailList({ items }: { items: Detail[] }) {
         <Fragment key={item.label}>
           {index > 0 ? <Separator /> : null}
           <View accessibilityLabel={`${item.label}: ${item.value}`} accessible className="flex-row items-center justify-between gap-4 px-4 py-3">
-            <Text className="text-muted-foreground text-sm">{item.label}</Text>
+            <Text className="text-muted-foreground shrink text-sm" numberOfLines={1}>{item.label}</Text>
             <Text
               className={cn(
                 'shrink text-right text-sm',

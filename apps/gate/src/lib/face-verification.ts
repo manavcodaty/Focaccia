@@ -11,6 +11,7 @@ export interface VerifyFaceInput {
   faceCaptureMs: number;
   liveEmbedding: ArrayLike<number>;
   loadSyncPrivateKey(eventId: string): Promise<Uint8Array | null>;
+  matchThreshold?: number | null;
   now?: () => Date;
   pending: PendingVerification;
   repository: DecisionRecorder;
@@ -25,11 +26,12 @@ export async function verifyFaceAndRecord({
   faceCaptureMs,
   liveEmbedding,
   loadSyncPrivateKey,
+  matchThreshold = null,
   now = () => new Date(),
   pending,
   repository,
 }: VerifyFaceInput): Promise<VerificationDecision> {
-  const decision = await finalizeOfflineVerification({ faceCaptureMs, liveEmbedding, pending });
+  const decision = await finalizeOfflineVerification({ faceCaptureMs, liveEmbedding, matchThreshold, pending });
 
   if (!decision.accepted || !decision.pass_id) {
     await repository.insertLog(decisionToLogEntry(decision));

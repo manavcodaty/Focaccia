@@ -211,6 +211,9 @@ importers:
       '@rn-primitives/separator':
         specifier: ^1.5.2
         version: 1.5.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-native@0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
+      '@rn-primitives/slider':
+        specifier: 1.5.2
+        version: 1.5.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-native@0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
       '@rn-primitives/slot':
         specifier: ^1.5.2
         version: 1.5.2(react-native@0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
@@ -3028,6 +3031,18 @@ packages:
 
   '@rn-primitives/separator@1.5.2':
     resolution: {integrity: sha512-/r0yx8zmc83hg5oKby434nTCKYe+Apmq1dDzExiUPs/qR+K27c9cjJ6GMsn7EqvmTQyniEJ0ZIBbPVGJAeGByw==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
+      react-native-web: '*'
+    peerDependenciesMeta:
+      react-native:
+        optional: true
+      react-native-web:
+        optional: true
+
+  '@rn-primitives/slider@1.5.2':
+    resolution: {integrity: sha512-+V1XEP/PtWgvaG7ztuWsjXRUJtJP/pjivfx666drTgwKi5AUIg48lu15095tSNN+LrO/ExV/Tp+ZM7RPdaPtNw==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -10832,6 +10847,24 @@ snapshots:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
 
+  '@radix-ui/react-slider@1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react@19.2.0)':
+    dependencies:
+      '@radix-ui/number': 1.1.1
+      '@radix-ui/primitive': 1.1.3
+      '@radix-ui/react-collection': 1.1.7(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react@19.2.0)
+      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.0)
+      '@radix-ui/react-context': 1.1.2(@types/react@19.2.14)(react@19.2.0)
+      '@radix-ui/react-direction': 1.1.1(@types/react@19.2.14)(react@19.2.0)
+      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react@19.2.0)
+      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.14)(react@19.2.0)
+      '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.2.14)(react@19.2.0)
+      '@radix-ui/react-use-previous': 1.1.1(@types/react@19.2.14)(react@19.2.0)
+      '@radix-ui/react-use-size': 1.1.1(@types/react@19.2.14)(react@19.2.0)
+      react: 19.2.0
+    optionalDependencies:
+      '@types/react': 19.2.14
+      '@types/react-dom': 19.2.3(@types/react@19.2.14)
+
   '@radix-ui/react-slot@1.2.3(@types/react@19.2.14)(react@19.2.0)':
     dependencies:
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.14)(react@19.2.0)
@@ -11055,6 +11088,12 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
 
+  '@radix-ui/react-use-previous@1.1.1(@types/react@19.2.14)(react@19.2.0)':
+    dependencies:
+      react: 19.2.0
+    optionalDependencies:
+      '@types/react': 19.2.14
+
   '@radix-ui/react-use-previous@1.1.1(@types/react@19.2.14)(react@19.2.4)':
     dependencies:
       react: 19.2.4
@@ -11065,6 +11104,13 @@ snapshots:
     dependencies:
       '@radix-ui/rect': 1.1.1
       react: 19.2.4
+    optionalDependencies:
+      '@types/react': 19.2.14
+
+  '@radix-ui/react-use-size@1.1.1(@types/react@19.2.14)(react@19.2.0)':
+    dependencies:
+      '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.2.14)(react@19.2.0)
+      react: 19.2.0
     optionalDependencies:
       '@types/react': 19.2.14
 
@@ -11481,6 +11527,19 @@ snapshots:
   '@rn-primitives/separator@1.5.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-native@0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@radix-ui/react-separator': 1.2.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react@19.2.0)
+      '@rn-primitives/slot': 1.5.2(react-native@0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
+      '@rn-primitives/types': 1.5.2(react-native@0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
+      react: 19.2.0
+    optionalDependencies:
+      react-native: 0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
+
+  '@rn-primitives/slider@1.5.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-native@0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)':
+    dependencies:
+      '@radix-ui/react-slider': 1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react@19.2.0)
       '@rn-primitives/slot': 1.5.2(react-native@0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
       '@rn-primitives/types': 1.5.2(react-native@0.83.4(@babel/core@7.29.6)(@react-native/metro-config@0.84.1(@babel/core@7.29.6))(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
       react: 19.2.0

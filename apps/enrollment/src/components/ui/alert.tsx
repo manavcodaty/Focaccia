@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { View } from 'react-native';
 
+/** Icon and copy side by side; the copy column shrinks so text always wraps inside the box. */
 function Alert({
   className,
   variant,
@@ -18,52 +19,31 @@ function Alert({
   iconClassName?: string;
 }) {
   return (
-    <TextClassContext.Provider
-      value={cn(
-        'text-sm text-foreground',
-        variant === 'destructive' && 'text-destructive',
-        className
-      )}>
+    <TextClassContext.Provider value={cn('text-sm text-foreground', variant === 'destructive' && 'text-destructive')}>
       <View
         role="alert"
-        className={cn(
-          'bg-card border-border relative w-full rounded-lg border px-3 pb-1.5 pt-3',
-          className
-        )}
+        className={cn('bg-card border-border w-full flex-row items-start gap-3 rounded-lg border px-4 py-3', className)}
         {...props}>
-        <View className="absolute left-3 top-3">
-          <Icon
-            as={icon}
-            className={cn('size-4', variant === 'destructive' && 'text-destructive', iconClassName)}
-          />
-        </View>
-        {children}
+        <Icon
+          as={icon}
+          className={cn('mt-0.5 size-4', variant === 'destructive' && 'text-destructive', iconClassName)}
+        />
+        <View className="flex-1 gap-1">{children}</View>
       </View>
     </TextClassContext.Provider>
   );
 }
 
-function AlertTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof Text>) {
-  return (
-    <Text
-      className={cn('mb-1.5 ml-0.5 min-h-4 pl-6 font-medium leading-snug', className)}
-      {...props}
-    />
-  );
+function AlertTitle({ className, ...props }: React.ComponentProps<typeof Text>) {
+  return <Text className={cn('font-medium leading-5', className)} {...props} />;
 }
 
-function AlertDescription({
-  className,
-  ...props
-}: React.ComponentProps<typeof Text>) {
+function AlertDescription({ className, ...props }: React.ComponentProps<typeof Text>) {
   const textClass = React.useContext(TextClassContext);
   return (
     <Text
       className={cn(
-        'text-muted-foreground ml-0.5 pb-1.5 pl-6 text-sm leading-relaxed',
+        'text-muted-foreground leading-5',
         textClass?.includes('text-destructive') && 'text-destructive/90',
         className
       )}

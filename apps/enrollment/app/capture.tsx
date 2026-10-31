@@ -208,7 +208,7 @@ export default function CaptureScreen() {
 
       {!hasPending ? (
         <View
-          className="bg-foreground w-full self-center overflow-hidden rounded-xl"
+          className="bg-foreground w-full self-center overflow-hidden rounded-lg"
           style={{ aspectRatio: layout.cameraAspectRatio, maxWidth: layout.cameraFrameMaxWidth }}
         >
           <Camera ref={camera} device={device!} isActive={true} photo style={StyleSheet.absoluteFill} />

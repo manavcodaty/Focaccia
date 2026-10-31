@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { getDefaultConfig } = require('expo/metro-config');
+const { withNativeWind } = require('nativewind/metro');
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(projectRoot, '../..');
@@ -30,7 +31,10 @@ const config = (async () => {
     path.resolve(workspaceRoot, 'node_modules'),
   ];
 
-  return resolvedConfig;
+  return withNativeWind(resolvedConfig, {
+    input: path.join(projectRoot, 'global.css'),
+    inlineRem: 16,
+  });
 })();
 
 export default config;

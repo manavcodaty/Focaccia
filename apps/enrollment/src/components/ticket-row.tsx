@@ -1,105 +1,45 @@
+import { ChevronRightIcon } from 'lucide-react-native';
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import {
-  ticketStatusPresentation,
-  type EnrollmentTicket,
-} from '../lib/ticket-state';
-import { palette, radii, typography } from '../theme';
+import { StatusText } from '@/components/status-text';
+import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
+import { Text } from '@/components/ui/text';
+import { eventDateTile, formatEventTimeRange } from '@/lib/event-format';
+import { ticketStatusPresentation, type EnrollmentTicket } from '@/lib/ticket-state';
 
 export const TicketRow = memo(function TicketRow({
-  offline = false,
   onPress,
   ticket,
 }: {
-  offline?: boolean;
   onPress(): void;
   ticket: EnrollmentTicket;
 }) {
   const status = ticketStatusPresentation(ticket.status);
-  const startsAt = new Date(ticket.event.starts_at);
+  const tile = eventDateTile(ticket.event.starts_at);
 
   return (
-    <Pressable
-      accessibilityHint="Opens ticket details"
+    <Button
       accessibilityLabel={`${ticket.event.name}, ${status.label}`}
-      accessibilityRole="button"
+      className="h-auto justify-start gap-3 p-3"
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
+      variant="outline"
     >
-      <View style={styles.dateBlock}>
-        <Text style={styles.month}>{startsAt.toLocaleDateString(undefined, { month: 'short' })}</Text>
-        <Text style={styles.day}>{startsAt.toLocaleDateString(undefined, { day: '2-digit' })}</Text>
+      <View className="bg-muted h-14 w-14 items-center justify-center rounded-md">
+        <Text className="text-muted-foreground text-xs font-normal">{tile.month}</Text>
+        <Text className="text-xl font-semibold leading-6">{tile.day}</Text>
       </View>
-      <View style={styles.content}>
-        <View style={styles.headingRow}>
-          <Text numberOfLines={2} style={styles.eventName}>{ticket.event.name}</Text>
-          <View style={[
-            styles.status,
-            status.tone === 'success'
-              ? styles.statusSuccess
-              : status.tone === 'danger'
-                ? styles.statusDanger
-                : status.tone === 'warning'
-                  ? styles.statusWarning
-                  : styles.statusNeutral,
-          ]}>
-            <Text style={[
-              styles.statusText,
-              status.tone === 'success'
-                ? styles.statusTextSuccess
-                : status.tone === 'danger'
-                  ? styles.statusTextDanger
-                  : status.tone === 'warning'
-                    ? styles.statusTextWarning
-                    : null,
-            ]}>{status.label}</Text>
-          </View>
+      <View className="flex-1 gap-1">
+        <Text numberOfLines={1}>{ticket.event.name}</Text>
+        <View className="flex-row items-center gap-2">
+          <StatusText className="font-normal" status={ticket.status} />
+          <Text className="text-muted-foreground text-sm font-normal">
+            {formatEventTimeRange(ticket.event.starts_at, ticket.event.ends_at)}
+          </Text>
         </View>
-        <Text numberOfLines={1} style={styles.meta}>{ticket.event.location || 'Location to be confirmed'}</Text>
-        <Text style={styles.meta}>{ticket.ticket_type.name}</Text>
-        <Text style={styles.claimCode}>
-          {offline ? 'Saved pass available offline' : `Claim code ${ticket.claim_code}`}
-        </Text>
       </View>
-    </Pressable>
+      <Icon as={ChevronRightIcon} className="text-muted-foreground" size={16} />
+    </Button>
   );
-});
-
-const styles = StyleSheet.create({
-  claimCode: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 12, marginTop: 4 },
-  content: { flex: 1, gap: 4 },
-  dateBlock: {
-    alignItems: 'center',
-    backgroundColor: palette.warmMist,
-    borderRadius: radii.control,
-    justifyContent: 'center',
-    minHeight: 64,
-    width: 58,
-  },
-  day: { ...typography.display, color: palette.ink, fontSize: 26, lineHeight: 29 },
-  eventName: { ...typography.title, color: palette.ink, flex: 1, fontSize: 17, lineHeight: 21 },
-  headingRow: { alignItems: 'flex-start', flexDirection: 'row', gap: 8 },
-  meta: { ...typography.body, color: palette.mutedStone, fontSize: 13 },
-  month: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 11, textTransform: 'uppercase' },
-  pressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
-  row: {
-    backgroundColor: palette.canvas,
-    borderColor: palette.border,
-    borderRadius: radii.panel,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 14,
-    minHeight: 128,
-    padding: 14,
-  },
-  status: { borderRadius: radii.status, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 5 },
-  statusDanger: { backgroundColor: palette.dangerSoft, borderColor: palette.dangerBorder },
-  statusNeutral: { backgroundColor: palette.neutralSoft, borderColor: palette.neutralBorder },
-  statusSuccess: { backgroundColor: palette.successSoft, borderColor: palette.successBorder },
-  statusText: { ...typography.bodyStrong, color: palette.ink, fontSize: 11 },
-  statusTextDanger: { color: palette.danger },
-  statusTextSuccess: { color: palette.success },
-  statusTextWarning: { color: palette.warning },
-  statusWarning: { backgroundColor: palette.warningSoft, borderColor: palette.warningBorder },
 });

@@ -1,21 +1,18 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
-import { BrandLogo } from '../src/components/brand-logo';
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { StatusBanner } from '../src/components/status-banner';
-import type { AuthMode } from '../src/lib/auth-validation';
-import { useAuth } from '../src/state/auth-context';
-import { palette, radii, typography } from '../src/theme';
+import { BrandLogo } from '@/components/brand-logo';
+import { InlineAlert } from '@/components/inline-alert';
+import { ScreenShell } from '@/components/screen-shell';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Text } from '@/components/ui/text';
+import type { AuthMode } from '@/lib/auth-validation';
+import { THEME } from '@/lib/theme';
+import { useAuth } from '@/state/auth-context';
 
 export default function AuthScreen() {
   const router = useRouter();
@@ -24,6 +21,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const signingIn = mode === 'sign-in';
 
   useEffect(() => {
     if (session) router.replace('/tickets');
@@ -45,167 +43,85 @@ export default function AuthScreen() {
 
   if (isLoading && session === null) {
     return (
-      <View style={styles.loadingScreen}>
-        <ActivityIndicator color={palette.ink} />
-        <Text style={styles.loadingText}>Signing in…</Text>
+      <View accessibilityLabel="Signing in" className="bg-background flex-1 items-center justify-center">
+        <ActivityIndicator color={THEME.light.foreground} />
       </View>
     );
   }
 
   return (
-    <ScreenShell style={styles.screen}>
-      <View style={styles.brandBlock}>
+    <ScreenShell className="justify-center gap-6" header={false}>
+      <View className="items-center gap-4">
         <BrandLogo />
-        <Text style={styles.eyebrow}>Attendee wallet</Text>
-        <Text style={styles.title}>{mode === 'sign-in' ? 'Sign in' : 'Create account'}</Text>
-        <Text style={styles.subtitle}>
-          {mode === 'sign-in'
-            ? 'Use your ticket account.'
-            : 'Create your ticket account.'}
-        </Text>
+        <Text variant="h1">{signingIn ? 'Sign in' : 'Create account'}</Text>
       </View>
 
-      <View style={styles.form}>
-        {mode === 'sign-up' ? (
-          <View style={styles.field}>
-            <Text style={styles.label}>Full name</Text>
-            <TextInput
-              accessibilityLabel="Full name"
-              autoCapitalize="words"
-              autoComplete="name"
-              onChangeText={setFullName}
-              placeholder="Your full name"
-              placeholderTextColor={palette.hintOfGrey}
-              style={styles.input}
-              textContentType="name"
-              value={fullName}
+      <Card>
+        <CardContent className="gap-4">
+          {mode === 'sign-up' ? (
+            <View className="gap-2">
+              <Label nativeID="full-name">Full name</Label>
+              <Input
+                accessibilityLabel="Full name"
+                aria-labelledby="full-name"
+                autoCapitalize="words"
+                autoComplete="name"
+                onChangeText={setFullName}
+                textContentType="name"
+                value={fullName}
+              />
+            </View>
+          ) : null}
+
+          <View className="gap-2">
+            <Label nativeID="email">Email</Label>
+            <Input
+              accessibilityLabel="Email"
+              aria-labelledby="email"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              returnKeyType="next"
+              textContentType="emailAddress"
+              value={email}
             />
           </View>
-        ) : null}
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            accessibilityLabel="Email"
-            autoCapitalize="none"
-            autoComplete="email"
-            autoCorrect={false}
-            keyboardType="email-address"
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={palette.hintOfGrey}
-            returnKeyType="next"
-            style={styles.input}
-            textContentType="emailAddress"
-            value={email}
-          />
-        </View>
+          <View className="gap-2">
+            <Label nativeID="password">Password</Label>
+            <Input
+              accessibilityLabel="Password"
+              aria-labelledby="password"
+              autoCapitalize="none"
+              autoComplete={signingIn ? 'current-password' : 'new-password'}
+              onChangeText={setPassword}
+              onSubmitEditing={() => void handleSubmit()}
+              returnKeyType="done"
+              secureTextEntry
+              textContentType={signingIn ? 'password' : 'newPassword'}
+              value={password}
+            />
+          </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            accessibilityLabel="Password"
-            autoCapitalize="none"
-            autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-            onChangeText={setPassword}
-            onSubmitEditing={() => void handleSubmit()}
-            placeholder="At least eight characters"
-            placeholderTextColor={palette.hintOfGrey}
-            returnKeyType="done"
-            secureTextEntry
-            style={styles.input}
-            textContentType={mode === 'sign-in' ? 'password' : 'newPassword'}
-            value={password}
-          />
-        </View>
+          {error ? <InlineAlert message={error} /> : null}
 
-        {error ? <StatusBanner message={error} title="Sign-in problem" tone="warning" /> : null}
+          <Button disabled={isLoading} onPress={() => void handleSubmit()}>
+            {isLoading ? <ActivityIndicator color={THEME.light.primaryForeground} /> : null}
+            <Text>{signingIn ? 'Sign in' : 'Create account'}</Text>
+          </Button>
+        </CardContent>
+      </Card>
 
-        <PrimaryButton
-          disabled={isLoading}
-          label={isLoading ? 'Please wait...' : mode === 'sign-in' ? 'Sign in' : 'Create account'}
-          onPress={() => void handleSubmit()}
-        />
-      </View>
-
-      <View style={styles.switchBlock}>
-        <Text style={styles.switchPrompt}>
-          {mode === 'sign-in' ? 'New to PrivatePass?' : 'Already have an account?'}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            setMode((current) => current === 'sign-in' ? 'sign-up' : 'sign-in');
-          }}
-          style={({ pressed }) => [styles.switchButton, pressed ? styles.pressed : null]}
-        >
-          <Text style={styles.switchLabel}>
-            {mode === 'sign-in' ? 'Create account' : 'Sign in instead'}
-          </Text>
-        </Pressable>
-      </View>
-
-      <Text style={styles.privacyCopy}>
-        Face processing stays on this phone.
-      </Text>
+      <Button
+        className="self-center"
+        onPress={() => setMode((current) => (current === 'sign-in' ? 'sign-up' : 'sign-in'))}
+        size="sm"
+        variant="link"
+      >
+        <Text className="text-muted-foreground">{signingIn ? 'Create account' : 'Sign in'}</Text>
+      </Button>
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  brandBlock: { gap: 8, paddingTop: 12 },
-  eyebrow: { ...typography.bodyStrong, color: palette.clay, fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase' },
-  field: { gap: 8 },
-  form: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderRadius: radii.panel,
-    borderWidth: 1,
-    gap: 18,
-    padding: 20,
-  },
-  input: {
-    ...typography.body,
-    backgroundColor: palette.surface,
-    borderColor: palette.borderStrong,
-    borderRadius: radii.field,
-    borderWidth: 1,
-    color: palette.ink,
-    fontSize: 17,
-    minHeight: 54,
-    paddingHorizontal: 16,
-  },
-  label: { ...typography.bodyStrong, color: palette.ink, fontSize: 15 },
-  loadingScreen: {
-    alignItems: 'center',
-    backgroundColor: palette.canvas,
-    flex: 1,
-    gap: 12,
-    justifyContent: 'center',
-  },
-  loadingText: { ...typography.body, color: palette.mutedStone, fontSize: 15 },
-  pressed: { opacity: 0.7, transform: [{ scale: 0.98 }] },
-  privacyCopy: {
-    ...typography.body,
-    color: palette.mutedStone,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: 'center',
-  },
-  screen: { gap: 28, justifyContent: 'center' },
-  subtitle: { ...typography.body, color: palette.mutedStone, fontSize: 16, lineHeight: 23 },
-  switchBlock: { alignItems: 'center', gap: 8 },
-  switchButton: {
-    alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderColor: palette.borderStrong,
-    borderRadius: radii.control,
-    borderWidth: 1,
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: 24,
-  },
-  switchLabel: { ...typography.bodyStrong, color: palette.ink, fontSize: 15 },
-  switchPrompt: { ...typography.body, color: palette.mutedStone, fontSize: 14 },
-  title: { ...typography.display, color: palette.ink, fontSize: 36, letterSpacing: -0.6, lineHeight: 41 },
-});

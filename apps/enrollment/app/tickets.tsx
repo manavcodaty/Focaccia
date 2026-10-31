@@ -1,31 +1,27 @@
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { CheckIcon, CopyIcon, TicketIcon } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PrimaryButton } from '../src/components/primary-button';
-import { StatusBanner } from '../src/components/status-banner';
-import { TicketRow } from '../src/components/ticket-row';
-import { enrollmentApi, FunctionApiError } from '../src/lib/api';
-import { passVault } from '../src/lib/enrollment-storage';
+import { InlineAlert } from '@/components/inline-alert';
+import { Section } from '@/components/section';
+import { TicketRow } from '@/components/ticket-row';
+import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
+import { Input } from '@/components/ui/input';
+import { Text } from '@/components/ui/text';
+import { enrollmentApi, FunctionApiError } from '@/lib/api';
+import { passVault } from '@/lib/enrollment-storage';
+import { THEME } from '@/lib/theme';
 import {
   reconcilePassWithTicket,
   type EnrollmentTicket,
   type StoredEnrollmentPass,
-} from '../src/lib/ticket-state';
-import { useAuth } from '../src/state/auth-context';
-import { useEnrollment } from '../src/state/enrollment-context';
-import { palette, radii, typography } from '../src/theme';
+} from '@/lib/ticket-state';
+import { useAuth } from '@/state/auth-context';
+import { useEnrollment } from '@/state/enrollment-context';
 
 const APPROVED_ROUTE = '/approved' as Href;
 
@@ -58,14 +54,10 @@ function ticketFromStoredPass(pass: StoredEnrollmentPass): EnrollmentTicket {
 
 function claimCodeMessage(error: unknown): string {
   if (error instanceof FunctionApiError) {
-    if (error.code === 'ticket_not_found') {
-      return 'That ticket is not available for enrollment in this account.';
-    }
-    if (error.code === 'rate_limit_exceeded') {
-      return 'Too many claim-code attempts. Wait before trying again.';
-    }
+    if (error.code === 'ticket_not_found') return 'Ticket not found in this account.';
+    if (error.code === 'rate_limit_exceeded') return 'Too many attempts. Try again later.';
   }
-  return error instanceof Error ? error.message : 'Unable to look up that ticket.';
+  return error instanceof Error ? error.message : 'Ticket not found.';
 }
 
 export default function TicketsScreen() {
@@ -74,11 +66,17 @@ export default function TicketsScreen() {
   const { reset, selectTicket } = useEnrollment();
   const [tickets, setTickets] = useState<EnrollmentTicket[]>([]);
   const [passes, setPasses] = useState<Record<string, StoredEnrollmentPass>>({});
-  const [offlineTicketIds, setOfflineTicketIds] = useState<Set<string>>(new Set());
   const [claimCode, setClaimCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
+
+  useEffect(() => {
+    if (!emailCopied) return undefined;
+    const timer = setTimeout(() => setEmailCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [emailCopied]);
 
   const loadTickets = useCallback(async () => {
     if (!user) return;
@@ -109,15 +107,13 @@ export default function TicketsScreen() {
       );
       setPasses(nextPasses);
       setTickets(response.tickets);
-      setOfflineTicketIds(new Set());
       if (resetEvents.length > 0) {
-        setMessage(`The organizer reset ${resetEvents.join(', ')}. The old pass was removed and the ticket is ready to enroll again.`);
+        setMessage(`${resetEvents.join(', ')} reset. Enroll again.`);
       }
     } catch (error) {
       setTickets(localPasses.map(ticketFromStoredPass));
-      setOfflineTicketIds(new Set(localPasses.map((pass) => pass.ticketId)));
       setMessage(localPasses.length > 0
-        ? 'The service is unreachable. Securely saved passes remain available offline.'
+        ? 'Offline. Showing saved passes.'
         : error instanceof Error ? error.message : 'Unable to load tickets.');
     } finally {
       setIsRefreshing(false);
@@ -132,30 +128,94 @@ export default function TicketsScreen() {
     void loadTickets();
   }, [loadTickets, router, session]));
 
+  const findTicket = useCallback(async () => {
+    setIsClaiming(true);
+    setMessage(null);
+    try {
+      const selection = await enrollmentApi.getEnrollmentBundle({ claimCode });
+      const response = await enrollmentApi.listMyTickets();
+      const ticket = response.tickets.find((item) => item.id === selection.ticket.id);
+      if (!ticket) throw new Error('Ticket not found.');
+      selectTicket(ticket, passes[ticket.id] ?? null);
+      router.push('/ticket');
+    } catch (error) {
+      setMessage(claimCodeMessage(error));
+    } finally {
+      setIsClaiming(false);
+    }
+  }, [claimCode, passes, router, selectTicket]);
+
   const renderTicket = useCallback(({ item }: { item: EnrollmentTicket }) => (
     <TicketRow
-      offline={offlineTicketIds.has(item.id)}
       onPress={() => {
         selectTicket(item, passes[item.id] ?? null);
         router.push(item.status === 'checked_in' ? APPROVED_ROUTE : '/ticket');
       }}
       ticket={item}
     />
-  ), [offlineTicketIds, passes, router, selectTicket]);
+  ), [passes, router, selectTicket]);
 
   const header = useMemo(() => (
-    <View style={styles.header}>
-      <View style={styles.titleRow}>
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>My tickets</Text>
-          <Text style={styles.account} numberOfLines={1}>{user?.email}</Text>
+    <View className="gap-6 pb-4">
+      <Text variant="h1">My tickets</Text>
+      {message ? <InlineAlert message={message} tone="default" /> : null}
+    </View>
+  ), [message]);
+
+  const footer = (
+    <View className="gap-8 pt-8">
+      <Section title="Claim code">
+        <View className="flex-row gap-2">
+          <Input
+            accessibilityLabel="Claim code"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            className="flex-1 tracking-widest"
+            onChangeText={(value) => setClaimCode(value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 14))}
+            onSubmitEditing={() => { if (claimCode.length === 14) void findTicket(); }}
+            placeholder="ABCD-EFGH-JKLM"
+            returnKeyType="go"
+            value={claimCode}
+          />
+          <Button
+            accessibilityLabel="Find ticket"
+            disabled={isClaiming || claimCode.length < 14}
+            onPress={() => void findTicket()}
+            variant="outline"
+          >
+            {isClaiming ? <ActivityIndicator color={THEME.light.foreground} /> : <Text>Find</Text>}
+          </Button>
         </View>
-        <Pressable
+      </Section>
+
+      <Section title="Account">
+        <View className="border-border flex-row items-center gap-3 rounded-lg border py-1 pl-3 pr-1">
+          <Text className="flex-1 text-sm" numberOfLines={1}>{user?.email}</Text>
+          <Button
+            accessibilityLabel="Copy account email"
+            onPress={() => {
+              void Clipboard.setStringAsync(user?.email ?? '').then(() => setEmailCopied(true));
+            }}
+            size="icon"
+            variant="ghost"
+          >
+            <Icon as={emailCopied ? CheckIcon : CopyIcon} size={16} />
+          </Button>
+        </View>
+        <Button
+          onPress={() => {
+            reset();
+            void signOut().then(() => router.replace('/'));
+          }}
+          variant="outline"
+        >
+          <Text>Log out</Text>
+        </Button>
+        <Button
           accessibilityLabel="Switch attendee"
-          accessibilityRole="button"
           onPress={() => Alert.alert(
             'Switch attendee?',
-            'Removes saved passes and pending enrollment from this phone.',
+            'Saved passes on this phone will be removed.',
             [
               { style: 'cancel', text: 'Cancel' },
               {
@@ -168,147 +228,38 @@ export default function TicketsScreen() {
               },
             ],
           )}
-          style={({ pressed }) => [styles.accountButton, pressed ? styles.pressed : null]}
+          variant="destructive"
         >
-          <Text style={styles.accountButtonLabel}>Switch</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.claimBlock}>
-        <Text style={styles.claimTitle}>Enter an owned claim code</Text>
-        <Text style={styles.claimHelp}>Only codes for this account are accepted.</Text>
-        <TextInput
-          accessibilityLabel="Owned ticket claim code"
-          autoCapitalize="characters"
-          autoCorrect={false}
-          onChangeText={(value) => setClaimCode(value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 14))}
-          placeholder="ABCD-EFGH-JKLM"
-          placeholderTextColor={palette.hintOfGrey}
-          returnKeyType="go"
-          style={styles.claimInput}
-          value={claimCode}
-        />
-        <PrimaryButton
-          disabled={isClaiming || claimCode.length < 14}
-          label={isClaiming ? 'Checking ticket...' : 'Find my ticket'}
-          onPress={() => {
-            void (async () => {
-              setIsClaiming(true);
-              setMessage(null);
-              try {
-                const selection = await enrollmentApi.getEnrollmentBundle({ claimCode });
-                const response = await enrollmentApi.listMyTickets();
-                const ticket = response.tickets.find((item) => item.id === selection.ticket.id);
-                if (!ticket) throw new Error('The owned ticket could not be loaded.');
-                selectTicket(ticket, passes[ticket.id] ?? null);
-                router.push('/ticket');
-              } catch (error) {
-                setMessage(claimCodeMessage(error));
-              } finally {
-                setIsClaiming(false);
-              }
-            })();
-          }}
-        />
-      </View>
-
-      {message ? <StatusBanner message={message} title="Ticket update" tone="warning" /> : null}
-      <View style={styles.listHeading}>
-        <Text style={styles.listTitle}>Your tickets</Text>
-        <Text style={styles.listHint}>Pull to refresh.</Text>
-      </View>
+          <Text>Switch attendee</Text>
+        </Button>
+      </Section>
     </View>
-  ), [claimCode, isClaiming, message, passes, reset, router, selectTicket, signOut, user?.email]);
+  );
 
   if (!session) return null;
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ backgroundColor: THEME.light.background, flex: 1 }}>
       <FlatList
-        contentContainerStyle={styles.listContent}
+        contentContainerClassName="w-full max-w-[620px] grow self-center px-5 pb-6 pt-6"
         data={tickets}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={() => <View className="h-3" />}
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={isRefreshing ? null : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No tickets yet</Text>
-            <Text style={styles.emptyBody}>Claim a ticket online, then refresh.</Text>
+          <View className="border-border items-center gap-3 rounded-xl border border-dashed px-6 py-10">
+            <View className="bg-muted h-10 w-10 items-center justify-center rounded-lg">
+              <Icon as={TicketIcon} size={20} />
+            </View>
+            <Text className="font-medium">No tickets</Text>
           </View>
         )}
-        ListFooterComponent={(
-          <View style={styles.footer}>
-            <PrimaryButton
-              label="Log out"
-              onPress={() => {
-                reset();
-                void signOut().then(() => router.replace('/'));
-              }}
-              tone="ghost"
-            />
-            <Pressable
-              accessibilityLabel="Copy account email"
-              accessibilityRole="button"
-              onPress={() => void Clipboard.setStringAsync(user?.email ?? '')}
-              style={({ pressed }) => [styles.copyAccount, pressed ? styles.pressed : null]}
-            >
-              <Text style={styles.copyAccountText}>Copy account email</Text>
-            </Pressable>
-          </View>
-        )}
+        ListFooterComponent={footer}
         ListHeaderComponent={header}
-        refreshControl={<RefreshControl onRefresh={() => void loadTickets()} refreshing={isRefreshing} tintColor={palette.ink} />}
+        refreshControl={<RefreshControl onRefresh={() => void loadTickets()} refreshing={isRefreshing} tintColor={THEME.light.foreground} />}
         renderItem={renderTicket}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  account: { ...typography.body, color: palette.mutedStone, fontSize: 13 },
-  accountButton: {
-    alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderColor: palette.borderStrong,
-    borderRadius: radii.control,
-    borderWidth: 1,
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: 16,
-  },
-  accountButtonLabel: { ...typography.bodyStrong, color: palette.ink, fontSize: 14 },
-  claimBlock: { backgroundColor: palette.surfaceClay, borderColor: palette.clay, borderRadius: radii.panel, borderWidth: StyleSheet.hairlineWidth, gap: 12, padding: 18 },
-  claimHelp: { ...typography.body, color: palette.mutedStone, fontSize: 13, lineHeight: 19 },
-  claimInput: {
-    ...typography.bodyStrong,
-    backgroundColor: palette.surface,
-    borderColor: palette.borderStrong,
-    borderRadius: radii.field,
-    borderWidth: 1,
-    color: palette.ink,
-    fontSize: 18,
-    letterSpacing: 1.1,
-    minHeight: 52,
-    paddingHorizontal: 16,
-    textAlign: 'center',
-  },
-  claimTitle: { ...typography.title, color: palette.ink, fontSize: 18 },
-  copyAccount: { alignItems: 'center', minHeight: 44, justifyContent: 'center' },
-  copyAccountText: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 14 },
-  emptyBody: { ...typography.body, color: palette.mutedStone, fontSize: 15, lineHeight: 22, textAlign: 'center' },
-  emptyState: { alignItems: 'center', backgroundColor: palette.surfaceSubtle, borderColor: palette.border, borderRadius: radii.panel, borderWidth: 1, gap: 8, padding: 28 },
-  emptyTitle: { ...typography.title, color: palette.ink, fontSize: 20 },
-  footer: { gap: 12, paddingBottom: 20, paddingTop: 28 },
-  header: { gap: 20, paddingBottom: 18 },
-  listContent: { alignSelf: 'center', flexGrow: 1, maxWidth: 680, paddingHorizontal: 20, paddingTop: 12, width: '100%' },
-  listHeading: { gap: 4 },
-  listHint: { ...typography.body, color: palette.mutedStone, fontSize: 13 },
-  listTitle: { ...typography.title, color: palette.ink, fontSize: 20 },
-  pressed: { opacity: 0.7, transform: [{ scale: 0.98 }] },
-  safeArea: { backgroundColor: palette.canvas, flex: 1 },
-  separator: { height: 12 },
-  title: { ...typography.display, color: palette.ink, fontSize: 36, letterSpacing: -0.6, lineHeight: 41 },
-  titleBlock: { flex: 1, gap: 2 },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: 16 },
-});

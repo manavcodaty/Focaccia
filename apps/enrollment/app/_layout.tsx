@@ -1,31 +1,35 @@
 import 'react-native-get-random-values';
+import '../global.css';
 
 import {
-  IBMPlexSans_400Regular,
-  IBMPlexSans_500Medium,
-  IBMPlexSans_600SemiBold,
-  IBMPlexSans_700Bold,
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_600SemiBold,
+  Geist_700Bold,
   useFonts,
-} from '@expo-google-fonts/ibm-plex-sans';
+} from '@expo-google-fonts/geist';
+import { PortalHost } from '@rn-primitives/portal';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { StatusBar, StyleSheet } from 'react-native';
+import { StatusBar } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { EnrollmentProvider } from '../src/state/enrollment-context';
-import { AuthProvider } from '../src/state/auth-context';
-import { palette } from '../src/theme';
+import { NAV_THEME } from '@/lib/theme';
+import { AuthProvider } from '@/state/auth-context';
+import { EnrollmentProvider } from '@/state/enrollment-context';
 
 void SplashScreen.preventAutoHideAsync();
 
+const colors = NAV_THEME.light.colors;
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    IBMPlexSans_400Regular,
-    IBMPlexSans_500Medium,
-    IBMPlexSans_600SemiBold,
-    IBMPlexSans_700Bold,
+    Geist_400Regular,
+    Geist_500Medium,
+    Geist_600SemiBold,
+    Geist_700Bold,
   });
 
   useEffect(() => {
@@ -39,7 +43,7 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar barStyle="dark-content" />
         <AuthProvider>
@@ -47,32 +51,21 @@ export default function RootLayout() {
             <Stack
               screenOptions={{
                 animation: 'slide_from_right',
-                contentStyle: { backgroundColor: palette.canvas },
-                headerBackTitle: 'Back',
+                contentStyle: { backgroundColor: colors.background },
+                headerBackButtonDisplayMode: 'minimal',
                 headerShadowVisible: false,
-                headerStyle: { backgroundColor: palette.canvas },
-                headerTintColor: palette.ink,
-                headerTitleStyle: { fontFamily: 'IBMPlexSans_600SemiBold' },
+                headerStyle: { backgroundColor: colors.background },
+                headerTintColor: colors.text,
+                headerTitle: '',
               }}
             >
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="tickets" options={{ headerShown: false }} />
-              <Stack.Screen name="ticket" options={{ title: 'Ticket' }} />
-              <Stack.Screen name="approved" options={{ title: 'Checked in' }} />
-              <Stack.Screen name="consent" options={{ title: 'Privacy and consent' }} />
-              <Stack.Screen name="capture" options={{ headerShown: false }} />
-              <Stack.Screen name="pass" options={{ title: 'Event pass' }} />
-              <Stack.Screen name="help" options={{ title: 'Help' }} />
             </Stack>
+            <PortalHost />
           </EnrollmentProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-});

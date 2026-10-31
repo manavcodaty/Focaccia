@@ -3,6 +3,10 @@
   "compilerOptions": {
     "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
     "module": "esnext",
@@ -25,6 +29,7 @@
     "**/*.ts",
     "**/*.tsx",
     "expo-env.d.ts",
+    "nativewind-env.d.ts",
     ".expo/types/**/*.ts"
   ]
 }

@@ -1,71 +1,34 @@
-import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { SectionCard } from '../src/components/section-card';
-import { scaleFont } from '../src/lib/responsive-metrics';
-import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
-import { palette, typography } from '../src/theme';
+import { ScreenShell } from '@/components/screen-shell';
+import { Section } from '@/components/section';
+import { Card, CardContent } from '@/components/ui/card';
+import { Text } from '@/components/ui/text';
+
+const TOPICS = [
+  { items: ['Even light, eyes visible.', 'Phone at eye level.', 'Hold still.'], title: 'Capture' },
+  { items: ['Copy the token and show it to gate staff.'], title: 'QR not scanning' },
+  { items: ['Face data stays on this phone.'], title: 'Privacy' },
+];
 
 export default function HelpScreen() {
-  const router = useRouter();
-  const layout = useResponsiveLayout();
-
   return (
-    <ScreenShell style={styles.screen}>
-      <SectionCard title="Enrollment support">
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Sign in with your ticket account.
-        </Text>
-      </SectionCard>
-
-      <SectionCard eyebrow="Privacy" title="What the app keeps" tone="subtle">
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Face processing stays local. Temporary captures are deleted best-effort after processing; face data is not saved to your account.
-        </Text>
-      </SectionCard>
-
-      <SectionCard title="For the best face capture">
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          1. Use even lighting. Keep eyes visible.
-        </Text>
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          2. Hold at eye level. Center your face.
-        </Text>
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          3. Hold still until your pass is ready.
-        </Text>
-      </SectionCard>
-
-      <SectionCard title="QR not scanning?">
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Copy the full pass token for gate staff.
-        </Text>
-      </SectionCard>
-
-      <SectionCard eyebrow="Offline limitation" title="Refresh revocations">
-        <Text style={[styles.bodyText, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Offline revocations apply after the gate reconnects and refreshes.
-        </Text>
-      </SectionCard>
-
-      <View style={styles.actions}>
-        <PrimaryButton label="Back" onPress={() => router.back()} />
-      </View>
+    <ScreenShell>
+      <Text variant="h1">Help</Text>
+      {TOPICS.map((topic) => (
+        <Section key={topic.title} title={topic.title}>
+          <Card>
+            <CardContent className="gap-2">
+              {topic.items.map((item) => (
+                <View className="flex-row gap-3" key={item}>
+                  <View className="bg-muted-foreground mt-2 h-1 w-1 rounded-full" />
+                  <Text className="flex-1 text-sm leading-5">{item}</Text>
+                </View>
+              ))}
+            </CardContent>
+          </Card>
+        </Section>
+      ))}
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  actions: {
-    gap: 12,
-  },
-  bodyText: {
-    ...typography.body,
-    color: palette.ink,
-  },
-  screen: {
-    gap: 18,
-  },
-});

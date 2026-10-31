@@ -1,22 +1,16 @@
 import * as Clipboard from 'expo-clipboard';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { SectionCard } from '../src/components/section-card';
-import { StatusBanner } from '../src/components/status-banner';
-import { scaleFont } from '../src/lib/responsive-metrics';
-import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
-import { useGate } from '../src/state/gate-context';
-import { palette, typography } from '../src/theme';
+import { InlineAlert } from '@/components/inline-alert';
+import { ScreenShell } from '@/components/screen-shell';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
+import { useGate } from '@/state/gate-context';
 
 export default function ExportScreen() {
-  const router = useRouter();
-  const layout = useResponsiveLayout();
   const { exportLogsCsv, gate } = useGate();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +25,7 @@ export default function ExportScreen() {
       const csv = await exportLogsCsv();
 
       await Clipboard.setStringAsync(csv);
-      setFeedback('CSV copied.');
+      setFeedback('Copied');
     } catch (copyError) {
       setError(copyError instanceof Error ? copyError.message : 'Failed to copy logs.');
     } finally {
@@ -57,9 +51,8 @@ export default function ExportScreen() {
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(file.uri);
-        setFeedback('Shared the offline gate log CSV.');
       } else {
-        setFeedback(`Sharing is unavailable on this device. CSV saved at ${file.uri}.`);
+        setFeedback(`Saved to ${file.uri}`);
       }
     } catch (shareError) {
       setError(shareError instanceof Error ? shareError.message : 'Failed to export logs.');
@@ -70,42 +63,17 @@ export default function ExportScreen() {
 
   return (
     <ScreenShell>
-      <SectionCard eyebrow="Evidence export" title="Operational records only" tone="subtle">
-        <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Gate decisions and timings. No face data.
-        </Text>
-        {feedback ? <StatusBanner message={feedback} title="Export ready" tone="success" /> : null}
-        {error ? <StatusBanner message={error} title="Export failed" tone="danger" /> : null}
-      </SectionCard>
-
-      <View style={styles.actions}>
-        <PrimaryButton
-          disabled={isWorking}
-          label={isWorking ? 'Preparing CSV...' : 'Copy CSV to clipboard'}
-          onPress={() => {
-            void handleCopy();
-          }}
-        />
-        <PrimaryButton
-          disabled={isWorking}
-          label={isWorking ? 'Preparing CSV...' : 'Share CSV file'}
-          onPress={() => {
-            void handleShare();
-          }}
-          tone="ghost"
-        />
-        <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
+      <Text variant="h1">Export logs</Text>
+      {feedback ? <InlineAlert message={feedback} tone="default" /> : null}
+      {error ? <InlineAlert message={error} /> : null}
+      <View className="gap-3">
+        <Button disabled={isWorking} onPress={() => void handleShare()}>
+          <Text>Share CSV</Text>
+        </Button>
+        <Button disabled={isWorking} onPress={() => void handleCopy()} variant="outline">
+          <Text>Copy CSV</Text>
+        </Button>
       </View>
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  actions: {
-    gap: 12,
-  },
-  body: {
-    ...typography.body,
-    color: palette.ink,
-  },
-});

@@ -1,115 +1,96 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { FileDownIcon, KeyboardIcon, SettingsIcon } from 'lucide-react-native';
+import { ActivityIndicator, View } from 'react-native';
 
-import { BrandLogo } from '../src/components/brand-logo';
-import { MetricRow } from '../src/components/metric-row';
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { SectionCard } from '../src/components/section-card';
-import { StatusBanner } from '../src/components/status-banner';
-import { StatusChip } from '../src/components/status-chip';
-import { formatTimestamp, snippet } from '../src/lib/display';
-import { formatCacheAge } from '../src/lib/gate-sync';
-import { scaleFont } from '../src/lib/responsive-metrics';
-import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
-import { useRevocationCache } from '../src/lib/use-revocation-cache';
-import { useGate } from '../src/state/gate-context';
-import { palette, typography } from '../src/theme';
+import { BrandLogo } from '@/components/brand-logo';
+import { DetailList } from '@/components/detail-list';
+import { InlineAlert } from '@/components/inline-alert';
+import { NavList } from '@/components/nav-list';
+import { ScreenShell } from '@/components/screen-shell';
+import { Section } from '@/components/section';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
+import { gateReadiness, shortAge, syncStatus } from '@/lib/gate-presentation';
+import { THEME } from '@/lib/theme';
+import { useRevocationCache } from '@/lib/use-revocation-cache';
+import { cn } from '@/lib/utils';
+import { useGate } from '@/state/gate-context';
+
+const toneClass = {
+  default: '',
+  destructive: 'text-destructive',
+  success: 'text-success',
+  warning: 'text-warning',
+} as const;
 
 export default function GateHomeScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
-  const { auth, dbError, dbReady, gate, signOut, stats } = useGate();
+  const { dbError, dbReady, gate, stats } = useGate();
   const cache = useRevocationCache(gate?.last_revocation_sync_at ?? null);
   const scannerReady = cache.state === 'fresh';
+  const readiness = gateReadiness(Boolean(gate), cache.state);
   const pendingSyncCount = stats?.pendingSyncCount ?? 0;
-  const readinessLabel = !gate
-    ? 'Needs setup'
-    : scannerReady
-      ? 'Offline ready'
-      : 'Refresh required';
+  const sync = syncStatus(pendingSyncCount);
+  const blocked = stats?.blockedSyncCount ?? 0;
 
   return (
-    <ScreenShell>
-      <View style={styles.hero}>
+    <ScreenShell header={false}>
+      <View className="gap-6">
         <BrandLogo />
-        <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Gate operations</Text>
-        <Text style={[styles.title, { fontSize: scaleFont(layout, 34, 1.12), lineHeight: scaleFont(layout, 39, 1.12) }]}>
-          {gate?.event_name ?? 'Prepare this gate'}
-        </Text>
-        <Text style={[styles.subtitle, { fontSize: scaleFont(layout, 16), lineHeight: scaleFont(layout, 24) }]}>
-          Offline entry. Automatic sync.
-        </Text>
-      </View>
-
-      {!dbReady ? <StatusBanner message="Opening encrypted local gate storage…" title="Preparing device" /> : null}
-      {dbError ? <StatusBanner message={dbError} title="Local storage unavailable" tone="danger" /> : null}
-
-      <SectionCard eyebrow="Door readiness" title={readinessLabel} tone={scannerReady ? 'default' : 'warning'}>
-        <View style={styles.statusRow}>
-          <StatusChip label={readinessLabel} tone={scannerReady ? 'success' : 'warning'} />
-          <StatusChip label={pendingSyncCount > 0 ? 'Sync pending' : 'Sync clear'} tone={pendingSyncCount > 0 ? 'warning' : 'success'} />
+        <View className="gap-2">
+          <Text variant="h1">{gate?.event_name ?? 'Gate'}</Text>
+          <View className="flex-row items-center gap-2">
+            {!dbReady ? (
+              <ActivityIndicator accessibilityLabel="Opening gate storage" color={THEME.light.mutedForeground} size="small" />
+            ) : (
+              <Text className={cn('text-sm', toneClass[readiness.tone])}>{readiness.label}</Text>
+            )}
+            {dbReady && gate && pendingSyncCount > 0 ? (
+              <Text className={cn('text-sm', toneClass[sync.tone])}>· {sync.label}</Text>
+            ) : null}
+          </View>
         </View>
-        <MetricRow label="Event" value={gate?.event_name ?? 'No event assigned'} />
-        <MetricRow label="Revocation cache" value={gate ? formatCacheAge(cache.ageMs) : 'Not available'} />
-        <MetricRow label="Queued check-ins" value={String(pendingSyncCount)} />
-        {gate && !scannerReady ? (
-          <StatusBanner
-            message={cache.state === 'critical'
-              ? 'Revocations missing or expired. Refresh to scan.'
-              : 'Revocations stale. Refresh before entry.'}
-            title="Refresh required"
-            tone="warning"
-          />
-        ) : null}
-        {!gate ? (
-          <StatusBanner
-            message="Sign in and scan the dashboard gate QR."
-            title="Needs setup"
-            tone="warning"
-          />
-        ) : null}
-        <PrimaryButton
-          disabled={Boolean(gate) && !scannerReady}
-          label={gate ? 'Open scanner' : 'Set up gate'}
-          onPress={() => router.push(gate ? '/scan' : '/provision')}
-        />
-        {gate && !scannerReady ? (
-          <PrimaryButton label="Refresh revocations" onPress={() => router.push('/settings')} tone="ghost" />
-        ) : null}
-      </SectionCard>
-
-      <SectionCard eyebrow="Local operations" title="Entry records" tone="subtle">
-        <MetricRow label="Accepted passes" value={String(stats?.usedPassCount ?? 0)} />
-        <MetricRow label="Check-ins synchronized" value={String(stats?.syncedCheckinCount ?? 0)} />
-        <MetricRow label="Check-ins needing retry" value={String(stats?.blockedSyncCount ?? 0)} />
-        <MetricRow label="Revocations cached" value={String(stats?.revocationCount ?? 0)} />
-        <MetricRow label="Last local record" value={formatTimestamp(stats?.lastRecordedAt ?? null)} />
-      </SectionCard>
-
-      <SectionCard eyebrow="Device detail" title={auth ? auth.email : 'Organizer sign-in required'}>
-        <StatusChip label={auth ? 'Organizer authenticated' : 'Signed out'} tone={auth ? 'success' : 'warning'} />
-        <MetricRow label="Event ID" value={gate?.event_id ?? 'No event yet'} />
-        <MetricRow label="Signer key" value={gate ? snippet(gate.pk_sign_event) : 'Added during setup'} />
-        <MetricRow label="Event salt" value={gate ? snippet(gate.event_salt) : 'Added during setup'} />
-        <MetricRow label="Provisioned" value={gate ? formatTimestamp(gate.provisioned_at) : 'Not provisioned'} />
-        {auth ? <PrimaryButton label="Sign out organizer" onPress={signOut} tone="ghost" /> : null}
-      </SectionCard>
-
-      <View style={styles.secondaryActions}>
-        <PrimaryButton disabled={!gate} label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
-        <PrimaryButton disabled={!gate} label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
-        <PrimaryButton disabled={!gate} label="Export logs" onPress={() => router.push('/export')} tone="ghost" />
       </View>
+
+      {dbError ? <InlineAlert message={dbError} /> : null}
+
+      <View className="gap-3">
+        <Button
+          disabled={!dbReady || (Boolean(gate) && !scannerReady)}
+          onPress={() => router.push(gate ? '/scan' : '/provision')}
+          size="lg"
+        >
+          <Text>{gate ? 'Open scanner' : 'Set up gate'}</Text>
+        </Button>
+        {gate && !scannerReady ? (
+          <Button onPress={() => router.push('/settings')} variant="outline">
+            <Text>Refresh revocations</Text>
+          </Button>
+        ) : null}
+      </View>
+
+      {gate ? (
+        <>
+          <Section title="Status">
+            <DetailList
+              items={[
+                { label: 'Revocations', tone: scannerReady ? 'default' : readiness.tone, value: shortAge(cache.ageMs) },
+                { label: 'Accepted', value: String(stats?.usedPassCount ?? 0) },
+                { label: 'Queued', tone: pendingSyncCount > 0 ? 'warning' : 'default', value: String(pendingSyncCount) },
+                { label: 'Needs retry', tone: blocked > 0 ? 'destructive' : 'default', value: String(blocked) },
+              ]}
+            />
+          </Section>
+
+          <NavList
+            items={[
+              { icon: KeyboardIcon, label: 'Manual entry', onPress: () => router.push('/fallback') },
+              { icon: SettingsIcon, label: 'Settings', onPress: () => router.push('/settings') },
+              { icon: FileDownIcon, label: 'Export logs', onPress: () => router.push('/export') },
+            ]}
+          />
+        </>
+      ) : null}
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  eyebrow: { ...typography.bodyStrong, color: palette.clay, letterSpacing: 1.4, textTransform: 'uppercase' },
-  hero: { gap: 8, paddingTop: 4 },
-  secondaryActions: { gap: 10 },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  subtitle: { ...typography.body, color: palette.mutedStone },
-  title: { ...typography.display, color: palette.ink },
-});

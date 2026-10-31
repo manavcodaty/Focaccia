@@ -1,19 +1,17 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { SectionCard } from '../src/components/section-card';
-import { StatusBanner } from '../src/components/status-banner';
-import { scaleFont } from '../src/lib/responsive-metrics';
-import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
-import { useGate } from '../src/state/gate-context';
-import { palette, radii, typography } from '../src/theme';
+import { InlineAlert } from '@/components/inline-alert';
+import { ScreenShell } from '@/components/screen-shell';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
+import { Textarea } from '@/components/ui/textarea';
+import { THEME } from '@/lib/theme';
+import { useGate } from '@/state/gate-context';
 
 export default function FallbackScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
   const { gate, processToken } = useGate();
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
@@ -28,7 +26,7 @@ export default function FallbackScreen() {
 
       router.replace(decision ? '/result' : '/face-match');
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Manual verification failed.');
+      setError(submitError instanceof Error ? submitError.message : 'Token rejected.');
     } finally {
       setIsBusy(false);
     }
@@ -36,67 +34,27 @@ export default function FallbackScreen() {
 
   return (
     <ScreenShell>
-      <SectionCard eyebrow="Scanner recovery" title="Paste the full pass token" tone="subtle">
-        <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Paste the full pass token. Short queue codes cannot verify entry.
-        </Text>
-        {!gate ? (
-          <StatusBanner
-            message="Provision the gate before using manual fallback."
-            title="Needs setup"
-            tone="warning"
-          />
-        ) : null}
-        {error ? <StatusBanner message={error} title="Token rejected" tone="danger" /> : null}
-        <TextInput
-          accessibilityLabel="Full pass token"
-          autoCapitalize="none"
-          autoCorrect={false}
-          multiline
-          onChangeText={setToken}
-          placeholder="eyJ2IjoxLCJldmVudF9pZCI6Ii4uLiJ9.signature"
-          placeholderTextColor={palette.mutedStone}
-          style={[
-            styles.tokenInput,
-            {
-              fontSize: scaleFont(layout, 15),
-              minHeight: layout.isTablet ? 220 : 180,
-            },
-          ]}
-          value={token}
-        />
-      </SectionCard>
-
-      <View style={styles.actions}>
-        <PrimaryButton
-          disabled={!gate || !token.trim() || isBusy}
-          label={isBusy ? 'Verifying token...' : 'Verify token offline'}
-          onPress={() => {
-            void handleSubmit();
-          }}
-        />
-        <PrimaryButton label="Back to scanner" onPress={() => router.replace('/scan')} tone="ghost" />
-      </View>
+      <Text variant="h1">Manual entry</Text>
+      {!gate ? <InlineAlert message="Needs setup" /> : null}
+      {error ? <InlineAlert message={error} /> : null}
+      <Textarea
+        accessibilityLabel="Full pass token"
+        autoCapitalize="none"
+        autoCorrect={false}
+        className="min-h-48"
+        onChangeText={setToken}
+        placeholder="Pass token"
+        value={token}
+      />
+      <Button
+        disabled={!gate || !token.trim() || isBusy}
+        onPress={() => {
+          void handleSubmit();
+        }}
+      >
+        {isBusy ? <ActivityIndicator color={THEME.light.primaryForeground} /> : null}
+        <Text>Verify</Text>
+      </Button>
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  actions: {
-    gap: 12,
-  },
-  body: {
-    ...typography.body,
-    color: palette.ink,
-  },
-  tokenInput: {
-    ...typography.body,
-    backgroundColor: palette.card,
-    borderColor: palette.borderStrong,
-    borderRadius: radii.field,
-    borderWidth: 1,
-    color: palette.ink,
-    padding: 16,
-    textAlignVertical: 'top',
-  },
-});

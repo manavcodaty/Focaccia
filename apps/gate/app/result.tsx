@@ -1,127 +1,95 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { ChevronDownIcon, CircleCheckIcon, CircleXIcon, ScanLineIcon } from 'lucide-react-native';
+import { useState } from 'react';
+import { View } from 'react-native';
 
-import { MetricRow } from '../src/components/metric-row';
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { SectionCard } from '../src/components/section-card';
-import { StatusBanner } from '../src/components/status-banner';
-import { StatusChip } from '../src/components/status-chip';
-import { decisionTone, formatDuration } from '../src/lib/display';
-import { scaleFont } from '../src/lib/responsive-metrics';
-import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
-import { useGate } from '../src/state/gate-context';
-import { palette, typography } from '../src/theme';
+import { DetailList } from '@/components/detail-list';
+import { EmptyState } from '@/components/empty-state';
+import { ScreenShell } from '@/components/screen-shell';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Icon } from '@/components/ui/icon';
+import { Text } from '@/components/ui/text';
+import { formatDuration } from '@/lib/display';
+import { decisionTitle } from '@/lib/gate-presentation';
+import { cn } from '@/lib/utils';
+import { useGate } from '@/state/gate-context';
 
 export default function ResultScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
-  const { gate, lastResult, resetLastResult } = useGate();
+  const { lastResult, resetLastResult } = useGate();
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
-  if (!lastResult || !gate) {
+  if (!lastResult) {
     return (
-      <ScreenShell>
-        <SectionCard eyebrow="Result" title="No verification result">
-          <StatusBanner
-            message="Scan a pass first."
-            tone="warning"
-          />
-          <PrimaryButton label="Back to scanner" onPress={() => router.replace('/scan')} />
-        </SectionCard>
+      <ScreenShell header={false}>
+        <EmptyState icon={ScanLineIcon} title="No result">
+          <Button onPress={() => router.replace('/scan')}><Text>Scan</Text></Button>
+        </EmptyState>
       </ScreenShell>
     );
   }
 
+  const title = decisionTitle(lastResult.accepted);
+  const { timings } = lastResult;
+
   return (
-    <ScreenShell variant={lastResult.accepted ? 'accepted' : 'rejected'}>
+    <ScreenShell header={false} variant={lastResult.accepted ? 'accepted' : 'rejected'}>
       <View
-        accessibilityLabel={`${lastResult.accepted ? 'Entry accepted' : 'Entry rejected'}. ${lastResult.hint}`}
+        accessibilityLabel={`${title}. ${lastResult.hint}`}
         accessibilityLiveRegion="assertive"
         accessibilityRole="alert"
-        style={[styles.decision, lastResult.accepted ? styles.accepted : styles.rejected]}
+        className="flex-1 items-center justify-center gap-4 py-8"
       >
-        <Text style={styles.decisionEyebrow}>Gate decision</Text>
-        <Text style={[styles.decisionTitle, { fontSize: scaleFont(layout, 46, 1.12), lineHeight: scaleFont(layout, 50, 1.12) }]}>
-          {lastResult.accepted ? 'Entry accepted' : 'Entry rejected'}
-        </Text>
-        <StatusChip
-          label={lastResult.reasonCode}
-          tone={decisionTone(lastResult)}
+        <Icon
+          as={lastResult.accepted ? CircleCheckIcon : CircleXIcon}
+          className={lastResult.accepted ? 'text-success' : 'text-destructive'}
+          size={64}
         />
-        <StatusBanner message={lastResult.hint} title="Operator note" tone={decisionTone(lastResult)} />
-        <Text
-          style={[
-            styles.headline,
-            {
-              fontSize: scaleFont(layout, 16),
-              lineHeight: scaleFont(layout, 24),
-            },
-          ]}
-        >
-          {lastResult.accepted
-            ? 'Entry approved. Check-in saved for sync.'
-            : 'Entry blocked.'}
+        <Text className={cn('text-center text-4xl', lastResult.accepted ? 'text-success' : 'text-destructive')} variant="h1">
+          {title}
         </Text>
+        <Text className="text-muted-foreground text-center">{lastResult.hint}</Text>
       </View>
 
-      <SectionCard eyebrow="Metrics" title="Verification timings">
-        <MetricRow label="Scan" value={formatDuration(lastResult.timings.scan_ms)} />
-        <MetricRow label="Decode" value={formatDuration(lastResult.timings.decode_ms)} />
-        <MetricRow label="Verify" value={formatDuration(lastResult.timings.verify_ms)} />
-        <MetricRow label="Decrypt" value={formatDuration(lastResult.timings.decrypt_ms)} />
-        <MetricRow label="Face capture" value={formatDuration(lastResult.timings.liveness_ms)} />
-        <MetricRow label="Match" value={formatDuration(lastResult.timings.match_ms)} />
-        <MetricRow label="Total" value={formatDuration(lastResult.timings.total_ms)} />
-        <MetricRow
-          label="Distance"
-          value={lastResult.hammingDistance === null ? 'Not reached' : String(lastResult.hammingDistance)}
-        />
-      </SectionCard>
+      <Collapsible onOpenChange={setDetailsOpen} open={detailsOpen}>
+        <CollapsibleTrigger asChild>
+          <Button className="self-center" size="sm" variant="ghost">
+            <Text>Details</Text>
+            <Icon as={ChevronDownIcon} className={cn(detailsOpen && 'rotate-180')} size={16} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-3">
+          <DetailList
+            items={[
+              { label: 'Total', value: formatDuration(timings.total_ms) },
+              { label: 'Scan', value: formatDuration(timings.scan_ms) },
+              { label: 'Decode', value: formatDuration(timings.decode_ms) },
+              { label: 'Verify', value: formatDuration(timings.verify_ms) },
+              { label: 'Decrypt', value: formatDuration(timings.decrypt_ms) },
+              { label: 'Face capture', value: formatDuration(timings.liveness_ms) },
+              { label: 'Match', value: formatDuration(timings.match_ms) },
+              { label: 'Distance', value: lastResult.hammingDistance === null ? '—' : String(lastResult.hammingDistance) },
+              { label: 'Reason', value: lastResult.reasonCode },
+            ]}
+          />
+        </CollapsibleContent>
+      </Collapsible>
 
-      <SectionCard eyebrow="Context" title="Pass summary">
-        <MetricRow label="Event ID" value={gate.event_id} />
-        <MetricRow label="Pass ref" value={lastResult.pass_ref ?? 'Unavailable'} />
-        <MetricRow label="Outcome" value={lastResult.outcome} />
-        <MetricRow label="Reason" value={lastResult.reasonCode} />
-      </SectionCard>
-
-      <View style={styles.actions}>
-        <PrimaryButton
-          label="Scan next pass"
+      <View className="gap-3">
+        <Button
           onPress={() => {
             resetLastResult();
             router.replace('/scan');
           }}
-        />
-        <PrimaryButton
-          label="Manual fallback"
-          onPress={() => router.replace('/fallback')}
-          tone="ghost"
-        />
-        <PrimaryButton label="Home" onPress={() => router.replace('/')} tone="ghost" />
+          size="lg"
+        >
+          <Text>Next</Text>
+        </Button>
+        <Button onPress={() => router.replace('/')} variant="outline">
+          <Text>Home</Text>
+        </Button>
       </View>
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  accepted: { borderColor: palette.acceptBorder },
-  actions: {
-    gap: 12,
-  },
-  decision: {
-    backgroundColor: palette.surface,
-    borderRadius: 20,
-    borderWidth: 2,
-    gap: 14,
-    paddingHorizontal: 22,
-    paddingVertical: 30,
-  },
-  decisionEyebrow: { ...typography.bodyStrong, color: palette.clay, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' },
-  decisionTitle: { ...typography.display, color: palette.ink, letterSpacing: -0.7 },
-  headline: {
-    ...typography.body,
-    color: palette.ink,
-  },
-  rejected: { borderColor: palette.alertBorder },
-});

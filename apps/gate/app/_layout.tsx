@@ -1,28 +1,33 @@
+import '../global.css';
+
 import {
-  IBMPlexSans_400Regular,
-  IBMPlexSans_500Medium,
-  IBMPlexSans_600SemiBold,
-  IBMPlexSans_700Bold,
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_600SemiBold,
+  Geist_700Bold,
   useFonts,
-} from '@expo-google-fonts/ibm-plex-sans';
+} from '@expo-google-fonts/geist';
+import { PortalHost } from '@rn-primitives/portal';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { StatusBar, StyleSheet } from 'react-native';
+import { StatusBar } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { GateProvider } from '../src/state/gate-context';
-import { palette } from '../src/theme';
+import { NAV_THEME } from '@/lib/theme';
+import { GateProvider } from '@/state/gate-context';
 
 void SplashScreen.preventAutoHideAsync();
 
+const colors = NAV_THEME.light.colors;
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    IBMPlexSans_400Regular,
-    IBMPlexSans_500Medium,
-    IBMPlexSans_600SemiBold,
-    IBMPlexSans_700Bold,
+    Geist_400Regular,
+    Geist_500Medium,
+    Geist_600SemiBold,
+    Geist_700Bold,
   });
 
   useEffect(() => {
@@ -36,24 +41,28 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar barStyle="dark-content" />
         <GateProvider>
           <Stack
             screenOptions={{
-              contentStyle: { backgroundColor: palette.canvas },
-              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+              headerBackButtonDisplayMode: 'minimal',
+              headerShadowVisible: false,
+              headerStyle: { backgroundColor: colors.background },
+              headerTintColor: colors.text,
+              headerTitle: '',
             }}
-          />
+          >
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            {/* Leaving these must run their own cleanup, so no header or swipe-back. */}
+            <Stack.Screen name="face-match" options={{ gestureEnabled: false, headerShown: false }} />
+            <Stack.Screen name="result" options={{ gestureEnabled: false, headerShown: false }} />
+          </Stack>
+          <PortalHost />
         </GateProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-});

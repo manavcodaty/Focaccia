@@ -38,6 +38,11 @@ exports.privatePassBrandMark = {
         y: 0,
     },
     shieldPath: "M64 34c-12.7 0-23 10.3-23 23v8c0 18 11.2 27.8 23 31 11.8-3.2 23-13 23-31v-8c0-12.7-10.3-23-23-23Z",
+    /** Admission ticket with an F punched through it; the mark used by the tickets and organizer apps. */
+    ticket: {
+        path: "M5 3h14a2 2 0 0 1 2 2v4.5a2.5 2.5 0 0 0 0 5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4.5a2.5 2.5 0 0 0 0-5V5a2 2 0 0 1 2-2Zm4 4v10h2.25v-3.75h3.75v-2h-3.75V9H16V7H9Z",
+        viewBox: "0 0 24 24",
+    },
     viewBox: "0 0 128 128",
 };
 //# sourceMappingURL=brand.js.map

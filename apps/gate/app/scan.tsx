@@ -1,12 +1,7 @@
 import { useRouter } from 'expo-router';
+import { CameraIcon, CameraOffIcon, ScanLineIcon } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
-import {
-  Linking,
-  StyleSheet,
-  Text,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
 import {
   Camera,
   useCameraDevice,
@@ -14,44 +9,15 @@ import {
   useCodeScanner,
 } from 'react-native-vision-camera';
 
-import { MetricRow } from '../src/components/metric-row';
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { SectionCard } from '../src/components/section-card';
-import { StatusBanner } from '../src/components/status-banner';
-import { StatusChip } from '../src/components/status-chip';
-import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
-import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
-import { useGate } from '../src/state/gate-context';
-import { palette, typography } from '../src/theme';
+import { EmptyState } from '@/components/empty-state';
+import { InlineAlert } from '@/components/inline-alert';
+import { ScreenShell } from '@/components/screen-shell';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
+import { THEME } from '@/lib/theme';
+import { useResponsiveLayout } from '@/lib/use-responsive-layout';
 
-function GateFallback({
-  body,
-  primaryLabel,
-  onPrimaryPress,
-  secondaryLabel,
-  onSecondaryPress,
-  title,
-}: {
-  body: string;
-  onPrimaryPress(): void;
-  onSecondaryPress?: () => void;
-  primaryLabel: string;
-  secondaryLabel?: string;
-  title: string;
-}) {
-  return (
-    <ScreenShell>
-      <SectionCard eyebrow="Scan" title={title}>
-        <StatusBanner message={body} tone="warning" />
-        <PrimaryButton label={primaryLabel} onPress={onPrimaryPress} />
-        {secondaryLabel && onSecondaryPress ? (
-          <PrimaryButton label={secondaryLabel} onPress={onSecondaryPress} tone="ghost" />
-        ) : null}
-      </SectionCard>
-    </ScreenShell>
-  );
-}
+import { useGate } from '@/state/gate-context';
 
 export default function ScanScreen() {
   const router = useRouter();
@@ -61,7 +27,6 @@ export default function ScanScreen() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [status, setStatus] = useState('Ready to scan');
   const lockRef = useRef(false);
   const scanStartedAtRef = useRef(Date.now());
   const codeScanner = useCodeScanner(
@@ -81,7 +46,6 @@ export default function ScanScreen() {
 
           lockRef.current = true;
           setError(null);
-          setStatus('Verifying pass…');
           setIsProcessing(true);
 
           void processToken(token, scanStartedAtRef.current)
@@ -94,8 +58,7 @@ export default function ScanScreen() {
               router.replace('/face-match');
             })
             .catch((scanError) => {
-              setError(scanError instanceof Error ? scanError.message : 'Offline verification failed.');
-              setStatus('Scanner ready');
+              setError(scanError instanceof Error ? scanError.message : 'Verification failed.');
               lockRef.current = false;
               scanStartedAtRef.current = Date.now();
             })
@@ -110,294 +73,75 @@ export default function ScanScreen() {
 
   if (!gate) {
     return (
-      <GateFallback
-        body="Set up this gate with the dashboard QR first."
-        onPrimaryPress={() => router.replace('/provision')}
-        primaryLabel="Provision gate"
-        title="Provisioning required"
-      />
+      <ScreenShell>
+        <EmptyState icon={ScanLineIcon} title="Needs setup">
+          <Button onPress={() => router.replace('/provision')}><Text>Set up gate</Text></Button>
+        </EmptyState>
+      </ScreenShell>
     );
   }
 
   if (!device) {
     return (
-      <GateFallback
-        body="Rear camera required."
-        onPrimaryPress={() => router.replace('/')}
-        primaryLabel="Back to home"
-        title="Rear camera unavailable"
-      />
+      <ScreenShell>
+        <EmptyState icon={CameraOffIcon} title="Rear camera unavailable" />
+      </ScreenShell>
     );
   }
 
   if (!hasPermission) {
     return (
-      <GateFallback
-        body="Allow camera access to scan passes."
-        onPrimaryPress={() => {
-          void requestPermission();
-        }}
-        onSecondaryPress={() => {
-          void Linking.openSettings();
-        }}
-        primaryLabel="Allow camera"
-        secondaryLabel="Open settings"
-        title="Camera permission required"
-      />
+      <ScreenShell>
+        <EmptyState icon={CameraIcon} title="Camera access">
+          <Button onPress={() => void requestPermission()}><Text>Allow camera</Text></Button>
+          <Button onPress={() => void Linking.openSettings()} variant="outline"><Text>Open Settings</Text></Button>
+        </EmptyState>
+      </ScreenShell>
     );
   }
 
-  const previewStyle = layout.isLandscape
-    ? {
-        width: Math.min(
-          layout.previewFrameMaxWidth,
-          layout.shortSide * (layout.isTablet ? 0.82 : 0.9),
-        ),
-      }
-    : {
-        maxWidth: layout.previewFrameMaxWidth,
-        width: '100%' as const,
-      };
-  const scanFrameStyle: ViewStyle = {
-    borderRadius: scaleSpacing(layout, 30, 1.08),
-    height: layout.isLandscape ? '52%' : '46%',
-    left: layout.isLandscape ? '14%' : '10%',
-    top: layout.isLandscape ? '24%' : '27%',
-    width: layout.isLandscape ? '72%' : '80%',
-  };
+  const preview = (
+    <View
+      className="bg-foreground w-full self-center overflow-hidden rounded-xl"
+      style={{ aspectRatio: layout.previewAspectRatio, maxWidth: layout.previewFrameMaxWidth }}
+    >
+      <Camera codeScanner={codeScanner} device={device} isActive={!isProcessing} style={StyleSheet.absoluteFill} />
+      <View className="absolute inset-[12%] rounded-2xl border-2 border-white/80" pointerEvents="none" />
+    </View>
+  );
+
+  const controls = (
+    <View className="gap-4">
+      <View accessibilityLiveRegion="polite" className="flex-row items-center gap-2">
+        {isProcessing ? <ActivityIndicator color={THEME.light.mutedForeground} size="small" /> : null}
+        <Text className="text-muted-foreground text-sm">{isProcessing ? 'Verifying' : 'Ready'}</Text>
+      </View>
+      {error ? <InlineAlert message={error} /> : null}
+      <Button onPress={() => router.push('/fallback')} variant="outline">
+        <Text>Manual entry</Text>
+      </Button>
+    </View>
+  );
 
   return (
-    <ScreenShell style={styles.screen} variant="scanner">
+    <ScreenShell variant="scanner">
       {layout.isLandscape ? (
-        <View
-          style={[
-            styles.landscapeShell,
-            { gap: scaleSpacing(layout, 18, 1.08), maxWidth: layout.wideContentMaxWidth },
-          ]}
-        >
-          <View style={styles.previewColumn}>
-            <View
-              style={[
-                styles.preview,
-                previewStyle,
-                {
-                  aspectRatio: layout.previewAspectRatio,
-                  borderRadius: scaleSpacing(layout, 30, 1.08),
-                },
-              ]}
-            >
-              <Camera
-                codeScanner={codeScanner}
-                device={device}
-                isActive={!isProcessing}
-                style={styles.camera}
-              />
-              <View style={styles.dimTop} />
-              <View style={styles.dimBottom} />
-              <View style={[styles.scanFrame, scanFrameStyle]} />
-            </View>
-          </View>
-
-          <View style={[styles.infoColumn, { gap: scaleSpacing(layout, 16, 1.08) }]}>
-            <View style={styles.header}>
-              <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Scan</Text>
-              <Text
-                style={[
-                  styles.title,
-                  {
-                    fontSize: scaleFont(layout, 32, 1.12),
-                    lineHeight: scaleFont(layout, 36, 1.12),
-                  },
-                ]}
-              >
-                {gate.event_name}
-              </Text>
-              <Text
-                style={[
-                  styles.subtitle,
-                  {
-                    fontSize: scaleFont(layout, 15),
-                    lineHeight: scaleFont(layout, 22),
-                  },
-                ]}
-              >
-                Scan an attendee pass.
-              </Text>
-            </View>
-
-            <SectionCard eyebrow="Status" title="Scanner live">
-              <View style={styles.statusRow}>
-                <StatusChip label="Offline ready" tone="success" />
-                <StatusChip
-                  label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'}
-                  tone="warning"
-                />
-              </View>
-              <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
-              <StatusBanner
-                message={error ?? status}
-                tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
-              />
-            </SectionCard>
-
-            <View style={styles.footerActions}>
-              <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
-              <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
-              <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
-            </View>
+        <View className="flex-1 flex-row items-center gap-6">
+          <View className="flex-1">{preview}</View>
+          <View className="w-[300px] gap-6">
+            <Text variant="h1">Scan</Text>
+            {controls}
           </View>
         </View>
       ) : (
         <>
-          <View style={styles.header}>
-            <Text style={[styles.eyebrow, { fontSize: scaleFont(layout, 12) }]}>Scan</Text>
-            <Text
-              style={[
-                styles.title,
-                {
-                  fontSize: scaleFont(layout, 32, 1.12),
-                  lineHeight: scaleFont(layout, 36, 1.12),
-                },
-              ]}
-            >
-              {gate.event_name}
-            </Text>
-            <Text
-              style={[
-                styles.subtitle,
-                {
-                  fontSize: scaleFont(layout, 15),
-                  lineHeight: scaleFont(layout, 22),
-                },
-              ]}
-            >
-              Scan an attendee pass.
-            </Text>
-          </View>
-
-          <SectionCard eyebrow="Status" title="Scanner live">
-            <View style={styles.statusRow}>
-              <StatusChip label="Offline ready" tone="success" />
-              <StatusChip
-                label={gate.policy.single_entry ? 'Single-entry enforced' : 'Policy mismatch'}
-                tone="warning"
-              />
-            </View>
-            <MetricRow label="Threshold" value={String(gate.policy.match_threshold)} />
-            <StatusBanner
-              message={error ?? status}
-              tone={error ? 'danger' : isProcessing ? 'warning' : 'success'}
-            />
-          </SectionCard>
-
-          <View
-            style={[
-              styles.preview,
-              previewStyle,
-              {
-                aspectRatio: layout.previewAspectRatio,
-                borderRadius: scaleSpacing(layout, 30, 1.08),
-              },
-            ]}
-          >
-            <Camera
-              codeScanner={codeScanner}
-              device={device}
-              isActive={!isProcessing}
-              style={styles.camera}
-            />
-            <View style={styles.dimTop} />
-            <View style={styles.dimBottom} />
-            <View style={[styles.scanFrame, scanFrameStyle]} />
-          </View>
-
-          <View style={styles.footerActions}>
-            <PrimaryButton label="Manual fallback" onPress={() => router.push('/fallback')} tone="ghost" />
-            <PrimaryButton label="Settings" onPress={() => router.push('/settings')} tone="ghost" />
-            <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
+          <Text variant="h1">Scan</Text>
+          <View className="gap-4">
+            {preview}
+            {controls}
           </View>
         </>
       )}
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  camera: {
-    flex: 1,
-  },
-  dimBottom: {
-    backgroundColor: palette.overlay,
-    bottom: 0,
-    height: '24%',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-  },
-  dimTop: {
-    backgroundColor: palette.overlay,
-    height: '24%',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  eyebrow: {
-    ...typography.title,
-    color: palette.warmMist,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  footerActions: {
-    gap: 12,
-  },
-  header: {
-    gap: 8,
-  },
-  infoColumn: {
-    flex: 1,
-    justifyContent: 'center',
-    maxWidth: 360,
-  },
-  landscapeShell: {
-    alignItems: 'stretch',
-    flex: 1,
-    flexDirection: 'row',
-    width: '100%',
-  },
-  preview: {
-    alignSelf: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  previewColumn: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  scanFrame: {
-    borderColor: palette.scanFrame,
-    borderWidth: 4,
-    position: 'absolute',
-  },
-  screen: {
-    gap: 16,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  subtitle: {
-    ...typography.body,
-    color: palette.textInverseMuted,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  title: {
-    ...typography.display,
-    color: palette.textInverse,
-    fontSize: 32,
-    lineHeight: 36,
-  },
-});

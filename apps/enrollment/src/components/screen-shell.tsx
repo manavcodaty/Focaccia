@@ -1,62 +1,50 @@
 import type { ReactNode } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  View,
-  type ViewStyle,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
-import { useResponsiveLayout } from '../lib/use-responsive-layout';
-import { palette } from '../theme';
+import { THEME } from '@/lib/theme';
+import { cn } from '@/lib/utils';
 
+const WITH_HEADER: Edge[] = ['bottom', 'left', 'right'];
+const WITHOUT_HEADER: Edge[] = ['top', 'bottom', 'left', 'right'];
+
+/**
+ * One container for every screen: 20px gutters, 32px between sections, a
+ * 620pt reading column on tablets. `header` says whether the native stack
+ * header (which owns the top inset) is visible.
+ */
 export function ScreenShell({
   children,
-  variant = 'default',
+  className,
+  header = true,
   scroll = true,
-  style,
+  variant = 'default',
 }: {
   children: ReactNode;
-  variant?: 'camera' | 'default' | 'wide';
+  className?: string;
+  header?: boolean;
   scroll?: boolean;
-  style?: ViewStyle;
+  variant?: 'camera' | 'default';
 }) {
-  const layout = useResponsiveLayout();
-  const backgroundColor = variant === 'camera' ? palette.surfaceInverse : palette.background;
   const content = (
     <View
-      style={[
-        styles.content,
-        {
-          gap: layout.sectionGap,
-          maxWidth: variant === 'wide' || variant === 'camera' ? layout.wideContentMaxWidth : layout.contentMaxWidth,
-          paddingHorizontal: layout.horizontalPadding,
-          paddingVertical: layout.verticalPadding,
-        },
-        style,
-      ]}
+      className={cn(
+        'w-full flex-1 gap-8 self-center px-5 pb-6',
+        header ? 'pt-2' : 'pt-6',
+        variant === 'camera' ? 'max-w-[820px]' : 'max-w-[620px]',
+        className,
+      )}
     >
       {children}
     </View>
   );
 
   return (
-    <SafeAreaView
-      edges={['top', 'bottom', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor }]}
-    >
-      <StatusBar barStyle={variant === 'camera' ? 'light-content' : 'dark-content'} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboard}
-      >
+    <SafeAreaView edges={header ? WITH_HEADER : WITHOUT_HEADER} style={{ backgroundColor: THEME.light.background, flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         {scroll ? (
           <ScrollView
-            bounces={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerClassName="grow"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -69,20 +57,3 @@ export function ScreenShell({
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  keyboard: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-});

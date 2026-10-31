@@ -1,44 +1,58 @@
 import * as Clipboard from 'expo-clipboard';
 import { useRouter, type Href } from 'expo-router';
-import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { CheckIcon, CopyIcon, TicketXIcon } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, View } from 'react-native';
 
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { SectionCard } from '../src/components/section-card';
-import { StatusBanner } from '../src/components/status-banner';
-import { enrollmentApi } from '../src/lib/api';
-import {
-  checkedInConfirmation,
-  generationAllowance,
-  ticketAction,
-  ticketStatusPresentation,
-} from '../src/lib/ticket-state';
-import { useEnrollment } from '../src/state/enrollment-context';
-import { palette, radii, typography } from '../src/theme';
+import { EmptyState } from '@/components/empty-state';
+import { EventMeta } from '@/components/event-meta';
+import { InlineAlert } from '@/components/inline-alert';
+import { ScreenShell } from '@/components/screen-shell';
+import { StatusText } from '@/components/status-text';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
+import { Separator } from '@/components/ui/separator';
+import { Text } from '@/components/ui/text';
+import { enrollmentApi } from '@/lib/api';
+import { THEME } from '@/lib/theme';
+import { checkedInConfirmation, generationAllowance, ticketAction } from '@/lib/ticket-state';
+import { useEnrollment } from '@/state/enrollment-context';
 
 const APPROVED_ROUTE = '/approved' as Href;
+
+function confirmRegenerate(onConfirm: () => void) {
+  Alert.alert('Regenerate pass?', 'Your current pass will be replaced.', [
+    { style: 'cancel', text: 'Cancel' },
+    { onPress: onConfirm, style: 'destructive', text: 'Regenerate' },
+  ]);
+}
 
 export default function TicketDetailScreen() {
   const router = useRouter();
   const { setBundle, state } = useEnrollment();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const ticket = state.selectedTicket;
+
+  useEffect(() => {
+    if (!copied) return undefined;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
 
   if (!ticket) {
     return (
-      <ScreenShell style={styles.screen}>
-        <SectionCard title="Select a ticket first">
-          <Text style={styles.body}>Choose a ticket in My tickets.</Text>
-          <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
-        </SectionCard>
+      <ScreenShell>
+        <EmptyState icon={TicketXIcon} title="No ticket selected">
+          <Button onPress={() => router.replace('/tickets')}><Text>My tickets</Text></Button>
+        </EmptyState>
       </ScreenShell>
     );
   }
 
   const action = ticketAction(ticket, state.pass);
-  const status = ticketStatusPresentation(ticket.status);
   const allowance = generationAllowance(ticket.generation_count);
   const confirmation = checkedInConfirmation(ticket);
 
@@ -56,106 +70,79 @@ export default function TicketDetailScreen() {
     }
   }
 
+  const spinner = <ActivityIndicator color={THEME.light.primaryForeground} />;
+
   return (
-    <ScreenShell style={styles.screen}>
-      <View style={styles.eventHeader}>
-        <Text style={styles.eventName}>{ticket.event.name}</Text>
-        <Text style={styles.eventMeta}>{ticket.event.location || 'Location to be confirmed'}</Text>
-        <Text style={styles.eventMeta}>{new Date(ticket.event.starts_at).toLocaleString()}</Text>
+    <ScreenShell>
+      <View className="gap-4">
+        <Text variant="h1">{ticket.event.name}</Text>
+        <EventMeta event={ticket.event} />
       </View>
 
-      <SectionCard eyebrow="Credential state" title="Ticket details">
-        <Detail label="Ticket type" value={ticket.ticket_type.name} />
-        <Detail label="Status" value={status.label} />
-        <Detail label="Generation" value={`${allowance.used} of 3 used`} />
-        <View style={styles.allowanceTrack}>
-          <View style={[styles.allowanceFill, { width: `${(allowance.used / 3) * 100}%` }]} />
+      <Card accessibilityLabel="Ticket" className="gap-0 overflow-hidden py-0">
+        <View className="flex-row items-center justify-between gap-3 p-4">
+          <Text className="flex-1 font-medium" numberOfLines={1}>{ticket.ticket_type.name}</Text>
+          <StatusText status={ticket.status} />
         </View>
-        <Text style={styles.mutedBody}>
-          {allowance.remaining === 0
-            ? 'No pass generations remain for this ticket.'
-            : `You can generate ${allowance.remaining} more ${allowance.remaining === 1 ? 'pass' : 'passes'}.`}
-        </Text>
-      </SectionCard>
+        <Separator />
+        <View className="bg-muted/40 flex-row items-end justify-between gap-3 p-4">
+          <View className="flex-1 gap-1">
+            <Text className="text-muted-foreground text-sm">Claim code</Text>
+            <Text className="text-xl font-medium tracking-widest" selectable>
+              {ticket.claim_code || (ticket.claim_code_hint ? `•••• ${ticket.claim_code_hint}` : '—')}
+            </Text>
+          </View>
+          {ticket.claim_code ? (
+            <Button
+              accessibilityLabel="Copy claim code"
+              onPress={() => {
+                void Clipboard.setStringAsync(ticket.claim_code).then(() => setCopied(true));
+              }}
+              size="icon"
+              variant="outline"
+            >
+              <Icon as={copied ? CheckIcon : CopyIcon} size={16} />
+            </Button>
+          ) : null}
+        </View>
+      </Card>
 
-      <SectionCard eyebrow="Privacy boundary" title="Processed on this phone" tone="subtle">
-        <Text style={styles.body}>Face processing stays local. Only the encrypted event template is sent for signing.</Text>
-        <Text style={styles.body}>Organizers see ticket status, not your face data, password, or pass token.</Text>
-      </SectionCard>
+      {error ? <InlineAlert message={error} /> : null}
 
-      <SectionCard eyebrow="Account recovery" title="Claim code">
-        <Text style={styles.claimCode}>{ticket.claim_code || 'Available when connected'}</Text>
-        {ticket.claim_code ? (
-          <PrimaryButton label="Copy claim code" onPress={() => void Clipboard.setStringAsync(ticket.claim_code)} tone="ghost" />
-        ) : null}
-      </SectionCard>
-
-      {ticket.status === 'cancelled' ? <StatusBanner message="Cancelled. Enrollment unavailable." title="Cancelled" tone="warning" /> : null}
-      {ticket.status === 'revoked' ? <StatusBanner message="Revoked. Saved pass removed." title="Revoked" tone="danger" /> : null}
-      {confirmation ? (
-        <StatusBanner message="Entry approved. View your receipt." title="Checked in" tone="success" />
-      ) : null}
-      {action === 'regenerate' ? <StatusBanner message="No pass on this phone. Regenerating replaces the old pass and uses a generation." title="Pass recovery" tone="warning" /> : null}
-      {error ? <StatusBanner message={error} title="Could not prepare enrollment" tone="warning" /> : null}
-
-      <View style={styles.actions}>
+      <View className="gap-3">
         {action === 'enroll' ? (
-          <PrimaryButton disabled={isLoading} label={isLoading ? 'Preparing…' : 'Create event pass'} onPress={() => void startEnrollment('initial')} />
+          <Button disabled={isLoading} onPress={() => void startEnrollment('initial')}>
+            {isLoading ? spinner : null}
+            <Text>Create pass</Text>
+          </Button>
         ) : null}
         {action === 'show-pass' ? (
           <>
-            <PrimaryButton label="Show secure pass" onPress={() => router.push('/pass')} />
+            <Button onPress={() => router.push('/pass')}><Text>Show pass</Text></Button>
             {allowance.remaining > 0 ? (
-              <PrimaryButton
-                label="Regenerate pass"
-                onPress={() => Alert.alert(
-                  'Regenerate pass?',
-                  'Replaces your current pass and uses one generation.',
-                  [
-                    { style: 'cancel', text: 'Cancel' },
-                    { onPress: () => void startEnrollment('regeneration'), style: 'destructive', text: 'Regenerate' },
-                  ],
-                )}
-                tone="ghost"
-              />
+              <Button
+                disabled={isLoading}
+                onPress={() => confirmRegenerate(() => void startEnrollment('regeneration'))}
+                variant="outline"
+              >
+                <Text>Regenerate</Text>
+              </Button>
             ) : null}
           </>
         ) : null}
         {action === 'regenerate' ? (
-          <PrimaryButton disabled={isLoading} label={isLoading ? 'Preparing...' : 'Regenerate on this device'} onPress={() => void startEnrollment('regeneration')} />
+          <Button disabled={isLoading} onPress={() => confirmRegenerate(() => void startEnrollment('regeneration'))}>
+            {isLoading ? spinner : null}
+            <Text>Regenerate pass</Text>
+          </Button>
         ) : null}
         {action === 'generation-limit' ? (
-          <PrimaryButton disabled label="Generation limit reached" onPress={() => {}} />
+          <Button disabled><Text>Limit reached</Text></Button>
         ) : null}
         {confirmation ? (
-          <PrimaryButton label="View approval receipt" onPress={() => router.push(APPROVED_ROUTE)} />
+          <Button onPress={() => router.push(APPROVED_ROUTE)}><Text>View receipt</Text></Button>
         ) : null}
       </View>
     </ScreenShell>
   );
 }
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.detail}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  actions: { gap: 12 },
-  allowanceFill: { backgroundColor: palette.success, borderRadius: 9999, height: '100%' },
-  allowanceTrack: { backgroundColor: palette.fog, borderRadius: 9999, height: 8, overflow: 'hidden' },
-  body: { ...typography.body, color: palette.ink, fontSize: 15, lineHeight: 23 },
-  claimCode: { ...typography.title, color: palette.ink, fontSize: 20, letterSpacing: 1.2, textAlign: 'center' },
-  detail: { gap: 4 },
-  detailLabel: { ...typography.bodyStrong, color: palette.mutedStone, fontSize: 13 },
-  detailValue: { ...typography.title, color: palette.ink, fontSize: 17 },
-  eventHeader: { backgroundColor: palette.surfaceClay, borderRadius: radii.credential, gap: 6, padding: 22 },
-  eventMeta: { ...typography.body, color: palette.mutedStone, fontSize: 15 },
-  eventName: { ...typography.display, color: palette.ink, fontSize: 32, letterSpacing: -0.5, lineHeight: 37 },
-  mutedBody: { ...typography.body, color: palette.mutedStone, fontSize: 13, lineHeight: 19 },
-  screen: { gap: 18 },
-});

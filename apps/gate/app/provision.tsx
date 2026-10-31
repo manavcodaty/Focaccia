@@ -1,13 +1,7 @@
 import { useRouter } from 'expo-router';
+import { CameraIcon, CameraOffIcon, CircleCheckIcon } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
-import {
-  Linking,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
 import {
   Camera,
   useCameraDevice,
@@ -15,57 +9,28 @@ import {
   useCodeScanner,
 } from 'react-native-vision-camera';
 
-import { MetricRow } from '../src/components/metric-row';
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { SectionCard } from '../src/components/section-card';
-import { StatusBanner } from '../src/components/status-banner';
-import { StatusChip } from '../src/components/status-chip';
-import { snippet } from '../src/lib/display';
-import { parseProvisioningQrPayload } from '../src/lib/provisioning';
-import { scaleFont, scaleSpacing } from '../src/lib/responsive-metrics';
-import { useResponsiveLayout } from '../src/lib/use-responsive-layout';
-import type { ProvisioningQrPayload } from '../src/lib/types';
-import { useGate } from '../src/state/gate-context';
-import { palette, radii, typography } from '../src/theme';
-
-function PermissionFallback({
-  body,
-  onPrimaryPress,
-  primaryLabel,
-  secondaryLabel,
-  secondaryPress,
-  title,
-}: {
-  body: string;
-  onPrimaryPress(): void;
-  primaryLabel: string;
-  secondaryLabel?: string;
-  secondaryPress?: () => void;
-  title: string;
-}) {
-  return (
-    <ScreenShell>
-      <SectionCard eyebrow="Provisioning" title={title}>
-        <StatusBanner message={body} tone="warning" />
-        <PrimaryButton label={primaryLabel} onPress={onPrimaryPress} />
-        {secondaryLabel && secondaryPress ? (
-          <PrimaryButton label={secondaryLabel} onPress={secondaryPress} tone="ghost" />
-        ) : null}
-      </SectionCard>
-    </ScreenShell>
-  );
-}
+import { DetailList } from '@/components/detail-list';
+import { EmptyState } from '@/components/empty-state';
+import { InlineAlert } from '@/components/inline-alert';
+import { ScreenShell } from '@/components/screen-shell';
+import { Section } from '@/components/section';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Text } from '@/components/ui/text';
+import { formatTimestamp } from '@/lib/display';
+import { parseProvisioningQrPayload } from '@/lib/provisioning';
+import { THEME } from '@/lib/theme';
+import type { ProvisioningQrPayload } from '@/lib/types';
+import { useResponsiveLayout } from '@/lib/use-responsive-layout';
+import { useGate } from '@/state/gate-context';
 
 export default function ProvisionScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
-  const {
-    auth,
-    completeProvisioning,
-    gate,
-    signIn,
-  } = useGate();
+  const { auth, completeProvisioning, signIn, signOut } = useGate();
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
   const [deviceName, setDeviceName] = useState('Gate iPhone');
@@ -73,7 +38,6 @@ export default function ProvisionScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const scanLockRef = useRef(false);
   const codeScanner = useCodeScanner(
@@ -96,10 +60,9 @@ export default function ProvisionScreen() {
 
             scanLockRef.current = true;
             setError(null);
-            setFeedback('QR scanned. Confirm the event and sync.');
             setDraft(payload);
           } catch (scanError) {
-            setError(scanError instanceof Error ? scanError.message : 'Failed to parse provisioning QR.');
+            setError(scanError instanceof Error ? scanError.message : 'Not a gate QR.');
           }
         },
       }),
@@ -109,12 +72,10 @@ export default function ProvisionScreen() {
 
   async function handleSignIn() {
     setError(null);
-    setFeedback(null);
     setIsBusy(true);
 
     try {
       await signIn(email, password);
-      setFeedback('Scan the dashboard gate QR.');
     } catch (signInError) {
       setError(signInError instanceof Error ? signInError.message : 'Sign-in failed.');
     } finally {
@@ -128,7 +89,6 @@ export default function ProvisionScreen() {
     }
 
     setError(null);
-    setFeedback(null);
     setIsBusy(true);
 
     try {
@@ -144,209 +104,131 @@ export default function ProvisionScreen() {
   function resetDraft() {
     scanLockRef.current = false;
     setDraft(null);
-    setFeedback(null);
   }
 
   if (!device) {
     return (
-      <PermissionFallback
-        body="Rear camera required."
-        onPrimaryPress={() => router.replace('/')}
-        primaryLabel="Back to home"
-        title="Rear camera unavailable"
-      />
+      <ScreenShell>
+        <EmptyState icon={CameraOffIcon} title="Rear camera unavailable" />
+      </ScreenShell>
     );
   }
 
   if (!hasPermission) {
     return (
-      <PermissionFallback
-        body="Allow camera access to scan the gate QR."
-        onPrimaryPress={() => {
-          void requestPermission();
-        }}
-        primaryLabel="Allow camera"
-        secondaryLabel="Open settings"
-        secondaryPress={() => {
-          void Linking.openSettings();
-        }}
-        title="Camera permission required"
-      />
+      <ScreenShell>
+        <EmptyState icon={CameraIcon} title="Camera access">
+          <Button onPress={() => void requestPermission()}><Text>Allow camera</Text></Button>
+          <Button onPress={() => void Linking.openSettings()} variant="outline"><Text>Open Settings</Text></Button>
+        </EmptyState>
+      </ScreenShell>
     );
   }
 
-  const previewStyle = {
-    aspectRatio: layout.previewAspectRatio,
-    borderRadius: scaleSpacing(layout, 24, 1.08),
-    maxWidth: layout.previewFrameMaxWidth,
-    width: '100%' as const,
-  };
-  const scanFrameStyle: ViewStyle = {
-    borderRadius: scaleSpacing(layout, 24, 1.08),
-    height: layout.isLandscape ? '58%' : '64%',
-    left: layout.isLandscape ? '18%' : '15%',
-    top: layout.isLandscape ? '21%' : '18%',
-    width: layout.isLandscape ? '64%' : '70%',
-  };
+  const spinner = <ActivityIndicator color={THEME.light.primaryForeground} />;
 
   return (
-    <ScreenShell variant="wide">
-      <SectionCard eyebrow="Gate setup" title="Pair this device to one event" tone="subtle">
-        <StatusChip
-          label={gate ? 'Action required' : 'Needs setup'}
-          tone={gate ? 'warning' : 'success'}
-        />
-        <Text style={[styles.body, { fontSize: scaleFont(layout, 15), lineHeight: scaleFont(layout, 22) }]}>
-          Gate keys stay on this phone. Only the public key is shared.
-        </Text>
-        {feedback ? <StatusBanner message={feedback} title="Setup update" tone="success" /> : null}
-        {error ? <StatusBanner message={error} title="Setup failed" tone="danger" /> : null}
-      </SectionCard>
+    <ScreenShell variant="scanner">
+      <Text variant="h1">Provisioning</Text>
 
-      <SectionCard eyebrow="Organizer auth" title={auth ? auth.email : 'Sign in before sync'}>
+      {error ? <InlineAlert message={error} /> : null}
+
+      <Section title="Organizer">
         {auth ? (
-          <StatusBanner
-            message="Signed in. Scan the gate QR."
-            title="Organizer authenticated"
-            tone="success"
+          <Card className="py-2">
+            <CardContent className="flex-row items-center gap-3 pr-2">
+              <Icon as={CircleCheckIcon} className="text-success" size={18} />
+              <Text className="flex-1 text-sm" numberOfLines={1}>{auth.email}</Text>
+              <Button disabled={isBusy} onPress={signOut} size="sm" variant="ghost">
+                <Text>Sign out</Text>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <View className="gap-4">
+            <View className="gap-2">
+              <Label nativeID="organizer-email">Email</Label>
+              <Input
+                accessibilityLabel="Organizer email"
+                aria-labelledby="organizer-email"
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect={false}
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                textContentType="emailAddress"
+                value={email}
+              />
+            </View>
+            <View className="gap-2">
+              <Label nativeID="organizer-password">Password</Label>
+              <Input
+                accessibilityLabel="Organizer password"
+                aria-labelledby="organizer-password"
+                autoCapitalize="none"
+                autoCorrect={false}
+                onChangeText={setPassword}
+                onSubmitEditing={() => void handleSignIn()}
+                secureTextEntry
+                textContentType="password"
+                value={password}
+              />
+            </View>
+            <Button disabled={!email.trim() || !password || isBusy} onPress={() => void handleSignIn()}>
+              {isBusy ? spinner : null}
+              <Text>Sign in</Text>
+            </Button>
+          </View>
+        )}
+      </Section>
+
+      <Section title="Gate QR">
+        {draft ? (
+          <DetailList
+            items={[
+              { label: 'Event', value: draft.name },
+              { label: 'Starts', value: formatTimestamp(draft.starts_at) },
+              { label: 'Ends', value: formatTimestamp(draft.ends_at) },
+            ]}
           />
         ) : (
-          <>
-            <TextInput
-              accessibilityLabel="Organizer email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={setEmail}
-              placeholder="Organizer email"
-              placeholderTextColor={palette.mutedStone}
-              style={[
-                styles.input,
-                {
-                  borderRadius: radii.field,
-                  fontSize: scaleFont(layout, 16),
-                  minHeight: layout.isTablet ? 60 : 56,
-                },
-              ]}
-              value={email}
+          <View
+            className="bg-foreground w-full self-center overflow-hidden rounded-xl"
+            style={{ aspectRatio: layout.previewAspectRatio, maxWidth: layout.previewFrameMaxWidth }}
+          >
+            <Camera
+              codeScanner={codeScanner}
+              device={device}
+              isActive={!draft && !isBusy}
+              style={StyleSheet.absoluteFill}
             />
-            <TextInput
-              accessibilityLabel="Organizer password"
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={setPassword}
-              placeholder="Password"
-              placeholderTextColor={palette.mutedStone}
-              secureTextEntry
-              style={[
-                styles.input,
-                {
-                  borderRadius: radii.field,
-                  fontSize: scaleFont(layout, 16),
-                  minHeight: layout.isTablet ? 60 : 56,
-                },
-              ]}
-              value={password}
-            />
-            <PrimaryButton
-              disabled={!email.trim() || !password || isBusy}
-              label={isBusy ? 'Signing in...' : 'Sign in organizer'}
-              onPress={() => {
-                void handleSignIn();
-              }}
-            />
-          </>
+            <View className="absolute inset-[15%] rounded-xl border-2 border-white/80" pointerEvents="none" />
+          </View>
         )}
-      </SectionCard>
+      </Section>
 
-      <SectionCard eyebrow="QR" title={draft ? draft.name : 'Scan the provisioning QR'}>
-        <View style={[styles.preview, previewStyle]}>
-          <Camera
-            codeScanner={codeScanner}
-            device={device}
-            isActive={!draft && !isBusy}
-            style={styles.camera}
-          />
-          <View style={[styles.scanFrame, scanFrameStyle]} />
-        </View>
-        <Text style={[styles.caption, { fontSize: scaleFont(layout, 14), lineHeight: scaleFont(layout, 20) }]}>
-          {draft
-            ? 'QR scanned. Confirm the event.'
-            : 'Scan the dashboard gate QR.'}
-        </Text>
-        {draft ? (
-          <>
-            <MetricRow label="Event" value={draft.name} />
-            <MetricRow label="Event ID" value={draft.event_id} />
-            <MetricRow label="Starts" value={draft.starts_at} />
-            <MetricRow label="Ends" value={draft.ends_at} />
-            <MetricRow label="PK_SIGN_EVENT" value={snippet(draft.pk_sign_event)} />
-            <MetricRow label="EVENT_SALT" value={snippet(draft.event_salt)} />
-            {draft.pk_gate_event ? (
-              <StatusBanner
-                message="Gate already bound. Another phone cannot replace it."
-                tone="warning"
-              />
-            ) : null}
-            <TextInput
+      {draft ? (
+        <Section title="Device">
+          {draft.pk_gate_event ? <InlineAlert message="Already bound to another device." /> : null}
+          <View className="gap-2">
+            <Label nativeID="device-name">Name</Label>
+            <Input
               accessibilityLabel="Gate device name"
+              aria-labelledby="device-name"
               autoCapitalize="words"
               onChangeText={setDeviceName}
-              placeholder="Device name"
-              placeholderTextColor={palette.mutedStone}
-              style={[
-                styles.input,
-                {
-                  borderRadius: radii.field,
-                  fontSize: scaleFont(layout, 16),
-                  minHeight: layout.isTablet ? 60 : 56,
-                },
-              ]}
               value={deviceName}
             />
-            <PrimaryButton
-              disabled={!auth || isBusy}
-              label={isBusy ? 'Provisioning gate...' : 'Provision this gate'}
-              onPress={() => {
-                void handleProvision();
-              }}
-            />
-            <PrimaryButton label="Scan another QR" onPress={resetDraft} tone="ghost" />
-          </>
-        ) : null}
-      </SectionCard>
-      <PrimaryButton label="Back to readiness" onPress={() => router.replace('/')} tone="ghost" />
+          </View>
+          <Button disabled={!auth || isBusy} onPress={() => void handleProvision()}>
+            {isBusy ? spinner : null}
+            <Text>Provision</Text>
+          </Button>
+          <Button disabled={isBusy} onPress={resetDraft} variant="outline">
+            <Text>Scan again</Text>
+          </Button>
+        </Section>
+      ) : null}
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  body: {
-    ...typography.body,
-    color: palette.ink,
-  },
-  camera: {
-    flex: 1,
-  },
-  caption: {
-    ...typography.body,
-    color: palette.mutedStone,
-  },
-  input: {
-    ...typography.body,
-    backgroundColor: palette.card,
-    borderColor: palette.borderStrong,
-    borderWidth: 1,
-    color: palette.ink,
-    paddingHorizontal: 16,
-  },
-  preview: {
-    alignSelf: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  scanFrame: {
-    borderColor: palette.scanFrame,
-    borderWidth: 3,
-    position: 'absolute',
-  },
-});

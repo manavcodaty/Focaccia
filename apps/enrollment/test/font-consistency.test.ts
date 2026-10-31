@@ -24,25 +24,35 @@ function collectTsxFiles(relativeDir: string): string[] {
   });
 }
 
-test("enrollment app loads IBM Plex Sans once and uses shared typography tokens", () => {
+test("enrollment app loads Geist once, the typeface shared with the tickets and organizer apps", () => {
   const layoutSource = readSource("app/_layout.tsx");
-  const themeSource = readSource("src/theme.ts");
+  const themeSource = readSource("src/lib/theme.ts");
 
   assert.match(layoutSource, /useFonts/);
   assert.match(layoutSource, /SplashScreen\.preventAutoHideAsync\(\)/);
-  assert.match(layoutSource, /IBMPlexSans_400Regular/);
-  assert.match(layoutSource, /IBMPlexSans_500Medium/);
-  assert.match(layoutSource, /IBMPlexSans_600SemiBold/);
-  assert.match(layoutSource, /IBMPlexSans_700Bold/);
-  assert.match(themeSource, /export const typography =/);
-  assert.match(themeSource, /IBMPlexSans_400Regular/);
-  assert.match(themeSource, /IBMPlexSans_700Bold/);
+  for (const weight of ["Geist_400Regular", "Geist_500Medium", "Geist_600SemiBold", "Geist_700Bold"]) {
+    assert.match(layoutSource, new RegExp(weight));
+    assert.match(themeSource, new RegExp(weight));
+  }
+  assert.doesNotMatch(layoutSource, /IBMPlexSans/);
+});
 
-  for (const relativePath of [
-    ...collectTsxFiles("app"),
-    ...collectTsxFiles("src/components"),
-  ]) {
+test("weight utilities select a Geist family instead of a synthesised weight", () => {
+  const tailwind = readSource("tailwind.config.cjs");
+
+  assert.match(tailwind, /fontWeight:\s*false/);
+  assert.match(tailwind, /'\.font-normal': \{ fontFamily: 'Geist_400Regular' \}/);
+  assert.match(tailwind, /'\.font-medium': \{ fontFamily: 'Geist_500Medium' \}/);
+  assert.match(tailwind, /'\.font-semibold': \{ fontFamily: 'Geist_600SemiBold' \}/);
+  assert.match(tailwind, /'\.font-bold': \{ fontFamily: 'Geist_700Bold' \}/);
+  // The base Text and inputs default to the regular face so every string is Geist.
+  assert.match(readSource("src/components/ui/text.tsx"), /'text-foreground text-base font-normal'/);
+  assert.match(readSource("src/components/ui/input.tsx"), /font-normal/);
+});
+
+test("no screen or component sets fonts or weights through inline styles", () => {
+  for (const relativePath of [...collectTsxFiles("app"), ...collectTsxFiles("src/components")]) {
     const source = readSource(relativePath);
-    assert.doesNotMatch(source, /fontWeight:/, relativePath);
+    assert.doesNotMatch(source, /fontWeight:|fontFamily:|fontSize:/, relativePath);
   }
 });

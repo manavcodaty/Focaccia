@@ -1,94 +1,66 @@
 import type { ReactNode } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  View,
-  type ViewStyle,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
-import { useResponsiveLayout } from '../lib/use-responsive-layout';
-import { palette } from '../theme';
+import { cn } from '@/lib/utils';
 
+const WITH_HEADER: Edge[] = ['bottom', 'left', 'right'];
+const WITHOUT_HEADER: Edge[] = ['top', 'bottom', 'left', 'right'];
+
+/**
+ * One container for every gate screen: 20px gutters, 32px between sections.
+ * `scanner` widens the column for camera layouts; `accepted` / `rejected`
+ * tint the whole screen so a decision reads from across the door.
+ */
 export function ScreenShell({
   children,
-  variant = 'default',
+  className,
+  header = true,
   scroll = true,
-  style,
+  variant = 'default',
 }: {
   children: ReactNode;
-  variant?: 'accepted' | 'default' | 'rejected' | 'scanner' | 'wide';
+  className?: string;
+  header?: boolean;
   scroll?: boolean;
-  style?: ViewStyle;
+  variant?: 'accepted' | 'default' | 'rejected' | 'scanner';
 }) {
-  const layout = useResponsiveLayout();
-  const backgroundColor = variant === 'scanner'
-    ? palette.surfaceInverse
-    : variant === 'accepted'
-      ? palette.acceptSoft
-      : variant === 'rejected'
-        ? palette.alertSoft
-        : palette.background;
   const content = (
     <View
-      style={[
-        styles.content,
-        {
-          gap: layout.sectionGap,
-          maxWidth: variant === 'wide' || variant === 'scanner' ? layout.wideContentMaxWidth : layout.contentMaxWidth,
-          paddingHorizontal: layout.horizontalPadding,
-          paddingVertical: layout.verticalPadding,
-        },
-        style,
-      ]}
+      className={cn(
+        'w-full flex-1 gap-8 self-center px-5 pb-6',
+        header ? 'pt-2' : 'pt-6',
+        variant === 'scanner' ? 'max-w-[820px]' : 'max-w-[620px]',
+        className,
+      )}
     >
-      <StatusBar barStyle={variant === 'scanner' ? 'light-content' : 'dark-content'} />
       {children}
     </View>
   );
 
   return (
-    <SafeAreaView
-      edges={['top', 'bottom', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor }]}
+    <View
+      className={cn(
+        'bg-background flex-1',
+        variant === 'accepted' && 'bg-success/10',
+        variant === 'rejected' && 'bg-destructive/10',
+      )}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboard}
-      >
-        {scroll ? (
-          <ScrollView
-            bounces={false}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {content}
-          </ScrollView>
-        ) : (
-          content
-        )}
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <SafeAreaView edges={header ? WITH_HEADER : WITHOUT_HEADER} style={{ flex: 1 }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+          {scroll ? (
+            <ScrollView
+              contentContainerClassName="grow"
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {content}
+            </ScrollView>
+          ) : (
+            content
+          )}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  keyboard: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-});

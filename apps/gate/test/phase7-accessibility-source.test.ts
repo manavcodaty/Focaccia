@@ -7,16 +7,18 @@ async function source(relativePath: string) {
 }
 
 test('gate feedback, controls, and credential fields are explicitly labeled', async () => {
-  const [banner, button, provision, fallback] = await Promise.all([
-    source('../src/components/status-banner.tsx'),
-    source('../src/components/primary-button.tsx'),
+  const [alert, button, provision, fallback, navList] = await Promise.all([
+    source('../src/components/inline-alert.tsx'),
+    source('../src/components/ui/button.tsx'),
     source('../app/provision.tsx'),
     source('../app/fallback.tsx'),
+    source('../src/components/nav-list.tsx'),
   ]);
 
-  assert.match(banner, /accessibilityLiveRegion=/);
-  assert.match(button, /accessibilityLabel=\{label\}/);
-  assert.match(button, /accessibilityState=\{\{ disabled \}\}/);
+  assert.match(alert, /accessibilityLiveRegion=/);
+  assert.match(button, /accessibilityRole="button"/);
+  assert.match(button, /accessibilityState=\{\{ disabled: Boolean\(props\.disabled\) \}\}/);
+  assert.match(navList, /accessibilityLabel=\{item\.label\}/);
   assert.match(provision, /accessibilityLabel="Organizer email"/);
   assert.match(provision, /accessibilityLabel="Organizer password"/);
   assert.match(provision, /accessibilityLabel="Gate device name"/);

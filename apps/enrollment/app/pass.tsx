@@ -1,16 +1,21 @@
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { QrCodeIcon } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
-import { PrimaryButton } from '../src/components/primary-button';
-import { ScreenShell } from '../src/components/screen-shell';
-import { SectionCard } from '../src/components/section-card';
-import { StatusBanner } from '../src/components/status-banner';
-import { enrollmentApi } from '../src/lib/api';
-import { useEnrollment } from '../src/state/enrollment-context';
-import { palette, radii, typography } from '../src/theme';
+import { EmptyState } from '@/components/empty-state';
+import { EventMeta } from '@/components/event-meta';
+import { InlineAlert } from '@/components/inline-alert';
+import { ScreenShell } from '@/components/screen-shell';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Text } from '@/components/ui/text';
+import { enrollmentApi } from '@/lib/api';
+import { THEME } from '@/lib/theme';
+import { useResponsiveLayout } from '@/lib/use-responsive-layout';
+import { useEnrollment } from '@/state/enrollment-context';
 
 const PASS_TOKEN_CLIPBOARD_TTL_MS = 60_000;
 
@@ -35,19 +40,26 @@ async function copyPassTokenToClipboard(
 
 export default function PassScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const { setBundle, state } = useEnrollment();
-  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [isPreparing, setIsPreparing] = useState(false);
   const pass = state.pass;
   const ticket = state.selectedTicket;
 
+  useEffect(() => {
+    if (!copied) return undefined;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
   if (!pass) {
     return (
-      <ScreenShell style={styles.screen}>
-        <SectionCard title="No secure pass is stored">
-          <Text style={styles.body}>Open the ticket to enroll or replace its pass.</Text>
-          <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
-        </SectionCard>
+      <ScreenShell>
+        <EmptyState icon={QrCodeIcon} title="No pass on this phone">
+          <Button onPress={() => router.replace('/tickets')}><Text>My tickets</Text></Button>
+        </EmptyState>
       </ScreenShell>
     );
   }
@@ -57,86 +69,61 @@ export default function PassScreen() {
   async function prepareRegeneration() {
     if (!ticket) return;
     setIsPreparing(true);
-    setMessage(null);
+    setError(null);
     try {
       const bundle = await enrollmentApi.getEnrollmentBundle({ ticketId: ticket.id });
       setBundle(bundle, 'regeneration');
       router.push('/consent');
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Unable to prepare regeneration.');
+    } catch (prepareError) {
+      setError(prepareError instanceof Error ? prepareError.message : 'Unable to prepare regeneration.');
     } finally {
       setIsPreparing(false);
     }
   }
 
   return (
-    <ScreenShell style={styles.screen}>
-      <View style={styles.readyHeader}>
-        <Text style={styles.readyLabel}>Pass ready</Text>
-        <Text style={styles.eventName}>{pass.event.name}</Text>
-        <Text style={styles.eventMeta}>{pass.event.location || 'Location to be confirmed'}</Text>
-        <Text style={styles.eventMeta}>{new Date(pass.event.starts_at).toLocaleString()}</Text>
+    <ScreenShell>
+      <View className="gap-4">
+        <Text variant="h1">{pass.event.name}</Text>
+        <EventMeta event={pass.event} />
       </View>
 
-      <SectionCard eyebrow="Event pass" title={pass.ticketTypeName} tone="credential">
-        <Text style={styles.generation}>Generation {pass.generation} of 3</Text>
-        <View style={styles.qrWrap}>
-          <QRCode backgroundColor={palette.canvas} color={palette.ink} quietZone={16} size={260} value={pass.token} />
-        </View>
-        {pass.queueCode ? <Text style={styles.queueCode}>{pass.queueCode}</Text> : null}
-        <Text style={styles.validUntil}>Valid until {new Date(pass.event.ends_at).toLocaleString()}</Text>
-      </SectionCard>
+      <Card accessibilityLabel="Event pass QR code">
+        <CardContent className="items-center gap-4">
+          <QRCode backgroundColor={THEME.light.card} color={THEME.light.foreground} quietZone={12} size={layout.qrSize} value={pass.token} />
+          {pass.queueCode ? (
+            <Text className="text-xl font-medium tracking-widest" selectable>{pass.queueCode}</Text>
+          ) : null}
+        </CardContent>
+      </Card>
 
-      <StatusBanner message="Saved securely on this phone." title="Offline ready" tone="success" />
+      {error ? <InlineAlert message={error} /> : null}
 
-      <SectionCard eyebrow="Scanner recovery" title="Manual fallback" tone="subtle">
-        <Text style={styles.body}>If scanning fails, copy the token for gate staff.</Text>
-        <Text style={styles.snippet}>{pass.tokenSnippet}</Text>
-        <PrimaryButton
-          label="Copy full signed token"
+      <View className="gap-3">
+        <Button
+          accessibilityLabel="Copy pass token"
           onPress={() => {
-            void copyPassTokenToClipboard(pass.token, () => setMessage('Full signed token copied briefly.'));
+            void copyPassTokenToClipboard(pass.token, () => setCopied(true));
           }}
-          tone="ghost"
-        />
-      </SectionCard>
-
-      {message ? <StatusBanner message={message} tone={message.includes('copied') ? 'success' : 'warning'} /> : null}
-
-      <View style={styles.actions}>
+          variant="outline"
+        >
+          <Text>{copied ? 'Copied' : 'Copy token'}</Text>
+        </Button>
         {ticket && remaining > 0 ? (
-          <PrimaryButton
+          <Button
             disabled={isPreparing}
-            label={isPreparing ? 'Preparing...' : 'Regenerate pass'}
-            onPress={() => Alert.alert(
-              'Regenerate pass?',
-              `The current pass will be revoked after the replacement is issued. ${remaining} ${remaining === 1 ? 'generation remains' : 'generations remain'}.`,
-              [
-                { style: 'cancel', text: 'Cancel' },
-                { onPress: () => void prepareRegeneration(), style: 'destructive', text: 'Regenerate' },
-              ],
-            )}
-            tone="ghost"
-          />
+            onPress={() => Alert.alert('Regenerate pass?', 'Your current pass will be replaced.', [
+              { style: 'cancel', text: 'Cancel' },
+              { onPress: () => void prepareRegeneration(), style: 'destructive', text: 'Regenerate' },
+            ])}
+            variant="outline"
+          >
+            {isPreparing ? <ActivityIndicator color={THEME.light.foreground} /> : null}
+            <Text>Regenerate</Text>
+          </Button>
         ) : null}
-        {remaining === 0 ? <StatusBanner message="Limit reached. Ask the organizer to reset your ticket." tone="warning" /> : null}
-        <PrimaryButton label="Back to My tickets" onPress={() => router.replace('/tickets')} />
+        <Button onPress={() => router.replace('/tickets')}><Text>Done</Text></Button>
       </View>
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  actions: { gap: 12 },
-  body: { ...typography.body, color: palette.ink, fontSize: 15, lineHeight: 23 },
-  eventMeta: { ...typography.body, color: palette.mutedStone, fontSize: 14 },
-  eventName: { ...typography.display, color: palette.ink, fontSize: 30, lineHeight: 35, textAlign: 'center' },
-  generation: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 15, textAlign: 'center' },
-  qrWrap: { alignItems: 'center', backgroundColor: palette.surface, borderColor: palette.border, borderRadius: radii.panel, borderWidth: 1, padding: 10 },
-  queueCode: { ...typography.title, color: palette.ink, fontSize: 20, letterSpacing: 2, textAlign: 'center' },
-  readyHeader: { alignItems: 'center', backgroundColor: palette.surfaceClay, borderRadius: radii.credential, gap: 6, padding: 24 },
-  readyLabel: { ...typography.bodyStrong, color: palette.success, fontSize: 14 },
-  screen: { gap: 18 },
-  snippet: { ...typography.bodyStrong, color: palette.terracotta, fontSize: 14, lineHeight: 20, textAlign: 'center' },
-  validUntil: { ...typography.body, color: palette.mutedStone, fontSize: 13, textAlign: 'center' },
-});

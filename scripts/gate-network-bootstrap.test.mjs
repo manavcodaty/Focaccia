@@ -111,11 +111,12 @@ test('parses only a loopback Supabase API endpoint', () => {
   );
 });
 
-test('prepares automatically only for Expo run:ios', () => {
+test('prepares automatically for Expo start and run:ios, but not exports', () => {
   assert.equal(typeof bootstrap.shouldPrepareGateNetwork, 'function');
   assert.equal(bootstrap.shouldPrepareGateNetwork(['node', 'expo', 'run:ios']), true);
   assert.equal(bootstrap.shouldPrepareGateNetwork(['node', 'expo', 'export']), false);
-  assert.equal(bootstrap.shouldPrepareGateNetwork(['node', 'expo', 'start']), false);
+  assert.equal(bootstrap.shouldPrepareGateNetwork(['node', 'expo', 'start']), true);
+  assert.equal(bootstrap.shouldPrepareNativeNetwork(['node', 'expo', 'start', '--dev-client']), true);
 });
 
 test('tunnel mode preserves selected env without probing or starting local services', async () => {

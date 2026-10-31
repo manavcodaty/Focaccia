@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
         admin
           .from('events')
           .select('event_id, name, location, starts_at, ends_at')
+          .is('deleted_at', null)
           .in('event_id', eventIds),
         admin
           .from('event_ticket_types')
@@ -39,7 +40,8 @@ Deno.serve(async (req) => {
       : [{ data: [], error: null }, { data: [], error: null }];
     if (eventResult.error || typeResult.error) throw eventResult.error ?? typeResult.error;
 
-    const tickets = await Promise.all((data ?? []).map(async (ticket) => ({
+    const visibleEventIds = new Set((eventResult.data ?? []).map((event) => event.event_id));
+    const tickets = await Promise.all((data ?? []).filter((ticket) => visibleEventIds.has(ticket.event_id)).map(async (ticket) => ({
       ...sanitizeTicketRecord(ticket),
       claim_code: await recoverTicketClaimCode(ticket, decryptClaimCode),
       event: (eventResult.data ?? []).find((event) => event.event_id === ticket.event_id) ?? null,

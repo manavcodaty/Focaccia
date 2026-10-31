@@ -70,7 +70,7 @@ export function parseSupabaseApiEndpoint(statusText) {
 }
 
 export function shouldPrepareGateNetwork(argv = process.argv) {
-  return argv.includes('run:ios');
+  return argv.includes('run:ios') || argv.includes('start');
 }
 
 export const shouldPrepareNativeNetwork = shouldPrepareGateNetwork;

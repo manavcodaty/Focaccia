@@ -103,9 +103,11 @@ let ownedTicketRecovered = false;
 let eventListingIdentity = null;
 const browserConsoleErrors = [];
 const browserPageErrors = [];
+const browserHttpErrors = [];
 const observePage = (page) => {
-  page.on('console', (message) => { if (message.type() === 'error') browserConsoleErrors.push(message.text()); });
+  page.on('console', (message) => { if (message.type() === 'error') browserConsoleErrors.push({ message: message.text(), location: message.location(), page_url: page.url() }); });
   page.on('pageerror', (error) => browserPageErrors.push(error.message));
+  page.on('response', (response) => { if (response.status() >= 400) browserHttpErrors.push({ url: response.url(), status: response.status(), page_url: page.url() }); });
 };
 context.on('page', observePage);
 
@@ -237,6 +239,7 @@ try {
     event_listing_page_identity: eventListingIdentity,
     browser_console_errors: browserConsoleErrors,
     browser_uncaught_errors: browserPageErrors,
+    browser_http_errors: browserHttpErrors,
     gate_provisioning_payload_captured: true,
     gate_provisioning_qr_screenshot_captured: true,
     organizer_event_created: true,

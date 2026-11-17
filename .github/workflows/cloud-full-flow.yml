@@ -31,10 +31,15 @@ jobs:
         with:
           version: 10.33.0
 
-      - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: 2.105.0
+      - name: Install Supabase CLI from npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUPABASE_SHIM="$RUNNER_TEMP/supabase"
+          printf '%s\n' '#!/usr/bin/env bash' 'exec npx --yes supabase@2.105.0 "$@"' > "$SUPABASE_SHIM"
+          chmod 0755 "$SUPABASE_SHIM"
+          "$SUPABASE_SHIM" --version
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
@@ -83,7 +88,7 @@ jobs:
           STATUS_FILE="$RUNNER_TEMP/focaccia-supabase.env"
           supabase status --workdir .focaccia/runtime -o env > "$STATUS_FILE"
           read_status() {
-            sed -n "s/^export //; s/^$1=//p" "$STATUS_FILE" | head -n 1
+            sed -n "s/^export //; s/^$1=//p" "$STATUS_FILE" | head -n 1 | sed -e 's/^"//' -e 's/"$//'
           }
           API_URL="$(read_status API_URL)"
           ANON_KEY="$(read_status ANON_KEY)"
@@ -240,3 +245,4 @@ jobs:
             ${{ runner.temp }}/focaccia-*.log
             ${{ runner.temp }}/focaccia-function-response.json
           if-no-files-found: warn
+          retention-days: 1

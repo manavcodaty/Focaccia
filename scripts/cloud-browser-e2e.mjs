@@ -100,6 +100,14 @@ const context = await browser.newContext({
 let organizerPage;
 let attendeePage;
 let ownedTicketRecovered = false;
+let eventListingIdentity = null;
+const browserConsoleErrors = [];
+const browserPageErrors = [];
+const observePage = (page) => {
+  page.on('console', (message) => { if (message.type() === 'error') browserConsoleErrors.push(message.text()); });
+  page.on('pageerror', (error) => browserPageErrors.push(error.message));
+};
+context.on('page', observePage);
 
 try {
   organizerPage = await context.newPage();
@@ -157,6 +165,8 @@ try {
   await attendeePage.goto(`${ticketsUrl}/`, { waitUntil: 'domcontentloaded' });
   const eventLink = attendeePage.getByRole('link', { name: `View ${eventName}`, exact: true });
   await waitForVisible(eventLink, 'listed event');
+  eventListingIdentity = { url: attendeePage.url(), title: await attendeePage.title(), visible_event_id: eventId };
+  await attendeePage.screenshot({ path: path.join(artifactDir, 'ticketing-first-page.png'), fullPage: false });
   await eventLink.click();
   await attendeePage.waitForURL(new RegExp(`/events/${eventId}$`), { waitUntil: 'domcontentloaded' });
   await waitForVisible(attendeePage.getByRole('heading', { name: eventName, exact: true }), 'event detail');
@@ -172,6 +182,7 @@ try {
   await waitForVisible(attendeePage.getByText(eventName, { exact: true }), 'claimed ticket in attendee wallet');
   if (process.env.FOCACCIA_CLOUD_BATCH === '1') {
     const recoveryContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    recoveryContext.on('page', observePage);
     try {
       const recoveryPage = await recoveryContext.newPage();
       await recoveryPage.goto(`${ticketsUrl}/login`, { waitUntil: 'domcontentloaded' });
@@ -222,6 +233,10 @@ try {
     claim_code_format_valid: true,
     event_id: eventId,
     event_listed: true,
+    event_listing_screenshot_captured: true,
+    event_listing_page_identity: eventListingIdentity,
+    browser_console_errors: browserConsoleErrors,
+    browser_uncaught_errors: browserPageErrors,
     gate_provisioning_payload_captured: true,
     gate_provisioning_qr_screenshot_captured: true,
     organizer_event_created: true,

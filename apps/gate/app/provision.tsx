@@ -16,6 +16,7 @@ import {
 } from 'react-native-vision-camera';
 
 import { MetricRow } from '../src/components/metric-row';
+import { loadCloudProvisioning } from '../src/lib/cloud-e2e-provisioning';
 import { PrimaryButton } from '../src/components/primary-button';
 import { ScreenShell } from '../src/components/screen-shell';
 import { SectionCard } from '../src/components/section-card';
@@ -81,19 +82,23 @@ function useProvisionController(isCloudE2E: boolean) {
       return;
     }
 
-    const encodedPayload = process.env.EXPO_PUBLIC_FOCACCIA_E2E_PROVISIONING_PAYLOAD;
-    if (!encodedPayload) {
-      return;
-    }
-
-    try {
-      const payload = parseProvisioningQrPayload(decodeURIComponent(encodedPayload));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    void loadCloudProvisioning({
+      enabled: true,
+      encodedPayload: process.env.EXPO_PUBLIC_FOCACCIA_E2E_PROVISIONING_PAYLOAD,
+      contextUrl: process.env.EXPO_PUBLIC_FOCACCIA_E2E_CONTEXT_URL,
+      signal: controller.signal,
+    }).then((raw) => {
+      if (!raw || controller.signal.aborted) return;
+      const payload = parseProvisioningQrPayload(raw);
       scanLockRef.current = true;
       setDraft(payload);
       setFeedback('Cloud E2E provisioning payload loaded. Confirm the event and sync this device.');
-    } catch (payloadError) {
-      setError(payloadError instanceof Error ? payloadError.message : 'Cloud E2E provisioning payload is invalid.');
-    }
+    }).catch(() => {
+      if (!controller.signal.aborted) setError('Cloud E2E provisioning payload could not be loaded.');
+    }).finally(() => clearTimeout(timeout));
+    return () => { clearTimeout(timeout); controller.abort(); };
   }, []);
   async function handleSignIn() {
     setError(null);

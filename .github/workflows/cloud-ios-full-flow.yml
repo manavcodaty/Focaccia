@@ -1,25 +1,30 @@
-name: cloud iOS full flow
-
-on:
+name: SC1-SC5 isolated cloud batch
+'on':
   workflow_dispatch:
-  push:
-    branches:
-      - codex/ios-simulator-verification
-
-run-name: Focaccia cloud iOS full flow (${{ github.ref_name }})
-
+    inputs:
+      observations:
+        description: One validation observation or the ten-observation batch
+        required: true
+        default: '2'
+        type: choice
+        options:
+        - '1'
+        - '2'
+        - '10'
+run-name: SC1-SC5 cloud batch (${{ inputs.observations }} observations, ${{ github.sha }})
 permissions:
   actions: read
   contents: read
 
 env:
   COCOAPODS_DISABLE_STATS: 'true'
+  FOCACCIA_OBSERVATIONS: ${{ inputs.observations }}
 
 jobs:
   backend:
     name: Ubuntu Supabase backend and public test tunnels
     runs-on: ubuntu-latest
-    timeout-minutes: 165
+    timeout-minutes: 360
     env:
       FOCACCIA_DOCKER_HOST: unix:///var/run/docker.sock
 
@@ -157,6 +162,7 @@ jobs:
             fi
             sleep 2
           done
+          EXTRA_ORGANIZERS="$(node -e 'console.log(Array.from({length:10},(_,i)=>`batch-${process.env.GITHUB_RUN_ID}-${String(i).padStart(2,"0")}@example.com`).join(","))')"
           SECRET_WRAPPING_KEY="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
           CLAIM_CODE_PEPPER="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
           cat > supabase/functions/.env.local <<EOF
@@ -165,14 +171,14 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
           FACE_PASS_SECRET_WRAPPING_KEY_B64URL=$SECRET_WRAPPING_KEY
           FOCACCIA_CLAIM_CODE_PEPPER=$CLAIM_CODE_PEPPER
-          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com
+          FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com,$EXTRA_ORGANIZERS
           FOCACCIA_NETWORK_MODE=tunnel
           FOCACCIA_TUNNEL_SUPABASE_URL=$SUPABASE_PUBLIC_URL
           FOCACCIA_TUNNEL_WEB_URL=$WEB_PUBLIC_URL
           FOCACCIA_TUNNEL_TICKETS_URL=$TICKETS_PUBLIC_URL
           EOF
           pnpm run db:functions:env
-          test "$(sed -n 's/^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=//p' supabase/functions/.env)" = 'organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com'
+          test "$(sed -n 's/^FOCACCIA_ORGANIZER_EMAIL_ALLOWLIST=//p' supabase/functions/.env)" = "organizer@example.com,organizer2@example.com,browser-organizer@example.com,auth-check@example.com,$EXTRA_ORGANIZERS"
           nohup npx --yes supabase@2.105.0 functions serve \
             --workdir .focaccia/runtime \
             --no-verify-jwt \
@@ -289,19 +295,16 @@ jobs:
         env:
           FOCACCIA_CLOUD_ARTIFACT_DIR: ${{ runner.temp }}/focaccia-cloud-browser
           FOCACCIA_CLOUD_CONTEXT_PATH: ${{ runner.temp }}/focaccia-cloud-context.json
-        run: node scripts/cloud-browser-e2e.mjs
+        run: node scripts/cloud-sc1-sc5-batch.mjs backend
 
       - name: Publish backend fixture for the hosted macOS job
         shell: bash
         run: |
           set -euo pipefail
           BACKEND_ARTIFACT_DIR="$RUNNER_TEMP/focaccia-cloud-backend"
-          mkdir -p "$BACKEND_ARTIFACT_DIR/browser"
-          cp "$RUNNER_TEMP/focaccia-cloud-context.json" "$BACKEND_ARTIFACT_DIR/context.json"
+          mkdir -p "$BACKEND_ARTIFACT_DIR"
+          cp -R "$RUNNER_TEMP/focaccia-cloud-batch/." "$BACKEND_ARTIFACT_DIR/"
           cp "$RUNNER_TEMP/focaccia-cloud-network.json" "$BACKEND_ARTIFACT_DIR/network.json"
-          cp "$RUNNER_TEMP/focaccia-cloud-browser/gate-provisioning-qr.png" "$BACKEND_ARTIFACT_DIR/browser/gate-provisioning-qr.png"
-          cp "$RUNNER_TEMP/focaccia-cloud-browser/report.json" "$BACKEND_ARTIFACT_DIR/browser/browser-report.json"
-          chmod 0600 "$BACKEND_ARTIFACT_DIR/context.json" "$BACKEND_ARTIFACT_DIR/network.json"
 
       - name: Upload backend fixture
         uses: actions/upload-artifact@v4
@@ -309,6 +312,7 @@ jobs:
           name: focaccia-cloud-ios-backend
           path: ${{ runner.temp }}/focaccia-cloud-backend
           if-no-files-found: error
+          retention-days: 1
 
       - name: Keep the public backend alive until the native job finishes
         shell: bash
@@ -316,7 +320,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 450); do
+          for attempt in $(seq 1 1050); do
             COMPLETE_COUNT="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
               --jq '[.artifacts[] | select(.name == "focaccia-cloud-ios-complete")] | length')"
             if [ "$COMPLETE_COUNT" -gt 0 ]; then
@@ -338,72 +342,32 @@ jobs:
           test -n "$COMPLETE_ARTIFACT_ID"
           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$COMPLETE_ARTIFACT_ID/zip" > "$RUNNER_TEMP/focaccia-cloud-ios-complete.zip"
           unzip -q -o "$RUNNER_TEMP/focaccia-cloud-ios-complete.zip" -d "$RUNNER_TEMP/focaccia-cloud-ios-complete"
-          NATIVE_STATUS="$(jq -r '.status' "$(find "$RUNNER_TEMP/focaccia-cloud-ios-complete" -name status.json -print -quit)")"
-          test "$NATIVE_STATUS" = success
-
-          NATIVE_ARTIFACT_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
-            --jq '.artifacts[] | select(.name == "focaccia-cloud-ios-full-flow-proof" and .expired == false) | .id' | tail -n 1)"
-          test -n "$NATIVE_ARTIFACT_ID"
-          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$NATIVE_ARTIFACT_ID/zip" > "$RUNNER_TEMP/focaccia-cloud-ios-proof.zip"
-          unzip -q -o "$RUNNER_TEMP/focaccia-cloud-ios-proof.zip" -d "$RUNNER_TEMP/focaccia-cloud-ios-proof"
-          REPORT_PATH="$(find "$RUNNER_TEMP/focaccia-cloud-ios-proof" -name native-report.json -print -quit)"
-          test -s "$REPORT_PATH"
-          EVENT_ID="$(jq -r '.event_id' "$REPORT_PATH")"
-          test -n "$EVENT_ID" && test "$EVENT_ID" != null
-          SERVICE_ROLE_KEY="$(cat "$RUNNER_TEMP/focaccia-service-role-key")"
-          curl --fail --silent --show-error \
-            -H "apikey: $SERVICE_ROLE_KEY" \
-            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-            --get \
-            --data-urlencode "event_id=eq.$EVENT_ID" \
-            --data-urlencode 'select=id,event_id,pass_id,decision,received_at' \
-            "$FOCACCIA_CLOUD_API_URL/rest/v1/gate_checkins" \
-            > "$RUNNER_TEMP/focaccia-gate-checkins.json"
-          curl --fail --silent --show-error \
-            -H "apikey: $SERVICE_ROLE_KEY" \
-            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-            --get \
-            --data-urlencode "event_id=eq.$EVENT_ID" \
-            --data-urlencode 'select=id,event_id,status,checked_in_at' \
-            "$FOCACCIA_CLOUD_API_URL/rest/v1/event_tickets" \
-            > "$RUNNER_TEMP/focaccia-event-tickets.json"
-          node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const checkins = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/focaccia-gate-checkins.json`, 'utf8'));
-          const tickets = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/focaccia-event-tickets.json`, 'utf8'));
-          if (checkins.length !== 1 || checkins[0]?.decision !== 'ACCEPT') {
-            throw new Error(`Expected one authoritative ACCEPT check-in, received ${checkins.length}.`);
-          }
-          if (tickets.length !== 1 || tickets[0]?.status !== 'checked_in') {
-            throw new Error(`Expected one checked-in ticket, received ${tickets.length}.`);
-          }
-          writeFileSync(
-            `${process.env.RUNNER_TEMP}/focaccia-cloud-ios-authoritative.json`,
-            `${JSON.stringify({
-              event_id: checkins[0].event_id,
-              gate_checkins: checkins.length,
-              accepted_checkins: checkins.filter((entry) => entry.decision === 'ACCEPT').length,
-              ticket_statuses: tickets.map((ticket) => ({ status: ticket.status, checked_in: Boolean(ticket.checked_in_at) })),
-            }, null, 2)}\n`,
-            { mode: 0o600 },
-          );
-          NODE
+          NATIVE_ARTIFACT_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "focaccia-cloud-ios-full-flow-proof" and .expired == false) | .id' | tail -n 1)"
+           test -n "$NATIVE_ARTIFACT_ID"
+           gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$NATIVE_ARTIFACT_ID/zip" > "$RUNNER_TEMP/focaccia-cloud-ios-proof.zip"
+           unzip -q -o "$RUNNER_TEMP/focaccia-cloud-ios-proof.zip" -d "$RUNNER_TEMP/focaccia-cloud-ios-proof"
+           export FOCACCIA_NATIVE_REPORT_ROOT="$RUNNER_TEMP/focaccia-cloud-ios-proof"
+           node scripts/cloud-sc1-sc5-batch.mjs authoritative
 
       - name: Upload backend logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: focaccia-cloud-ios-backend-logs
-          path: |
+          path: |-
             ${{ runner.temp }}/focaccia-*.log
             ${{ runner.temp }}/focaccia-cloud-browser
             ${{ runner.temp }}/focaccia-cloud-ios-authoritative.json
+
+            ${{ runner.temp }}/focaccia-cloud-authoritative
+            ${{ runner.temp }}/focaccia-cloud-batch
           if-no-files-found: warn
+          retention-days: 1
 
   native:
     name: Hosted macOS simulator and native agent
     runs-on: macos-26
-    timeout-minutes: 150
+    timeout-minutes: 360
 
     steps:
       - name: Check out Focaccia
@@ -456,6 +420,7 @@ jobs:
           import path from 'node:path';
           const network = JSON.parse(readFileSync(process.env.NETWORK_PATH, 'utf8'));
           const values = {
+            FOCACCIA_CLOUD_BATCH_ROOT: path.join(path.dirname(process.env.NETWORK_PATH), 'observations'),
             FOCACCIA_BAGUETTE_URL: 'http://127.0.0.1:8421',
             FOCACCIA_CLOUD_ANON_KEY: network.anonKey,
             FOCACCIA_CLOUD_CONTEXT_PATH: process.env.CONTEXT_PATH,
@@ -468,6 +433,7 @@ jobs:
           };
           appendFileSync(process.env.GITHUB_ENV, Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(''));
           NODE
+
       - name: Build shared package for the native apps
         run: pnpm --filter @face-pass/shared build
 
@@ -529,7 +495,7 @@ jobs:
           writeFileSync('apps/enrollment/.env.local', `${common.join('\n')}\n`, { mode: 0o600 });
           writeFileSync('apps/gate/.env.local', `${[
             ...common,
-            `EXPO_PUBLIC_FOCACCIA_E2E_PROVISIONING_PAYLOAD=${encodeURIComponent(JSON.stringify(context.provisioningPayload))}`,
+            `EXPO_PUBLIC_FOCACCIA_E2E_CONTEXT_URL=http://${host}:9012/provisioning`,
           ].join('\n')}\n`, { mode: 0o600 });
           NODE
 
@@ -641,7 +607,7 @@ jobs:
           done
 
       - name: Run the native cloud agent through Enrollment, Gate, offline sync, and dashboard
-        run: node scripts/cloud-ios-e2e.mjs
+        run: node scripts/cloud-sc1-sc5-batch.mjs native
 
       - name: Upload cloud native full-flow proof
         if: always()
@@ -652,6 +618,7 @@ jobs:
             ${{ runner.temp }}/focaccia-cloud-ios
             ${{ runner.temp }}/focaccia-*.log
           if-no-files-found: warn
+          retention-days: 1
 
       - name: Signal backend job that the native job finished
         if: always()
@@ -670,3 +637,5 @@ jobs:
           name: focaccia-cloud-ios-complete
           path: ${{ runner.temp }}/focaccia-cloud-ios-complete/status.json
           if-no-files-found: error
+          retention-days: 1
+

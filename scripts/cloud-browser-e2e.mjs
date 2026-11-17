@@ -99,6 +99,7 @@ const context = await browser.newContext({
 });
 let organizerPage;
 let attendeePage;
+let ownedTicketRecovered = false;
 
 try {
   organizerPage = await context.newPage();
@@ -169,6 +170,20 @@ try {
   await attendeePage.goto(`${ticketsUrl}/tickets`, { waitUntil: 'domcontentloaded' });
   await waitForVisible(attendeePage.getByRole('heading', { name: 'My tickets', exact: true }), 'attendee wallet');
   await waitForVisible(attendeePage.getByText(eventName, { exact: true }), 'claimed ticket in attendee wallet');
+  if (process.env.FOCACCIA_CLOUD_BATCH === '1') {
+    const recoveryContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    try {
+      const recoveryPage = await recoveryContext.newPage();
+      await recoveryPage.goto(`${ticketsUrl}/login`, { waitUntil: 'domcontentloaded' });
+      await fillStable(recoveryPage, recoveryPage.locator('input[type="email"]'), attendeeEmail, 'recovery email');
+      await fillStable(recoveryPage, recoveryPage.locator('input[type="password"]'), attendeePassword, 'recovery password');
+      await recoveryPage.locator('form button[type="submit"]').click();
+      await recoveryPage.waitForURL(/\/tickets(?:\?.*)?$/, { timeout: 45_000, waitUntil: 'domcontentloaded' });
+      await waitForVisible(recoveryPage.getByText(eventName, { exact: true }), 'owned ticket recovered in fresh browser');
+      ownedTicketRecovered = true;
+      await recoveryPage.screenshot({ path: path.join(artifactDir, 'attendee-ticket-recovered.png'), fullPage: true });
+    } finally { await recoveryContext.close(); }
+  }
 
   await organizerPage.goto(`${webUrl}/events/${eventId}/provisioning`, { waitUntil: 'domcontentloaded' });
   await waitForVisible(
@@ -195,6 +210,7 @@ try {
       organizerPassword,
       provisioningPayload,
       runId,
+      ownedTicketRecovered,
     }, null, 2)}\n`,
     { mode: 0o600 },
   );
@@ -209,6 +225,7 @@ try {
     gate_provisioning_payload_captured: true,
     gate_provisioning_qr_screenshot_captured: true,
     organizer_event_created: true,
+    owned_ticket_recovered: ownedTicketRecovered,
     run_id: runId,
   };
   await writeFile(path.join(artifactDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);

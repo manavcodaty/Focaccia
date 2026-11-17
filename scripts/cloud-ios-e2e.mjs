@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
+import { captureGateState } from './lib/cloud-gate-evidence.mjs';
 
 import {
   describeUi,
@@ -312,6 +313,16 @@ async function fillOrganizerBrowserLogin(page) {
 }
 
 async function main() {
+  const startedAt = new Date().toISOString();
+  const extendedEvidence = process.env.FOCACCIA_FRESH_SIMULATOR_STATE === '1';
+  const extraArtifacts = [];
+  let gateIdentity = null;
+  let beforeRestart = null;
+  let originalGateTime = null;
+  let passId = null;
+  let duplicateSync = null;
+  const securityTimes = {};
+  const securityAttempts = {};
   await installSimulatorApp(simulatorUdid, enrollmentAppPath);
   await installSimulatorApp(simulatorUdid, gateAppPath);
   await grantCameraAccess(simulatorUdid, enrollmentBundleId);
@@ -381,6 +392,11 @@ async function main() {
     checks.gate_provisioned = true;
     checks.provisioning_payload_injected = true;
     await screenshot('gate-provisioned.png');
+    if (extendedEvidence) {
+      const state = await captureGateState(simulatorUdid, artifact('gate-provisioned-state.json'));
+      gateIdentity = state.snapshot;
+      extraArtifacts.push('gate-provisioned-state.json');
+    }
 
     await launchEnrollment();
 
@@ -417,6 +433,7 @@ async function main() {
     await waitForNode(simulatorUdid, /Full signed token copied briefly/);
     const passToken = await readSimulatorClipboard(simulatorUdid);
     assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
+    if (extendedEvidence) passId = JSON.parse(Buffer.from(passToken.split('.')[0], 'base64url').toString('utf8')).pass_id;
 
     await launchGate();
     await tapAction('Open scanner', { timeoutMs: 90_000 });
@@ -430,10 +447,12 @@ async function main() {
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
 
     await stopLocalProxy();
+    if (extendedEvidence) { checks.decision_backend_unreachable = true; securityAttempts.genuine_unused = true; }
     await tapAction('Capture and verify attendee', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, /^Entry accepted\b/, { timeoutMs: 180_000 });
     checks.gate_liveness_capture_accepted = true;
     checks.offline_acceptance = true;
+    securityTimes.genuine_unused = new Date().toISOString();
     await screenshot('gate-entry-accepted-offline.png');
     await tapAction('Home');
     await waitForNode(simulatorUdid, /Sync pending/ , { timeoutMs: 90_000 });
@@ -441,6 +460,12 @@ async function main() {
     await waitForMetric('Pending check-ins', 1, { timeoutMs: 90_000 });
     checks.offline_queue_observed = true;
     await screenshot('gate-sync-pending.png');
+    if (extendedEvidence) {
+      beforeRestart = await captureGateState(simulatorUdid, artifact('queue-before-restart.json'));
+      assert.equal(beforeRestart.snapshot.queue.filter((row) => row.status === 'pending').length, 1);
+      originalGateTime = beforeRestart.snapshot.queue[0].gate_timestamp;
+      extraArtifacts.push('queue-before-restart.json');
+    }
 
     // A restart must retain the durable offline queue before connectivity is restored.
     await launchGate();
@@ -448,8 +473,15 @@ async function main() {
     await waitForMetric('Pending check-ins', 1, { timeoutMs: 30_000 });
     checks.queue_persisted_after_restart = true;
     await screenshot('gate-sync-persisted-after-restart.png');
+    if (extendedEvidence) {
+      const afterRestart = await captureGateState(simulatorUdid, artifact('queue-after-restart.json'));
+      assert.equal(afterRestart.snapshot.queue.filter((row) => row.status === 'pending').length, 1);
+      assert.equal(afterRestart.snapshot.queue[0].gate_timestamp, originalGateTime);
+      extraArtifacts.push('queue-after-restart.json');
+    }
 
     // Reusing the accepted token while still offline must be rejected locally.
+    securityAttempts.replay = true;
     await tapAction('Back');
     await waitForNode(simulatorUdid, 'Open scanner', { timeoutMs: 90_000 });
     await tapAction('Open scanner');
@@ -460,6 +492,7 @@ async function main() {
     await waitForNode(simulatorUdid, /^Entry rejected\b/, { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, /REPLAY_USED/, { timeoutMs: 30_000 });
     checks.replay_rejected = true;
+    securityTimes.replay = new Date().toISOString();
     await screenshot('gate-replay-rejected-offline.png');
     await tapAction('Home');
 
@@ -475,6 +508,23 @@ async function main() {
     await waitForNode(simulatorUdid, 'Queue clear', { timeoutMs: 90_000 });
     checks.reconnect_sync = true;
     await screenshot('gate-sync-complete.png');
+    if (extendedEvidence) {
+      const afterSync = await captureGateState(simulatorUdid, artifact('queue-after-reconnect.json'));
+      assert.equal(afterSync.snapshot.queue.filter((row) => row.status === 'pending').length, 0);
+      assert.equal(afterSync.snapshot.queue.filter((row) => row.status === 'synced').length, 1);
+      const signedRequest = beforeRestart.signedRequests[0];
+      securityAttempts.duplicate_synchronization = true;
+      const response = await fetch(`http://${requiredEnv('FOCACCIA_CLOUD_LOCAL_HOST')}:54331/functions/v1/record-gate-checkin`, {
+        method: 'POST', headers: { apikey: requiredEnv('FOCACCIA_CLOUD_ANON_KEY'), 'Content-Type': 'application/json' }, body: JSON.stringify(signedRequest), signal: AbortSignal.timeout(15_000),
+      });
+      const body = await response.json();
+      assert.equal(response.status, 200, 'An identical signed retry must return an idempotent response.');
+      assert.equal(body?.data?.idempotent_replay, true);
+      duplicateSync = { http_status: response.status, idempotent_replay: true, observed_at: new Date().toISOString() };
+      securityTimes.duplicate_synchronization = duplicateSync.observed_at;
+      await writeFile(artifact('duplicate-sync.json'), JSON.stringify(duplicateSync, null, 2)+'\n');
+      extraArtifacts.push('queue-after-reconnect.json', 'duplicate-sync.json');
+    }
 
     const browser = await chromium.launch({
       ...(process.env.FOCACCIA_BROWSER_EXECUTABLE_PATH ? { executablePath: process.env.FOCACCIA_BROWSER_EXECUTABLE_PATH } : { channel: 'chrome' }),
@@ -514,6 +564,7 @@ async function main() {
         'gate-sync-complete.png',
         'organizer-dashboard-checked-in.png',
       ];
+    artifacts.push(...extraArtifacts);
     if (failure) {
       await Promise.allSettled([
         takeSimulatorScreenshot(simulatorUdid, artifact('native-failure.png')),
@@ -535,12 +586,50 @@ async function main() {
       commit_sha: process.env.GITHUB_SHA ?? null,
       event_id: context.eventId,
       face_fixture_sha256: faceFixtureSha256,
-      failure,
+      fixture_sha256: faceFixtureSha256,
+      runtime_failure: failure,
+      failure: failure ?? 'Base native flow completed; complete privacy audit and four authenticated security-control fixtures remain unavailable.',
+      status: failure ? 'FAIL' : 'PARTIAL',
       network_loss_method: 'stopped_macOS_relay',
       provisioning_mode: 'e2e_payload_injection',
       provisioning_qr_camera_scan: false,
       run_id: context.runId,
       runner_os: process.env.RUNNER_OS ?? null,
+      started_at: startedAt,
+      workflow_run_url: process.env.GITHUB_RUN_ID ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}` : null,
+      ticket_id: context.ticketId ?? null,
+      organizer_id_hash: context.organizerIdHash ?? null,
+      attendee_id_hash: context.attendeeIdHash ?? null,
+      gate_device_id: gateIdentity?.gate_device_id ?? null,
+      gate_key_fingerprint: gateIdentity?.gate_key_fingerprint ?? null,
+      pass_id: passId,
+      fresh_simulator_state: extendedEvidence,
+      mutable_state_isolated: extendedEvidence,
+      original_gate_time: originalGateTime,
+      duplicate_sync: duplicateSync,
+      security_matrix: [
+        ['genuine_unused', checks.offline_acceptance, 'ACCEPT', 'ACCEPT'],
+        ['replay', checks.replay_rejected, 'REJECT', 'REPLAY_USED'],
+        ['tampered', false, 'REJECT', null],
+        ['wrong_event', false, 'REJECT', null],
+        ['expired', false, 'REJECT', null],
+        ['revoked_after_refresh', false, 'REJECT', null],
+        ['duplicate_synchronization', duplicateSync?.idempotent_replay === true, 'NO_DUPLICATE_BACKEND_ROW', 'IDEMPOTENT_REPLAY'],
+      ].map(([scenario, passed, expected, reason]) => ({
+        scenario, status: passed ? 'PASS' : securityAttempts[scenario] ? 'FAIL' : 'NOT_TESTED',
+        input_identity: securityAttempts[scenario] ? passId : null,
+        expected, observed: passed ? expected : null, reason_code: passed ? reason : null,
+        timestamp: securityTimes[scenario] ?? null,
+        backend_consequence: 'Requires the separate per-run authoritative backend artifact; not inferred from UI.',
+        reason: passed ? null : securityAttempts[scenario] ? 'Attempt did not satisfy its assertion; see native failure evidence.' : 'Authenticated control fixture not implemented by this workflow; no pass claim.',
+        workflow_run_url: process.env.GITHUB_RUN_ID ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}` : null,
+        raw_artifact_paths: ['native-report.json'],
+      })),
+      privacy_audit: {
+        status: 'NOT_TESTED',
+        reason: 'Owner waived the privacy dispatch blocker; this is not evidence that schema, rows, API payloads, logs, CSV and retained artifacts passed a full audit.',
+        encrypted_payload_classification: 'Event-specific encrypted gate-bound biometric-derived ciphertext; not described as no biometric bytes.',
+      },
     };
     await Promise.all([
       writeFile(artifact('native-report.json'), `${JSON.stringify(evidence, null, 2)}\n`),

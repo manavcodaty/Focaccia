@@ -414,7 +414,7 @@ export async function typeIntoNode(udid, matcher, value, options = {}) {
   });
 }
 
-export async function readSimulatorClipboard(udid, { timeoutMs = 10_000 } = {}) {
+export async function readSimulatorClipboard(udid, { timeoutMs = 10_000, accept = (value) => Boolean(value), readCommand = runCommand } = {}) {
   const deadline = Date.now() + timeoutMs;
 
   // Expo Clipboard resolves its write before the hosted simulator's pasteboard
@@ -426,9 +426,9 @@ export async function readSimulatorClipboard(udid, { timeoutMs = 10_000 } = {}) 
       ['xcrun', ['simctl', 'pbpaste', udid]],
     ]) {
       try {
-        const { stdout } = await runCommand(command, args);
+        const { stdout } = await readCommand(command, args, { timeout: Math.max(1, Math.min(3000, deadline - Date.now())) });
         const value = stdout.trim();
-        if (value) return value;
+        if (accept(value)) return value;
       } catch {
         // Try the other hosted pasteboard reader before the next poll.
       }

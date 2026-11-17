@@ -440,10 +440,21 @@ async function main() {
     checks.enrollment_camera_capture_completed = true;
     await screenshot('enrollment-pass.png');
 
-    await tapAction('Copy full signed token');
+    let passToken = '';
+    const clipboardReads = [];
+    const signedTokenShape = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      // Copy keeps its button visible. Generic repeat-until-hidden tapping
+      // can outlast the clipboard TTL and let an earlier copy timer clear it.
+      await tapNode(simulatorUdid, 'Copy full signed token', { retryIfStillVisible: false });
+      passToken = await readSimulatorClipboard(simulatorUdid, { timeoutMs: 10_000, accept: (value) => signedTokenShape.test(value) });
+      clipboardReads.push({ attempt, observed_at: new Date().toISOString(), signed_token_read: signedTokenShape.test(passToken), token_retained: false });
+      if (passToken) break;
+    }
+    await writeFile(artifact('clipboard-read.json'), JSON.stringify({ attempts: clipboardReads }, null, 2)+'\n');
+    extraArtifacts.push('clipboard-read.json');
+    assert.ok(signedTokenShape.test(passToken), 'Enrollment copy did not yield a signed pass token after three bounded attempts; token value withheld.');
     await waitForNode(simulatorUdid, /Full signed token copied briefly/);
-    const passToken = await readSimulatorClipboard(simulatorUdid);
-    assert.match(passToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Enrollment should copy a signed pass token.');
     if (extendedEvidence) passId = JSON.parse(Buffer.from(passToken.split('.')[0], 'base64url').toString('utf8')).pass_id;
 
     await launchGate();

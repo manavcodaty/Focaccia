@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -10,7 +10,7 @@ const sha = 'd'.repeat(40);
 const preflight = { zero_cost_verdict: 'CONFIRMED', target: { commit_sha: sha, workflow_url: 'https://github.com/manavcodaty/Focaccia/blob/'+sha+'/.github/workflows/cloud-ios-full-flow.yml' }, dispatched_workflows: 0, blockers: [], limitations: [] };
 function valid(id = 'fixture-one') {
   const artifact = id + '.json';
-  writeFileSync(path.join(root, artifact), JSON.stringify({ event_id: id, gate_checkins: 1, accepted_checkins: 1, ticket_statuses: [{ status: 'checked_in', checked_in: true }] }));
+  writeFileSync(path.join(root, artifact), JSON.stringify({ event_id: id, gate_checkins: 1, accepted_checkins: 1, ticket_statuses: [{ status: 'checked_in', checked_in: true }], checkins:[{gate_timestamp:'2026-08-23T13:00:00Z'}], tickets:[{checked_in_at:'2026-08-23T13:00:00Z'}] }));
   const checks = Object.fromEntries(['organizer_event_created','event_listed','attendee_authenticated','ticket_claimed','owned_ticket_recovered','foreign_ticket_rejected','enrollment_pass_issued','gate_verified','dashboard_checked_in','revocation_cache_fresh','offline_acceptance','decision_backend_unreachable','offline_queue_observed','queue_persisted_after_restart','reconnect_sync','duplicate_sync_no_duplicate'].map((k) => [k,true]));
   checks.original_gate_time = '2026-08-23T13:00:00Z';
   return {
@@ -35,7 +35,7 @@ test('checks raw backend evidence independently of manifest assertions',()=>{con
 test('rejects privacy audit with missing surfaces',()=>{const r=valid();delete r.privacy_audit.surfaces.rows;assert.throws(()=>validate([r]),/Privacy audit/)});
 test('rejects incomplete security matrix',()=>{const r=valid();r.security_matrix.pop();assert.throws(()=>validate([r]),/Security evidence/)});
 test('rejects unproven mutable-state isolation',()=>{const r=valid();r.mutable_state_isolated=false;assert.throws(()=>validate([r]),/isolation/)});
-test('rejects unavailable original gate timestamp for recovery PASS',()=>{const r=valid();r.checks.original_gate_time=0;assert.throws(()=>validate([r]),/Recovery evidence/)});
+test('rejects unavailable original gate timestamp for recovery PASS',()=>{const r=valid();r.checks.original_gate_time=0;assert.throws(()=>validate([r]),/original gate time|Recovery evidence/)});
 test('rejects missing ownership rejection for full journey PASS',()=>{const r=valid();r.checks.foreign_ticket_rejected=false;assert.throws(()=>validate([r]),/ownership evidence/)});
 test('empty observations yield blocked results and null rates, never invented 0% success',()=>{const p={...preflight,zero_cost_verdict:'UNVERIFIED'};const r=aggregate([],{preflight:p,baseline:{},optimization:{},security_review:{dispatch_safe:false}});assert.equal(r.status,'BLOCKED');for(const c of Object.values(r.criteria)){assert.equal(c.denominator,0);assert.equal(c.rate,null);assert.equal(c.planned_denominator,10)}});
 test('FAIL and PARTIAL remain in denominators rather than selecting successes',()=>{const a=valid('denom-a');const b=valid('denom-b');b.status='FAIL';b.failure='synthetic';b.criteria.SC1={status:'FAIL',reason:'synthetic'};const r=aggregate([a,b],{preflight,baseline:{},optimization:{},security_review:{dispatch_safe:true}});assert.equal(r.criteria.SC1.numerator,1);assert.equal(r.criteria.SC1.denominator,2);assert.equal(r.criteria.SC1.status,'FAIL')});
@@ -47,4 +47,18 @@ test('CLI writes both blocked receipt files end to end without any real workflow
  const p={...preflight,zero_cost_verdict:'UNVERIFIED',limitations:[],blockers:[]};
  for(const [name,value] of Object.entries({preflight:p,baseline:{observations:[]},optimization:{status:'BLOCKED',baseline_wall_seconds:null,baseline_runner_seconds:null},'security-review':{dispatch_safe:false}}))writeFileSync(path.join(dir,name+'.json'),JSON.stringify(value));
  const r=main(['--input',input,'--output',dir]);assert.equal(r.status,'BLOCKED');assert.ok(fs.existsSync(path.join(dir,'sc1-sc5-evidence-receipt.json')));assert.ok(fs.existsSync(path.join(dir,'sc1-sc5-evidence-receipt.md')));
+});
+
+test('owner dispatch override does not convert an untested privacy audit into PASS',()=>{
+ const runs=Array.from({length:10},(_,i)=>valid('waived-'+i));for(const r of runs){r.status='PARTIAL';r.failure='Privacy audit not exercised';r.criteria.SC3={status:'NOT_TESTED',reason:r.failure};r.privacy_audit={status:'NOT_TESTED'};}
+ validate(runs);const r=aggregate(runs,{preflight,baseline:{},optimization:{},security_review:{dispatch_safe:false,owner_dispatch_override:true}});
+ assert.equal(r.status,'PARTIAL');assert.equal(r.criteria.SC3.status,'NOT_TESTED');assert.equal(r.criteria.SC3.denominator,0);assert.equal(r.criteria.SC3.rate,null);assert.equal(r.criteria.SC1.numerator,10);
+});
+test('an early failed observation with explicit identity gaps is preserved without fabricating a pass',()=>{
+ const r=valid('early-fail');r.status='FAIL';r.failure='Simulator failed before gate setup';r.pass_id=null;r.gate_device_id=null;r.gate_key_fingerprint=null;
+ r.identity_gaps=Object.fromEntries(['pass_id','gate_device_id','gate_key_fingerprint'].map(k=>[k,r.failure]));r.criteria=Object.fromEntries(CRITERIA.map(k=>[k,{status:'NOT_TESTED',reason:r.failure}]));
+ assert.equal(validate([r]).length,1);r.criteria.SC1={status:'PASS'};assert.throws(()=>validate([r]),/Incomplete identities/);
+});
+test('authoritative original time is checked rather than merely accepting a nonempty timestamp',()=>{
+ const r=valid('wrong-time');const raw=JSON.parse(readFileSync(path.join(root,r.artifact_paths[0]),'utf8'));raw.checkins[0].gate_timestamp='2026-08-23T13:01:00Z';writeFileSync(path.join(root,r.artifact_paths[0]),JSON.stringify(raw));assert.throws(()=>validate([r]),/original gate time mismatch/);
 });

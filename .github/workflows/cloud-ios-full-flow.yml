@@ -417,6 +417,12 @@ jobs:
               unzip -q -o "$RUNNER_TEMP/focaccia-cloud-backend.zip" -d "$BACKEND_DIR"
               break
             fi
+            BACKEND_CONCLUSION="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" \
+              --jq '.jobs[] | select(.name == "Ubuntu Supabase backend and public test tunnels") | .conclusion // ""')"
+            if [ "$BACKEND_CONCLUSION" = 'failure' ] || [ "$BACKEND_CONCLUSION" = 'cancelled' ]; then
+              echo 'Backend preparation failed; stop native waiting and preserve diagnostics.' >&2
+              exit 1
+            fi
             if [ "$attempt" -eq 120 ]; then
               echo 'Timed out waiting for the Ubuntu backend fixture.' >&2
               exit 1

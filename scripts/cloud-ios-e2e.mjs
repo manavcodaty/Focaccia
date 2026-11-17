@@ -458,7 +458,16 @@ async function main() {
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
 
     await stopLocalProxy();
-    if (extendedEvidence) { checks.decision_backend_unreachable = true; securityAttempts.genuine_unused = true; }
+    if (extendedEvidence) {
+      checks.decision_backend_unreachable = true; securityAttempts.genuine_unused = true;
+      await writeFile(artifact('network-state.json'), JSON.stringify({
+        checked_at: new Date().toISOString(), network_loss_method: 'stopped_macOS_relay',
+        relay_process_signalled: true, relay_health_available: false,
+        assertion: 'waitForProxyState(false) completed after SIGTERM; native clients use this relay as their only configured backend endpoint.',
+        physical_radio_isolation: false,
+      }, null, 2)+'\n');
+      extraArtifacts.push('network-state.json');
+    }
     await tapAction('Capture and verify attendee', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, /^Entry accepted\b/, { timeoutMs: 180_000 });
     checks.gate_liveness_capture_accepted = true;

@@ -137,15 +137,17 @@ jobs:
           start_tunnel supabase 54321
           start_tunnel web 3000
           start_tunnel tickets 3001
+          start_tunnel coordinator 9013
           for attempt in $(seq 1 90); do
             SUPABASE_PUBLIC_URL="$(tunnel_url supabase)"
             WEB_PUBLIC_URL="$(tunnel_url web)"
             TICKETS_PUBLIC_URL="$(tunnel_url tickets)"
-            if [ -n "$SUPABASE_PUBLIC_URL" ] && [ -n "$WEB_PUBLIC_URL" ] && [ -n "$TICKETS_PUBLIC_URL" ]; then
+            COORDINATOR_PUBLIC_URL="$(tunnel_url coordinator)"
+            if [ -n "$SUPABASE_PUBLIC_URL" ] && [ -n "$WEB_PUBLIC_URL" ] && [ -n "$TICKETS_PUBLIC_URL" ] && [ -n "$COORDINATOR_PUBLIC_URL" ]; then
               break
             fi
             if [ "$attempt" -eq 90 ]; then
-              for tunnel in supabase web tickets; do
+              for tunnel in supabase web tickets coordinator; do
                 sed -n '1,180p' "$RUNNER_TEMP/focaccia-$tunnel-tunnel.log" >&2 || true
               done
               exit 1
@@ -232,6 +234,7 @@ jobs:
           echo "FOCACCIA_CLOUD_SUPABASE_URL=$SUPABASE_PUBLIC_URL" >> "$GITHUB_ENV"
           echo "FOCACCIA_CLOUD_WEB_URL=$WEB_PUBLIC_URL" >> "$GITHUB_ENV"
           echo "FOCACCIA_CLOUD_TICKETS_URL=$TICKETS_PUBLIC_URL" >> "$GITHUB_ENV"
+          echo "FOCACCIA_CLOUD_COORDINATOR_URL=$COORDINATOR_PUBLIC_URL" >> "$GITHUB_ENV"
 
       - name: Start web and tickets apps on the public tunnel origins
         shell: bash
@@ -295,7 +298,19 @@ jobs:
         env:
           FOCACCIA_CLOUD_ARTIFACT_DIR: ${{ runner.temp }}/focaccia-cloud-browser
           FOCACCIA_CLOUD_CONTEXT_PATH: ${{ runner.temp }}/focaccia-cloud-context.json
-        run: node scripts/cloud-sc1-sc5-batch.mjs backend
+        run: |
+          set -euo pipefail
+          nohup node scripts/cloud-sc1-sc5-batch.mjs backend > "$RUNNER_TEMP/focaccia-batch-coordinator.log" 2>&1 &
+          COORDINATOR_PID="$!"
+          echo "$COORDINATOR_PID" > "$RUNNER_TEMP/focaccia-batch-coordinator.pid"
+          for attempt in $(seq 1 300); do
+            if [ -s "$RUNNER_TEMP/focaccia-cloud-batch/ready.json" ]; then break; fi
+            if ! kill -0 "$COORDINATOR_PID" 2>/dev/null || [ "$attempt" -eq 300 ]; then
+              cat "$RUNNER_TEMP/focaccia-batch-coordinator.log" >&2
+              exit 1
+            fi
+            sleep 2
+          done
 
       - name: Publish backend fixture for the hosted macOS job
         shell: bash

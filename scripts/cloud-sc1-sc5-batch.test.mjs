@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { observationCount, contextServer } from './cloud-sc1-sc5-batch.mjs';
+import { observationCount, contextServer, runCloudCommand } from './cloud-sc1-sc5-batch.mjs';
 import { loadCloudProvisioning } from '../apps/gate/src/lib/cloud-e2e-provisioning.ts';
 
 test('bounded validation and batch counts only',()=>{
@@ -34,5 +34,10 @@ test('candidate runs native build steps once and uses simulator erase for each o
   const yaml=readFileSync(new URL('../.github/workflows/cloud-ios-full-flow.yml',import.meta.url),'utf8');
   assert.equal((yaml.match(/name: Build Enrollment for/g)||[]).length,1);assert.equal((yaml.match(/name: Build Gate for/g)||[]).length,1);
   assert.match(yaml,/node scripts\/cloud-sc1-sc5-batch\.mjs native/);assert.match(yaml,/retention-days: 1/);
-  const driver=readFileSync(new URL('./cloud-sc1-sc5-batch.mjs',import.meta.url),'utf8');assert.match(driver,/\['simctl','erase',udid\]/);assert.match(driver,/for\(const index of directories\)/);
+  const driver=readFileSync(new URL('./cloud-sc1-sc5-batch.mjs',import.meta.url),'utf8');assert.match(driver,/\['simctl','erase',udid\]/);assert.match(driver,/for\(let i=0;i<count;i\+\+\)/);
+});
+test('native subprocess can fetch its fixture while the parent waits; no event-loop deadlock',async(t)=>{
+ const server=await contextServer('127.0.0.1',()=>({provisioningPayload:{event_id:'fixture-child'}}),0);t.after(()=>new Promise(resolve=>server.close(resolve)));
+ const url='http://127.0.0.1:'+server.address().port+'/provisioning';
+ await runCloudCommand(process.execPath,['-e',`fetch(${JSON.stringify(url)},{signal:AbortSignal.timeout(1500)}).then(r=>r.json()).then(x=>{if(x.event_id!=='fixture-child')process.exit(1)}).catch(()=>process.exit(1))`],{stdio:'ignore'});
 });

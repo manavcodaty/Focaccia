@@ -344,6 +344,17 @@ async function main() {
     reconnect_sync: false,
   };
   let failure = null;
+  if (extendedEvidence) {
+    Object.assign(checks, {
+      organizer_event_created: context.browserChecks?.organizer_event_created === true,
+      event_listed: context.browserChecks?.event_listed === true,
+      attendee_authenticated: context.browserChecks?.attendee_account_created === true,
+      ticket_claimed: Boolean(context.ticketId) && context.browserChecks?.claim_code_format_valid === true,
+      owned_ticket_recovered: context.ownedTicketRecovered === true,
+      foreign_ticket_rejected: context.foreignTicketRejected === true,
+    });
+    for (const scenario of ['tampered','wrong_event','expired','revoked_after_refresh']) checks[`security_${scenario}`] = false;
+  }
 
   try {
     // Gate provisioning must precede enrollment: the server will not issue a
@@ -496,6 +507,32 @@ async function main() {
     await screenshot('gate-replay-rejected-offline.png');
     await tapAction('Home');
 
+    if (extendedEvidence) {
+      assert.equal(context.securityControls?.length, 4, 'Expected four isolated authenticated security-control fixtures.');
+      for (const control of context.securityControls) {
+        securityAttempts[control.scenario] = true;
+        await tapAction('Open scanner', { timeoutMs: 90_000 });
+        await tapAction('Manual fallback', { timeoutMs: 90_000 });
+        await fillInputExactly(/^Full pass token\b/, control.token);
+        await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
+        await tapAction('Verify token offline', { timeoutMs: 90_000 });
+        await waitForNode(simulatorUdid, /^Entry rejected\b/, { timeoutMs: 90_000 });
+        await waitForNode(simulatorUdid, new RegExp(`\\b${control.expected_reason}\\b`), { timeoutMs: 30_000 });
+        checks[`security_${control.scenario}`] = true;
+        securityTimes[control.scenario] = new Date().toISOString();
+        const image = `gate-${control.scenario}-rejected-offline.png`;
+        await screenshot(image); extraArtifacts.push(image);
+        await tapAction('Home');
+      }
+      const securityState = await captureGateState(simulatorUdid, artifact('security-control-state.json'));
+      assert.equal(securityState.snapshot.queue.filter((row) => row.status === 'pending').length, 1, 'Rejected controls must not create accepted check-ins.');
+      for (const control of context.securityControls) {
+        assert.ok(securityState.snapshot.logs.some((row) => row.pass_id === control.pass_id && row.outcome === 'REJECT' && row.reason_code === control.expected_reason), 'Each security rejection must have a matching durable gate log.');
+      }
+      assert.ok(securityState.snapshot.revocations.some((row) => row.pass_id === context.securityControls.find((item) => item.scenario === 'revoked_after_refresh').pass_id), 'Revoked control must actually be present in the refreshed cache.');
+      extraArtifacts.push('security-control-state.json');
+    }
+
     await restartLocalProxy();
     await tapAction('Settings', { timeoutMs: 90_000 });
     // Restoring connectivity can trigger the app's automatic foreground sync
@@ -588,7 +625,7 @@ async function main() {
       face_fixture_sha256: faceFixtureSha256,
       fixture_sha256: faceFixtureSha256,
       runtime_failure: failure,
-      failure: failure ?? 'Base native flow completed; complete privacy audit and four authenticated security-control fixtures remain unavailable.',
+      failure: failure ?? 'Native flow and security controls completed; the central privacy audit remains waived/not tested.',
       status: failure ? 'FAIL' : 'PARTIAL',
       network_loss_method: 'stopped_macOS_relay',
       provisioning_mode: 'e2e_payload_injection',
@@ -610,14 +647,15 @@ async function main() {
       security_matrix: [
         ['genuine_unused', checks.offline_acceptance, 'ACCEPT', 'ACCEPT'],
         ['replay', checks.replay_rejected, 'REJECT', 'REPLAY_USED'],
-        ['tampered', false, 'REJECT', null],
-        ['wrong_event', false, 'REJECT', null],
-        ['expired', false, 'REJECT', null],
-        ['revoked_after_refresh', false, 'REJECT', null],
+        ['tampered', checks.security_tampered === true, 'REJECT', 'BAD_SIGNATURE'],
+        ['wrong_event', checks.security_wrong_event === true, 'REJECT', 'WRONG_EVENT'],
+        ['expired', checks.security_expired === true, 'REJECT', 'EXPIRED'],
+        ['revoked_after_refresh', checks.security_revoked_after_refresh === true, 'REJECT', 'REVOKED'],
         ['duplicate_synchronization', duplicateSync?.idempotent_replay === true, 'NO_DUPLICATE_BACKEND_ROW', 'IDEMPOTENT_REPLAY'],
       ].map(([scenario, passed, expected, reason]) => ({
         scenario, status: passed ? 'PASS' : securityAttempts[scenario] ? 'FAIL' : 'NOT_TESTED',
-        input_identity: securityAttempts[scenario] ? passId : null,
+        input_identity: securityAttempts[scenario] ? context.securityControls?.find((item) => item.scenario === scenario)?.pass_id ?? passId : null,
+        fixture_origin: context.securityControls?.find((item) => item.scenario === scenario)?.fixture_origin ?? 'Actual enrolled pass and signed synchronization request.',
         expected, observed: passed ? expected : null, reason_code: passed ? reason : null,
         timestamp: securityTimes[scenario] ?? null,
         backend_consequence: 'Requires the separate per-run authoritative backend artifact; not inferred from UI.',
@@ -630,6 +668,7 @@ async function main() {
         reason: 'Owner waived the privacy dispatch blocker; this is not evidence that schema, rows, API payloads, logs, CSV and retained artifacts passed a full audit.',
         encrypted_payload_classification: 'Event-specific encrypted gate-bound biometric-derived ciphertext; not described as no biometric bytes.',
       },
+      stale_revocation_cache_limitation: 'A disconnected gate cannot learn later remote revocations until a successful refresh. The revoked control was seeded before the fresh snapshot; it is not an instant-revocation claim.',
     };
     await Promise.all([
       writeFile(artifact('native-report.json'), `${JSON.stringify(evidence, null, 2)}\n`),

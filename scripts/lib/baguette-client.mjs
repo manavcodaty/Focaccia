@@ -160,6 +160,22 @@ function nodeText(node) {
     .join(' ');
 }
 
+export function redactDiagnosticText(text) {
+  return text
+    .replace(/eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[JWT withheld]')
+    .replace(/[A-Za-z0-9_-]{180,}\.[A-Za-z0-9_-]{70,}/g, '[signed pass withheld]');
+}
+
+export function redactAccessibilityTree(value) {
+  if (Array.isArray(value)) return value.map(redactAccessibilityTree);
+  if (typeof value === 'string') return redactDiagnosticText(value);
+  if (!value || typeof value !== 'object') return value;
+  const input = /^AX(?:Secure)?Text(?:Field|Area)$/.test(value.role ?? '');
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+    key, input && key === 'value' ? '[input value withheld]' : redactAccessibilityTree(item),
+  ]));
+}
+
 function matchesNode(node, matcher) {
   if (matcher instanceof RegExp) {
     return matcher.test(nodeText(node));
@@ -225,7 +241,7 @@ export async function waitForNode(udid, matcher, { timeoutMs = 60_000, label = S
   const visibleText = [];
   const collect = (node) => {
     if (!node || node.hidden) return;
-    const text = nodeText(node);
+    const text = nodeText(redactAccessibilityTree({ label: node.label, title: node.title, value: node.value, identifier: node.identifier, role: node.role }));
     if (text) visibleText.push(text);
     for (const child of node.children ?? []) collect(child);
   };

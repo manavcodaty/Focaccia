@@ -2,7 +2,22 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 import test from 'node:test';
 
-import { CameraWebSocket, readSimulatorClipboard } from './lib/baguette-client.mjs';
+import { CameraWebSocket, readSimulatorClipboard, redactAccessibilityTree } from './lib/baguette-client.mjs';
+
+test('diagnostics retain the gate error while excluding entered values and a token embedded in a label', () => {
+  const token = `${'x'.repeat(190)}.${'y'.repeat(86)}`;
+  const tree = { children: [
+    { role: 'AXTextField', label: 'Full pass token', value: token },
+    { role: 'AXSecureTextField', label: 'Password', value: 'fixture-secret' },
+    { role: 'AXStaticText', label: `Token rejected: ${token}. Refresh revocations successfully.` },
+  ] };
+  const serialized = JSON.stringify(redactAccessibilityTree(tree));
+  assert.ok(serialized.includes('Refresh revocations successfully'));
+  assert.ok(serialized.includes('Full pass token'));
+  assert.ok(!serialized.includes(token));
+  assert.ok(!serialized.includes('fixture-secret'));
+  assert.equal(tree.children[0].value, token, 'UI assertions must continue seeing the original test input');
+});
 
 function listen(server) {
   return new Promise((resolve, reject) => {

@@ -16,6 +16,8 @@ import {
   launchSimulatorApp,
   pasteIntoNode,
   readSimulatorClipboard,
+  redactAccessibilityTree,
+  redactDiagnosticText,
   runCommand,
   takeSimulatorScreenshot,
   tapNode,
@@ -458,58 +460,19 @@ async function main() {
       extraArtifacts.push('queue-after-restart.json');
     }
 
-    // Reusing the accepted token while still offline must be rejected locally.
-    securityAttempts.replay = true;
-    await tapAction('Back');
-    await waitForNode(simulatorUdid, 'Open scanner', { timeoutMs: 90_000 });
-    await tapAction('Open scanner');
-    await tapAction('Manual fallback', { timeoutMs: 90_000 });
-    await fillInputExactly(/^Full pass token\b/, passToken);
-    await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
-    await tapAction('Verify token offline', { timeoutMs: 90_000 });
-    await waitForNode(simulatorUdid, /^Entry rejected\b/, { timeoutMs: 90_000 });
-    await waitForNode(simulatorUdid, /REPLAY_USED/, { timeoutMs: 30_000 });
-    checks.replay_rejected = true;
-    securityTimes.replay = new Date().toISOString();
-    await screenshot('gate-replay-rejected-offline.png');
-    await tapAction('Home');
-
-    if (extendedEvidence) {
-      assert.equal(context.securityControls?.length, 4, 'Expected four isolated authenticated security-control fixtures.');
-      for (const control of context.securityControls) {
-        securityAttempts[control.scenario] = true;
-        await tapAction('Open scanner', { timeoutMs: 90_000 });
-        await tapAction('Manual fallback', { timeoutMs: 90_000 });
-        await fillInputExactly(/^Full pass token\b/, control.token);
-        await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
-        await tapAction('Verify token offline', { timeoutMs: 90_000 });
-        await waitForNode(simulatorUdid, /^Entry rejected\b/, { timeoutMs: 90_000 });
-        await waitForNode(simulatorUdid, new RegExp(`\\b${control.expected_reason}\\b`), { timeoutMs: 30_000 });
-        checks[`security_${control.scenario}`] = true;
-        securityTimes[control.scenario] = new Date().toISOString();
-        const image = `gate-${control.scenario}-rejected-offline.png`;
-        await screenshot(image); extraArtifacts.push(image);
-        await tapAction('Home');
-      }
-      const securityState = await captureGateState(simulatorUdid, artifact('security-control-state.json'));
-      assert.equal(securityState.snapshot.queue.filter((row) => row.status === 'pending').length, 1, 'Rejected controls must not create accepted check-ins.');
-      for (const control of context.securityControls) {
-        assert.ok(securityState.snapshot.logs.some((row) => row.pass_id === control.pass_id && row.outcome === 'REJECT' && row.reason_code === control.expected_reason), 'Each security rejection must have a matching durable gate log.');
-      }
-      assert.ok(securityState.snapshot.revocations.some((row) => row.pass_id === context.securityControls.find((item) => item.scenario === 'revoked_after_refresh').pass_id), 'Revoked control must actually be present in the refreshed cache.');
-      extraArtifacts.push('security-control-state.json');
-    }
-
+    // Start recovery from the same Settings screen where the offline
+    // queue was verified after restart. Security controls have their own
+    // freshly refreshed cache so a stale-cache guard cannot mask them.
     await relay.start();
-    await tapAction('Settings', { timeoutMs: 90_000 });
     // Restoring connectivity can trigger the app's automatic foreground sync
     // before the explicit retry below. Queue persistence was already proven
-    // while offline, so accept either intermediate state here and assert the
-    // synchronized confirmation plus a clear queue as the reconnect result.
+    // while offline, so use the actual sync count and empty queue as the
+    // postconditions regardless of which invocation finishes the upload.
     await waitForNode(simulatorUdid, /Queue clear|Sync pending/, { timeoutMs: 30_000 });
-    await tapAction('Retry check-in synchronization', { timeoutMs: 90_000 });
-    await waitForNode(simulatorUdid, /Check-in queue and revocation cache synchronized\./, { timeoutMs: 120_000 });
+    await tapNode(simulatorUdid, 'Retry check-in synchronization', { timeoutMs: 90_000 });
+    await waitForMetric('Synchronized check-ins', 1, { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Queue clear', { timeoutMs: 90_000 });
+    await waitForNode(simulatorUdid, /Offline ready/, { timeoutMs: 90_000 });
     checks.reconnect_sync = true;
     await screenshot('gate-sync-complete.png');
     if (extendedEvidence) {
@@ -528,6 +491,52 @@ async function main() {
       securityTimes.duplicate_synchronization = duplicateSync.observed_at;
       await writeFile(artifact('duplicate-sync.json'), JSON.stringify(duplicateSync, null, 2)+'\n');
       extraArtifacts.push('queue-after-reconnect.json', 'duplicate-sync.json');
+    }
+
+    await tapAction('Back');
+    const controls = [{ scenario: 'replay', token: passToken, pass_id: passId, expected_reason: 'REPLAY_USED' }];
+    if (extendedEvidence) {
+      assert.equal(context.securityControls?.length, 4, 'Expected four isolated authenticated security-control fixtures.');
+      controls.push(...context.securityControls);
+    }
+    for (const control of controls) {
+      await tapAction('Settings', { timeoutMs: 90_000 });
+      await tapNode(simulatorUdid, 'Refresh revocation cache', { timeoutMs: 90_000 });
+      await waitForNode(simulatorUdid, /Synced \d+ revoked pass IDs into the local offline cache\./, { timeoutMs: 90_000 });
+      await tapAction('Back');
+      await tapAction('Open scanner', { timeoutMs: 90_000 });
+      await waitForNode(simulatorUdid, /Offline ready/, { timeoutMs: 90_000 });
+      await tapAction('Manual fallback', { timeoutMs: 90_000 });
+      await fillInputExactly(/^Full pass token\b/, control.token);
+      await runCommand('baguette', ['key', '--udid', simulatorUdid, '--code', 'Escape']);
+      const evidence = await relay.disconnect();
+      securityAttempts[control.scenario] = true;
+      const networkFile = `gate-${control.scenario}-network-state.json`;
+      await writeFile(artifact(networkFile), JSON.stringify(evidence, null, 2)+'\n');
+      extraArtifacts.push(networkFile);
+      await tapAction('Verify token offline', { timeoutMs: 90_000 });
+      await waitForNode(simulatorUdid, /^Entry rejected\b/, { timeoutMs: 90_000 });
+      await waitForNode(simulatorUdid, new RegExp(`\\b${control.expected_reason}\\b`), { timeoutMs: 30_000 });
+      if (control.scenario === 'replay') checks.replay_rejected = true;
+      else checks[`security_${control.scenario}`] = true;
+      securityTimes[control.scenario] = new Date().toISOString();
+      const image = `gate-${control.scenario}-rejected-offline.png`;
+      await screenshot(image);
+      if (control.scenario !== 'replay') extraArtifacts.push(image);
+      await relay.start();
+      await tapAction('Home');
+    }
+    if (extendedEvidence) {
+      const securityState = await captureGateState(simulatorUdid, artifact('security-control-state.json'));
+      const queue = securityState.snapshot.queue;
+      assert.equal(queue.length, 1, 'Rejected controls must not create accepted check-ins.');
+      assert.equal(queue[0].status, 'synced');
+      assert.equal(queue[0].pass_id, passId);
+      for (const control of controls) {
+        assert.ok(securityState.snapshot.logs.some((row) => row.pass_id === control.pass_id && row.outcome === 'REJECT' && row.reason_code === control.expected_reason), 'Each security rejection must have a matching durable gate log.');
+      }
+      assert.ok(securityState.snapshot.revocations.some((row) => row.pass_id === controls.find((item) => item.scenario === 'revoked_after_refresh').pass_id), 'Revoked control must actually be present in the refreshed cache.');
+      extraArtifacts.push('security-control-state.json');
     }
 
     const browser = await chromium.launch({
@@ -555,7 +564,7 @@ async function main() {
       await browser.close();
     }
   } catch (error) {
-    failure = error instanceof Error ? error.message : String(error);
+    failure = redactDiagnosticText(error instanceof Error ? error.message : String(error));
     throw error;
   } finally {
     await relay.close();
@@ -575,7 +584,7 @@ async function main() {
         takeSimulatorScreenshot(simulatorUdid, artifact('native-failure.png')),
         describeUi(simulatorUdid).then((tree) => writeFile(
           artifact('native-failure-ui.json'),
-          `${JSON.stringify(tree, null, 2)}\n`,
+          `${JSON.stringify(redactAccessibilityTree(tree), null, 2)}\n`,
         )),
         captureSimulatorDiagnostics(),
       ]);

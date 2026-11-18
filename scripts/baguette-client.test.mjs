@@ -2,7 +2,35 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 import test from 'node:test';
 
-import { CameraWebSocket, readSimulatorClipboard, redactAccessibilityTree } from './lib/baguette-client.mjs';
+import { CameraWebSocket, describeUi, readSimulatorClipboard, redactAccessibilityTree } from './lib/baguette-client.mjs';
+
+test('transient SimulatorKit orientation errors recover with a bounded portrait request', async () => {
+  const calls = [];
+  const tree = { tree: { label: 'Organizer email' } };
+  const readCommand = async (_command, args) => {
+    calls.push(args);
+    if (calls.length <= 2) throw new Error("SimulatorKit cannot report the screen's interface orientation");
+    return { stdout: JSON.stringify(tree) };
+  };
+  assert.deepEqual(await describeUi('fixture', { readCommand, delay: async () => {}, report: () => {} }), tree);
+  assert.deepEqual(calls.map(args => args[0]), ['describe-ui', 'describe-ui', 'orientation', 'describe-ui']);
+  assert.equal(calls[2].at(-1), 'portrait');
+});
+
+test('persistent orientation errors stop after five reads, and other errors are not retried', async () => {
+  for (const [message, expectedReads] of [
+    ["SimulatorKit cannot report the screen's interface orientation", 5],
+    ['Baguette process exited unexpectedly', 1],
+  ]) {
+    let reads = 0;
+    const readCommand = async (_command, args) => {
+      if (args[0] === 'describe-ui') reads += 1;
+      throw new Error(message);
+    };
+    await assert.rejects(describeUi('fixture', { readCommand, delay: async () => {}, report: () => {} }), { message });
+    assert.equal(reads, expectedReads);
+  }
+});
 
 test('diagnostics retain the gate error while excluding entered values and a token embedded in a label', () => {
   const token = `${'x'.repeat(190)}.${'y'.repeat(86)}`;

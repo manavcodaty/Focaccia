@@ -149,9 +149,27 @@ async function runWithShortInputSession(udid, action) {
   }
 }
 
-export async function describeUi(udid) {
-  const { stdout } = await runCommand('baguette', ['describe-ui', '--udid', udid]);
-  return JSON.parse(stdout);
+export async function describeUi(udid, { readCommand = runCommand, delay = sleep, report = console.warn } = {}) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      const { stdout } = await readCommand('baguette', ['describe-ui', '--udid', udid], { timeout: 15_000 });
+      return JSON.parse(stdout);
+    } catch (error) {
+      const orientationUnavailable = error instanceof Error
+        && /SimulatorKit cannot report the screen's interface orientation/.test(error.message);
+      if (!orientationUnavailable || attempt === 5) throw error;
+      report(`Simulator accessibility orientation unavailable (attempt ${attempt}); retrying screen read`);
+      if (attempt === 2) {
+        try {
+          await readCommand('baguette', ['orientation', '--udid', udid, 'portrait'], { timeout: 12_000 });
+          report('Restored portrait simulator orientation for accessibility');
+        } catch {
+          report('Simulator orientation command could not confirm portrait; probing accessibility again');
+        }
+      }
+      await delay(600 * attempt);
+    }
+  }
 }
 
 function nodeText(node) {

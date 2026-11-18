@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
 import { captureGateState } from './lib/cloud-gate-evidence.mjs';
+import { settleHostedInput } from './lib/cloud-input-retry.mjs';
 
 import {
   describeUi,
@@ -46,6 +47,7 @@ const enrollmentBundleId = 'com.facepass.enrollment';
 const gateBundleId = 'com.facepass.gate';
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const context = JSON.parse(await readFile(contextPath, 'utf8'));
+const inputRetryEvents = [];
 await mkdir(artifactDir, { recursive: true });
 
 function artifact(name) {
@@ -188,31 +190,16 @@ async function tapAction(matcher, options = {}) {
 }
 
 async function fillInputExactly(matcher, value) {
-  let observedLength = 0;
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    await pasteIntoNode(simulatorUdid, matcher, value, {
-      press: false,
-      replace: true,
-      timeoutMs: 90_000,
-    });
-
-    const deadline = Date.now() + 10_000;
-    while (Date.now() < deadline) {
-      try {
-        const node = findNode(await describeUi(simulatorUdid), matcher);
-        if (typeof node?.value === 'string') {
-          observedLength = node.value.length;
-          if (node.value === value) return;
-        }
-      } catch {
-        // Keep polling while the hosted accessibility tree settles after paste.
-      }
-      await sleep(150);
-    }
-  }
-
-  throw new Error(`Hosted input did not settle to the expected value for ${String(matcher)} (observed ${observedLength} characters).`);
+  await settleHostedInput({
+    expected: value, label: String(matcher),
+    paste: () => pasteIntoNode(simulatorUdid, matcher, value, { press: false, replace: true, timeoutMs: 90_000 }),
+    type: () => typeIntoNode(simulatorUdid, matcher, value, { replace: true, timeoutMs: 90_000 }),
+    read: async () => findNode(await describeUi(simulatorUdid), matcher)?.value,
+    record: async (event) => {
+      inputRetryEvents.push(event);
+      await writeFile(artifact('input-retries.json'), JSON.stringify({ attempts: inputRetryEvents }, null, 2)+'\n');
+    },
+  });
 }
 
 function accessibilityNodeText(node) {
@@ -357,6 +344,15 @@ async function main() {
   }
 
   try {
+    if (extendedEvidence) {
+      const container = (await runCommand('xcrun', ['simctl', 'get_app_container', simulatorUdid, gateBundleId, 'data'])).stdout.trim();
+      const documents = path.join(container, 'Documents');
+      await mkdir(documents, { recursive: true });
+      const payload = JSON.stringify(context.provisioningPayload);
+      await writeFile(path.join(documents, 'cloud-e2e-provisioning.json'), payload, { mode: 0o600 });
+      await writeFile(artifact('runtime-provisioning.json'), JSON.stringify({ run_id: context.runId, event_id: context.eventId, transport: 'runner_written_app_documents_fixture', payload_sha256: createHash('sha256').update(payload).digest('hex'), raw_payload_in_receipt: false }, null, 2)+'\n');
+      extraArtifacts.push('runtime-provisioning.json');
+    }
     // Gate provisioning must precede enrollment: the server will not issue a
     // pass until the event has a bound gate public key.
     await launchGate();
@@ -463,7 +459,7 @@ async function main() {
     checks.revocation_cache_fresh = true;
     await waitForNode(simulatorUdid, 'Manual fallback', { timeoutMs: 90_000 });
     await tapAction('Manual fallback');
-    await pasteIntoNode(simulatorUdid, /^Full pass token\b/, passToken, { timeoutMs: 90_000 });
+    await fillInputExactly(/^Full pass token\b/, passToken);
     await tapAction('Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Capture and verify attendee', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
@@ -638,6 +634,7 @@ async function main() {
         'native-simulator-log.txt',
       );
     }
+    if (inputRetryEvents.length) artifacts.push('input-retries.json');
     const evidence = {
       checks,
       commit_sha: process.env.GITHUB_SHA ?? null,
@@ -649,6 +646,7 @@ async function main() {
       status: failure ? 'FAIL' : 'PARTIAL',
       network_loss_method: 'stopped_macOS_relay',
       provisioning_mode: 'e2e_payload_injection',
+      runtime_provisioning_transport: extraArtifacts.includes('runtime-provisioning.json') ? 'runner_written_app_documents_fixture' : null,
       provisioning_qr_camera_scan: false,
       run_id: context.runId,
       runner_os: process.env.RUNNER_OS ?? null,

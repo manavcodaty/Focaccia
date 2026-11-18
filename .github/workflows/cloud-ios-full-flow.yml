@@ -516,7 +516,6 @@ jobs:
           writeFileSync('apps/enrollment/.env.local', `${common.join('\n')}\n`, { mode: 0o600 });
           writeFileSync('apps/gate/.env.local', `${[
             ...common,
-            `EXPO_PUBLIC_FOCACCIA_E2E_CONTEXT_URL=http://${host}:9012/provisioning`,
           ].join('\n')}\n`, { mode: 0o600 });
           NODE
 

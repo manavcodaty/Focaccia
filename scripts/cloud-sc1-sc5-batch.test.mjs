@@ -11,6 +11,16 @@ test('bounded validation and batch counts only',()=>{
 test('production mode never fetches even when a context URL is supplied',async()=>{
   const result=await loadCloudProvisioning({enabled:false,contextUrl:'http://10.0.0.1:9012/provisioning',fetchImpl:()=>{throw Error('Production fetched a fixture');}});assert.equal(result,null);
 });
+test('production never reads a simulator fixture file',async()=>{
+  assert.equal(await loadCloudProvisioning({enabled:false,readLocalPayload:async()=>{throw Error('Production read a fixture');}}),null);
+});
+test('runtime simulator file supplies the current observation without a network request',async()=>{
+  let current='one';const options={enabled:true,readLocalPayload:async()=>JSON.stringify({event_id:current}),fetchImpl:()=>{throw Error('File provisioning must not fetch');}};
+  assert.deepEqual(JSON.parse(await loadCloudProvisioning(options)),{event_id:'one'});current='two';assert.deepEqual(JSON.parse(await loadCloudProvisioning(options)),{event_id:'two'});
+});
+test('missing runtime fixture is explicit rather than silently leaving provisioning empty',async()=>{
+  await assert.rejects(()=>loadCloudProvisioning({enabled:true,readLocalPayload:async()=>null}),/fixture is missing/);
+});
 test('legacy encoded fixture remains supported without a network call',async()=>{
   assert.equal(await loadCloudProvisioning({enabled:true,encodedPayload:encodeURIComponent('{"event_id":"fixture"}'),fetchImpl:()=>{throw Error('Unexpected network');}}),'{"event_id":"fixture"}');
 });

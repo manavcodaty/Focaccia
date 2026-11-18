@@ -139,9 +139,9 @@ async function native(count) {
     const app=required('FOCACCIA_'+name+'_APP_PATH');const executable=path.join(app,name==='GATE'?'FacePassGate':'FacePassEnrollment');
     return [name.toLowerCase(),hash(readFileSync(executable))];
   }));
-  let current=null;const server=await contextServer(required('FOCACCIA_CLOUD_LOCAL_HOST'),()=>current);const results=[];
+  let current=null;const results=[];
   const seen=new Set();
-  try{for(let i=0;i<count;i++){
+  for(let i=0;i<count;i++){
     const index=String(i).padStart(2,'0');let received;
     for(let attempt=0;attempt<240;attempt++){
       received=await coordination('/case/'+i);
@@ -167,7 +167,7 @@ async function native(count) {
     save(path.join(dir,'batch-observation.json'),result);results.push(result);
     try{await command('xcrun',['simctl','shutdown',udid],{stdio:'ignore'});}catch{}
     const completion=await coordination('/complete/'+i,result);assert.equal(completion.status,200,'Backend results were not captured; do not reset or advance');
-  }}finally{await new Promise(resolve=>server.close(resolve));}
+  }
   save(path.join(output,'batch-summary.json'),{observations:results,target_count:count,native_builds:builds,build_count_per_app:1,failed:results.filter(r=>r.native_flow_exit_code!==0).length});
   if(results.some(r=>r.native_flow_exit_code!==0))process.exitCode=1;
 }

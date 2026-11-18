@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { File, Paths } from 'expo-file-system';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Linking,
@@ -78,17 +79,22 @@ function useProvisionController(isCloudE2E: boolean) {
   const [isBusy, setIsBusy] = useState(false);
   const scanLockRef = useRef(false);
   useEffect(() => {
-    if (process.env.EXPO_PUBLIC_FOCACCIA_CLOUD_E2E !== '1') {
+    if (!isCloudE2E) {
       return;
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
+    let cancelled = false;
+    const timeout = setTimeout(() => controller.abort(), 90_000);
     void loadCloudProvisioning({
       enabled: true,
       encodedPayload: process.env.EXPO_PUBLIC_FOCACCIA_E2E_PROVISIONING_PAYLOAD,
       contextUrl: process.env.EXPO_PUBLIC_FOCACCIA_E2E_CONTEXT_URL,
       signal: controller.signal,
+      readLocalPayload: async () => {
+        const file = new File(Paths.document, 'cloud-e2e-provisioning.json');
+        return file.exists ? file.text() : null;
+      },
     }).then((raw) => {
       if (!raw || controller.signal.aborted) return;
       const payload = parseProvisioningQrPayload(raw);
@@ -96,10 +102,12 @@ function useProvisionController(isCloudE2E: boolean) {
       setDraft(payload);
       setFeedback('Cloud E2E provisioning payload loaded. Confirm the event and sync this device.');
     }).catch(() => {
-      if (!controller.signal.aborted) setError('Cloud E2E provisioning payload could not be loaded.');
+      if (!cancelled) setError(controller.signal.aborted
+        ? 'Cloud E2E provisioning payload timed out.'
+        : 'Cloud E2E provisioning fixture could not be loaded.');
     }).finally(() => clearTimeout(timeout));
-    return () => { clearTimeout(timeout); controller.abort(); };
-  }, []);
+    return () => { cancelled = true; clearTimeout(timeout); controller.abort(); };
+  }, [isCloudE2E, auth?.userId]);
   async function handleSignIn() {
     setError(null);
     setFeedback(null);

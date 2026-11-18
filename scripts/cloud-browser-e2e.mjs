@@ -206,8 +206,19 @@ try {
     organizerPage.getByText('Gate transfer payload', { exact: true }),
     'gate provisioning payload',
   );
-  await organizerPage.getByText('Advanced cryptographic details', { exact: true }).click();
-  const provisioningPayloadText = await organizerPage.locator('#qr-payload pre').textContent();
+  const detailsToggle = organizerPage.getByRole('button', { name: /Advanced cryptographic details/ });
+  const payloadPreview = organizerPage.locator('#qr-payload pre');
+  for (let attempt = 0; attempt < 8 && !(await payloadPreview.isVisible()); attempt += 1) {
+    if (await detailsToggle.getAttribute('aria-expanded') !== 'true') {
+      await detailsToggle.click({ timeout: 5_000 });
+    }
+    try {
+      await payloadPreview.waitFor({ state: 'visible', timeout: 2_000 });
+    } catch (error) {
+      if (error.name !== 'TimeoutError' || attempt === 7) throw error;
+    }
+  }
+  const provisioningPayloadText = await payloadPreview.textContent({ timeout: 5_000 });
   assert.ok(provisioningPayloadText, 'The provisioning payload preview should be present.');
   const provisioningPayload = JSON.parse(provisioningPayloadText);
   const verifiedAt = new Date().toISOString();

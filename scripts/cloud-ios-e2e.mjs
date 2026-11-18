@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
 import { captureGateState } from './lib/cloud-gate-evidence.mjs';
 import { settleHostedInput } from './lib/cloud-input-retry.mjs';
+import { createObservationRelay } from './lib/cloud-observation-relay.mjs';
 
 import {
   describeUi,
@@ -40,7 +40,6 @@ const enrollmentAppPath = requiredEnv('FOCACCIA_ENROLLMENT_APP_PATH');
 const gateAppPath = requiredEnv('FOCACCIA_GATE_APP_PATH');
 const faceFixturePath = requiredEnv('FOCACCIA_FACE_FIXTURE_PATH');
 const webUrl = requiredEnv('FOCACCIA_CLOUD_WEB_URL');
-const proxyPidPath = requiredEnv('FOCACCIA_PROXY_PID_FILE');
 const faceFixtureSha256 = createHash('sha256').update(await readFile(faceFixturePath)).digest('hex');
 
 const enrollmentBundleId = 'com.facepass.enrollment';
@@ -52,54 +51,6 @@ await mkdir(artifactDir, { recursive: true });
 
 function artifact(name) {
   return path.join(artifactDir, name);
-}
-
-async function waitForProxyState(expected) {
-  const healthUrl = `${process.env.FOCACCIA_PROXY_HEALTH_URL ?? 'http://127.0.0.1:54331/.focaccia/health'}`;
-  const deadline = Date.now() + 30_000;
-  while (Date.now() < deadline) {
-    try {
-      const response = await fetch(healthUrl);
-      if (expected ? response.ok : !response.ok) return;
-    } catch {
-      if (!expected) return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 400));
-  }
-  throw new Error(`Timed out waiting for local Supabase proxy to become ${expected ? 'available' : 'unavailable'}.`);
-}
-
-async function stopLocalProxy() {
-  const pid = Number((await readFile(proxyPidPath, 'utf8')).trim());
-  assert.ok(Number.isInteger(pid) && pid > 1, `Invalid proxy PID in ${proxyPidPath}.`);
-  process.kill(pid, 'SIGTERM');
-  await waitForProxyState(false);
-}
-
-async function restartLocalProxy() {
-  const localHost = requiredEnv('FOCACCIA_CLOUD_LOCAL_HOST');
-  const upstreamUrl = requiredEnv('FOCACCIA_SUPABASE_UPSTREAM_URL');
-  const child = spawn(process.execPath, ['scripts/lan-supabase-proxy.mjs'], {
-    cwd: process.cwd(),
-    detached: true,
-    env: {
-      ...process.env,
-      FOCACCIA_ALLOWED_BROWSER_ORIGINS: [
-        `http://${localHost}:3000`,
-        `http://${localHost}:3001`,
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001',
-      ].join(','),
-      FOCACCIA_LAN_PROXY_PORT: '54331',
-      FOCACCIA_LOCAL_HOST: localHost,
-      FOCACCIA_SUPABASE_UPSTREAM_URL: upstreamUrl,
-    },
-    stdio: 'ignore',
-  });
-  child.unref();
-  await writeFile(proxyPidPath, `${child.pid}\n`, { mode: 0o600 });
-  await chmod(proxyPidPath, 0o600);
-  await waitForProxyState(true);
 }
 
 async function launchApp({ appLabel, bundleId, matcher, timeoutMs }) {
@@ -303,6 +254,10 @@ async function main() {
   const startedAt = new Date().toISOString();
   const extendedEvidence = process.env.FOCACCIA_FRESH_SIMULATOR_STATE === '1';
   const extraArtifacts = [];
+  const relay = createObservationRelay({
+    bindHost: requiredEnv('FOCACCIA_CLOUD_LOCAL_HOST'),
+    upstreamUrl: requiredEnv('FOCACCIA_SUPABASE_UPSTREAM_URL'),
+  });
   let gateIdentity = null;
   let beforeRestart = null;
   let originalGateTime = null;
@@ -344,6 +299,7 @@ async function main() {
   }
 
   try {
+    await relay.start();
     if (extendedEvidence) {
       const container = (await runCommand('xcrun', ['simctl', 'get_app_container', simulatorUdid, gateBundleId, 'data'])).stdout.trim();
       const documents = path.join(container, 'Documents');
@@ -460,21 +416,16 @@ async function main() {
     await waitForNode(simulatorUdid, 'Manual fallback', { timeoutMs: 90_000 });
     await tapAction('Manual fallback');
     await fillInputExactly(/^Full pass token\b/, passToken);
+    const offlineNetwork = await relay.disconnect();
+    if (extendedEvidence) {
+      checks.decision_backend_unreachable = true;
+      securityAttempts.genuine_unused = true;
+      await writeFile(artifact('network-state.json'), JSON.stringify(offlineNetwork, null, 2)+'\n');
+      extraArtifacts.push('network-state.json');
+    }
     await tapAction('Verify token offline', { timeoutMs: 90_000 });
     await waitForNode(simulatorUdid, 'Capture and verify attendee', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, 'Cloud E2E image source ready', { timeoutMs: 120_000 });
-
-    await stopLocalProxy();
-    if (extendedEvidence) {
-      checks.decision_backend_unreachable = true; securityAttempts.genuine_unused = true;
-      await writeFile(artifact('network-state.json'), JSON.stringify({
-        checked_at: new Date().toISOString(), network_loss_method: 'stopped_macOS_relay',
-        relay_process_signalled: true, relay_health_available: false,
-        assertion: 'waitForProxyState(false) completed after SIGTERM; native clients use this relay as their only configured backend endpoint.',
-        physical_radio_isolation: false,
-      }, null, 2)+'\n');
-      extraArtifacts.push('network-state.json');
-    }
     await tapAction('Capture and verify attendee', { timeoutMs: 120_000 });
     await waitForNode(simulatorUdid, /^Entry accepted\b/, { timeoutMs: 180_000 });
     checks.gate_liveness_capture_accepted = true;
@@ -549,7 +500,7 @@ async function main() {
       extraArtifacts.push('security-control-state.json');
     }
 
-    await restartLocalProxy();
+    await relay.start();
     await tapAction('Settings', { timeoutMs: 90_000 });
     // Restoring connectivity can trigger the app's automatic foreground sync
     // before the explicit retry below. Queue persistence was already proven
@@ -607,6 +558,7 @@ async function main() {
     failure = error instanceof Error ? error.message : String(error);
     throw error;
   } finally {
+    await relay.close();
     const artifacts = [
         'gate-provisioned.png',
         'enrollment-pass.png',

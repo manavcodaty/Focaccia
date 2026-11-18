@@ -118,15 +118,6 @@ export async function contextServer(host, getCurrent, port = 9012) {
   return server;
 }
 
-async function relayReady() {
-  const url=required('FOCACCIA_PROXY_HEALTH_URL');
-  try{if((await fetch(url,{signal:AbortSignal.timeout(2000)})).ok)return;}catch{}
-  const child=spawn(process.execPath,['scripts/lan-supabase-proxy.mjs'],{env:{...process.env,FOCACCIA_LOCAL_HOST:required('FOCACCIA_CLOUD_LOCAL_HOST'),FOCACCIA_LAN_PROXY_PORT:'54331',FOCACCIA_SUPABASE_UPSTREAM_URL:required('FOCACCIA_SUPABASE_UPSTREAM_URL')},stdio:'ignore'});
-  writeFileSync(required('FOCACCIA_PROXY_PID_FILE'),String(child.pid)+'\n',{mode:0o600});
-  for(let i=0;i<60;i++){try{if((await fetch(url,{signal:AbortSignal.timeout(2000)})).ok)return;}catch{} await delay(500);}
-  throw new Error('Batch relay did not recover');
-}
-
 async function native(count) {
   const root=required('FOCACCIA_CLOUD_BATCH_ROOT');const output=required('FOCACCIA_CLOUD_ARTIFACT_DIR');
   const coordinator=load(path.join(root,'..','coordinator.json'));assert.equal(coordinator.observations,count);
@@ -156,7 +147,6 @@ async function native(count) {
       try{await command('xcrun',['simctl','shutdown',udid],{stdio:'ignore'});}catch{}
       await command('xcrun',['simctl','erase',udid]);erased=true;
       await command('xcrun',['simctl','boot',udid]);await command('xcrun',['simctl','bootstatus',udid,'-b']);
-      await relayReady();
       await command(process.execPath,['scripts/cloud-ios-e2e.mjs'],{env:{...process.env,FOCACCIA_CLOUD_CONTEXT_PATH:path.join(root,index,'context.json'),FOCACCIA_CLOUD_ARTIFACT_DIR:dir,FOCACCIA_FRESH_SIMULATOR_STATE:'1'}});
       const report=load(path.join(dir,'native-report.json'));
       for(const field of ['run_id','event_id','ticket_id','organizer_id_hash','attendee_id_hash','pass_id','gate_device_id','gate_key_fingerprint']){

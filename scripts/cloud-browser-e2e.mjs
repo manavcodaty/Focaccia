@@ -96,6 +96,7 @@ const browser = await chromium.launch({
 });
 const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 },
+  timezoneId: 'UTC',
 });
 let organizerPage;
 let attendeePage;
@@ -140,6 +141,8 @@ try {
     'Cloud verification hall',
     'event location',
   );
+  const activeSince = new Date(Date.now() - 5 * 60_000).toISOString().slice(0, 16);
+  await fillStable(organizerPage, organizerPage.locator('#starts-at'), activeSince, 'already active test event start');
   await organizerPage.getByRole('checkbox', { name: /Listed publicly/ }).check();
   await organizerPage.locator('form button[type="submit"]').click();
   await waitForVisible(
@@ -207,6 +210,9 @@ try {
   const provisioningPayloadText = await organizerPage.locator('#qr-payload pre').textContent();
   assert.ok(provisioningPayloadText, 'The provisioning payload preview should be present.');
   const provisioningPayload = JSON.parse(provisioningPayloadText);
+  const verifiedAt = new Date().toISOString();
+  assert.ok(Date.parse(provisioningPayload.starts_at) < Date.parse(verifiedAt), 'The fixture event must already be active');
+  assert.ok(Date.parse(provisioningPayload.ends_at) > Date.parse(verifiedAt), 'The fixture event must still be active');
   await organizerPage.locator('#qr-payload').getByRole('img').screenshot({
     path: path.join(artifactDir, 'gate-provisioning-qr.png'),
   });
@@ -235,6 +241,7 @@ try {
     claim_code_format_valid: true,
     event_id: eventId,
     event_listed: true,
+    fixture_event_window: { starts_at: provisioningPayload.starts_at, ends_at: provisioningPayload.ends_at, verified_at: verifiedAt },
     event_listing_screenshot_captured: true,
     event_listing_page_identity: eventListingIdentity,
     browser_console_errors: browserConsoleErrors,

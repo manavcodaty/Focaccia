@@ -458,7 +458,7 @@ jobs:
       - name: Build shared package for the native apps
         run: pnpm --filter @face-pass/shared build
 
-      - name: Start local relay to the public Supabase tunnel
+      - name: Configure the per-observation macOS relay
         shell: bash
         run: |
           set -euo pipefail
@@ -468,29 +468,8 @@ jobs:
             10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) ;;
             *) echo "Unexpected runner address: $LOCAL_HOST" >&2; exit 1 ;;
           esac
-          nohup env \
-            FOCACCIA_ALLOWED_BROWSER_ORIGINS="http://$LOCAL_HOST:3000,http://$LOCAL_HOST:3001" \
-            FOCACCIA_LAN_PROXY_PORT=54331 \
-            FOCACCIA_LOCAL_HOST="$LOCAL_HOST" \
-            FOCACCIA_SUPABASE_UPSTREAM_URL="$FOCACCIA_CLOUD_PUBLIC_SUPABASE_URL" \
-            node scripts/lan-supabase-proxy.mjs \
-            > "$RUNNER_TEMP/focaccia-proxy.log" 2>&1 &
-          PROXY_PID="$!"
-          echo "$PROXY_PID" > "$RUNNER_TEMP/focaccia-proxy.pid"
-          for attempt in $(seq 1 60); do
-            if curl --silent --fail --output /dev/null "http://$LOCAL_HOST:54331/.focaccia/health"; then
-              break
-            fi
-            if [ "$attempt" -eq 60 ]; then
-              sed -n '1,200p' "$RUNNER_TEMP/focaccia-proxy.log" >&2 || true
-              exit 1
-            fi
-            sleep 1
-          done
           echo "FOCACCIA_CLOUD_LOCAL_HOST=$LOCAL_HOST" >> "$GITHUB_ENV"
           echo "FOCACCIA_LOCAL_HOST=$LOCAL_HOST" >> "$GITHUB_ENV"
-          echo "FOCACCIA_PROXY_HEALTH_URL=http://$LOCAL_HOST:54331/.focaccia/health" >> "$GITHUB_ENV"
-          echo "FOCACCIA_PROXY_PID_FILE=$RUNNER_TEMP/focaccia-proxy.pid" >> "$GITHUB_ENV"
           echo "FOCACCIA_SUPABASE_UPSTREAM_URL=$FOCACCIA_CLOUD_PUBLIC_SUPABASE_URL" >> "$GITHUB_ENV"
 
       - name: Prepare mobile network and E2E environment

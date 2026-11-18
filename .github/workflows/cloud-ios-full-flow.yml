@@ -562,6 +562,39 @@ jobs:
             test "$pod_succeeded" -eq 1
           done
 
+      - name: Start pinned Baguette and verify simulator accessibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          BAGUETTE_ARCHIVE="$RUNNER_TEMP/baguette-v0.2.14.tar.gz"
+          BAGUETTE_DIST="$RUNNER_TEMP/baguette-v0.2.14-macOS-arm64"
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+            https://github.com/tddworks/baguette/releases/download/v0.2.14/baguette_v0.2.14_macOS_arm64.tar.gz \
+            -o "$BAGUETTE_ARCHIVE"
+          printf '%s  %s\n' '885ad86ae989dda85e39de370d0e9be5368b564fa65000153577c59d5effc777' "$BAGUETTE_ARCHIVE" \
+            | shasum -a 256 -c -
+          tar -xzf "$BAGUETTE_ARCHIVE" -C "$RUNNER_TEMP"
+          ln -s "$BAGUETTE_DIST/Baguette" "$RUNNER_TEMP/baguette"
+          BAGUETTE_BIN="$RUNNER_TEMP/baguette"
+          test "$("$BAGUETTE_BIN" --version)" = 0.2.14
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          nohup "$BAGUETTE_BIN" serve --host 127.0.0.1 --port 8421 \
+            > "$RUNNER_TEMP/focaccia-baguette.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/focaccia-baguette.pid"
+          for attempt in $(seq 1 20); do
+            if curl --silent --fail --max-time 3 --output /dev/null http://127.0.0.1:8421/simulators.json \
+              && "$BAGUETTE_BIN" describe-ui --udid "$FOCACCIA_IOS_SIMULATOR_UDID" \
+                > "$RUNNER_TEMP/focaccia-baguette-probe.json" 2>> "$RUNNER_TEMP/focaccia-baguette.log"; then
+              echo "Baguette 0.2.14 simulator accessibility probe passed"
+              exit 0
+            fi
+            sleep 2
+          done
+          sed -n '1,200p' "$RUNNER_TEMP/focaccia-baguette.log" >&2
+          echo 'Baguette accessibility probe failed; native compilation was skipped.' >&2
+          exit 1
+
       - name: Build Enrollment for the fixture-driven cloud simulator
         shell: bash
         run: |
@@ -605,26 +638,6 @@ jobs:
           APP_PATH="$(find "$RUNNER_TEMP/gate-derived/Build/Products" -type d -name 'FacePassGate.app' -print -quit)"
           test -n "$APP_PATH"
           echo "FOCACCIA_GATE_APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
-
-      - name: Install and start Baguette simulator controller
-        shell: bash
-        run: |
-          set -euo pipefail
-          command -v baguette >/dev/null || brew install baguette
-          baguette --version
-          nohup baguette serve --host 127.0.0.1 --port 8421 \
-            > "$RUNNER_TEMP/focaccia-baguette.log" 2>&1 &
-          echo $! > "$RUNNER_TEMP/focaccia-baguette.pid"
-          for attempt in $(seq 1 30); do
-            if curl --silent --fail --output /dev/null http://127.0.0.1:8421/simulators.json; then
-              break
-            fi
-            if [ "$attempt" -eq 30 ]; then
-              sed -n '1,200p' "$RUNNER_TEMP/focaccia-baguette.log" >&2 || true
-              exit 1
-            fi
-            sleep 2
-          done
 
       - name: Run the native cloud agent through Enrollment, Gate, offline sync, and dashboard
         run: node scripts/cloud-sc1-sc5-batch.mjs native
